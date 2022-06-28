@@ -1,0 +1,25 @@
+/*--********  Navigation bar */
+.navbarTeamName {
+	color:black !important;
+	font-size: 200%;
+	font-weight: bold;
+}
+
+.bsafesNavbar {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.memberBadge {
+  display: inline-block;
+  width: 42px;
+  height: 42px;
+  margin-top: 5px;
+  padding-top: 2px;
+  border-radius: 50%;
+  font-size: 24px;
+  font-weight: bold;
+  color: #fff;
+  background-color: #000;
+}
+/* End of navigation bar */

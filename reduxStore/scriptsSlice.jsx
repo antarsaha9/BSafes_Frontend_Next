@@ -1,0 +1,85 @@
+import { createSlice } from '@reduxjs/toolkit';
+
+const scripts = [
+    {id: "froala_editor.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/froala_editor.min.js",
+     loaded: false,
+    },
+    {id: "codemirror.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.min.js",
+     loaded: false,
+    },
+    {id: "xml.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/mode/xml/xml.min.js",
+     loaded: false,
+    },
+    {id: "align.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/align.min.js",
+     loaded: false,
+    },
+    {id: "char_counter.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/char_counter.min.js",
+     loaded: false,
+    },
+    {id: "code_beautifier.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/code_beautifier.min.js",
+     loaded: false,
+    },
+    {id: "code_view.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/code_view.min.js",
+     loaded: false,
+    },
+    {id: "colors.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/colors.min.js",
+     loaded: false,
+    },
+    {id: "emoticons.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/emoticons.min.js",
+     loaded: false,
+    },
+    {id: "entities.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/entities.min.js",
+     loaded: false,
+    },
+    {id: "file.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/file.min.js",
+     loaded: false,
+    },
+    {id: "font_family.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/font_family.min.js",
+     loaded: false,
+    },
+    {id: "font_size.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/font_size.min.js",
+     loaded: false
+    }
+];
+
+const initialState = {
+    scripts: [scripts[0]],
+    index: 0,
+    done: false,
+}
+
+export const scriptsSlice = createSlice({
+    name: 'scripts',
+    initialState,
+    reducers:{
+        loaded: (state, action) => {
+            state.scripts[action.payload].loaded = true;
+            if(action.payload === scripts.length - 1) { 
+                state.done = true;
+            } else {
+                state.index ++;
+                state.scripts.push(scripts[state.index]);
+                console.log(action.payload + ' loaded. current count:' + state.index);
+            }
+        },
+    }
+})
+
+
+export const { loaded } = scriptsSlice.actions;
+export const scriptsReducer = scriptsSlice.reducer;
+
+export default scriptsSlice;
