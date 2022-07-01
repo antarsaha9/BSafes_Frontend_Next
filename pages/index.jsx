@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import Head from 'next/head'
+import Button from 'react-bootstrap/Button' 
 import BSafesStyle from '../styles/BSafes.module.css'
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 
 import jquery from "jquery"
 
 import Scripts from '../components/scripts'
+import ImagesGallery from '../components/imagesGallery';
 
 export default function Home() {
 
@@ -18,6 +20,12 @@ export default function Home() {
       $("#edit").froalaEditor();
     }
   },[scriptsLoaded])
+
+  const upload = async () => {
+    $.get("/", function(data, status){
+      console.log("Data: " + data + "\nStatus: " + status);
+    });
+  }
 
   return (
     <div>
@@ -32,6 +40,8 @@ export default function Home() {
           <h1>Introduction</h1>
 
           <div id='edit'></div>
+        
+          <ImagesGallery />
         </main>
       </ContentPageLayout>
 

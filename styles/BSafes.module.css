@@ -1,3 +1,9 @@
+/*--*****   General  */
+.displayNone {
+	display: none;
+}
+/* End of general */
+
 /*--********  Navigation bar */
 .navbarTeamName {
 	color:black !important;
