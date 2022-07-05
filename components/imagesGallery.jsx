@@ -1,4 +1,6 @@
-import {useRef} from 'react'
+import { useRef, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -10,12 +12,18 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import { PostCall } from '../lib/helper'
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import ImagePanel from './imagePanel'
+
+import {addFiles, addFilesAsync} from '../reduxStore/pageSlice'
 
 export default function ImagesGallery() {
+    const dispatch = useDispatch();
+    const imagePanelsSelector = useSelector(state => state.page.imagePanels);
+
     const fileInputRef = useRef(null);
 
-    const handleUpload = async () => {
-        
+    const handleUpload = (event) => {
+        /* 
         try {
             let data = await PostCall({
                 api: 'preS3Upload', 
@@ -27,20 +35,38 @@ export default function ImagesGallery() {
         } catch (error) {
             console.log(error);
         }
-      console.log("handleUpload")
-      fileInputRef.current?.click();
+        */
+      console.log("handleUpload:", event.target.id)
+      dispatch(addFilesAsync(["1","2","3"]));
+      //fileInputRef.current?.click();
     };
+
+    const panelCallback = (panelIndex) => {
+        console.log(`${panelIndex} is clicked`);
+    }
+
+    useEffect(()=> {
+        console.log("uesEffect called")
+    },[])
+
+    const imagePanels = imagePanelsSelector.map((file, index) =>
+        <ImagePanel key={file} panelIndex={index} callback={panelCallback} />
+    )
 
     return (
         <div className="images">
             <input ref={fileInputRef} type="file" multiple className="d-none editControl" id="image" />
             <Row className="imageBtnRowTemplate row hidden">
                 <Col sm={{span:10, offset:1}} md={{span:8, offset:2}} className="text-center">
-                    <Button onClick={handleUpload} variant="link" className="btn btn-labeled">
-                        <h4><i className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                    <Button id="1" onClick={handleUpload} variant="link" className="btn btn-labeled">
+                        <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
                     </Button>
                 </Col>
             </Row>	
+            { imagePanels }
+        </div>    
+    )   
+/*
             <Row className="uploadImageTemplate downloadImageTemplate hidden">
                 <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
                     <div className="uploadText downloadText">
@@ -65,9 +91,9 @@ export default function ImagesGallery() {
                         <Dropdown.Item eventKey="1" className="changeImageBtn">Change Image</Dropdown.Item>
                         <Dropdown.Item eventKey="2" className="deleteImageBtn">Delete Image</Dropdown.Item>
                     </DropdownButton>
-                    <input ref={fileInputRef} type="file" multiple className={"d-none insertImages"} />
-                    <Button onClick={handleUpload} variant="link" className="btn btn-labeled pull-right">
-                        <i className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
+                
+                    <Button id="2" onClick={handleUpload} variant="link" className="btn btn-labeled pull-right">
+                        <i id="2" className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
                     </Button>
                     <Button variant="link" className="btnWrite btnWriteImageWords pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
                 </div>
@@ -76,9 +102,8 @@ export default function ImagesGallery() {
                     <p></p>
                 </div>
                 </div>
-            </Row>		
-        </div>    
-    )   
+            </Row>	
+*/
 /*
     return (
         <div className="images">

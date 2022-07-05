@@ -73,7 +73,7 @@ const initialState = {
     done: false,
 }
 
-export const stylesheetsSlice = createSlice({
+const stylesheetsSlice = createSlice({
     name: 'stylesheets',
     initialState,
     reducers:{

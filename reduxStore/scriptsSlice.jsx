@@ -61,7 +61,7 @@ const initialState = {
     done: false,
 }
 
-export const scriptsSlice = createSlice({
+const scriptsSlice = createSlice({
     name: 'scripts',
     initialState,
     reducers:{
