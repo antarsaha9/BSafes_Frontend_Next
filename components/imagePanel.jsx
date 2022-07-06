@@ -7,7 +7,7 @@ import DropdownButton from 'react-bootstrap/DropdownButton'
 import Dropdown from 'react-bootstrap/Dropdown'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 
-export default function ImagePanel({panelIndex, callback}) {
+export default function ImagePanel({panelIndex, status, callback}) {
 
     const fileInputRef = useRef(null);
 
@@ -36,7 +36,7 @@ export default function ImagePanel({panelIndex, callback}) {
             <Row className="uploadImageTemplate downloadImageTemplate hidden">
                 <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
                     <div className="uploadText downloadText">
-          
+                        {panelIndex} {status}
                     </div>
                     <ProgressBar className="marginTop20Px marginBottom0Px"  now={45} />
                 </Col>

@@ -14,11 +14,15 @@ import { PostCall } from '../lib/helper'
 import BSafesStyle from '../styles/BSafes.module.css'
 import ImagePanel from './imagePanel'
 
-import {addFiles, addFilesAsync} from '../reduxStore/pageSlice'
+import {addFiles, addImagesAsyncThunk} from '../reduxStore/pageSlice'
+import { NavItem } from 'react-bootstrap'
 
 export default function ImagesGallery() {
     const dispatch = useDispatch();
-    const imagePanelsSelector = useSelector(state => state.page.imagePanels);
+    const imagePanelesSelector = useSelector(state => state.page.imagePanels);
+    const imagePanelesIndexSelector = useSelector(state => state.page.imagePanelsIndex);
+    console.log(imagePanelesIndexSelector);
+
 
     const fileInputRef = useRef(null);
 
@@ -37,7 +41,7 @@ export default function ImagesGallery() {
         }
         */
       console.log("handleUpload:", event.target.id)
-      dispatch(addFilesAsync(["1","2","3"]));
+      dispatch(addImagesAsyncThunk({files:["1","2","3"], where:"top"}));
       //fileInputRef.current?.click();
     };
 
@@ -49,8 +53,8 @@ export default function ImagesGallery() {
         console.log("uesEffect called")
     },[])
 
-    const imagePanels = imagePanelsSelector.map((file, index) =>
-        <ImagePanel key={file} panelIndex={index} callback={panelCallback} />
+    const imagePanels = imagePanelesSelector.map((item, index) =>
+        <ImagePanel key={item.key} panelIndex={index} status={item.status} callback={panelCallback} />
     )
 
     return (
