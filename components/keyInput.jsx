@@ -8,13 +8,20 @@ var maskedKey = "";
 export default function KeyInput() {
     const inputRef = useRef(null);
     let inputTimer = null;
+    let selectionStart = 0;
+    let selectionEnd = 0;
+    let keyCode = 0;
 
     const [hidden, setHidden] = useState(true);
 
     const handleKeyDown = e => {
         //e.preventDefault();
 
-        console.log('keyDown selection', e.target.selectionStart + ', ' +  e.target.selectionEnd);
+        selectionStart = e.target.selectionStart;
+        selectionEnd = e.target.selectionEnd;
+        keyCode = e.keyCode;
+
+        console.log('keyDown selection and keyCode', e.target.selectionStart + ', ' +  e.target.selectionEnd + ', ' + keyCode);
 
     }
 
@@ -30,12 +37,37 @@ export default function KeyInput() {
         if(!hidden) {
             masterKey = originalInput;
         } else {
-            /* Assuming the change only happens at the end of masterKey */
-            if(originalInput.length < masterKey.length){
-                masterKey = masterKey.substring(0, inputLength);
-            } else {
-                masterKey = masterKey + originalInput.charAt(inputLength -1);
+            let part1, part2, part3;
+            switch (keyCode) {
+                case 8: // backspace
+                    if(masterKey.length === 0) break;
+                    if(selectionEnd !== selectionStart) {
+                        part1 = masterKey.substring(0, selectionStart);
+                    } else {
+                        part1 = masterKey.substring(0, selectionStart -1);
+                    }
+                    part3 = masterKey.substring(selectionEnd, masterKey.length);
+                    masterKey = part1 + part3;
+                    break;
+                case 46: // delete
+                    if(masterKey.length === 0) break;
+                    part1 = masterKey.substring(0, selectionStart);
+                    part3 = masterKey.substring(selectionEnd, masterKey.length);
+                    if(selectionEnd === masterKey.length - 1) 
+                    {
+                        masterKey = part1
+                    } else {
+                        masterKey = part1 + part3;
+                    }
+                    break;
+                default:
+                    let newChar = originalInput.charAt(selectionStart);
+                    part1 = masterKey.substring(0, selectionStart);
+                    part2 = masterKey.substring(selectionStart, selectionEnd);
+                    part3 = masterKey.substring(selectionEnd, masterKey.length);
+                    masterKey = part1 + newChar + part3;
             }
+           
         }
         
         maskedKey="";
@@ -60,6 +92,7 @@ export default function KeyInput() {
             } else {
                 e.target.value = masterKey;
             }
+            inputTimer = null;
         }, 1000)
     }
 
@@ -94,7 +127,8 @@ export default function KeyInput() {
                 <Form.Control ref={inputRef} type="text" 
                     onInput={handleInput}
                     onPaste={handlePaste}
-                    onKeyDown={handleKeyDown}>
+                    onKeyDown={handleKeyDown}
+                    >
                 </Form.Control>
                 <Button onClick={handleClick} variant="outline-dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>
             </InputGroup>
