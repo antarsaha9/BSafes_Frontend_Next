@@ -53,12 +53,7 @@ export default function KeyInput() {
                     if(masterKey.length === 0) break;
                     part1 = masterKey.substring(0, selectionStart);
                     part3 = masterKey.substring(selectionEnd, masterKey.length);
-                    if(selectionEnd === masterKey.length - 1) 
-                    {
-                        masterKey = part1
-                    } else {
-                        masterKey = part1 + part3;
-                    }
+                    masterKey = part1 + part3;         
                     break;
                 default:
                     let newChar = originalInput.charAt(selectionStart);
@@ -79,8 +74,12 @@ export default function KeyInput() {
             inputTimer = null;
             let maskedInput="";
             if(hidden) {
-                for(var i=0; i< inputLength-1; i++) maskedInput += "*";
-                e.target.value = maskedInput + originalInput.charAt(inputLength-1);
+                for(var i=0; i< selectionStart; i++) maskedInput += "*";
+                maskedInput += originalInput.charAt(selectionStart);
+                for(var i=selectionStart+1; i< masterKey.length; i++)  maskedInput += "*";
+                console.log("maskedInput: ", maskedInput);
+                e.target.value = maskedInput;
+                e.target.setSelectionRange(selectionStart+1, selectionStart+1);
             } else {
                 e.target.value = masterKey;
             }
@@ -89,6 +88,7 @@ export default function KeyInput() {
         inputTimer = setTimeout(() => {         
             if(hidden){
                 e.target.value = maskedKey;
+                e.target.setSelectionRange(selectionStart+1, selectionStart+1);
             } else {
                 e.target.value = masterKey;
             }
