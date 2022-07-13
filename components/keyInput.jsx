@@ -150,9 +150,8 @@ export default function KeyInput() {
                     onKeyDown={handleKeyDown}
                     >
                 </Form.Control>
-                <Button onClick={handleClick} variant="outline-dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>
+                <Button onClick={handleClick} variant="dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>
             </InputGroup>
-            
         </>
     )
 }
