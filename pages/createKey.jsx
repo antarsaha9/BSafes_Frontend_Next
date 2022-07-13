@@ -11,7 +11,7 @@ import KeyInput from "../components/keyInput";
 export default function CreateKey() {
     return (
         <ContentPageLayout> 
-            <Container className="d-flex align-items-center justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
+            <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
                         <h1>Create Your Key</h1>

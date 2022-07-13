@@ -3,11 +3,15 @@ import { data } from 'jquery';
 import { useEffect, useRef, useState } from 'react'
 import { Button, Form, InputGroup } from 'react-bootstrap'
 
-var masterKey = "";
-var maskedKey = "";
-
 export default function KeyInput() {
+    const [masterKeyState, setMasterKeyState] = useState("");
+    const [maskedKeyState, setMaskedrKeyState] = useState("");
+
+    const masterKey = masterKeyState;
+    const maskedKey = maskedKeyState;
+
     const inputRef = useRef(null);
+
     let inputTimer = null;
     let selectionStart = 0;
     let selectionEnd = 0;
@@ -129,10 +133,16 @@ export default function KeyInput() {
 
     const handleClick = e => {
         e.preventDefault();
+        setMasterKeyState(masterKey);
+        setMaskedrKeyState(maskedKey);
 
         setHidden(!hidden);
     }
    
+    useEffect(() => {
+        inputRef.current.value = "";
+    }, [])
+
     useEffect(() => {
         if(hidden) {
             inputRef.current.value = maskedKey;
@@ -144,7 +154,7 @@ export default function KeyInput() {
     return (
         <>
             <InputGroup>
-                <Form.Control ref={inputRef} type="text" 
+                <Form.Control ref={inputRef} type="text" autoComplete="off" 
                     onInput={handleInput}
                     onPaste={handlePaste}
                     onKeyDown={handleKeyDown}
