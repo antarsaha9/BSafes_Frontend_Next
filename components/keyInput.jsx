@@ -1,4 +1,5 @@
 import { legacy_createStore } from '@reduxjs/toolkit';
+import { data } from 'jquery';
 import { useEffect, useRef, useState } from 'react'
 import { Button, Form, InputGroup } from 'react-bootstrap'
 
@@ -10,7 +11,7 @@ export default function KeyInput() {
     let inputTimer = null;
     let selectionStart = 0;
     let selectionEnd = 0;
-    let keyCode = 0;
+    let inputInfo = {};
 
     const [hidden, setHidden] = useState(true);
 
@@ -19,10 +20,11 @@ export default function KeyInput() {
 
         selectionStart = e.target.selectionStart;
         selectionEnd = e.target.selectionEnd;
-        keyCode = e.keyCode;
+        inputInfo.type = 'KeyDown';
+        inputInfo.data = e.keyCode;
 
-        console.log('keyDown selection and keyCode', e.target.selectionStart + ', ' +  e.target.selectionEnd + ', ' + keyCode);
-
+        console.log('keyDown selection and keyCode', e.target.selectionStart + ', ' +  e.target.selectionEnd + ', ' + inputInfo.data);
+        console.log('KeyDown input value', `${e.target.value}`);
     }
 
     const handleInput = e => {
@@ -38,7 +40,7 @@ export default function KeyInput() {
             masterKey = originalInput;
         } else {
             let part1, part2, part3;
-            switch (keyCode) {
+            switch (inputInfo.data) {
                 case 8: // backspace
                     if(masterKey.length === 0) break;
                     if(selectionEnd !== selectionStart) {
@@ -55,12 +57,18 @@ export default function KeyInput() {
                     part3 = masterKey.substring(selectionEnd, masterKey.length);
                     masterKey = part1 + part3;         
                     break;
-                default:
-                    let newChar = originalInput.charAt(selectionStart);
+                default:                   
                     part1 = masterKey.substring(0, selectionStart);
                     part2 = masterKey.substring(selectionStart, selectionEnd);
                     part3 = masterKey.substring(selectionEnd, masterKey.length);
-                    masterKey = part1 + newChar + part3;
+                    
+                    if(inputInfo.type === 'KeyDown') {
+                        let newChar = originalInput.charAt(selectionStart);
+                        masterKey = part1 + newChar + part3;
+                    } else {
+                        masterKey = part1 + inputInfo.data + part3;
+                    }
+                    
             }
            
         }
@@ -72,23 +80,36 @@ export default function KeyInput() {
         if(inputTimer) {
             clearTimeout(inputTimer);
             inputTimer = null;
-            let maskedInput="";
+            
             if(hidden) {
-                for(var i=0; i< selectionStart; i++) maskedInput += "*";
-                maskedInput += originalInput.charAt(selectionStart);
-                for(var i=selectionStart+1; i< masterKey.length; i++)  maskedInput += "*";
-                console.log("maskedInput: ", maskedInput);
-                e.target.value = maskedInput;
-                e.target.setSelectionRange(selectionStart+1, selectionStart+1);
+                if(inputInfo.data === 8) {
+                    e.target.value = maskedKey;
+                    e.target.setSelectionRange(selectionStart-1, selectionStart-1);
+                } else {
+                    let maskedInput="";
+                    for(var i=0; i< selectionStart; i++) maskedInput += "*";
+                    maskedInput += originalInput.charAt(selectionStart);
+                    for(var i=selectionStart+1; i< masterKey.length; i++)  maskedInput += "*";
+                    console.log("maskedInput: ", maskedInput);
+                    e.target.value = maskedInput;
+                    e.target.setSelectionRange(selectionStart+1, selectionStart+1);
+                }
             } else {
                 e.target.value = masterKey;
             }
         }
 
         inputTimer = setTimeout(() => {         
-            if(hidden){
+            if(hidden){              
                 e.target.value = maskedKey;
-                e.target.setSelectionRange(selectionStart+1, selectionStart+1);
+                if(inputInfo.data === 8) {
+                    e.target.setSelectionRange(selectionStart-1, selectionStart-1);
+                } else if(inputInfo.type === 'Paste'){
+                    let cursorPosition = selectionStart + inputInfo.data.length;
+                    e.target.setSelectionRange(cursorPosition, cursorPosition);
+                } else {
+                    e.target.setSelectionRange(selectionStart+1, selectionStart+1);
+                }
             } else {
                 e.target.value = masterKey;
             }
@@ -98,13 +119,12 @@ export default function KeyInput() {
 
     const handlePaste = (e) => {
         
-        e.preventDefault();
-        
-        console.log('selection', e.target.selectionStart + ', ' +  e.target.selectionEnd);
-        
-        let paste = (e.clipboardData || window.clipboardData).getData('text');
+        selectionStart = e.target.selectionStart;
+        selectionEnd = e.target.selectionEnd;
 
-        
+        inputInfo.type = "Paste";
+        inputInfo.data = (e.clipboardData || window.clipboardData).getData('text');
+        console.log('Paste (Start, End, Data)', `${e.target.selectionStart}, ${e.target.selectionEnd}, ${inputInfo.data}`);
     }
 
     const handleClick = e => {
