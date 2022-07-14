@@ -3,7 +3,10 @@ import { data } from 'jquery';
 import { useEffect, useRef, useState } from 'react'
 import { Button, Form, InputGroup } from 'react-bootstrap'
 
-export default function KeyInput() {
+import { debugLog } from '../lib/helper'
+
+export default function KeyInput({onKeyChanged}) {
+    const debugOn = false;
     const [masterKeyState, setMasterKeyState] = useState("");
     const [maskedKeyState, setMaskedrKeyState] = useState("");
 
@@ -19,6 +22,8 @@ export default function KeyInput() {
 
     const [hidden, setHidden] = useState(true);
 
+    debugLog(debugOn, "Hi, test");
+
     const handleKeyDown = e => {
         //e.preventDefault();
 
@@ -27,16 +32,17 @@ export default function KeyInput() {
         inputInfo.type = 'KeyDown';
         inputInfo.data = e.keyCode;
 
-        console.log('keyDown selection and keyCode', e.target.selectionStart + ', ' +  e.target.selectionEnd + ', ' + inputInfo.data);
-        console.log('KeyDown input value', `${e.target.value}`);
+        
+        debugLog(debugOn, 'keyDown selection and keyCode', e.target.selectionStart + ', ' +  e.target.selectionEnd + ', ' + inputInfo.data);
+        debugLog(debugOn, 'KeyDown input value', `${e.target.value}`);
     }
 
     const handleInput = e => {
         e.preventDefault();
 
-       // console.log('selection', e.target.selectionStart + ', ' +  e.target.selectionEnd);
-        console.log("handleInput");
-        console.log(e.target.value);
+       // debugLog(debugOn, 'selection', e.target.selectionStart + ', ' +  e.target.selectionEnd);
+        debugLog(debugOn, "handleInput");
+        debugLog(debugOn, e.target.value);
         const originalInput = e.target.value;
         let inputLength = originalInput.length;
 
@@ -76,11 +82,13 @@ export default function KeyInput() {
             }
            
         }
-        
+
+        if(onKeyChanged) onKeyChanged(masterKey);
+
         maskedKey="";
         for(var i=0; i< inputLength; i++) maskedKey += "*";
 
-        console.log("Master Key: ", masterKey);
+        debugLog(debugOn, "Master Key: ", masterKey);
         if(inputTimer) {
             clearTimeout(inputTimer);
             inputTimer = null;
@@ -94,7 +102,7 @@ export default function KeyInput() {
                     for(var i=0; i< selectionStart; i++) maskedInput += "*";
                     maskedInput += originalInput.charAt(selectionStart);
                     for(var i=selectionStart+1; i< masterKey.length; i++)  maskedInput += "*";
-                    console.log("maskedInput: ", maskedInput);
+                    debugLog(debugOn, "maskedInput: ", maskedInput);
                     e.target.value = maskedInput;
                     e.target.setSelectionRange(selectionStart+1, selectionStart+1);
                 }
@@ -128,7 +136,7 @@ export default function KeyInput() {
 
         inputInfo.type = "Paste";
         inputInfo.data = (e.clipboardData || window.clipboardData).getData('text');
-        console.log('Paste (Start, End, Data)', `${e.target.selectionStart}, ${e.target.selectionEnd}, ${inputInfo.data}`);
+        debugLog(debugOn, 'Paste (Start, End, Data)', `${e.target.selectionStart}, ${e.target.selectionEnd}, ${inputInfo.data}`);
     }
 
     const handleClick = e => {
