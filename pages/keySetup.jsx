@@ -19,6 +19,9 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
 
 import KeyInput from "../components/keyInput";
+
+import XKeyInput from "../components/xKeyInput";
+
 import { FormText } from 'react-bootstrap'
 
 export default function CreateKey() {
@@ -69,14 +72,14 @@ export default function CreateKey() {
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
-                                <KeyInput onKeyChanged={keyPasswordChanged}/>
+                                <XKeyInput onKeyChanged={keyPasswordChanged}/>
                                 <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="ConfirmkeyPassword">
                                 <Form.Label>Please retype to confirm</Form.Label>
-                                <KeyInput onKeyChanged={confirmPasswordChanged}/>
+                                <XKeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
                             <Button variant="dark" onClick={handleSubmit}>Submit</Button>
                             <p> Calculation Time: {calcuationTime} ms</p>
