@@ -149,7 +149,7 @@ export default function KeyInput({onKeyChanged}) {
    
     useEffect(() => {
         inputRef.current.value = "";
-    }, [])
+    })
 
     useEffect(() => {
         if(hidden) {
@@ -172,4 +172,5 @@ export default function KeyInput({onKeyChanged}) {
             </InputGroup>
         </>
     )
+
 }

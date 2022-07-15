@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
@@ -12,7 +12,8 @@ import jquery from "jquery"
 const forge = require('node-forge');
 const argon2 = require('argon2-browser')
 
-import { calculateExpandedKey } from '../lib/helper'
+import { debugLog } from '../lib/helper'
+import { calculateCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -21,40 +22,29 @@ import KeyInput from "../components/keyInput";
 import { FormText } from 'react-bootstrap'
 
 export default function CreateKey() {
+    const debugOn = true;
+    const [calcuationTime, setCalcuationTime] = useState(0);
+
     const scriptsLoaded = useSelector(state => state.scripts.done);
 
+    const keyPasswordChanged = ( goldenKey) => {
+        debugLog(debugOn, "goldenKey: ", goldenKey);
+    }
+
+    const confirmPasswordChanged = ( confirmPassword) => {
+        debugLog(debugOn, "confirmPassword: ", confirmPassword);
+    }
+
     const handleSubmit = async e => { 
-        console.log("handleSubmit");
+        debugLog(debugOn,  "handleSubmit");
         const nickname = "apple102";
         const password = "Wishing you well!";
 
-        await calculateExpandedKey(nickname, password);
- /*       // Deriving the salt from nickname
-        let md = forge.md.sha256.create();
-        md.update(nickname);      
-        let result = forge.util.hexToBytes(md.digest().toHex())
-        let keySalt = result.substring(0, 16);
-        console.log("keySalt:", keySalt.length);
-        
-        
-        try {
-            const result= await argon2.hash({
-                pass: password, 
-                salt: keySalt,
-                time: 2,
-                mem: 100 * 1024,
-                hashLen: 32,
-                parallelism: 2,
-                type: argon2.ArgonType.Argon2id
-            })
-            console.log(result.hashHex);
-
-            const expandedKey = forge.util.hexToBytes(result.hashHex);
-            console.log(expandedKey);
-        } catch (e) {
-            console.error(e);
+        const credentials = await calculateCredentials(nickname, password);
+        setCalcuationTime(credentials.calculationTime);
+        if(credentials) {
+            debugLog(debugOn, "credentials: ", credentials);
         }
-        */
     }
 
     useEffect(()=> {
@@ -79,16 +69,17 @@ export default function CreateKey() {
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
-                                <KeyInput />
+                                <KeyInput onKeyChanged={keyPasswordChanged}/>
                                 <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="ConfirmkeyPassword">
                                 <Form.Label>Please retype to confirm</Form.Label>
-                                <KeyInput />
+                                <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
                             <Button variant="dark" onClick={handleSubmit}>Submit</Button>
+                            <p> Calculation Time: {calcuationTime} ms</p>
                         </Form>
                     </Col>           
                 </Row>

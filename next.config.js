@@ -12,7 +12,10 @@ const nextConfig = {
         }
     }
 
-    config.experiments = { asyncWebAssembly: true };
+    config.experiments = { 
+      asyncWebAssembly: true,
+      layers: true
+    };
 
     config.module.rules.push({
       test: /\.wasm$/,
