@@ -10,8 +10,8 @@ export default function KeyInput({onKeyChanged}) {
     const [masterKeyState, setMasterKeyState] = useState("");
     const [maskedKeyState, setMaskedrKeyState] = useState("");
 
-    const masterKey = masterKeyState;
-    const maskedKey = maskedKeyState;
+    let masterKey = masterKeyState;
+    let maskedKey = maskedKeyState;
 
     const inputRef = useRef(null);
 
@@ -22,7 +22,7 @@ export default function KeyInput({onKeyChanged}) {
 
     const [hidden, setHidden] = useState(true);
 
-    debugLog(debugOn, "Hi, test");
+    debugLog(debugOn, "keyInput");
 
     const handleKeyDown = e => {
         //e.preventDefault();
@@ -87,6 +87,7 @@ export default function KeyInput({onKeyChanged}) {
 
         maskedKey="";
         for(var i=0; i< inputLength; i++) maskedKey += "*";
+        
 
         debugLog(debugOn, "Master Key: ", masterKey);
         if(inputTimer) {
@@ -111,9 +112,12 @@ export default function KeyInput({onKeyChanged}) {
             }
         }
 
-        inputTimer = setTimeout(() => {         
+        inputTimer = setTimeout(() => {      
+            setMasterKeyState(masterKey);
+            setMaskedrKeyState(maskedKey);
             if(hidden){              
                 e.target.value = maskedKey;
+                
                 if(inputInfo.data === 8) {
                     e.target.setSelectionRange(selectionStart-1, selectionStart-1);
                 } else if(inputInfo.type === 'Paste'){
@@ -126,7 +130,7 @@ export default function KeyInput({onKeyChanged}) {
                 e.target.value = masterKey;
             }
             inputTimer = null;
-        }, 1000)
+        }, 500)
     }
 
     const handlePaste = (e) => {
@@ -141,23 +145,13 @@ export default function KeyInput({onKeyChanged}) {
 
     const handleClick = e => {
         e.preventDefault();
-        setMasterKeyState(masterKey);
-        setMaskedrKeyState(maskedKey);
 
         setHidden(!hidden);
     }
    
     useEffect(() => {
-        inputRef.current.value = "";
-    })
-
-    useEffect(() => {
-        if(hidden) {
-            inputRef.current.value = maskedKey;
-        } else {
-            inputRef.current.value = masterKey;
-        }
-    }, [hidden])
+        inputRef.current.value = hidden?maskedKeyState:masterKeyState;
+    });
 
     return (
         <>

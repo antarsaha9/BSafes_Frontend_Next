@@ -1,5 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+import { debugLog } from '../lib/helper';
+
+const debugOn = false;
+
 const scripts = [
     {id: "froala_editor.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/froala_editor.min.js",
@@ -72,7 +76,7 @@ const scriptsSlice = createSlice({
             } else {
                 state.index ++;
                 state.scripts.push(scripts[state.index]);
-                console.log(action.payload + ' loaded. current count:' + state.index);
+                debugLog(debugOn, action.payload + ' loaded. current count:' + state.index);
             }
         },
     }
