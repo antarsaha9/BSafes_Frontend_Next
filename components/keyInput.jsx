@@ -6,7 +6,7 @@ import { Button, Form, InputGroup } from 'react-bootstrap'
 import { debugLog } from '../lib/helper'
 
 export default function XKeyInput({onKeyChanged}) {
-    const debugOn = true;
+    const debugOn = false;
     const [masterKeyState, setMasterKeyState] = useState("");
     const [maskedKeyState, setMaskedKeyState] = useState("");
     const [hidden, setHidden] = useState(true);
