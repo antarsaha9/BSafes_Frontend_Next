@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import Head from 'next/head'
 import Button from 'react-bootstrap/Button' 
@@ -7,12 +7,30 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 
 import jquery from "jquery"
 
+import { debugLog } from '../lib/helper';
+
 import Scripts from '../components/scripts'
+import Editor from '../components/editor';
 import ImagesGallery from '../components/imagesGallery';
 
 export default function Home() {
-
+  const debugOn = true;
   const scriptsLoaded = useSelector(state => state.scripts.done);
+
+  const [mainEditorMode, setMainEditorMode] = useState("ReadOnly");
+  const [mainEditorContent, setMainEditorContent] = useState("Hello World");
+
+  const [ editingEditorId, setEditingEditorId ] = useState("");
+
+  const thoseImageTextEditors = [
+    {
+      editorId: "image-1",
+      editorMode: "ReadOnly",
+      editorContent:"abc",
+    }
+  ];
+
+  const [ imageTextEditors, setImageTextEditors ] = useState(thoseImageTextEditors); 
 
   useEffect(() => {
     window.$ = window.jQuery = jquery;
@@ -23,9 +41,73 @@ export default function Home() {
 
   const upload = async () => {
     $.get("/", function(data, status){
-      console.log("Data: " + data + "\nStatus: " + status);
+      debugLog(debugOn, "Data: " + data + "\nStatus: " + status);
     });
   }
+
+  const handleWrite = () => {
+    debugLog(debugOn, "Writing");
+    setMainEditorMode("Writing");
+  }
+
+  const handleSave = () => {
+    debugLog(debugOn, "Saving");
+    if(editingEditorId === "main") {
+      setMainEditorMode("Saving");
+    } else {
+      const editorsCopy = [...imageTextEditors];
+      let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
+      thisEditor.editorMode = "Saving";
+      setImageTextEditors(editorsCopy);
+    }
+  }
+
+  const handleCancel = () => {
+    debugLog(debugLog, "Cancel");
+    if(editingEditorId === "main") {
+      setMainEditorMode("ReadOnly");
+    } else {
+      const editorsCopy = [...imageTextEditors];
+      let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
+      thisEditor.editorMode = "ReadOnly";
+      setImageTextEditors(editorsCopy);
+    }
+  }
+
+  const handlePenClicked = (editorId) => {
+    debugLog(debugOn, `pen ${editorId} clicked`);
+    if(editorId === 'main'){
+      setMainEditorMode("Writing");
+      setEditingEditorId("main");
+    } else {
+      const editorsCopy = [...imageTextEditors];
+      let thisEditor = editorsCopy.find((item) => item.editorId === editorId);
+      thisEditor.editorMode = "Writing";
+      setImageTextEditors(editorsCopy);
+      setEditingEditorId(editorId);
+    }
+  }
+
+  var handleContentChanged = (editorId, content) => {
+    debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
+    
+    setTimeout(()=>{
+      if(editingEditorId === "main") {
+        setMainEditorContent(content);
+        setMainEditorMode("ReadOnly");
+      } else {
+        const editorsCopy = [...imageTextEditors];
+        let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
+        thisEditor.editorContent = content;
+        thisEditor.editorMode = "ReadOnly";
+        setImageTextEditors(editorsCopy);
+      }     
+    },1000)
+  }
+
+  const imageEditorComponents = imageTextEditors.map( (thisEditor) => 
+    <Editor key={thisEditor.editorId} editorId={thisEditor.editorId} mode={thisEditor.editorMode} content={thisEditor.editorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
+  )
 
   return (
     <div>
@@ -42,6 +124,14 @@ export default function Home() {
           <div id='edit'></div>
         
           <ImagesGallery />
+
+          <Editor editorId="main" mode={mainEditorMode} content={mainEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
+
+          {imageEditorComponents}
+
+          <Button onClick={handleWrite}>Write</Button>
+          <Button variant="success" onClick={handleSave}>Save</Button>
+          <Button variant="warning" onClick={handleCancel}>Cancel</Button>
         </main>
       </ContentPageLayout>
 
