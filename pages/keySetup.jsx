@@ -12,7 +12,7 @@ import jquery from "jquery"
 const forge = require('node-forge');
 const argon2 = require('argon2-browser')
 
-import { debugLog } from '../lib/helper'
+import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
@@ -48,6 +48,17 @@ export default function CreateKey() {
         }
     }
 
+    const testAPI = () => {
+        PostCall({
+            api:'createAnAccount',
+            body: {
+                "id": "123"
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+        })
+    }
+
     useEffect(()=> {
         window.$ = window.jQuery = jquery;
         if(scriptsLoaded) {
@@ -79,7 +90,7 @@ export default function CreateKey() {
                                 <Form.Label>Please retype to confirm</Form.Label>
                                 <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
-                            <Button variant="dark" onClick={handleSubmit}>Submit</Button>
+                            <Button variant="dark" onClick={testAPI}>Submit</Button>
                             <p> Calculation Time: {calcuationTime} ms</p>
                         </Form>
                     </Col>           
