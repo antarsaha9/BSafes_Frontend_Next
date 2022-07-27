@@ -49,14 +49,16 @@ export default function CreateKey() {
     }
 
     const testAPI = () => {
-        PostCall({
-            api:'createAnAccount',
-            body: {
-                "id": "123"
-            }
-        }).then( data => {
-            debugLog(debugOn, data);
-        })
+            PostCall({
+                api:'createAnAccount',
+                body: {
+                    "id": "123"
+                }
+            }).then( data => {
+                debugLog(debugOn, data);
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to create an account.")
+            })
     }
 
     useEffect(()=> {
