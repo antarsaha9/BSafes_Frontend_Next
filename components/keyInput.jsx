@@ -120,7 +120,6 @@ export default function XKeyInput({onKeyChanged}) {
             }
         }
         
-        
         if(inputTimer) { 
             debugLog(debugOn, "inputTimer exists");
             clearTimeout(inputTimer);
@@ -148,6 +147,10 @@ export default function XKeyInput({onKeyChanged}) {
     useEffect(()=>{
         inputRef.current.setSelectionRange(cursor, cursor); 
     })
+
+    useEffect(()=> {
+        onKeyChanged(masterKeyState);
+    }, [masterKeyState]);
 
     return (
         <>

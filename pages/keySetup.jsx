@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
@@ -25,26 +25,39 @@ import { FormText } from 'react-bootstrap'
 export default function CreateKey() {
     const debugOn = true;
     const [calcuationTime, setCalcuationTime] = useState(0);
+    const [keyPassword, setKeyPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    const nicknameRef = useRef(null);
 
     const scriptsLoaded = useSelector(state => state.scripts.done);
 
-    const keyPasswordChanged = ( goldenKey) => {
-        debugLog(debugOn, "goldenKey: ", goldenKey);
+    const keyPasswordChanged = ( password ) => {
+        debugLog(debugOn, "keyPassword: ", password);
+        setKeyPassword(password);
     }
 
-    const confirmPasswordChanged = ( confirmPassword) => {
-        debugLog(debugOn, "confirmPassword: ", confirmPassword);
+    const confirmPasswordChanged = ( password) => {
+        debugLog(debugOn, "confirmPassword: ", password);
+        setConfirmPassword(password);
     }
 
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
-        const nickname = "apple102";
-        const password = "Wishing you well!";
 
-        const credentials = await calculateCredentials(nickname, password);
+        const credentials = await calculateCredentials(nicknameRef.current.value, keyPassword);
         setCalcuationTime(credentials.calculationTime);
         if(credentials) {
             debugLog(debugOn, "credentials: ", credentials);
+
+            PostCall({
+                api:'createAnAccount',
+                body: credentials.keyPack,
+            }).then( data => {
+                debugLog(debugOn, data);
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to create an account.")
+            })
         }
     }
 
@@ -79,7 +92,7 @@ export default function CreateKey() {
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">
                                 <Form.Label>Nickname</Form.Label>
-                                <Form.Control size="lg" type="text" placeholder='Enter a nickname' />
+                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Enter a nickname' />
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
@@ -92,7 +105,7 @@ export default function CreateKey() {
                                 <Form.Label>Please retype to confirm</Form.Label>
                                 <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
-                            <Button variant="dark" onClick={testAPI}>Submit</Button>
+                            <Button variant="dark" onClick={handleSubmit}>Submit</Button>
                             <p> Calculation Time: {calcuationTime} ms</p>
                         </Form>
                     </Col>           
