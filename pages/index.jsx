@@ -13,9 +13,14 @@ import Scripts from '../components/scripts'
 import Editor from '../components/editor';
 import ImagesGallery from '../components/imagesGallery';
 
+import { preflightAsyncThunk } from '../reduxStore/auth';
+
 export default function Home() {
   const debugOn = true;
+
+  const dispatch = useDispatch();
   const scriptsLoaded = useSelector(state => state.scripts.done);
+  const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
   const [mainEditorMode, setMainEditorMode] = useState("ReadOnly");
   const [mainEditorContent, setMainEditorContent] = useState("Hello World");
@@ -32,12 +37,18 @@ export default function Home() {
 
   const [ imageTextEditors, setImageTextEditors ] = useState(thoseImageTextEditors); 
 
+  debugLog(debugOn, "Rendering Home ...")
+
   useEffect(() => {
     window.$ = window.jQuery = jquery;
     if(scriptsLoaded) {
       $("#edit").froalaEditor();
     }
-  },[scriptsLoaded])
+  },[scriptsLoaded, isLoggedIn])
+
+  useEffect(() => {
+    dispatch(preflightAsyncThunk());
+  }, [])
 
   const upload = async () => {
     $.get("/", function(data, status){
@@ -48,6 +59,7 @@ export default function Home() {
   const handleWrite = () => {
     debugLog(debugOn, "Writing");
     setMainEditorMode("Writing");
+    setEditingEditorId("main");
   }
 
   const handleSave = () => {
@@ -118,7 +130,8 @@ export default function Home() {
       </Head>
 
       <ContentPageLayout>
-        <main>
+        {isLoggedIn?
+          <main>
           <h1>Introduction</h1>
 
           <div id='edit'></div>
@@ -133,6 +146,8 @@ export default function Home() {
           <Button variant="success" onClick={handleSave}>Save</Button>
           <Button variant="warning" onClick={handleCancel}>Cancel</Button>
         </main>
+        : <main></main>
+        }
       </ContentPageLayout>
 
       <footer>
