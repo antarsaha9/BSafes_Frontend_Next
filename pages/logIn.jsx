@@ -8,12 +8,12 @@ import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 
 import jquery from "jquery"
-
 const forge = require('node-forge');
-const argon2 = require('argon2-browser')
+
+
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials } from '../lib/crypto'
+import { calculateCredentials, decryptBinaryString} from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -26,7 +26,6 @@ export default function CreateKey() {
     const debugOn = true;
     const [calcuationTime, setCalcuationTime] = useState(0);
     const [keyPassword, setKeyPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
 
     const nicknameRef = useRef(null);
 
@@ -37,26 +36,55 @@ export default function CreateKey() {
         setKeyPassword(password);
     }
 
-    const confirmPasswordChanged = ( password) => {
-        debugLog(debugOn, "confirmPassword: ", password);
-        setConfirmPassword(password);
-    }
-
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
 
-        const credentials = await calculateCredentials(nicknameRef.current.value, keyPassword);
+        const credentials = await calculateCredentials(nicknameRef.current.value, keyPassword, true);
         setCalcuationTime(credentials.calculationTime);
         if(credentials) {
             debugLog(debugOn, "credentials: ", credentials);
 
             PostCall({
-                api:'createAnAccount',
+                api:'logIn',
                 body: credentials.keyPack,
             }).then( data => {
                 debugLog(debugOn, data);
+                credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
+                credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
+                credentials.keyPack.publicKey = data.publicKey;
+
+                function verifyChallenge() {
+                    let randomMessage = data.randomMessage;
+                    randomMessage = forge.util.encode64(randomMessage);
+                    
+                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                    privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
+                    const pki = forge.pki;
+                    let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
+                    const md = forge.md.sha1.create();
+                    md.update(randomMessage, 'utf8');
+                    let signature = privateKeyFromPem.sign(md);
+                    signature = forge.util.encode64(signature);
+
+
+                    PostCall({
+                        api:'memberAPI/verifyChallenge',
+                        body: { signature },
+                    }).then( data => {
+                        if(data.status == "ok") {
+                            debugLog(debugOn, "Logged in.");
+                        } else {
+                            debugLog(debugOn, "Error: ", data.error);
+                        }
+                    }).catch( error => {
+                        debugLog(debugOn, "woo... failed to verify challenge.");
+                    })
+                } 
+                    
+                verifyChallenge();
+
             }).catch( error => {
-                debugLog(debugOn, "woo... failed to create an account.")
+                debugLog(debugOn, "woo... failed to login.")
             })
         }
     }
@@ -74,7 +102,7 @@ export default function CreateKey() {
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
-                        <h1>Create Your Key</h1>
+                        <h1>Log In</h1>
                         <hr></hr>
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">
@@ -87,10 +115,6 @@ export default function CreateKey() {
                                 <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
-                            </Form.Group>
-                            <Form.Group className="mb-3" controlId="ConfirmkeyPassword">
-                                <Form.Label>Please retype to confirm</Form.Label>
-                                <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
                             <Button variant="dark" onClick={handleSubmit}>Submit</Button>
                             <p> Calculation Time: {calcuationTime} ms</p>
