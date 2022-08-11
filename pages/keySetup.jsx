@@ -13,7 +13,7 @@ const forge = require('node-forge');
 const argon2 = require('argon2-browser')
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials } from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -55,6 +55,11 @@ export default function CreateKey() {
                 body: credentials.keyPack,
             }).then( data => {
                 debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                } else {
+                    debugLog(debugOn, "woo... failed to create an account:", data.error);
+                }
             }).catch( error => {
                 debugLog(debugOn, "woo... failed to create an account.")
             })

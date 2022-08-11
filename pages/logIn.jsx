@@ -13,7 +13,7 @@ const forge = require('node-forge');
 
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, decryptBinaryString} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, decryptBinaryString} from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -73,6 +73,9 @@ export default function CreateKey() {
                     }).then( data => {
                         if(data.status == "ok") {
                             debugLog(debugOn, "Logged in.");
+                           
+                            saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                          
                         } else {
                             debugLog(debugOn, "Error: ", data.error);
                         }

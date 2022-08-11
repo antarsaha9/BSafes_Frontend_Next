@@ -21,11 +21,17 @@ export default function CreateKey() {
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
 
+        localStorage.clear();
 
         PostCall({
             api:'memberAPI/logOut'
         }).then( data => {
             debugLog(debugOn, data);
+            if(data.status === 'ok') {
+
+            } else {
+                debugLog(debugOn, "woo... failed to log out: ", data.error)
+            } 
         }).catch( error => {
             debugLog(debugOn, "woo... failed to log out.")
         })
