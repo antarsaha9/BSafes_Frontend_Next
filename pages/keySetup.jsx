@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -20,11 +20,12 @@ import Scripts from '../components/scripts'
 
 import KeyInput from "../components/keyInput";
 
-import { FormText } from 'react-bootstrap'
+import { keySetupAsyncThunk } from '../reduxStore/auth'
 
-export default function CreateKey() {
+export default function KeySetup() {
     const debugOn = true;
-    const [calcuationTime, setCalcuationTime] = useState(0);
+    const dispatch = useDispatch();
+
     const [keyPassword, setKeyPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -44,26 +45,7 @@ export default function CreateKey() {
 
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
-
-        const credentials = await calculateCredentials(nicknameRef.current.value, keyPassword);
-        setCalcuationTime(credentials.calculationTime);
-        if(credentials) {
-            debugLog(debugOn, "credentials: ", credentials);
-
-            PostCall({
-                api:'createAnAccount',
-                body: credentials.keyPack,
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {
-                    saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
-                } else {
-                    debugLog(debugOn, "woo... failed to create an account:", data.error);
-                }
-            }).catch( error => {
-                debugLog(debugOn, "woo... failed to create an account.")
-            })
-        }
+        dispatch(keySetupAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword}));
     }
 
     useEffect(()=> {
@@ -98,7 +80,6 @@ export default function CreateKey() {
                                 <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
                             <Button variant="dark" onClick={handleSubmit}>Submit</Button>
-                            <p> Calculation Time: {calcuationTime} ms</p>
                         </Form>
                     </Col>           
                 </Row>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -14,27 +14,18 @@ import { debugLog, PostCall } from '../lib/helper'
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
 
-export default function CreateKey() {
+import { logOutAsyncThunk } from '../reduxStore/auth'
+
+export default function LogOut() {
     const debugOn = true;
+    const dispatch = useDispatch();
+
     const scriptsLoaded = useSelector(state => state.scripts.done);
 
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
 
-        localStorage.clear();
-
-        PostCall({
-            api:'memberAPI/logOut'
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-
-            } else {
-                debugLog(debugOn, "woo... failed to log out: ", data.error)
-            } 
-        }).catch( error => {
-            debugLog(debugOn, "woo... failed to log out.")
-        })
+        dispatch(logOutAsyncThunk());
         
     }
 
