@@ -2,11 +2,15 @@ import { createSlice, current } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, decryptBinaryString} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
 const debugOn = true;
 
 const initialState = {
     isLoggedIn: false,
+    expandedKey: null,
+    publicKey: null,
+    privateKey: null,
+    searchKey: null,
 }
 
 const authSlice = createSlice({
@@ -15,6 +19,12 @@ const authSlice = createSlice({
     reducers: {
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
+
+            let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            state.expandedKey = credentials.secret.expandedKey;
+            state.publicKey = credentials.keyPack.publicKey;
+            state.privateKey = credentials.secret.privateKey;
+            state.searchKey = credentials.secret.searchKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
