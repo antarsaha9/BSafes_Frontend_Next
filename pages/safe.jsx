@@ -6,25 +6,30 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
+import InputGroup from 'react-bootstrap/InputGroup'
+
+import jquery from "jquery"
+
+const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
+import Scripts from '../components/scripts'
 
-import { preflightAsyncThunk } from '../reduxStore/auth';
+import Workspace from '../components/workspace'
+
 
 export default function Safe() {
-    const debugOn = true;
-    const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
-    
+
     return (
         <ContentPageLayout> 
-            <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
-            {
-                isLoggedIn?"In":"Out"
-            }
-
-            </Container>
+            <Row className="justify-content-center">
+                <Col lg={8}>
+                    <Workspace />
+                </Col> 
+            </Row>
+           
         </ContentPageLayout>
     )
 }

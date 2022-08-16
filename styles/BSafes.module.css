@@ -29,3 +29,22 @@
   background-color: #000;
 }
 /* End of navigation bar */
+
+/*--***** Custom buttons */
+.btnCircle {
+  width: 48px;
+  height: 48px;
+  text-align: center;
+  border-radius: 50%;
+}
+/* End of custom buttons */
+
+/*--****** Safe *******/
+	/* Safe general */
+.safeItemTypeIcon {
+  margin-right:20px;
+}
+
+.safeItem h2 {
+  margin-top:10px;
+}

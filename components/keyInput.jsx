@@ -1,11 +1,12 @@
-import { legacy_createStore } from '@reduxjs/toolkit';
-import { data } from 'jquery';
 import { useEffect, useRef, useState } from 'react'
-import { Button, Form, InputGroup } from 'react-bootstrap'
+
+import Button from 'react-bootstrap/Button'
+import Form from 'react-bootstrap/Form'
+import InputGroup from 'react-bootstrap/InputGroup'
 
 import { debugLog } from '../lib/helper'
 
-export default function XKeyInput({onKeyChanged}) {
+export default function KeyInput({onKeyChanged}) {
     const debugOn = false;
     const [masterKeyState, setMasterKeyState] = useState("");
     const [maskedKeyState, setMaskedKeyState] = useState("");

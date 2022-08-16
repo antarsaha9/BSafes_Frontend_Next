@@ -6,6 +6,7 @@ import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLo
 const debugOn = true;
 
 const initialState = {
+    memberId: null,
     isLoggedIn: false,
     expandedKey: null,
     publicKey: null,
@@ -21,6 +22,7 @@ const authSlice = createSlice({
             state.isLoggedIn = true;
 
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            state.memberId = credentials.memberId;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
@@ -47,6 +49,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
+                credentials.memberId = data.memberId;
                 saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                 
                 dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
@@ -96,7 +99,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     }).then( data => {
                         if(data.status == "ok") {
                             debugLog(debugOn, "Logged in.");
-                           
+                            credentials.memberId = data.memberId;
                             saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                             
                             dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
