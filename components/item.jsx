@@ -22,7 +22,7 @@ export default function Item({}) {
           }}
         >
           {/* Render custom icon here */}
-          <i class="fa fa-plus" aria-hidden="true"></i>
+          <i className="fa fa-plus" aria-hidden="true"></i>
           {children}
         </a>
     ));
@@ -37,7 +37,7 @@ export default function Item({}) {
           }}
         >
           {/* Render custom icon here */}
-          <i class="fa fa-sort" aria-hidden="true"></i>
+          <i className="fa fa-sort" aria-hidden="true"></i>
           {children}
         </a>
     ));
