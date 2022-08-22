@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -13,28 +14,31 @@ import NewItemModal from './newItemModal'
 import Item from './item'
 
 
-
-
 import { debugLog } from '../lib/helper'
 
 export default function Workspace({}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering Workspace");
+    
+    const expandedKey = useSelector( state => state.auth.expandedKey );
+    const searchKey = useSelector( state => state.auth.searchKey);
+    
     const [newItemModalVisiable, setNewItemModalVisiable] = useState(false);
 
     const itemTypeIsSelected = (itemType) => {
         
-        setShow(true);
+        setShowNewItemModal(true);
         
     }
 
-    const [show, setShow] = useState(false);
+    const [showNewItemModal, setShowNewItemModal] = useState(false);
 
-    const handleClose = () => setShow(false);
+    const handleClose = () => setShowNewItemModal(false);
 
     const createANewItem = (title) => {
         debugLog(debugOn, "createANewItem", title);
-        setShow(false);
+        setShowNewItemModal(false);
+
         alert(title);
     }
 
@@ -54,7 +58,7 @@ export default function Workspace({}) {
                 <AddAnItemButton itemTypeIsSelected={itemTypeIsSelected}/>
             </Row>
 
-            <NewItemModal show={show} handleClose={handleClose} createANewItem={createANewItem}/>
+            <NewItemModal show={showNewItemModal} handleClose={handleClose} createANewItem={createANewItem}/>
             <Row className="mt-5 justify-content-center">     
                 <Col>
                     <Item />
@@ -64,20 +68,3 @@ export default function Workspace({}) {
     )
 
 }
-
-/*
-            <Modal show={show} onHide={handleClose}>
-                <Modal.Header closeButton>
-                    <Modal.Title>Modal heading</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>Woohoo, you're reading this text in a modal!</Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={handleClose}>
-                        Close
-                    </Button>
-                    <Button variant="primary" onClick={handleClose}>
-                        Save Changes
-                    </Button>
-                </Modal.Footer>
-            </Modal>
-*/
