@@ -7,7 +7,7 @@ import Row from 'react-bootstrap/Row'
 
 import { debugLog } from '../lib/helper'
 
-export default function NewItemModal({show=false, handleClose, createANewItem}) {
+export default function NewItemModal({show=false, handleClose, handleCreateANewItem}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering NewItemModal: ", `${show}}`);
 
@@ -19,7 +19,7 @@ export default function NewItemModal({show=false, handleClose, createANewItem}) 
 
     const handleCreate = () => {
         const title = inputRef.current.value;
-        createANewItem(title);
+        handleCreateANewItem(title);
     }
     
     return (

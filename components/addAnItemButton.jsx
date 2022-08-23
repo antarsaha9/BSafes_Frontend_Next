@@ -7,7 +7,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper'
 
-export default function AddAnItemButton({itemTypeIsSelected, pageOnly=false}) {
+export default function AddAnItemButton({addAnItem, pageOnly=false}) {
     const debugOn = true;
     const [show, setShow] = useState(false);
 
@@ -18,7 +18,7 @@ export default function AddAnItemButton({itemTypeIsSelected, pageOnly=false}) {
         debugLog(debugOn, e.target.id)
         
         setShow(false);
-        itemTypeIsSelected(e.target.id);
+        addAnItem(e.target.id, 'addAnItemOnTop');
     }
 
     return (

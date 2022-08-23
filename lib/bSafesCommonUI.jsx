@@ -1,8 +1,8 @@
 const forge = require('node-forge');
 
-import { encryptBinaryString } from './crypto';
+import { encryptBinaryString, encryptBinaryStringCBC } from './crypto';
 
-export function createANewItem(titleStr, currentContainer, selectedItemType, addAction, targetItem, expandedKey, searchKey) {
+export function createANewItem(titleStr, currentContainer, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV) {
 
     const title = '<h2>' + titleStr + '</h2>';
     const encodedTitle = forge.util.encodeUtf8(title);
@@ -14,7 +14,7 @@ export function createANewItem(titleStr, currentContainer, selectedItemType, add
     const keyEnvelope = encryptBinaryString(itemKey, expandedKey);
     const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
   
-    const titleTokens = stringToEncryptedTokens(titleStr, searchKey);
+    const titleTokens = stringToEncryptedTokens(titleStr, searchKey, searchIV);
   
     let addActionOptions;
     if (addAction === "addAnItemOnTop") {
@@ -65,7 +65,7 @@ export function createANewItem(titleStr, currentContainer, selectedItemType, add
  */ 
 };
 
-function stringToEncryptedTokens(str, searchKey) {
+function stringToEncryptedTokens(str, searchKey, searchIV) {
     var thisStr = str.toLowerCase();
     var re = /\s*[\s,.;!?]\s*/;
     var slices = thisStr.split(re);
@@ -74,7 +74,7 @@ function stringToEncryptedTokens(str, searchKey) {
     for (var i = 0; i < slices.length; i++) {
       if (slices[i].length) {
         var encodedSlice = forge.util.encodeUtf8(slices[i]);
-        var encryptedToken = ECBEncryptBinaryString(encodedSlice, searchKey);
+        var encryptedToken = encryptBinaryStringCBC(encodedSlice, searchKey, searchIV);
         var base64Token = forge.util.encode64(encryptedToken);
         encryptedTokens.push(base64Token);
       }

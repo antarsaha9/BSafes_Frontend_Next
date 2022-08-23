@@ -13,33 +13,40 @@ import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import Item from './item'
 
-
+import { createANewItem } from '../lib/bSafesCommonUI'
 import { debugLog } from '../lib/helper'
 
-export default function Workspace({}) {
+export default function Workspace({workspaceId}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering Workspace");
     
     const expandedKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
     
-    const [newItemModalVisiable, setNewItemModalVisiable] = useState(false);
+    const [selectedItemType, setSelectedItemType] = useState(null);
+    const [addAction, setAddAction] = useState(null);
+    const [targetItem, setTargetItem] = useState(null);
+    const [showNewItemModal, setShowNewItemModal] = useState(false);
 
-    const itemTypeIsSelected = (itemType) => {
-        
+    const addAnItem = (itemType, addAction, targetItem = null) => {
+    
+        setSelectedItemType(itemType);
+        setAddAction(addAction);
+        setTargetItem(targetItem);
         setShowNewItemModal(true);
         
     }
 
-    const [showNewItemModal, setShowNewItemModal] = useState(false);
+ 
 
     const handleClose = () => setShowNewItemModal(false);
 
-    const createANewItem = (title) => {
+    const handleCreateANewItem = (title) => {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        alert(title);
+        createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV );
     }
 
     return (
@@ -55,10 +62,10 @@ export default function Workspace({}) {
                 </InputGroup>
             </Row>
             <Row className="justify-content-center">     
-                <AddAnItemButton itemTypeIsSelected={itemTypeIsSelected}/>
+                <AddAnItemButton addAnItem={addAnItem}/>
             </Row>
 
-            <NewItemModal show={showNewItemModal} handleClose={handleClose} createANewItem={createANewItem}/>
+            <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <Row className="mt-5 justify-content-center">     
                 <Col>
                     <Item />

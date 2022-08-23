@@ -12,6 +12,7 @@ const initialState = {
     publicKey: null,
     privateKey: null,
     searchKey: null,
+    searchIV: null
 }
 
 const authSlice = createSlice({
@@ -27,6 +28,7 @@ const authSlice = createSlice({
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
             state.searchKey = credentials.secret.searchKey;
+            state.searchIV = credentials.secret.searchIV;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
@@ -77,6 +79,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, data);
                 credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
                 credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
+                credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
                 credentials.keyPack.publicKey = data.publicKey;
 
                 function verifyChallenge() {
