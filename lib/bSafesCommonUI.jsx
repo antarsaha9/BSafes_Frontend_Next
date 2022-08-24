@@ -1,6 +1,9 @@
 const forge = require('node-forge');
 
+import { debugLog, PostCall } from '../lib/helper'
 import { encryptBinaryString, encryptBinaryStringCBC } from './crypto';
+
+const debugOn = true;
 
 export function createANewItem(titleStr, currentContainer, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV) {
 
@@ -44,7 +47,20 @@ export function createANewItem(titleStr, currentContainer, selectedItemType, add
       };
       */
     }
- 
+    
+    PostCall({
+      api:'memberAPI/' + addAction,
+      body: addActionOptions
+    }).then( data => {
+      debugLog(debugOn, data);
+      if(data.status === 'ok') {
+          debugLog(debugOn, `${addAction} succeeded`);
+      } else {
+          debugLog(debugOn, `${addAction} failed: `, data.error)
+      } 
+    }).catch( error => {
+      debugLog(debugOn,  `${addAction} failed.`)
+    })
 /*
     $.post('/memberAPI/' + addAction,
       addActionOptions,
