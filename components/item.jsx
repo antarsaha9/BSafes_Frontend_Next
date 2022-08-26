@@ -11,36 +11,42 @@ import Form from 'react-bootstrap/Form'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function Item({}) {
-    const plusToggle = React.forwardRef(({ children, onClick }, ref) => (
-        <a
-          href=""
-          ref={ref}
-          onClick={e => {
-            e.preventDefault();
-            onClick(e);
-          }}
-        >
-          {/* Render custom icon here */}
-          <i className="fa fa-plus" aria-hidden="true"></i>
-          {children}
-        </a>
-    ));
+export default function Item() {
+    function plusButton({ children, onClick }, ref) {
+        return (
+            <a
+                href=""
+                ref={ref}
+                onClick={e => {
+                    e.preventDefault();
+                    onClick(e);
+                }}
+            >
+                {/* Render custom icon here */}
+                <i className="fa fa-plus" aria-hidden="true"></i>
+                {children}
+            </a>
+        )
+    }
+    const plusToggle = React.forwardRef(plusButton);
 
-    const sortToggle = React.forwardRef(({ children, onClick }, ref) => (
-        <a
-          href=""
-          ref={ref}
-          onClick={e => {
-            e.preventDefault();
-            onClick(e);
-          }}
-        >
-          {/* Render custom icon here */}
-          <i className="fa fa-sort" aria-hidden="true"></i>
-          {children}
-        </a>
-    ));
+    function sortButton({ children, onClick }, ref) {
+        return (
+            <a
+                href=""
+                ref={ref}
+                onClick={e => {
+                    e.preventDefault();
+                    onClick(e);
+                }}
+            >
+                {/* Render custom icon here */}
+                <i className="fa fa-sort" aria-hidden="true"></i>
+                {children}
+            </a>
+        )
+    }
+    const sortToggle = React.forwardRef(sortButton);
 
     return (
         <>

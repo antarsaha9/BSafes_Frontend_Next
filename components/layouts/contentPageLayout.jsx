@@ -28,7 +28,7 @@ const ContentPageLayout = ({children}) => {
 
     useEffect(() => {
         dispatch(preflightAsyncThunk());
-    }, []);
+    }, [dispatch]);
     
     return (
         <div>

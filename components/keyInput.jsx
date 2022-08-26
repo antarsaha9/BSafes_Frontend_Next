@@ -151,7 +151,7 @@ export default function KeyInput({onKeyChanged}) {
 
     useEffect(()=> {
         onKeyChanged(masterKeyState);
-    }, [masterKeyState]);
+    }, [onKeyChanged, masterKeyState]);
 
     return (
         <>

@@ -46,10 +46,6 @@ export default function Home() {
     }
   },[scriptsLoaded, isLoggedIn])
 
-  useEffect(() => {
-    dispatch(preflightAsyncThunk());
-  }, [])
-
   const upload = async () => {
     $.get("/", function(data, status){
       debugLog(debugOn, "Data: " + data + "\nStatus: " + status);

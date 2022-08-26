@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -13,12 +14,13 @@ import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import Item from './item'
 
-import { createANewItem } from '../lib/bSafesCommonUI'
+import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
 import { debugLog } from '../lib/helper'
 
 export default function Workspace({workspaceId}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering Workspace");
+    const router = useRouter();
     
     const expandedKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -42,11 +44,14 @@ export default function Workspace({workspaceId}) {
 
     const handleClose = () => setShowNewItemModal(false);
 
-    const handleCreateANewItem = (title) => {
+    const handleCreateANewItem = async (title) => {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV );
+        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV );
+        const link = getItemLink(item);
+
+        router.push(link);
     }
 
     return (
