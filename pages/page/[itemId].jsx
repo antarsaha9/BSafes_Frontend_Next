@@ -1,8 +1,10 @@
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
-import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
+import Container from 'react-bootstrap/Container'
+
+import pageGlobals from '../../styles/pageGlobals'
+import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
@@ -19,12 +21,19 @@ export default function Page() {
     const workspaceId = 'u:' + memberId;
     return (
         <ContentPageLayout> 
-            <p>Item:{itemId}</p>
-            <Row className="justify-content-center">
-                <ItemTopRows />
-                <PageCommons />
-            </Row>
-           
+            <div>
+                <Container> 
+                    <p>Item:{itemId}</p>
+                    <div className={BSafesStyle.pagePanel}>
+                        <ItemTopRows />
+                        <PageCommons />
+                    </div>
+                </Container>
+            </div>
+            <style jsx global>
+                {pageGlobals}
+            </style>
         </ContentPageLayout>
+        
     )
 }

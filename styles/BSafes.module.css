@@ -41,6 +41,7 @@
 
 /*--****** Safe *******/
 	/* Safe general */
+
 .safeItemTypeIcon {
   margin-right:20px;
 }
@@ -48,3 +49,17 @@
 .safeItem h2 {
   margin-top:10px;
 }
+/* End of Safe */
+
+/*--****** Page *******/
+/*--***** Page general */
+.pagePanel {
+  background-color:rgb(255, 255, 255);
+  min-height:700px;
+  margin-top:20px;
+  padding-bottom:48px;
+  box-shadow:0px 1px 2px 2px #C9C9C9;
+  -webkit-box-shadow:0px 1px 2px 2px #C9C9C9;
+  -moz-box-shadow:0px 0px 1px 2px #C9C9C9;
+}
+/* End of Page */
