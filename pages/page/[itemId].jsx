@@ -2,6 +2,8 @@ import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 
 import pageGlobals from '../../styles/pageGlobals'
 import BSafesStyle from '../../styles/BSafes.module.css'
@@ -26,6 +28,11 @@ export default function Page() {
                     <p>Item:{itemId}</p>
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />
+                        <Row className="justify-content-center">
+                            <Col xs="12" sm="10" md="8">
+                                <hr />
+                            </Col>
+                        </Row>
                         <PageCommons />
                     </div>
                 </Container>

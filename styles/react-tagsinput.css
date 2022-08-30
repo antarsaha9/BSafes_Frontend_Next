@@ -11,8 +11,8 @@
   
   .react-tagsinput-tag {
     background-color: #ffffff;
-    border-radius: 2px;
-    border: 1px solid #111111;
+    border-radius: 7px;
+    border: 1px solid #b8b5b5;
     color: #000000;
     display: inline-block;
     font-family: sans-serif;
@@ -45,4 +45,3 @@
     padding: 5px;
     width: 100px;
   }
-  

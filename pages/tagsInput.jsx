@@ -1,6 +1,5 @@
-import React, { useState } from "react";
-
-import TagsInput from 'react-tagsinput'
+import { useState } from "react";
+import TagsInput from 'react-tagsinput-special'
 
 
 const Example = () => {
