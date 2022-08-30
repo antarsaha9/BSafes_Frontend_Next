@@ -24,8 +24,8 @@ export default function ItemTopRows() {
             <Row>
                 <Col>
                     <div className="pull-right">
-                        <span>v.1</span><Button variant="link"><i className="fa fa-history" aria-hidden="true"></i></Button>
-                        <Button variant="link" >
+                        <span>v.1</span><Button variant="link" className="text-dark" ><i className="fa fa-history" aria-hidden="true"></i></Button>
+                        <Button variant="link" className="text-dark" >
 		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
 		        	    </Button>
                     </div>

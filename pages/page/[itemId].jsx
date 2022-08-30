@@ -12,6 +12,7 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
+import PageCommonControls from "../../components/pageCommonControls";
 
 
 export default function Page() {
@@ -37,6 +38,7 @@ export default function Page() {
                     </div>
                 </Container>
             </div>
+            <PageCommonControls />
             <style jsx global>
                 {pageGlobals}
             </style>

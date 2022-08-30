@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { Button } from 'react-bootstrap';
+
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Button from 'react-bootstrap/Button';
 
 import jquery from "jquery"
 
 import { debugLog } from "../lib/helper";
 import { read } from "fs";
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, editable=true}) {
     const debugOn = true;    
     const editorRef = useRef(null);
 
@@ -58,11 +61,21 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     return (
-        <div>
-            <Button variant="outline-dark" onClick={handlePenClicked}>P</Button>
-            <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
+        <>
+            {   (editable)?
                 
-            </div>
-        </div>
+                <Row>
+                    <Col>
+                        <Button variant="link" className="text-dark pull-right" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                    </Col>
+                </Row>
+                
+                :<></>
+            }
+            <Row>
+                <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
+                </div>
+            </Row>
+        </>
     );
 }

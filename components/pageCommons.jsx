@@ -44,11 +44,13 @@ export default function PageCommons() {
           if(editingEditorId === "main") {
             setMainEditorContent(content);
             setMainEditorMode("ReadOnly");
+            setEditingEditorId("");
           } else {
             const editorsCopy = [...imageTextEditors];
             let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
             thisEditor.editorContent = content;
             thisEditor.editorMode = "ReadOnly";
+            setEditingEditorId("");
             setImageTextEditors(editorsCopy);
           }     
         },1000)
@@ -58,12 +60,17 @@ export default function PageCommons() {
         <>
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={editingEditorId===""} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
+                <Col sm="10" md="8">
+                    <hr />
+                </Col>
+            </Row>
+            <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="main" mode={mainEditorMode} content={mainEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
+                    <Editor editorId="main" mode={mainEditorMode} content={mainEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={editingEditorId===""} />
                 </Col> 
             </Row>
             <Scripts />

@@ -45,6 +45,46 @@
   text-align: center;
   border-radius: 50%;
 }
+
+.btnFloating {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #FFF;
+  box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.5), 3px 3px 3px rgba(0, 0, 0, 0.25);
+  position: fixed;
+  display: inline-block;
+  cursor: default;
+  padding-top: 8px;
+  z-index:15000;
+}
+
+.btnFloatingAdd {
+	padding-top:10px;
+	padding-left:15px;
+}
+
+.btnFloatingWrite {
+  background: #03A9F4;
+  bottom: 12px;
+  right: 24px;
+  padding-left:10px;
+}
+
+.btnFloatingSave {
+  background: #229954;
+  bottom: 72px;
+  right: 24px;
+  padding-left:10px;
+}
+
+.btnFloatingCancel {
+  background: #F39C12;
+  bottom: 12px;
+  right: 24px;
+  padding-left:14px;
+}
+
 /* End of custom buttons */
 
 /*--****** Safe *******/
