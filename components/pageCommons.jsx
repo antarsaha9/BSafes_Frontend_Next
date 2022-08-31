@@ -6,6 +6,7 @@ import Button from 'react-bootstrap/Button'
 
 import Scripts from './scripts'
 import Editor from './editor';
+import PageCommonControls from "./pageCommonControls";
 
 import { debugLog } from '../lib/helper';
 
@@ -37,13 +38,17 @@ export default function PageCommons() {
         }
     }
     
-    var handleContentChanged = (editorId, content) => {
+    const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
         
         setTimeout(()=>{
           if(editingEditorId === "main") {
             setMainEditorContent(content);
             setMainEditorMode("ReadOnly");
+            setEditingEditorId("");
+          } else if(editingEditorId === "title") {
+            setTitleEditorContent(content);
+            setTitleEditorMode("ReadOnly");
             setEditingEditorId("");
           } else {
             const editorsCopy = [...imageTextEditors];
@@ -54,6 +59,35 @@ export default function PageCommons() {
             setImageTextEditors(editorsCopy);
           }     
         },1000)
+    }
+
+    const handleWrite = () =>{
+        debugLog(debugOn, "handleWrite");
+        setMainEditorMode("Writing");
+        setEditingEditorId("main");
+    }
+
+    const setEditingEditorMode = (mode) => {
+        switch(editingEditorId) {
+            case 'main':
+                setMainEditorMode(mode);
+                break;
+            case 'title':
+                setTitleEditorMode(mode);
+                break;
+            default:
+        }
+    }
+
+    const handleSave = () => {
+        debugLog(debugOn, "handleSave");
+        setEditingEditorMode("Saving");
+    }
+
+    const handleCancel = () => {
+        debugLog(debugOn, "handleCancel");
+        setEditingEditorMode("ReadOnly");
+        setEditingEditorId("");
     }
 
     return (
@@ -73,6 +107,7 @@ export default function PageCommons() {
                     <Editor editorId="main" mode={mainEditorMode} content={mainEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={editingEditorId===""} />
                 </Col> 
             </Row>
+            <PageCommonControls isEditing={editingEditorId!==""} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
             <Scripts />
         </>
     )

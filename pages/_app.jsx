@@ -1,6 +1,6 @@
-import '../styles/bootstrap.min.css'
 import SSRProvider from 'react-bootstrap/SSRProvider'
 import store, {reduxWrapper} from '../reduxStore/store'
+import '../styles/bootstrap.min.css'
 import '../styles/react-tagsinput.css'
 
 function MyApp({ Component, pageProps }) {

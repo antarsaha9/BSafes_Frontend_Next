@@ -1,7 +1,12 @@
 import { createSlice, current } from '@reduxjs/toolkit';
 
+import { debugLog, PostCall } from '../lib/helper'
+const debugOn = true;
+
 const initialState = {
     status: "idle",
+    title:"",
+    content:"",
     imagePanels:[],
     imagePanelsIndex:{},
     uploadQueue:[],
@@ -56,6 +61,25 @@ const pageSlice = createSlice({
 })
 
 export const { addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
+
+export const getPageItemThunk = (data) => async (dispatch, getState) => {
+
+        PostCall({
+            api:'memberAPI/getPageItem',
+            body: {itemId: data.itemId},
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {               
+                //dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+            } else {
+                debugLog(debugOn, "woo... failed to get a page item:", data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "woo... failed to get a page item.")
+        })
+    
+
+}
 
 export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
     const state = getState();

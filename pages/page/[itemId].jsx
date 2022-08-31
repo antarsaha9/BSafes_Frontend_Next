@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -5,26 +6,35 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import pageGlobals from '../../styles/pageGlobals'
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
-import PageCommonControls from "../../components/pageCommonControls";
 
+import { getPageItemThunk } from "../../reduxStore/pageSlice";
 
 export default function Page() {
+    const dispatch = useDispatch();
 
     const router = useRouter();
     const {itemId} = router.query;
 
     const memberId = useSelector( state => state.auth.memberId );
+    const expandedKey = useSelector( state => state.auth.expandedKey );
+    const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
+
     const workspaceId = 'u:' + memberId;
+
+    useEffect(()=>{
+        dispatch(getPageItemThunk({itemId}));
+    }, []);
+
     return (
         <ContentPageLayout> 
-            <div>
+            <div className={BSafesStyle.pageBackground}>
                 <Container> 
                     <p>Item:{itemId}</p>
                     <div className={BSafesStyle.pagePanel}>
@@ -38,10 +48,6 @@ export default function Page() {
                     </div>
                 </Container>
             </div>
-            <PageCommonControls />
-            <style jsx global>
-                {pageGlobals}
-            </style>
         </ContentPageLayout>
         
     )

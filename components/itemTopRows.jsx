@@ -34,7 +34,7 @@ export default function ItemTopRows() {
 
             <Row>
                 <Col xs="1">
-                    <label className="pull-right"><span><i class="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                    <label className="pull-right"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
                 <Col xs="10">
                     <TagsInput value={tags} onChange={handleChange} />
