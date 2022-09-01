@@ -14,13 +14,14 @@ import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
 import { getPageItemThunk } from "../../reduxStore/pageSlice";
+import { debugLog } from "../../lib/helper";
 
 export default function Page() {
+    const debugOn = true;
+    debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
-
     const router = useRouter();
-    const {itemId} = router.query;
-
+    
     const memberId = useSelector( state => state.auth.memberId );
     const expandedKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -29,14 +30,15 @@ export default function Page() {
     const workspaceId = 'u:' + memberId;
 
     useEffect(()=>{
+        if(!router.isReady) return;
+        const {itemId} = router.query;
         dispatch(getPageItemThunk({itemId}));
-    }, []);
+    }, [router.isReady]);
 
     return (
         <ContentPageLayout> 
             <div className={BSafesStyle.pageBackground}>
                 <Container> 
-                    <p>Item:{itemId}</p>
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />
                         <Row className="justify-content-center">

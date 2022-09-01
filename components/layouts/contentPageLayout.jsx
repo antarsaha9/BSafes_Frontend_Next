@@ -14,8 +14,10 @@ import { preflightAsyncThunk } from '../../reduxStore/auth';
 
 const ContentPageLayout = ({children}) => {
     const debugOn = true;
+    debugLog(debugOn, "Rendering ContentPageLayout");
+
     const dispatch = useDispatch();
-    
+
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
     const logIn = (e) => {
@@ -27,8 +29,9 @@ const ContentPageLayout = ({children}) => {
     }
 
     useEffect(() => {
+        debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
         dispatch(preflightAsyncThunk());
-    }, [dispatch]);
+    }, []);
     
     return (
         <div>
