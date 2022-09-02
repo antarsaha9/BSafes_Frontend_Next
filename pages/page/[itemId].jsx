@@ -21,6 +21,13 @@ export default function Page() {
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();
+
+    const [pageItemId, setPageItemId] = useState(null); 
+
+    const {itemId} = router.query;
+    if(itemId && !pageItemId) {
+        setPageItemId(itemId);
+    }
     
     const memberId = useSelector( state => state.auth.memberId );
     const expandedKey = useSelector( state => state.auth.expandedKey );
@@ -30,11 +37,17 @@ export default function Page() {
     const workspaceId = 'u:' + memberId;
 
     useEffect(()=>{
-        if(!router.isReady) return;
+        if(!router.isReady || pageItemId) return;
         const {itemId} = router.query;
-        dispatch(getPageItemThunk({itemId}));
+        setPageItemId(itemId);
     }, [router.isReady]);
 
+    useEffect(()=>{
+        if(pageItemId && expandedKey) {
+            dispatch(getPageItemThunk({itemId, expandedKey}));
+        }
+    }, [pageItemId, expandedKey]);
+    
     return (
         <ContentPageLayout> 
             <div className={BSafesStyle.pageBackground}>

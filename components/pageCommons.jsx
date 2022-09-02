@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from 'react-redux'
+
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -14,7 +16,7 @@ export default function PageCommons() {
     const debugOn = true;
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
-    const [titleEditorContent, setTitleEditorContent] = useState("Hello Title");
+    const titleEditorContent = useSelector(state => state.page.title);
 
     const [mainEditorMode, setMainEditorMode] = useState("ReadOnly");
     const [mainEditorContent, setMainEditorContent] = useState("Hello World");

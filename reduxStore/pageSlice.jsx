@@ -1,21 +1,116 @@
 import { createSlice, current } from '@reduxjs/toolkit';
+import { startTransition } from 'react';
+const forge = require('node-forge');
+const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall } from '../lib/helper'
+import { decryptBinaryString } from '../lib/crypto';
+
 const debugOn = true;
 
 const initialState = {
     status: "idle",
-    title:"",
-    content:"",
+    error: null,
+    id: null,
+    isBlankPageItem: true,
+    space: null,
+    container: null,
+    position: null,
+    itemKey: null,
+    itemIV: null,
+    tags: [],
+    title: null,
+    titleText: null,
+    content:null,
     imagePanels:[],
     imagePanelsIndex:{},
     uploadQueue:[],
+}
+
+const dataFetchedFunc = (state, action) => {
+    const item = action.payload.item;
+
+    state.id = item.id;
+    state.isBlankPageItem = false;
+    state.space = item.space;
+    state.container = item.container;
+    state.position = item.position;
+
+    function decryptPageItem(expandedKey) {
+        if ((item.keyEnvelope === undefined)) {      
+            debugLog(debugOn, "Error: undefined item key");
+            state.error = "Undefined item key";
+        }
+        if(item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
+            state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), expandedKey, forge.util.decode64(item.envelopeIV));
+            state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), expandedKey, forge.util.decode64(item.ivEnvelopeIV));
+        } else {
+            const decoded = forge.util.decode64(item.keyEnvelope);
+            state.itemKey = decryptBinaryString(decoded, expandedKey);
+            state.itemIV = null;
+        }
+        let itemTags = [];
+        if (item.tags && item.tags.length > 1) {
+            const encryptedTags = item.tags;
+            for (let i = 0; i < (item.tags.length - 1); i++) {
+              try {
+                let encryptedTag = encryptedTags[i];
+                encryptedTag = forge.util.decode64(encryptedTag);
+                const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
+                const tag = forge.util.decodeUtf8(encodedTag);
+
+                itemTags.push(tag);
+              } catch (err) {
+                state.error = err;
+              }
+            }
+        };
+        state.tags = itemTags;
+
+        let titleText = "";
+        if (item.title) {
+            try {
+                const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
+                let title = forge.util.decodeUtf8(encodedTitle);
+                title = DOMPurify.sanitize(title);
+                state.title = title;
+                state.titleText = $(title).text();
+            } catch (err) {
+                state.error = err;
+            }
+        } else {
+            state.title = '<h2></h2>';
+            state.titleText = "";
+        }
+
+	    if (item.content) {
+	        try {
+	            const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
+	            let content = forge.util.decodeUtf8(encodedContent);
+
+	            content = DOMPurify.sanitize(content);
+                             
+                state.content = content;
+	        } catch (err) {
+	            state.error = err;
+	        }  	                            
+	    }
+    }
+
+    if (item.space.substring(0, 1) === 'u') {
+        decryptPageItem(action.payload.expandedKey);
+    } else {
+
+    }
 }
 
 const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
     reducers: {
+        dataFetched: (state, action) => {
+            dataFetchedFunc(state, action);
+        },
         addImages: (state, action) => {
             switch (action.payload.where) {
                 case "top":
@@ -60,17 +155,22 @@ const pageSlice = createSlice({
     }
 })
 
-export const { addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
+export const { dataFetched, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
         PostCall({
             api:'memberAPI/getPageItem',
             body: {itemId: data.itemId},
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {               
-                //dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+        }).then( result => {
+            debugLog(debugOn, result);
+            if(result.status === 'ok') {               
+                
+                if(result.item) {
+                    dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
+                } else {
+
+                }
             } else {
                 debugLog(debugOn, "woo... failed to get a page item:", data.error);
             }
