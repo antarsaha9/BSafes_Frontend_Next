@@ -12,7 +12,7 @@ import jquery from "jquery"
 const forge = require('node-forge');
 const argon2 = require('argon2-browser')
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';

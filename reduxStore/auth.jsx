@@ -46,7 +46,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
         debugLog(debugOn, "credentials: ", credentials);
 
         PostCall({
-            api:'keySetup',
+            api:'/keySetup',
             body: credentials.keyPack,
         }).then( data => {
             debugLog(debugOn, data);
@@ -73,7 +73,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
             debugLog(debugOn, "credentials: ", credentials);
 
             PostCall({
-                api:'logIn',
+                api:'/logIn',
                 body: credentials.keyPack,
             }).then( data => {
                 debugLog(debugOn, data);
@@ -97,7 +97,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
 
 
                     PostCall({
-                        api:'memberAPI/verifyChallenge',
+                        api:'/memberAPI/verifyChallenge',
                         body: { signature },
                     }).then( data => {
                         if(data.status == "ok") {
@@ -127,7 +127,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     localStorage.clear();
 
     PostCall({
-        api:'memberAPI/logOut'
+        api:'/memberAPI/logOut'
     }).then( data => {
         debugLog(debugOn, data);
         if(data.status === 'ok') {
@@ -144,7 +144,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
     await new Promise(resolve => {
 
         PostCall({
-            api:'memberAPI/preflight'
+            api:'/memberAPI/preflight'
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {

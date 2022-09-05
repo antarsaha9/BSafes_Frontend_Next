@@ -9,7 +9,7 @@ import Button from 'react-bootstrap/Button'
 
 import jquery from "jquery"
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'

@@ -29,12 +29,7 @@ export default function Page() {
         setPageItemId(itemId);
     }
     
-    const memberId = useSelector( state => state.auth.memberId );
     const expandedKey = useSelector( state => state.auth.expandedKey );
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-
-    const workspaceId = 'u:' + memberId;
 
     useEffect(()=>{
         if(!router.isReady || pageItemId) return;
@@ -49,8 +44,8 @@ export default function Page() {
     }, [pageItemId, expandedKey]);
     
     return (
-        <ContentPageLayout> 
-            <div className={BSafesStyle.pageBackground}>
+        <div className={BSafesStyle.pageBackground}>
+            <ContentPageLayout>            
                 <Container> 
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />
@@ -61,9 +56,9 @@ export default function Page() {
                         </Row>
                         <PageCommons />
                     </div>
-                </Container>
-            </div>
-        </ContentPageLayout>
+                </Container>           
+            </ContentPageLayout>
+        </div>
         
     )
 }

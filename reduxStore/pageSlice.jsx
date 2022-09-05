@@ -4,13 +4,16 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { decryptBinaryString } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, stringToEncryptedTokens } from '../lib/crypto';
+import { createNewItemVersion } from '../lib/bSafesCommonUI';
 
 const debugOn = true;
 
 const initialState = {
     status: "idle",
     error: null,
+    latestVersion: null,
+    itemCopy: null,
     id: null,
     isBlankPageItem: true,
     space: null,
@@ -29,6 +32,8 @@ const initialState = {
 
 const dataFetchedFunc = (state, action) => {
     const item = action.payload.item;
+
+    state.itemCopy = item;
 
     state.id = item.id;
     state.isBlankPageItem = false;
@@ -111,6 +116,12 @@ const pageSlice = createSlice({
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
         },
+        newVersionCreated: (state, action) => {
+            state = {
+                ...state,
+                ...action.payload
+            }
+        },
         addImages: (state, action) => {
             switch (action.payload.where) {
                 case "top":
@@ -155,12 +166,12 @@ const pageSlice = createSlice({
     }
 })
 
-export const { dataFetched, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
+export const { dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
         PostCall({
-            api:'memberAPI/getPageItem',
+            api:'/memberAPI/getPageItem',
             body: {itemId: data.itemId},
         }).then( result => {
             debugLog(debugOn, result);
@@ -179,6 +190,42 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         })
     
 
+}
+
+async function createNewItemVersionForPage(itemCopy, updatedData) {
+    try {
+        const data = await createNewItemVersion(itemCopy);
+        if (data.status === 'ok') {
+            const usage = data.usage;
+            itemCopy.usage = usage;
+            dispatch(newVersionCreated({
+                itemCopy,
+                ...updatedData
+            }));
+        }  
+    } catch (error) {
+        debugLog(debugOn, error);
+    }
+};
+
+export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
+    let state, titleStr, encodedTitle, encryptedTitle, titleTokens;
+    state = getState();
+
+    titleText = $(title).text();
+    encodedTitle = forge.util.encodeUtf8(title);
+    encryptedTitle = encryptBinaryString(encodedTitle, state.page.itemKey);
+    titleTokens = stringToEncryptedTokens(titleText, searchKey, searchIV);
+
+    if (state.isBlankPageItem) {
+    } else {
+        let itemCopy = JSON.parse(JSON.stringify(state.page.itemCopy));
+        itemCopy.title = forge.util.encode64(encryptedTitle);
+        itemCopy.titleTokens = titleTokens;
+        itemCopy.update = "title";
+
+        createNewItemVersionForPage(itemCopy, {title, titleText});
+    }
 }
 
 export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {

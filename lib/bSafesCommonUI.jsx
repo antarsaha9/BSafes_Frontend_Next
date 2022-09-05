@@ -50,7 +50,7 @@ export async function createANewItem(titleStr, currentContainer, selectedItemTyp
       }
       
       PostCall({
-        api:'memberAPI/' + addAction,
+        api:'/memberAPI/' + addAction,
         body: addActionOptions
       }).then( data => {
         debugLog(debugOn, data);
@@ -66,6 +66,34 @@ export async function createANewItem(titleStr, currentContainer, selectedItemTyp
         reject(error);
       })
     });
+};
+
+export async function createNewItemVersion(itemCopy) {
+  return new Promise( (resolve, reject) => {
+    itemCopy.version = itemCopy.version + 1;
+    resolve({status:'ok', usage:100});
+    return;
+    PostCall({
+      api:'/memberAPI/createNewItemVersion',
+      body: {
+        itemId: itemCopy.id,
+        itemVersion: JSON.stringify(itemCopy)
+      }
+    }).then( data => {
+      debugLog(debugOn, data);
+      if(data.status === 'ok') {
+          debugLog(debugOn, `createNewItemVersion succeeded`);
+          resolve(data)
+      } else {
+          debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+          reject(data.error);
+        } 
+    }).catch( error => {
+      debugLog(debugOn,  `createNewItemVersion failed.`)
+      reject(error);
+    })
+
+  });
 };
 
 export function getItemLink(item) {
