@@ -3,14 +3,14 @@ import { startTransition } from 'react';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
 
 const debugOn = true;
 
 const initialState = {
-    status: "idle",
+    activity: "Done",  //"Done", "Error", "Cancelling", "Loading", "Uploading"
     error: null,
     latestVersion: null,
     itemCopy: null,
@@ -113,6 +113,9 @@ const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
     reducers: {
+        activityChanged: (state, action) => {
+            state.activity = action.payload;
+        },
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
         },
@@ -166,66 +169,105 @@ const pageSlice = createSlice({
     }
 })
 
-export const { dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
 
-export const getPageItemThunk = (data) => async (dispatch, getState) => {
-
-        PostCall({
-            api:'/memberAPI/getPageItem',
-            body: {itemId: data.itemId},
-        }).then( result => {
-            debugLog(debugOn, result);
-            if(result.status === 'ok') {               
-                
-                if(result.item) {
-                    dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
-                } else {
-
-                }
-            } else {
-                debugLog(debugOn, "woo... failed to get a page item:", data.error);
-            }
-        }).catch( error => {
-            debugLog(debugOn, "woo... failed to get a page item.")
-        })
-    
-
+const newActivity = async (dispatch, type, activity) => {
+    dispatch(activityChanged(type));
+    try {
+        await activity();
+        dispatch(activityChanged("Done"));
+    } catch(error) {
+        dispatch(activityChanged("Error"));
+    }
 }
 
-async function createNewItemVersionForPage(itemCopy, updatedData) {
-    try {
-        const data = await createNewItemVersion(itemCopy);
-        if (data.status === 'ok') {
-            const usage = data.usage;
-            itemCopy.usage = usage;
-            dispatch(newVersionCreated({
-                itemCopy,
-                ...updatedData
-            }));
-        }  
-    } catch (error) {
-        debugLog(debugOn, error);
-    }
+export const getPageItemThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise((resolve, reject) => {
+            PostCall({
+                api:'/memberAPI/getPageItem',
+                body: {itemId: data.itemId},
+            }).then( result => {
+                debugLog(debugOn, result);
+                if(result.status === 'ok') {                                   
+                    if(result.item) {
+                        dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
+                        resolve();
+                    } else {
+                        reject("woo... failed to get a page item!");
+                    }
+                } else {
+                    debugLog(debugOn, "woo... failed to get a page item!", data.error);
+                    reject("woo... failed to get a page item!");
+                }
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to get a page item.")
+                reject("woo... failed to get a page item!");
+            })
+        });
+    });
+}
+
+function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const data = await createNewItemVersion(itemCopy);
+            if (data.status === 'ok') {
+                const usage = data.usage;
+                itemCopy.usage = usage;
+                dispatch(newVersionCreated({
+                    itemCopy,
+                    ...updatedData
+                }));
+                resolve();
+            } else {
+                reject("Could not create a new item version!");
+            } 
+        } catch (error) {
+            debugLog(debugOn, error);
+            reject("Could not create a new item version!");
+        }
+    })
 };
 
+export const cancelEditingThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, "Cancelling", () => {
+        return new Promise(async (resolve) => {
+            resolve();
+        });
+    })
+}
+
 export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
-    let state, titleStr, encodedTitle, encryptedTitle, titleTokens;
-    state = getState();
+    newActivity(dispatch, "Uploading", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, titleText, encodedTitle, encryptedTitle, titleTokens;
+            state = getState();
+            try {
+                titleText = extractHTMLElementText(title);
+                encodedTitle = forge.util.encodeUtf8(title);
+                encryptedTitle = encryptBinaryString(encodedTitle, state.page.itemKey);
+                titleTokens = stringToEncryptedTokens(titleText, searchKey, searchIV);
+            
+                if (state.isBlankPageItem) {
+                } else {
+                    let itemCopy = {
+                        ...state.page.itemCopy
+                    }
+        
+                    itemCopy.title = forge.util.encode64(encryptedTitle);
+                    itemCopy.titleTokens = titleTokens;
+                    itemCopy.update = "title";
+            
+                    await createNewItemVersionForPage(dispatch, itemCopy, {title, titleText});
+                    resolve();
+                }
+            } catch (error) {
+                reject();
+            }
 
-    titleText = $(title).text();
-    encodedTitle = forge.util.encodeUtf8(title);
-    encryptedTitle = encryptBinaryString(encodedTitle, state.page.itemKey);
-    titleTokens = stringToEncryptedTokens(titleText, searchKey, searchIV);
-
-    if (state.isBlankPageItem) {
-    } else {
-        let itemCopy = JSON.parse(JSON.stringify(state.page.itemCopy));
-        itemCopy.title = forge.util.encode64(encryptedTitle);
-        itemCopy.titleTokens = titleTokens;
-        itemCopy.update = "title";
-
-        createNewItemVersionForPage(itemCopy, {title, titleText});
-    }
+        });
+    })
 }
 
 export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
