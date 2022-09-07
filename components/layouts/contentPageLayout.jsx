@@ -1,9 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
 import Navbar from 'react-bootstrap/Navbar'
 import Container from 'react-bootstrap/Container'
-import NavDropdown from 'react-bootstrap/NavDropdown';
 import Dropdown from 'react-bootstrap/Dropdown'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
@@ -15,7 +14,6 @@ import { preflightAsyncThunk } from '../../reduxStore/auth';
 const ContentPageLayout = ({children}) => {
     const debugOn = true;
     debugLog(debugOn, "Rendering ContentPageLayout");
-
     const dispatch = useDispatch();
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
@@ -29,7 +27,7 @@ const ContentPageLayout = ({children}) => {
     }
 
     useEffect(() => {
-        debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
+        debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
         dispatch(preflightAsyncThunk());
     }, []);
     

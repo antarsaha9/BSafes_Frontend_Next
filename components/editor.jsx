@@ -7,7 +7,6 @@ import Button from 'react-bootstrap/Button';
 import jquery from "jquery"
 
 import { debugLog } from "../lib/helper";
-import { read } from "fs";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, editable=true}) {
     const debugOn = true;    
@@ -15,9 +14,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     const [ editorOn, setEditorOn ] = useState(false);
 
-    debugLog(debugOn, "Rendering editor, mode: ", mode);
+    debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
     
     const writing = () => {
+        if(editorOn) return;
         $(editorRef.current).froalaEditor();
         if(!editorOn){
             debugLog(debugOn, "setEditorOn")
@@ -35,22 +35,25 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         if(editorOn) {        
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
-            setEditorOn(false);           
+            setEditorOn(false);  
         }
     }
 
-    switch (mode) {
-        case "ReadOnly":
-            readOnly();
-            break;
-        case "Writing":
-            writing();
-            break;
-        case "Saving":
-            saving();
-            break;
-        default:
-    }
+    useEffect(()=> {
+        switch (mode) {
+            case "ReadOnly":
+                readOnly();
+                break;
+            case "Writing":
+                writing();
+                break;
+            case "Saving":
+                saving();
+                break;
+            default:
+        }
+    }, [mode])
+ 
 
     useEffect(() => {
         window.$ = window.jQuery = jquery;``

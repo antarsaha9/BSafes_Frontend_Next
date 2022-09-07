@@ -10,7 +10,7 @@ import { createNewItemVersion } from '../lib/bSafesCommonUI';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",  //"Done", "Error", "Cancelling", "Loading", "Uploading"
+    activity: "Done",  //"Done", "Error", "Loading", "Uploading"
     error: null,
     latestVersion: null,
     itemCopy: null,
@@ -120,9 +120,10 @@ const pageSlice = createSlice({
             dataFetchedFunc(state, action);
         },
         newVersionCreated: (state, action) => {
-            state = {
-                ...state,
-                ...action.payload
+            const updatedKeys = Object.keys(action.payload);
+            for(let i=0; i<updatedKeys.length; i++) {
+                let key = updatedKeys[i];
+                state[key] = action.payload[key];
             }
         },
         addImages: (state, action) => {
@@ -229,14 +230,6 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
         }
     })
 };
-
-export const cancelEditingThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, "Cancelling", () => {
-        return new Promise(async (resolve) => {
-            resolve();
-        });
-    })
-}
 
 export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Uploading", () => {

@@ -10,8 +10,8 @@ import Scripts from './scripts'
 import Editor from './editor';
 import PageCommonControls from "./pageCommonControls";
 
-import { cancelEditingThunk, saveTitleThunk } from "../reduxStore/pageSlice";
-import { debugLog } from '../lib/helper';
+import { saveTitleThunk } from "../reduxStore/pageSlice";
+import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
     const debugOn = true;
@@ -56,11 +56,14 @@ export default function PageCommons() {
             setEditingEditorId("");
         } else if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, searchKey, searchIV));
+                updateComponentAfterRender(()=> {
+                    dispatch(saveTitleThunk(content, searchKey, searchIV));
+                });
             } else {
-                dispatch(cancelEditingThunk());
-                setEditingEditorMode("ReadOnly");
-                setEditingEditorId(null);
+                updateComponentAfterRender(()=> {
+                    setEditingEditorMode("ReadOnly");
+                    setEditingEditorId(null);
+                });
             }
         } else {
             const editorsCopy = [...imageTextEditors];
@@ -106,6 +109,10 @@ export default function PageCommons() {
             if(editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
+            }
+        } else if (activity === "Error") {
+            if(editingEditorId) {
+                setEditingEditorMode("Writing");
             }
         }
     }, [activity]);

@@ -71,7 +71,10 @@ export async function createANewItem(titleStr, currentContainer, selectedItemTyp
 export async function createNewItemVersion(itemCopy) {
   return new Promise( (resolve, reject) => {
     itemCopy.version = itemCopy.version + 1;
+    debugLog(debugOn, "item copy version: ", itemCopy.version);
+  
     resolve({status:'ok', usage:100});
+    
     return;
     PostCall({
       api:'/memberAPI/createNewItemVersion',
