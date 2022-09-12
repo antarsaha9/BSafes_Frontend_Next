@@ -73,9 +73,6 @@ export async function createNewItemVersion(itemCopy) {
     itemCopy.version = itemCopy.version + 1;
     debugLog(debugOn, "item copy version: ", itemCopy.version);
   
-    resolve({status:'ok', usage:100});
-    
-    return;
     PostCall({
       api:'/memberAPI/createNewItemVersion',
       body: {
