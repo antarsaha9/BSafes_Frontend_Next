@@ -10,7 +10,7 @@ import Scripts from './scripts'
 import Editor from './editor';
 import PageCommonControls from "./pageCommonControls";
 
-import { saveTitleThunk } from "../reduxStore/pageSlice";
+import { saveContentThunk, saveTitleThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
@@ -26,7 +26,7 @@ export default function PageCommons() {
     const titleEditorContent = useSelector(state => state.page.title);
 
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
-    const [contentEditorContent, setContentEditorContent] = useState("Hello World");
+    const contentEditorContent = useSelector(state => state.page.content);
   
     const [editingEditorId, setEditingEditorId] = useState(null);
 
@@ -51,9 +51,16 @@ export default function PageCommons() {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
         
         if(editingEditorId === "content") {
-            setContentEditorContent(content);
-            setContentEditorMode("ReadOnly");
-            setEditingEditorId("");
+            if(content !== contentEditorContent) {
+                updateComponentAfterRender(()=> {
+                    dispatch(saveContentThunk(content));
+                });
+            } else {
+                updateComponentAfterRender(()=> {
+                    setEditingEditorMode("ReadOnly");
+                    setEditingEditorId(null);
+                });
+            }
         } else if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
                 updateComponentAfterRender(()=> {

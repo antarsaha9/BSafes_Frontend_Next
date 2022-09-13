@@ -263,6 +263,108 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
     })
 }
 
+function preProcessEditorContentBeforeSaving(content) {
+    var tempElement = document.createElement("div");
+    tempElement.innerHTML = content;
+    const images = tempElement.querySelectorAll(".bSafesImage");
+    let s3ObjectsInContent = [];
+	let totalS3ObjectsSize = 0;
+    images.forEach((item) => {
+        const id = item.id;
+        const idParts = id.split('&');
+        const s3Key = idParts[0];
+        const dimension = idParts[1];
+        const size = parseInt(idParts[2]);
+        s3ObjectsInContent.push({
+            s3Key: s3Key,
+            size: size
+        });
+        totalS3ObjectsSize += size;
+        const placeholder = 'https://via.placeholder.com/' + dimension;
+        item.src = placeholder;
+    });
+
+    images.forEach((item) => { // Clean up any bSafes status class
+	    item.classList.remove('bSafesDisplayed');
+	    item.classList.remove('bSafesDownloading');
+	});
+
+    const videos = tempElement.querySelectorAll('.fr-video');
+    videos.forEach((item) => {
+        const video = item.querySelector('video');
+        video.classList.remove('fr-draggable');
+        const videoId = video.id;
+        const videoStyle = video.style;
+        const videoImg = document.createElement('img');
+        if(item.classList.contains('fr-dvb')) videoImg.classList.add('fr-dib');
+        if(item.classList.contains('fr-dvi')) videoImg.classList.add('fr-dii');
+	    if(item.classList.contains('fr-fvl')) videoImg.classList.add('fr-fil');
+	    if(item.classList.contains('fr-fvc')) videoImg.classList.add('fr-fic');
+	    if(item.classList.contains('fr-fvr')) videoImg.classList.add('fr-fir');
+    
+        videoImg,id = videoId;
+        videoImg.style = videoStyle;
+        const placeholder = 'https://via.placeholder.com/' + '360x200';
+        videoImg.src = placeholder;
+        item.replaceWith(videoImg);
+    });
+
+    const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');
+    videoImgs.forEach((item) => {
+        const id = item.id;
+        const idParts = id.split('&');
+	    const s3Key = idParts[0];
+	    const size = parseInt(idParts[1]);
+
+        s3ObjectsInContent.push({
+            s3Key: s3Key,
+            size: size
+        });
+        totalS3ObjectsSize += size;
+    });
+
+    return {
+	    content: tempElement.innerHTML,
+	    s3ObjectsInContent: s3ObjectsInContent,
+	    s3ObjectsSize: totalS3ObjectsSize
+	};
+};
+
+export const saveContentThunk = (content) => async (dispatch, getState) => {
+    newActivity(dispatch, "Uploading", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, encodedContent, encryptedContent;
+            state = getState();
+            const result = preProcessEditorContentBeforeSaving(content);
+            const s3ObjectsInContent = result.s3ObjectsInContent;
+	        const s3ObjectsSize = result.s3ObjectsSize;
+            
+            try {
+                encodedContent = forge.util.encodeUtf8(content);
+                encryptedContent = encryptBinaryString(encodedContent, state.page.itemKey);
+            
+                if (state.isBlankPageItem) {
+                } else {
+                    let itemCopy = {
+                        ...state.page.itemCopy
+                    }
+        
+                    itemCopy.content = forge.util.encode64(encryptedContent);
+                    itemCopy.s3ObjectsInContent = s3ObjectsInContent;
+	                itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
+                    itemCopy.update = "content";
+            
+                    await createNewItemVersionForPage(dispatch, itemCopy, {content});
+                    resolve();
+                }
+            } catch (error) {
+                reject();
+            }
+
+        });
+    })
+}
+
 export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
     const state = getState();
     
