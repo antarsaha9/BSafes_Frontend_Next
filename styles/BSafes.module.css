@@ -106,6 +106,8 @@
   min-height:980px;
   margin-top:20px;
   margin-bottom:20px;
+  padding-left:15px;
+  padding-right:15px;
   padding-bottom:48px;
   box-shadow:0px 1px 2px 2px #C9C9C9;
   -webkit-box-shadow:0px 1px 2px 2px #C9C9C9;
@@ -116,4 +118,31 @@
   background-color: black;
   padding-bottom:30px;
 }
+
+
+.imagesDragDropZone {
+  border: 2px dashed #e4e1e1;
+  background-color: aliceblue;
+  margin-bottom: 10px;
+}
+
+.imagesDragDropZoneActive {
+  border: 2px dashed #e4e1e1;
+  background-color: white;
+  margin-bottom: 10px;
+}
+
+.attachmentsDragDropZone {
+  border: 2px dashed #e4e1e1;
+  background-color: blanchedalmond;
+  margin-bottom: 10px;
+}
+
+.attachmentsDragDropZoneActive {
+  border: 2px dashed #e4e1e1;
+  background-color: white;
+  margin-bottom: 10px;
+}
+
+
 /* End of Page */

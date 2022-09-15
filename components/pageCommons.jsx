@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -10,6 +9,7 @@ import Scripts from './scripts'
 import Editor from './editor';
 import PageCommonControls from "./pageCommonControls";
 
+import BSafesStyle from '../styles/BSafes.module.css'
 import { saveContentThunk, saveTitleThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
@@ -24,11 +24,15 @@ export default function PageCommons() {
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
-
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
-  
     const [editingEditorId, setEditingEditorId] = useState(null);
+
+    const imageFilesInputRef = useRef(null);
+    const [imagesDragActive, setImagesDragActive] = useState(false);
+
+    const attachmentsInputRef = useRef(null);
+    const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
@@ -111,6 +115,62 @@ export default function PageCommons() {
         setEditingEditorId(null);
     }
 
+    const handleImageButton = (e) => {
+        debugLog(debugOn, "handleImageBtn");
+        e.preventDefault();
+        imageFilesInputRef.current?.click();
+    };
+    
+    const handleImageFiles = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleImageFiles: ", e.target.id);
+    }
+
+    const handleAttachments = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleAttachments: ", e.target.id);
+    }
+
+    const setDragActive = (e, active) => {
+        if(e.target.id === "images") {
+            setImagesDragActive(active);
+        } else {
+            setAttachmentsDragActive(active);
+        }
+    }
+
+    const handleDrag = (e) => {
+        debugLog(debugOn, "handleDrag");
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.type === "dragenter" || e.type === "dragover") {      
+            setDragActive(e, true);
+        } else if (e.type === "dragleave") {
+            setDragActive(e, false);
+        }
+    }
+
+    const handleDrop = function(e) {
+        debugLog(debugOn, "handleDrop");
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActive(e,false);
+
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          // at least one file has been dropped so do something
+          // handleFiles(e.dataTransfer.files);
+            if(e.target.id === 'images') {
+                const imageType = /image.*/;
+                const file = e.dataTransfer.files[0];
+                if (!file.type.match(imageType)) {
+                    debugLog(debugOn, "Not an image.");
+                }
+            } else {
+
+            }
+        }
+    };
+
     useEffect(() => {
         if(activity === "Done") {
             if(editingEditorId) {
@@ -141,6 +201,26 @@ export default function PageCommons() {
                     <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
                 </Col> 
             </Row>
+            <div className="images">
+                <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
+                <Row>
+                    <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                        <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                            <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                        </Button>
+                    </Col>
+                </Row>	
+            </div>
+            <div className="attachments">
+                <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
+                <Row>
+                    <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                        <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                            <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                        </Button>
+                    </Col>
+                </Row>	
+            </div>
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
             <Scripts />
         </>
