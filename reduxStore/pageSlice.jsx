@@ -6,6 +6,7 @@ const DOMPurify = require('dompurify');
 import { debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
+import { get } from 'jquery';
 
 const debugOn = true;
 
@@ -28,6 +29,8 @@ const initialState = {
     imagePanels:[],
     imagePanelsIndex:{},
     uploadQueue:[],
+    testQueue: [],
+    testList:[],
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -166,11 +169,21 @@ const pageSlice = createSlice({
             state.uploadQueue.shift();
             console.log("uploadQueue: ", current(state.uploadQueue));
             state.imagePanels[i].status = "displayed";
+        },
+        newTestJob: (state, action) => {
+            state.testQueue.push(action.payload);
+            state.testList.push(action.payload);
+        },
+        updateJob: (state, action) => {
+            const currentJob = state.testQueue[0];
+            console.log(currentJob.progress);
+            currentJob.progress += 1;
+            console.log(currentJob.progress);
         }
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage, newTestJob, updateJob } = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -180,6 +193,17 @@ const newActivity = async (dispatch, type, activity) => {
     } catch(error) {
         dispatch(activityChanged("Error"));
     }
+}
+
+const testAJob = (dispatch, getState) => {
+    let state = getState();
+    let job = {file:"abc", progress:0};
+    job.progress += 1;
+    
+    dispatch(newTestJob(job));
+    setInterval(()=>{
+        dispatch(updateJob(job));
+    }, 1000);
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
@@ -193,6 +217,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 if(result.status === 'ok') {                                   
                     if(result.item) {
                         dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
+                        testAJob(dispatch, getState);
                         resolve();
                     } else {
                         reject("woo... failed to get a page item!");
