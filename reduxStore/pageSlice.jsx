@@ -11,7 +11,7 @@ import { get } from 'jquery';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",  //"Done", "Error", "Loading", "Uploading"
+    activity: "Done",  //"Done", "Error", "Loading", "Saving", "UploadingImages"
     error: null,
     latestVersion: null,
     itemCopy: null,
@@ -27,10 +27,10 @@ const initialState = {
     titleText: null,
     content:null,
     imagePanels:[],
-    imagePanelsIndex:{},
-    uploadQueue:[],
-    testQueue: [],
-    testList:[],
+    imageUploadQueue:[],
+    imageUploadIndex:0,
+    imageDownloadQueue:[],
+    imageDownloadIndex:0
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -130,23 +130,33 @@ const pageSlice = createSlice({
             }
         },
         addImages: (state, action) => {
+            const files = action.payload.files;
+            let newPanels = [];
+            for(let i=0; i < files.length; i++) {
+                const queueId = 'u' + state.imageUploadQueue.length;
+                const newUpload = {file: files[i]};
+                state.imageUploadQueue.push(newUpload);
+                const newPanel = {
+                    queueId: queueId,
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
             switch (action.payload.where) {
                 case "top":
-                    state.imagePanels.unshift(...action.payload.newPanels)
+                    state.imagePanels.unshift(...newPanels);
                     break;
                 case "bottom":
                     break;
                 default:
             }
-            let index = {};
-            for(let i=0; i< state.imagePanels.length; i++) {
-                let key = state.imagePanels[i].key;
-                index[key] = i;
-            }
-            state.imagePanelsIndex = index;
-            state.uploadQueue.push(...action.payload.newPanels);
         },
-        uploadAnImage: (state, action) => {
+        imageUploaded: (state, action) => {
+            let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
+            panel.progress = 1;
+            state.imageUploadIndex += 1;
+        }
+/*        uploadAnImage: (state, action) => {
             console.log("uploadAnImage");
             console.log("action payload: ", action.payload)
             console.log("imagePanelsIndex: ", current(state.imagePanelsIndex));
@@ -169,21 +179,12 @@ const pageSlice = createSlice({
             state.uploadQueue.shift();
             console.log("uploadQueue: ", current(state.uploadQueue));
             state.imagePanels[i].status = "displayed";
-        },
-        newTestJob: (state, action) => {
-            state.testQueue.push(action.payload);
-            state.testList.push(action.payload);
-        },
-        updateJob: (state, action) => {
-            const currentJob = state.testQueue[0];
-            console.log(currentJob.progress);
-            currentJob.progress += 1;
-            console.log(currentJob.progress);
         }
+*/
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addImages, uploadAnImage, doneUploadingAnImage, newTestJob, updateJob } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addImages, imageUploaded, doneUploadingAnImage } = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -193,17 +194,6 @@ const newActivity = async (dispatch, type, activity) => {
     } catch(error) {
         dispatch(activityChanged("Error"));
     }
-}
-
-const testAJob = (dispatch, getState) => {
-    let state = getState();
-    let job = {file:"abc", progress:0};
-    job.progress += 1;
-    
-    dispatch(newTestJob(job));
-    setInterval(()=>{
-        dispatch(updateJob(job));
-    }, 1000);
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
@@ -217,7 +207,6 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 if(result.status === 'ok') {                                   
                     if(result.item) {
                         dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
-                        testAJob(dispatch, getState);
                         resolve();
                     } else {
                         reject("woo... failed to get a page item!");
@@ -257,7 +246,7 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
 };
 
 export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
-    newActivity(dispatch, "Uploading", () => {
+    newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, titleText, encodedTitle, encryptedTitle, titleTokens;
             state = getState();
@@ -356,7 +345,7 @@ function preProcessEditorContentBeforeSaving(content) {
 };
 
 export const saveContentThunk = (content) => async (dispatch, getState) => {
-    newActivity(dispatch, "Uploading", () => {
+    newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, encodedContent, encryptedContent;
             state = getState();
@@ -390,7 +379,28 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
     })
 }
 
-export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
+export const uploadImagesThunk = (data) => async (dispatch, getState) => {
+    let state;
+    state = getState();
+    if(state.page.activity === "UploadingImages") {
+        dispatch(addImages({files:data.files, where:data.where}));
+        return;
+    } 
+    newActivity(dispatch, "UploadingImages",  async () => {
+        dispatch(addImages({files:data.files, where:data.where}));
+        state = getState().page;
+        while(state.imageUploadQueue.length > state.imageUploadIndex){
+            console.log("Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
+            await new Promise(resolve => setTimeout(()=>{resolve()}, 1000));
+            dispatch(imageUploaded());
+            state = getState().page;
+        }
+        state = getState().page;
+        console.log(state.imagePanels);
+    });
+}
+
+/*export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
     const state = getState();
     
     console.log("Timeout");
@@ -418,7 +428,7 @@ export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
             state = getState();
         } 
     }
-}
+} */
 
 export const pageReducer = pageSlice.reducer;
 

@@ -10,7 +10,7 @@ import Editor from './editor';
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { saveContentThunk, saveTitleThunk } from "../reduxStore/pageSlice";
+import { saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
@@ -121,9 +121,17 @@ export default function PageCommons() {
         imageFilesInputRef.current?.click();
     };
     
+    const uploadImages = (files, where) => {
+        dispatch(uploadImagesThunk({files, where}));
+    };
+
     const handleImageFiles = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleImageFiles: ", e.target.id);
+        const files = e.target.files;
+	    if (files.length) {
+            uploadImages(files, 'top');
+        }
     }
 
     const handleAttachments = (e) => {

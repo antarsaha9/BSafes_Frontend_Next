@@ -14,6 +14,17 @@ const reduxStore = configureStore({
         [pageSlice.name]: pageReducer,
     },
     devTools: true,
+    middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        // Ignore these action types
+        ignoredActions: ['page/addImages'],
+        // Ignore these field paths in all actions
+        ignoredActionPaths: ['payload.files'],
+        // Ignore these paths in the state
+        ignoredPaths: ['page.imageUploadQueue'],
+      },
+    }),
 })
 
 const createStore = () => reduxStore;
