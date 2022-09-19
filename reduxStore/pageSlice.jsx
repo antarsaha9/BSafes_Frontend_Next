@@ -2,11 +2,12 @@ import { createSlice, current } from '@reduxjs/toolkit';
 import { startTransition } from 'react';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
+const axios = require('axios');
 
-import { debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, stringToEncryptedTokens } from '../lib/crypto';
+import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, Utf8ArrayToStr } from '../lib/helper'
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
-import { get } from 'jquery';
+import { rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
 
@@ -379,6 +380,148 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
     })
 }
 
+const uploadAnImage = async (dispatch, state, file) => {
+    let img;
+    let imageDataInBinaryString;
+    let s3Key, s3ObjectSize;
+    let totalUploadedSize = 0; 
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        const startUploadingAnImage = async ()=> {
+            debugLog(debugOn, 'startUploadingAnImage');
+            const imageWidth = img.width;
+	        const imageHeight = img.height;
+
+            const uploadToS3 = (data) => {
+                let signedURL, signedGalleryURL, signedThumbnailURL; 
+                debugLog(debugOn, 'uploadToS3');
+                return new Promise( async (resolve, reject) => {
+                    const preS3Upload = () => {
+                        return new Promise( async (resolve, reject) => {
+                            PostCall({
+                                api:'/memberAPI/preS3Upload',
+                            }).then( data => {
+                                debugLog(debugOn, data);
+                                if(data.status === 'ok') {  
+                                    s3Key = data.s3Key;
+	                                signedURL = data.signedURL;
+	                                signedGalleryURL = data.signedGalleryURL;
+	                                signedThumbnailURL = data.signedThumbnailURL;                                 
+                                    resolve();
+                                } else {
+                                    debugLog(debugOn, "preS3Upload failed: ", data.error);
+                                    reject(data.error);
+                                }
+                            }).catch( error => {
+                                debugLog(debugOn, "preS3Upload failed: ", error)
+                                reject("preS3Upload failed:!");
+                            })
+                        });
+                    };
+                   
+                    try {
+                        await preS3Upload();
+                        totalUploadedSize += data.byteLength;
+                        
+                        const axiosResponse = await axios.put(signedURL, {
+                            data: data,
+                        }, {
+                            headers: {
+                              'Content-Type': 'binary/octet-stream'
+                        }});
+                          
+                        debugLog(debugOn, axiosResponse)
+                    } catch(error) {
+                        debugLog(debugOn, 'uploadToS3 error: ', error)
+                        reject(error);
+                    }
+                });
+            };
+
+            const postS3Upload = () => {
+                debugLog(debugOn, 'postS3Upload');
+            };
+
+            const encryptDataInBinaryString = (data) => {
+                const binaryStr = data;
+	            debugLog(debugOn, 'encryptDataInBinaryString length: ', binaryStr.length);
+	            const encryptedStr = encryptLargeBinaryString(binaryStr, state.itemKey);
+	            const uint8Array = convertBinaryStringToUint8Array(encryptedStr);
+	            return encryptedStr;
+            };
+
+            const encryptedImageData = encryptDataInBinaryString(imageDataInBinaryString);
+
+            //const encryptedImageDataInUint8Array = encryptDataInBinaryString(imageDataInBinaryString);
+            //const encrypted_buffer = Utf8ArrayToStr(encryptedImageDataInUint8Array, 1000);
+            try {
+                await uploadToS3(encryptedImageData);
+            } catch(error) {
+                debugLog(debugOn, 'uploadToS3 error: ', error);
+            }      
+        };
+
+
+        reader.addEventListener('load', async () => {
+            const imageData = reader.result;
+
+            const getOrientation = (data) => {
+	            var view = new DataView(imageData);
+
+	            if (view.getUint16(0, false) != 0xFFD8) return -2;
+
+	            var length = view.byteLength,
+	              offset = 2;
+	            while (offset < length) {
+	              var marker = view.getUint16(offset, false);
+	              offset += 2;
+	              if (marker == 0xFFE1) {
+
+	                if (view.getUint32(offset += 2, false) != 0x45786966) return -1;
+
+	                var little = view.getUint16(offset += 6, false) == 0x4949;
+	                offset += view.getUint32(offset + 4, little);
+	                var tags = view.getUint16(offset, little);
+	                offset += 2;
+	                for (var i = 0; i < tags; i++)
+	                  if (view.getUint16(offset + (i * 12), little) == 0x0112)
+	                    return view.getUint16(offset + (i * 12) + 8, little);
+	              } else if ((marker & 0xFF00) != 0xFF00) break;
+	              else offset += view.getUint16(offset, false);
+	            }
+	            return -1;
+            }
+
+            const exifOrientation = getOrientation(imageData);
+            const imageDataInUint8Array = new Uint8Array(imageData);
+            const blob = new Blob([imageDataInUint8Array], {
+	            type: 'image/jpeg'
+	        });
+            let link = window.URL.createObjectURL(blob);
+
+            try {
+                const result = await rotateImage(link, exifOrientation);
+                debugLog(debugOn, 'Rotation done');
+                imageDataInBinaryString = result.byteString;
+                link = window.URL.createObjectURL(result.blob);
+
+                img = new Image();
+                img.src = link;
+
+                img.onload = startUploadingAnImage;
+
+            } catch(error) {
+                debugLog(debugOn, 'rotateImage error:', error)
+                reject(error);
+            }
+
+        });
+    
+        reader.readAsArrayBuffer(file);
+    });
+};
+
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState();
@@ -391,7 +534,8 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         state = getState().page;
         while(state.imageUploadQueue.length > state.imageUploadIndex){
             console.log("Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
-            await new Promise(resolve => setTimeout(()=>{resolve()}, 1000));
+            const file = state.imageUploadQueue[state.imageUploadIndex].file;
+            await uploadAnImage(dispatch, state, file);
             dispatch(imageUploaded());
             state = getState().page;
         }
