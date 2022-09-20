@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
 
-import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, Utf8ArrayToStr } from '../lib/helper'
+import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
 import { rotateImage } from '../lib/wnImage';
@@ -383,8 +383,8 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
 const uploadAnImage = async (dispatch, state, file) => {
     let img;
     let imageDataInBinaryString;
-    let s3Key, s3ObjectSize;
     let totalUploadedSize = 0; 
+
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
 
@@ -394,7 +394,7 @@ const uploadAnImage = async (dispatch, state, file) => {
 	        const imageHeight = img.height;
 
             const uploadToS3 = (data) => {
-                let signedURL, signedGalleryURL, signedThumbnailURL; 
+                let s3Key, signedURL, signedGalleryURL, signedThumbnailURL; 
                 debugLog(debugOn, 'uploadToS3');
                 return new Promise( async (resolve, reject) => {
                     const preS3Upload = () => {
@@ -423,15 +423,21 @@ const uploadAnImage = async (dispatch, state, file) => {
                     try {
                         await preS3Upload();
                         totalUploadedSize += data.byteLength;
-                        
-                        const axiosResponse = await axios.put(signedURL, {
-                            data: data,
-                        }, {
+                        const buffer = Buffer.from(data, 'binary');
+                        const config = {
+                            onUploadProgress: (progressEvent) => {
+                                let percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
+                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} %`);
+                            },
                             headers: {
-                              'Content-Type': 'binary/octet-stream'
-                        }});
+                                'Content-Type': 'binary/octet-stream'
+                            }
+                        }
+                        const axiosResponse = await axios.put(signedURL,
+                            Buffer.from(data, 'binary'), config);
                           
-                        debugLog(debugOn, axiosResponse)
+                        debugLog(debugOn, axiosResponse);
+                        resolve({s3Key, buffer});
                     } catch(error) {
                         debugLog(debugOn, 'uploadToS3 error: ', error)
                         reject(error);
@@ -439,24 +445,95 @@ const uploadAnImage = async (dispatch, state, file) => {
                 });
             };
 
+            const downloadFromS3 = (s3Key) => { 
+                debugLog(debugOn, 'downloadFromS3');
+                return new Promise( async (resolve, reject) => {
+                    const preS3Download = () => {
+                        return new Promise( async (resolve, reject) => {
+                            PostCall({
+                                api:'/memberAPI/preS3Download',
+                                body: {
+                                    itemId: state.id,
+                                    s3Key
+                                }
+                            }).then( data => {
+                                debugLog(debugOn, data);
+                                if(data.status === 'ok') {                                                  
+                                    resolve(data.signedURL);
+                                } else {
+                                    debugLog(debugOn, "preS3Download failed: ", data.error);
+                                    reject(data.error);
+                                }
+                            }).catch( error => {
+                                debugLog(debugOn, "preS3Download failed: ", error)
+                                reject("preS3Download failed:!");
+                            })
+                        });
+                    };
+                   
+                    const XHRDownload = (signedURL) => {
+                        return new Promise( async (resolve, reject) => {
+                            const xhr = new XMLHttpRequest();
+                            xhr.open('GET', signedURL, true);
+                            xhr.responseType = 'arraybuffer';
+                  
+                            xhr.addEventListener("progress", function(evt) {
+                              if (evt.lengthComputable) {
+                                let percentComplete = evt.loaded / evt.total * 100;
+                                debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
+                              }
+                            }, false);
+                  
+                            xhr.onload = function(e) {
+                                resolve(this.response)
+                            };
+                  
+                            xhr.send();
+                        });
+                    }
+
+                    try {
+                        const signedDownloadURL = await preS3Download();
+
+                        const response = await XHRDownload(signedDownloadURL, { responseType: 'arraybuffer' })
+                          
+                        debugLog(debugOn, "downloadFromS3 completed. Length: ", response.byteLength);
+                        const buffer = Buffer.from(response, 'binary');
+                        resolve({buffer});
+                    } catch(error) {
+                        debugLog(debugOn, 'downloadFromS3 error: ', error)
+                        reject(error);
+                    }
+                });               
+            }
+
             const postS3Upload = () => {
                 debugLog(debugOn, 'postS3Upload');
             };
 
             const encryptDataInBinaryString = (data) => {
                 const binaryStr = data;
-	            debugLog(debugOn, 'encryptDataInBinaryString length: ', binaryStr.length);
 	            const encryptedStr = encryptLargeBinaryString(binaryStr, state.itemKey);
-	            const uint8Array = convertBinaryStringToUint8Array(encryptedStr);
+	            debugLog(debugOn, 'encryptLargeBinaryString length: ', encryptedStr.length);
 	            return encryptedStr;
             };
 
-            const encryptedImageData = encryptDataInBinaryString(imageDataInBinaryString);
+            const encryptedImageDataInBinaryString = encryptDataInBinaryString(imageDataInBinaryString);
 
-            //const encryptedImageDataInUint8Array = encryptDataInBinaryString(imageDataInBinaryString);
             //const encrypted_buffer = Utf8ArrayToStr(encryptedImageDataInUint8Array, 1000);
             try {
-                await uploadToS3(encryptedImageData);
+                const uploadResult = await uploadToS3(encryptedImageDataInBinaryString);
+                const downloadResult = await downloadFromS3(uploadResult.s3Key);
+                let compare = Buffer.compare(uploadResult.buffer, downloadResult.buffer);
+                debugLog(debugOn, "Compare upload and download result: ", compare);
+                const downloadedBinaryString = downloadResult.buffer.toString('binary');
+                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+                compare = downloadedBinaryString.localeCompare(encryptedImageDataInBinaryString);
+                debugLog(debugOn, "Compare upload and download result in binary string: ", compare);
+                const decryptedStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                debugLog(debugOn, "Decrypted string length: ", decryptedStr.length);
+                compare = decryptedStr.localeCompare(imageDataInBinaryString);
+                debugLog(debugOn, "Compare original and decrypted result in binary string: ", compare);
             } catch(error) {
                 debugLog(debugOn, 'uploadToS3 error: ', error);
             }      
