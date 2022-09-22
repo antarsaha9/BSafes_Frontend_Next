@@ -7,7 +7,8 @@ const axios = require('axios');
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
-import { rotateImage } from '../lib/wnImage';
+import { downScaleImage, rotateImage } from '../lib/wnImage';
+import { createDispatchHook } from 'react-redux';
 
 const debugOn = true;
 
@@ -130,7 +131,7 @@ const pageSlice = createSlice({
                 state[key] = action.payload[key];
             }
         },
-        addImages: (state, action) => {
+        addUploadImages: (state, action) => {
             const files = action.payload.files;
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
@@ -139,6 +140,7 @@ const pageSlice = createSlice({
                 state.imageUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
+                    status: "WaitingForUpload",
                     progress: 0
                 }
                 newPanels.push(newPanel);
@@ -154,8 +156,15 @@ const pageSlice = createSlice({
         },
         imageUploaded: (state, action) => {
             let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
-            panel.progress = 1;
+            panel.status = "Uploaded";
+            panel.progress = 100;
+            panel.img = action.payload.img;
             state.imageUploadIndex += 1;
+        },
+        uploadingImage: (state, action) => {
+            let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
+            panel.status = "Uploading";
+            panel.progress = action.payload;
         }
 /*        uploadAnImage: (state, action) => {
             console.log("uploadAnImage");
@@ -185,7 +194,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addImages, imageUploaded, doneUploadingAnImage } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, imageUploaded, /*doneUploadingAnImage,*/ uploadingImage } = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -382,8 +391,22 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
 
 const uploadAnImage = async (dispatch, state, file) => {
     let img;
+    let exifOrientation;
     let imageDataInBinaryString;
     let totalUploadedSize = 0; 
+
+    const downscaleImgAndEncryptInUint8Array = (size) => {
+        return new Promise( async (resolve, reject) => {
+            try {
+                const originalStr = await downScaleImage(img, exifOrientation, size);
+                const encryptedStr = encryptLargeBinaryString(originalStr, state.itemKey);
+                resolve(encryptedStr);
+            } catch(error) {
+                debugLog(debugOn, "_downScaleImage failed: ", error);
+                reject(error);
+            }                   
+        });
+    };
 
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -393,11 +416,14 @@ const uploadAnImage = async (dispatch, state, file) => {
             const imageWidth = img.width;
 	        const imageHeight = img.height;
 
-            const uploadToS3 = (data) => {
+            let uploadOriginalImgPromise = null, uploadGalleryImgPromise = null, uploadThumbnailImgPromise = null;
+
+            const uploadImagesToS3 = (data) => {
                 let s3Key, signedURL, signedGalleryURL, signedThumbnailURL; 
-                debugLog(debugOn, 'uploadToS3');
+                let uploadingSubImages = false;
+                debugLog(debugOn, 'uploadImagesToS3')
                 return new Promise( async (resolve, reject) => {
-                    const preS3Upload = () => {
+                    const preImagesS3Upload = () => {
                         return new Promise( async (resolve, reject) => {
                             PostCall({
                                 api:'/memberAPI/preS3Upload',
@@ -419,32 +445,64 @@ const uploadAnImage = async (dispatch, state, file) => {
                             })
                         });
                     };
-                   
+
                     try {
-                        await preS3Upload();
-                        totalUploadedSize += data.byteLength;
+                        await preImagesS3Upload();
+                        totalUploadedSize += data.length;
                         const buffer = Buffer.from(data, 'binary');
                         const config = {
-                            onUploadProgress: (progressEvent) => {
-                                let percentCompleted = Math.round( (progressEvent.loaded * 100) / progressEvent.total );
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} %`);
+                            onUploadProgress: async (progressEvent) => {
+                                let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
+                                dispatch(uploadingImage(percentCompleted));
+                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                if(!uploadingSubImages) {
+                                    uploadingSubImages = true;
+                                    const galleryImgString = await downscaleImgAndEncryptInUint8Array(720);
+                                    totalUploadedSize += galleryImgString.length;
+                                    debugLog(debugOn, "galleryString length: ", galleryImgString.length);
+                                    const thumbnailImgString = await downscaleImgAndEncryptInUint8Array(120);
+                                    totalUploadedSize += thumbnailImgString.length;
+                                    debugLog(debugOn, "thumbnailImgString length: ", thumbnailImgString.length);
+                                    uploadGalleryImgPromise = axios.put(
+                                        signedGalleryURL,
+                                        Buffer.from(galleryImgString, 'binary'), 
+                                        {
+                                            headers: {
+                                                'Content-Type': 'binary/octet-stream'
+                                            }
+                                        }
+                                    );
+                                    uploadThumbnailImgPromise = axios.put(
+                                        signedThumbnailURL,
+                                        Buffer.from(thumbnailImgString, 'binary'), 
+                                        {
+                                            headers: {
+                                                'Content-Type': 'binary/octet-stream'
+                                            }
+                                        }
+                                    );
+                                    
+                                    const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
+                                    debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
+                                    debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
+                                    debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
+                                    resolve({s3Key, size: totalUploadedSize, img, buffer});
+                                }
                             },
                             headers: {
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
-                        const axiosResponse = await axios.put(signedURL,
-                            Buffer.from(data, 'binary'), config);
-                          
-                        debugLog(debugOn, axiosResponse);
-                        resolve({s3Key, buffer});
+                        uploadOriginalImgPromise = axios.put(signedURL,
+                            Buffer.from(data, 'binary'), config);                      
+            
                     } catch(error) {
-                        debugLog(debugOn, 'uploadToS3 error: ', error)
+                        debugLog(debugOn, 'uploadImagesToS3 error: ', error)
                         reject(error);
                     }
                 });
             };
-
+/*
             const downloadFromS3 = (s3Key) => { 
                 debugLog(debugOn, 'downloadFromS3');
                 return new Promise( async (resolve, reject) => {
@@ -506,23 +564,18 @@ const uploadAnImage = async (dispatch, state, file) => {
                     }
                 });               
             }
-
+*/
             const postS3Upload = () => {
                 debugLog(debugOn, 'postS3Upload');
             };
 
-            const encryptDataInBinaryString = (data) => {
-                const binaryStr = data;
-	            const encryptedStr = encryptLargeBinaryString(binaryStr, state.itemKey);
-	            debugLog(debugOn, 'encryptLargeBinaryString length: ', encryptedStr.length);
-	            return encryptedStr;
-            };
-
-            const encryptedImageDataInBinaryString = encryptDataInBinaryString(imageDataInBinaryString);
+            const encryptedImageDataInBinaryString = encryptLargeBinaryString(imageDataInBinaryString, state.itemKey);
 
             //const encrypted_buffer = Utf8ArrayToStr(encryptedImageDataInUint8Array, 1000);
             try {
-                const uploadResult = await uploadToS3(encryptedImageDataInBinaryString);
+                const uploadResult = await uploadImagesToS3(encryptedImageDataInBinaryString);
+                resolve(uploadResult);
+                /*
                 const downloadResult = await downloadFromS3(uploadResult.s3Key);
                 let compare = Buffer.compare(uploadResult.buffer, downloadResult.buffer);
                 debugLog(debugOn, "Compare upload and download result: ", compare);
@@ -534,8 +587,10 @@ const uploadAnImage = async (dispatch, state, file) => {
                 debugLog(debugOn, "Decrypted string length: ", decryptedStr.length);
                 compare = decryptedStr.localeCompare(imageDataInBinaryString);
                 debugLog(debugOn, "Compare original and decrypted result in binary string: ", compare);
+                */
             } catch(error) {
-                debugLog(debugOn, 'uploadToS3 error: ', error);
+                debugLog(debugOn, 'uploadImagesToS3 error: ', error);
+                reject(error);
             }      
         };
 
@@ -570,7 +625,7 @@ const uploadAnImage = async (dispatch, state, file) => {
 	            return -1;
             }
 
-            const exifOrientation = getOrientation(imageData);
+            exifOrientation = getOrientation(imageData);
             const imageDataInUint8Array = new Uint8Array(imageData);
             const blob = new Blob([imageDataInUint8Array], {
 	            type: 'image/jpeg'
@@ -603,17 +658,17 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState();
     if(state.page.activity === "UploadingImages") {
-        dispatch(addImages({files:data.files, where:data.where}));
+        dispatch(addUploadImages({files:data.files, where:data.where}));
         return;
     } 
     newActivity(dispatch, "UploadingImages",  async () => {
-        dispatch(addImages({files:data.files, where:data.where}));
+        dispatch(addUploadImages({files:data.files, where:data.where}));
         state = getState().page;
         while(state.imageUploadQueue.length > state.imageUploadIndex){
-            console.log("Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
+            console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
             const file = state.imageUploadQueue[state.imageUploadIndex].file;
-            await uploadAnImage(dispatch, state, file);
-            dispatch(imageUploaded());
+            const uploadResult = await uploadAnImage(dispatch, state, file);
+            dispatch(imageUploaded(uploadResult));
             state = getState().page;
         }
         state = getState().page;
@@ -621,7 +676,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-/*export const addImagesAsyncThunk = (data) => async (dispatch, getState) => {
+/*export const addUploadImagesAsyncThunk = (data) => async (dispatch, getState) => {
     const state = getState();
     
     console.log("Timeout");
@@ -630,7 +685,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         key: Date.now() + '-' + index,
         status: "waitingForUpload"}
     }) 
-    dispatch(addImages({newPanels:newPanels, where: data.where}));
+    dispatch(addUploadImages({newPanels:newPanels, where: data.where}));
 
     const uploadAnImageAsync = async () => {
             await new Promise( resolve => setTimeout(resolve, 3000));

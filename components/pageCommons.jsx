@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
@@ -7,6 +7,7 @@ import Button from 'react-bootstrap/Button'
 
 import Scripts from './scripts'
 import Editor from './editor';
+import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
@@ -28,11 +29,26 @@ export default function PageCommons() {
     const contentEditorContent = useSelector(state => state.page.content);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
+    const imagePanelsState = useSelector(state => state.page.imagePanels);
+    const pswpRef = useRef(null);
+
     const imageFilesInputRef = useRef(null);
     const [imagesDragActive, setImagesDragActive] = useState(false);
 
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
+
+    const imagePanelCallback = (index) => {
+        debugLog(debugOn, "imagePanelCallback: ", index);
+    }
+
+    const imageOnClick = (queueId) => {
+        debugLog(debugOn, "imageOnClick: ", queueId);
+    }
+
+    const imagePanels = imagePanelsState.map((item, index) =>
+        <ImagePanel key={item.queueId} panelIndex={index} panel={item} imageOnClick={imageOnClick} callback={imagePanelCallback} />
+    )
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
@@ -118,6 +134,7 @@ export default function PageCommons() {
     const handleImageButton = (e) => {
         debugLog(debugOn, "handleImageBtn");
         e.preventDefault();
+        imageFilesInputRef.current.value = null;
         imageFilesInputRef.current?.click();
     };
     
@@ -192,6 +209,56 @@ export default function PageCommons() {
         }
     }, [activity]);
 
+    const photoSwipeGallery = () => {
+        return (
+            //<!-- Root element of PhotoSwipe. Must have class pswp. -->
+            <div ref={pswpRef} className="pswp" tabIndex="-1" role="dialog" aria-hidden="true">
+                {/*<!-- Background of PhotoSwipe. It's a separate element as animating opacity is faster than rgba(). -->*/}
+                <div className="pswp__bg"></div>
+                {/*<!-- Slides wrapper with overflow:hidden. -->*/}
+                <div className="pswp__scroll-wrap">
+                    {/*<!-- Container that holds slides. PhotoSwipe keeps only 3 of them in the DOM to save memory. Don't modify these 3 pswp__item elements, data is added later on. -->*/}
+                    <div className="pswp__container">
+                        <div className="pswp__item"></div>
+                        <div className="pswp__item"></div>
+                        <div className="pswp__item"></div>
+                    </div>
+    
+                    {/*<!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->*/}
+                    <div className="pswp__ui pswp__ui--hidden">
+                        <div className="pswp__top-bar">
+                        {/*<!--  Controls are self-explanatory. Order can be changed. -->*/}
+                            <div className="pswp__counter"></div>
+                            <button className="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                            <button className="pswp__button pswp__button--share" title="Share"></button>
+                            <button className="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                            <button className="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                        {/*<!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->*/}
+                        {/*<!-- element will get class pswp__preloader active when preloader is running -->*/}
+                            <div className="pswp__preloader">
+                                <div className="pswp__preloader__icn">
+                                    <div className="pswp__preloader__cut">
+                                    <div className="pswp__preloader__donut"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                            <div className="pswp__share-tooltip"></div> 
+                        </div>
+                        <button className="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+                        </button>
+                        <button className="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+                        </button>
+                        <div className="pswp__caption">
+                            <div className="pswp__caption__center"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <>
             <Row className="justify-content-center">
@@ -219,6 +286,11 @@ export default function PageCommons() {
                     </Col>
                 </Row>	
             </div>
+            <Row className="justify-content-center">
+                <Col xs="12" sm="10" md="8" >
+                    {imagePanels}
+                </Col>
+            </Row>
             <div className="attachments">
                 <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                 <Row>
@@ -229,6 +301,7 @@ export default function PageCommons() {
                     </Col>
                 </Row>	
             </div>
+            {photoSwipeGallery()}
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
             <Scripts />
         </>

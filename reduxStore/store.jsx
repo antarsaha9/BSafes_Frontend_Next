@@ -18,11 +18,11 @@ const reduxStore = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['page/addImages'],
+        ignoredActions: ['page/addImages', 'page/imageUploaded'],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.files'],
+        ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer'],
         // Ignore these paths in the state
-        ignoredPaths: ['page.imageUploadQueue'],
+        ignoredPaths: ['page.imageUploadQueue', 'page.imagePanels'],
       },
     }),
 })

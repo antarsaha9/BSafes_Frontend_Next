@@ -56,6 +56,14 @@ const scripts = [
     {id: "font_size.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/font_size.min.js",
      loaded: false
+    },
+    {id: "photoswipe.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js",         
+     loaded: false
+    },
+    {id: "photoswipe-ui-default.min.js",
+     src: "https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js",
+     loaded: false
     }
 ];
 
