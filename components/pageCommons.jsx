@@ -44,6 +44,29 @@ export default function PageCommons() {
 
     const imageOnClick = (queueId) => {
         debugLog(debugOn, "imageOnClick: ", queueId);
+
+        const slides = [];
+        let startingIndex;
+        for(let i=0; i< imagePanelsState.length; i++) {
+            const thisPanel = imagePanelsState[i];
+            if(thisPanel.status !== "Uploaded") continue;
+            const item = {};
+            item.src = thisPanel.img.src;
+            item.w = thisPanel.img.width;
+            item.h = thisPanel.img.height;
+            slides.push(item);
+            if(thisPanel.queueId === queueId) {
+                startingIndex = slides.length - 1;
+            }
+        }
+        const pswpElement = pswpRef.current;
+        const options = {
+            // optionName: 'option value'
+            // for example:
+            index: startingIndex // start at first slide
+        };
+        const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
+        gallery.init();
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>

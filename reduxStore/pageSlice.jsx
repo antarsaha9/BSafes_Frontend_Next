@@ -448,21 +448,25 @@ const uploadAnImage = async (dispatch, state, file) => {
 
                     try {
                         await preImagesS3Upload();
+                        dispatch(uploadingImage(5));
                         totalUploadedSize += data.length;
+                        const galleryImgString = await downscaleImgAndEncryptInUint8Array(720);
+                        totalUploadedSize += galleryImgString.length;
+                        debugLog(debugOn, "galleryString length: ", galleryImgString.length);
+                        dispatch(uploadingImage(20));
+                        const thumbnailImgString = await downscaleImgAndEncryptInUint8Array(120);
+                        totalUploadedSize += thumbnailImgString.length;
+                        debugLog(debugOn, "thumbnailImgString length: ", thumbnailImgString.length);
+                        dispatch(uploadingImage(30));
                         const buffer = Buffer.from(data, 'binary');
                         const config = {
                             onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
+                                let percentCompleted = 30 + Math.ceil(progressEvent.loaded*70/progressEvent.total);
                                 dispatch(uploadingImage(percentCompleted));
                                 debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
                                 if(!uploadingSubImages) {
                                     uploadingSubImages = true;
-                                    const galleryImgString = await downscaleImgAndEncryptInUint8Array(720);
-                                    totalUploadedSize += galleryImgString.length;
-                                    debugLog(debugOn, "galleryString length: ", galleryImgString.length);
-                                    const thumbnailImgString = await downscaleImgAndEncryptInUint8Array(120);
-                                    totalUploadedSize += thumbnailImgString.length;
-                                    debugLog(debugOn, "thumbnailImgString length: ", thumbnailImgString.length);
+                                    
                                     uploadGalleryImgPromise = axios.put(
                                         signedGalleryURL,
                                         Buffer.from(galleryImgString, 'binary'), 

@@ -37,11 +37,8 @@ export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) 
     return (
         <div>
             <input ref={fileInputRef} type="file" multiple className="d-none editControl" id="image" />
-            <Row className="uploadImageTemplate downloadImageTemplate hidden">
+            <Row className="">
                 <Col>
-                    <div className="uploadText downloadText">
-                        {panelIndex} {(panel.status === "Uploading")?panel.progress:""}
-                    </div>
                     {(panel.status === 'Uploaded')?
                         <div>
                             <Image src={panel.img.src} onClick={onClick} fluid/>
@@ -51,7 +48,7 @@ export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) 
                     {(panel.status === "Uploading")?<ProgressBar className="marginTop20Px marginBottom0Px"  now={panel.progress} />:""}  
                 </Col>
             </Row>
-            <Row className="imagePanelTemplate hidden">                
+            <Row className="">                
                 <div>
                     <DropdownButton variant="link" align="end" title={
                         <span>
