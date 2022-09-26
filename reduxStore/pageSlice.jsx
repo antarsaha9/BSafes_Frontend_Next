@@ -15,7 +15,6 @@ const debugOn = true;
 const initialState = {
     activity: "Done",  //"Done", "Error", "Loading", "Saving", "UploadingImages"
     error: null,
-    latestVersion: null,
     itemCopy: null,
     id: null,
     isBlankPageItem: true,
@@ -159,6 +158,8 @@ const pageSlice = createSlice({
             panel.status = "Uploaded";
             panel.progress = 100;
             panel.img = action.payload.img;
+            panel.s3Key = action.payload.s3Key;
+            panel.size = action.payload.size;
             state.imageUploadIndex += 1;
         },
         uploadingImage: (state, action) => {
@@ -238,7 +239,7 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
         try {
             const data = await createNewItemVersion(itemCopy);
             if (data.status === 'ok') {
-                const usage = data.usage;
+                const usage = JSON.parse(data.usage);
                 itemCopy.usage = usage;
                 dispatch(newVersionCreated({
                     itemCopy,
@@ -259,7 +260,7 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, titleText, encodedTitle, encryptedTitle, titleTokens;
-            state = getState();
+            state = getState().page;
             try {
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
@@ -269,7 +270,7 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
                 if (state.isBlankPageItem) {
                 } else {
                     let itemCopy = {
-                        ...state.page.itemCopy
+                        ...state.itemCopy
                     }
         
                     itemCopy.title = forge.util.encode64(encryptedTitle);
@@ -358,7 +359,7 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, encodedContent, encryptedContent;
-            state = getState();
+            state = getState().page;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
 	        const s3ObjectsSize = result.s3ObjectsSize;
@@ -370,7 +371,7 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
                 if (state.isBlankPageItem) {
                 } else {
                     let itemCopy = {
-                        ...state.page.itemCopy
+                        ...state.itemCopy
                     }
         
                     itemCopy.content = forge.util.encode64(encryptedContent);
@@ -413,8 +414,6 @@ const uploadAnImage = async (dispatch, state, file) => {
 
         const startUploadingAnImage = async ()=> {
             debugLog(debugOn, 'startUploadingAnImage');
-            const imageWidth = img.width;
-	        const imageHeight = img.height;
 
             let uploadOriginalImgPromise = null, uploadGalleryImgPromise = null, uploadThumbnailImgPromise = null;
 
@@ -660,8 +659,8 @@ const uploadAnImage = async (dispatch, state, file) => {
 
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state;
-    state = getState();
-    if(state.page.activity === "UploadingImages") {
+    state = getState().page;
+    if(state.activity === "UploadingImages") {
         dispatch(addUploadImages({files:data.files, where:data.where}));
         return;
     } 
@@ -677,6 +676,22 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         }
         state = getState().page;
         console.log(state.imagePanels);
+        const images = [];
+        for(let i=0; i<state.imagePanels.length; i++) {
+            let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
+            images.push(image);
+        }
+        if (state.isBlankPageItem) {
+        } else {
+            let itemCopy = {
+                ...state.itemCopy
+            }
+
+            itemCopy.images = images;
+            itemCopy.update = "images";    
+            await createNewItemVersionForPage(dispatch, itemCopy, {});
+
+        }
     });
 }
 
