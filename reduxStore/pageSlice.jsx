@@ -187,7 +187,11 @@ const pageSlice = createSlice({
             panel.progress = action.payload;
         },
         imageDownloaded: (state, action) => {
-
+            let panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            panel.status = "Downloaded";
+            panel.progress = 100;
+            panel.img = action.payload.img;
+            state.imageDownloadIndex += 1;
         }
 /*        uploadAnImage: (state, action) => {
             console.log("uploadAnImage");
@@ -245,7 +249,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         }).then( data => {
                             debugLog(debugOn, data);
                             if(data.status === 'ok') {                                  
-                                signedURL = data.signedURL;
+                                const signedURL = data.signedURL;
                                 resolve(signedURL);
                             } else {
                                 debugLog(debugOn, "preS3Download failed: ", data.error);
@@ -253,7 +257,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             }
                         }).catch( error => {
                             debugLog(debugOn, "preS3Download failed: ", error)
-                            reject("preS3Upload failed!");
+                            reject("preS3Download failed!");
                         })
                     });
                 }
@@ -265,7 +269,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
               
                         xhr.addEventListener("progress", function(evt) {
                             if (evt.lengthComputable) {
-                                let percentComplete = evt.loaded / evt.total * 90;
+                                let percentComplete = evt.loaded / evt.total * 90 + 10;
                                 debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
                                 dispatch(downloadingImage(percentComplete));
                             }
@@ -289,19 +293,29 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         const response = await XHRDownload(signedURL)                          
                         debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
                         
-                        
+                        let decryptedImageStr
                         if(keyVersion === '3') {
                             const buffer = Buffer.from(response, 'binary');
                             const downloadedBinaryString = buffer.toString('binary');
                             debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            const decryptedStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted string length: ", decryptedStr.length);
+                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
                 
                         } else if(keyVersion === '1') {
 
                         }
-                        dispatch(imageDownloaded());
-                        resolve();
+                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                            type: 'image/jpeg'
+                        });
+                        const img = new Image();
+                        img.src = link;
+                        const imgLoaded = ()=> {
+                            dispatch(imageDownloaded({img}));
+                            resolve();
+                        };
+
+                        img.addEventListener('load', imgLoaded);    
                     } catch(error) {
                         debugLog(debugOn, 'downloadFromS3 error: ', error)
                         reject(error);
@@ -743,7 +757,7 @@ const uploadAnImage = async (dispatch, state, file) => {
             exifOrientation = getOrientation(imageData);
             const imageDataInUint8Array = new Uint8Array(imageData);
             const blob = new Blob([imageDataInUint8Array], {
-	            type: 'image/jpeg'
+	            type: 'image/*'
 	        });
             let link = window.URL.createObjectURL(blob);
 

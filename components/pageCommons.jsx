@@ -49,7 +49,7 @@ export default function PageCommons() {
         let startingIndex;
         for(let i=0; i< imagePanelsState.length; i++) {
             const thisPanel = imagePanelsState[i];
-            if(thisPanel.status !== "Uploaded") continue;
+            if(thisPanel.status !== "Uploaded" &&  thisPanel.status !== "Downloaded") continue;
             const item = {};
             item.src = thisPanel.img.src;
             item.w = thisPanel.img.width;

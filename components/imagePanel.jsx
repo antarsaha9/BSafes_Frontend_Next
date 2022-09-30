@@ -39,13 +39,13 @@ export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) 
             <input ref={fileInputRef} type="file" multiple className="d-none editControl" id="image" />
             <Row className="">
                 <Col>
-                    {(panel.status === 'Uploaded')?
+                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
                         <div>
                             <Image src={panel.img.src} onClick={onClick} fluid/>
                         </div>
                         :""
                     }
-                    {(panel.status === "Uploading")?<ProgressBar className="marginTop20Px marginBottom0Px"  now={panel.progress} />:""}  
+                    {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar className="marginTop20Px marginBottom0Px"  now={panel.progress} />:""}  
                 </Col>
             </Row>
             <Row className="">                
