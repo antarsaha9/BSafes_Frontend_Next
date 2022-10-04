@@ -179,6 +179,8 @@ const pageSlice = createSlice({
             panel.img = action.payload.img;
             panel.s3Key = action.payload.s3Key;
             panel.size = action.payload.size;
+            panel.editorMode = "ReadOnly";
+            panel.words="";
             state.imageUploadIndex += 1;
         },
         downloadingImage: (state, action) => {
@@ -191,7 +193,13 @@ const pageSlice = createSlice({
             panel.status = "Downloaded";
             panel.progress = 100;
             panel.img = action.payload.img;
+            panel.editorMode = "ReadOnly";
+            panel.words="";
             state.imageDownloadIndex += 1;
+        },
+        writingImageWords: (state, action) => {
+            let panel = state.imagePanels[action.payload];
+            panel.editorMode = "Writing";
         }
 /*        uploadAnImage: (state, action) => {
             console.log("uploadAnImage");
@@ -221,7 +229,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded} = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -390,7 +398,7 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
             try {
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
-                encryptedTitle = encryptBinaryString(encodedTitle, state.page.itemKey);
+                encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
                 titleTokens = stringToEncryptedTokens(titleText, searchKey, searchIV);
             
                 if (state.isBlankPageItem) {
@@ -492,7 +500,7 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
             
             try {
                 encodedContent = forge.util.encodeUtf8(content);
-                encryptedContent = encryptBinaryString(encodedContent, state.page.itemKey);
+                encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
             
                 if (state.isBlankPageItem) {
                 } else {

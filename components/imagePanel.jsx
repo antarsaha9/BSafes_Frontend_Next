@@ -7,7 +7,9 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import Image from 'react-bootstrap/Image'
 
-export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) {
+import Editor from './editor'
+
+export default function ImagePanel({panelIndex, panel, onImageClicked, editorMode, onContentChanged, onPenClicked, editable=true}) {
 
     const fileInputRef = useRef(null);
 
@@ -26,12 +28,15 @@ export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) 
         }
         */
       console.log("handleUpload:", event.target.id)
-      callback(event.target.id);
       fileInputRef.current?.click();
     };   
 
-    const onClick = ()=> {
-        imageOnClick(panel.queueId);
+    const handleImageClicked = ()=> {
+        onImageClicked(panel.queueId);
+    }
+
+    const handlePenClicked = () => {
+        onPenClicked(panelIndex);
     }
 
     return (
@@ -41,35 +46,37 @@ export default function ImagePanel({panelIndex, panel, imageOnClick, callback}) 
                 <Col>
                     {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
                         <div>
-                            <Image src={panel.img.src} onClick={onClick} fluid/>
+                            <Image src={panel.img.src} onClick={handleImageClicked} fluid/>
                         </div>
                         :""
                     }
                     {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar className="marginTop20Px marginBottom0Px"  now={panel.progress} />:""}  
                 </Col>
             </Row>
-            <Row className="">                
+            {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
                 <div>
-                    <DropdownButton variant="link" align="end" title={
+                <Row>                
+                    <div>
+                        <DropdownButton variant="link" align="end" title={
                         <span>
                             <i className="text-dark fa fa-ellipsis-v" aria-hidden="true"></i>
                          </span>
                     }  className="pull-right" id="dropdown-menu-align-end">
                         <Dropdown.Item eventKey="1" className="changeImageBtn">Change Image</Dropdown.Item>
                         <Dropdown.Item eventKey="2" className="deleteImageBtn">Delete Image</Dropdown.Item>
-                    </DropdownButton>
+                        </DropdownButton>
                 
-                    <Button id={panelIndex} onClick={handleUpload} variant="link" className="text-dark btn btn-labeled pull-right">
+                        <Button id={panelIndex} onClick={handleUpload} variant="link" className="text-dark btn btn-labeled pull-right">
                         <i id={panelIndex} className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
-                    </Button>
-                    <Button variant="link" className="text-dark btnWrite btnWriteImageWords pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
-                </div>
-                <div>
-                    <div className="froala-editor imageWordsEditor">
-                        <p></p>
+                        </Button>
+                        <Button variant="link" onClick={handlePenClicked} className="text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
                     </div>
+                </Row> 
+                <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} />
+                <br />
                 </div>
-            </Row>		
+                :""
+            }		
         </div>    
     )   
 }

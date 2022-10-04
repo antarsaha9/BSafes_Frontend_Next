@@ -8,7 +8,7 @@ import jquery from "jquery"
 
 import { debugLog } from "../lib/helper";
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, editable=true}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = true;    
     const editorRef = useRef(null);
 
@@ -28,7 +28,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const saving = () => {
         let content = $(editorRef.current).froalaEditor('html.get');
         debugLog(debugOn, "editor content: ", content );
-        onContentChanged(editorId, content);
+        setTimeout(()=> {
+            onContentChanged(editorId, content);
+        }, 0) 
     }
 
     const readOnly = () => {
@@ -65,7 +67,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     return (
         <>
-            {   (editable)?
+            {  (showPen)&&(editable)?
                 
                 <Row>
                     <Col>
