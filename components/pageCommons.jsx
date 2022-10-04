@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { writingImageWords, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
@@ -38,12 +38,8 @@ export default function PageCommons() {
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
 
-    const imagePanelCallback = (index) => {
-        debugLog(debugOn, "imagePanelCallback: ", index);
-    }
-
-    const imageOnClick = (queueId) => {
-        debugLog(debugOn, "imageOnClick: ", queueId);
+    const onImageClicked = (queueId) => {
+        debugLog(debugOn, "onImageClicked: ", queueId);
 
         const slides = [];
         let startingIndex;
@@ -69,10 +65,6 @@ export default function PageCommons() {
         gallery.init();
     }
 
-    const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={index} panel={item} imageOnClick={imageOnClick} callback={imagePanelCallback} />
-    )
-
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         if(editorId === 'content'){
@@ -82,11 +74,8 @@ export default function PageCommons() {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
         } else {
-            const editorsCopy = [...imageTextEditors];
-            let thisEditor = editorsCopy.find((item) => item.editorId === editorId);
-            thisEditor.editorMode = "Writing";
-            setImageTextEditors(editorsCopy);
-            setEditingEditorId(editorId);
+            dispatch(writingImageWords(editorId));
+            setEditingEditorId(editorId.toString());
         }
     }
     
@@ -95,25 +84,17 @@ export default function PageCommons() {
         
         if(editingEditorId === "content") {
             if(content !== contentEditorContent) {
-                updateComponentAfterRender(()=> {
-                    dispatch(saveContentThunk(content));
-                });
+                dispatch(saveContentThunk(content));
             } else {
-                updateComponentAfterRender(()=> {
-                    setEditingEditorMode("ReadOnly");
-                    setEditingEditorId(null);
-                });
+                setEditingEditorMode("ReadOnly");
+                setEditingEditorId(null);
             }
         } else if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                updateComponentAfterRender(()=> {
-                    dispatch(saveTitleThunk(content, searchKey, searchIV));
-                });
+                dispatch(saveTitleThunk(content, searchKey, searchIV));
             } else {
-                updateComponentAfterRender(()=> {
-                    setEditingEditorMode("ReadOnly");
-                    setEditingEditorId(null);
-                });
+                setEditingEditorMode("ReadOnly");
+                setEditingEditorId(null);
             }
         } else {
             const editorsCopy = [...imageTextEditors];
@@ -124,6 +105,10 @@ export default function PageCommons() {
             setImageTextEditors(editorsCopy);
         }     
     }
+
+    const imagePanels = imagePanelsState.map((item, index) =>
+        <ImagePanel key={item.queueId} panelIndex={index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+    )
 
     const handleWrite = () =>{
         debugLog(debugOn, "handleWrite");
@@ -314,6 +299,7 @@ export default function PageCommons() {
                     {imagePanels}
                 </Col>
             </Row>
+            <br />
             <div className="attachments">
                 <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                 <Row>
