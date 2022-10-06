@@ -8,16 +8,22 @@ import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function ItemTopRows() {
-    const [tags, setTags] = useState([]);
+export default function ItemTopRows({ tags: initialTags = ['initial'] }) {
+    const [tags, setTags] = useState(initialTags);
+    const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
 
     const handleChange = (tags) => {
         setTags(tags);
+        if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
     }
 
-    useEffect(()=>{
-        setTags(["Banana"]);
-    }, [])
+    const handleSave = () => {
+        setShowTagsConfirmButton(false)
+    }
+    const handleDiscard = () => {
+        setTags(initialTags);
+        setShowTagsConfirmButton(false)
+    }
 
     return (
         <Container>
@@ -26,10 +32,10 @@ export default function ItemTopRows() {
                     <div className="pull-right">
                         <span>v.1</span><Button variant="link" className="text-dark" ><i className="fa fa-history" aria-hidden="true"></i></Button>
                         <Button variant="link" className="text-dark" >
-		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
-		        	    </Button>
+                            <i className="fa fa-share-square-o" aria-hidden="true"></i>
+                        </Button>
                     </div>
-                </Col>     
+                </Col>
             </Row>
 
             <Row>
@@ -40,12 +46,12 @@ export default function ItemTopRows() {
                     <TagsInput value={tags} onChange={handleChange} />
                 </Col>
             </Row>
-            <Row>
+            {showTagsConfirmButton && <Row>
                 <Col md="10">
-                    <Button variant="link" className="pull-right"><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
-                    <Button variant="link" className="pull-right"><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
+                    <Button variant="link" className="pull-right" onClick={handleDiscard}><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
+                    <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
-            </Row>
+            </Row>}
         </Container>
     )
 }
