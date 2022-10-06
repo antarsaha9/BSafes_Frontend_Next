@@ -112,6 +112,8 @@ const dataFetchedFunc = (state, action) => {
                 const queueId = 'd' + i;
                 const newPanel = {
                     queueId: queueId,
+                    s3Key: image.s3Key,
+                    size: image.size,
                     status: "WaitingForDownload",
                     progress: 0
                 }
@@ -197,10 +199,18 @@ const pageSlice = createSlice({
             panel.words="";
             state.imageDownloadIndex += 1;
         },
+        readOnlyImageWords: (state, action) => {
+            let panel = state.imagePanels[action.payload];
+            panel.editorMode = "ReadOnly";
+        },
         writingImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
             panel.editorMode = "Writing";
-        }
+        },
+        saveImageWords: (state, action) => {
+            let panel = state.imagePanels[action.payload];
+            panel.editorMode = "Saving";
+        },
 /*        uploadAnImage: (state, action) => {
             console.log("uploadAnImage");
             console.log("action payload: ", action.payload)
@@ -229,7 +239,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords} = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, readOnlyImageWords, writingImageWords, saveImageWords} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

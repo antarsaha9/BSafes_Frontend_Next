@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { writingImageWords, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { readOnlyImageWords, writingImageWords, saveImageWords, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
@@ -73,8 +73,9 @@ export default function PageCommons() {
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
-        } else {
-            dispatch(writingImageWords(editorId));
+        } else if(editorId.startsWith("image_")) {
+            const imageIndex = parseInt(editorId.split("_")[1]);
+            dispatch(writingImageWords(imageIndex));
             setEditingEditorId(editorId.toString());
         }
     }
@@ -96,18 +97,19 @@ export default function PageCommons() {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        } else {
-            const editorsCopy = [...imageTextEditors];
-            let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
-            thisEditor.editorContent = content;
-            thisEditor.editorMode = "ReadOnly";
-            setEditingEditorId("");
-            setImageTextEditors(editorsCopy);
+        } else if(editingEditorId.startsWith("image_")){
+            const imageIndex = parseInt(editingEditorId.split("_")[1]);
+            if(content !== imagePanelsState[imageIndex].words) {
+
+            } else {
+                dispatch(readOnlyImageWords(imageIndex));
+                setEditingEditorId(null);
+            }
         }     
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
     )
 
     const handleWrite = () =>{
@@ -125,6 +127,12 @@ export default function PageCommons() {
                 setTitleEditorMode(mode);
                 break;
             default:
+                if(editingEditorId.startsWith("image_")){
+                    const imageIndex = parseInt(editingEditorId.split("_")[1]);
+                    dispatch(saveImageWords(imageIndex));
+                } else {
+
+                }
         }
     }
 
@@ -271,7 +279,7 @@ export default function PageCommons() {
         <>
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
@@ -281,7 +289,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <div className="images">
