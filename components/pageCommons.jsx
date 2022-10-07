@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { readOnlyImageWords, writingImageWords, saveImageWords, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog, updateComponentAfterRender } from '../lib/helper';
 
 export default function PageCommons() {
@@ -75,8 +75,8 @@ export default function PageCommons() {
             setEditingEditorId("title");
         } else if(editorId.startsWith("image_")) {
             const imageIndex = parseInt(editorId.split("_")[1]);
-            dispatch(writingImageWords(imageIndex));
-            setEditingEditorId(editorId.toString());
+            dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
+            setEditingEditorId(editorId);
         }
     }
     
@@ -100,9 +100,9 @@ export default function PageCommons() {
         } else if(editingEditorId.startsWith("image_")){
             const imageIndex = parseInt(editingEditorId.split("_")[1]);
             if(content !== imagePanelsState[imageIndex].words) {
-
+                dispatch(saveImageWordsThunk({index: imageIndex, content: content}));
             } else {
-                dispatch(readOnlyImageWords(imageIndex));
+                dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}));
                 setEditingEditorId(null);
             }
         }     
@@ -129,7 +129,16 @@ export default function PageCommons() {
             default:
                 if(editingEditorId.startsWith("image_")){
                     const imageIndex = parseInt(editingEditorId.split("_")[1]);
-                    dispatch(saveImageWords(imageIndex));
+                    switch(mode) {
+                        case "Saving":
+                            dispatch(setImageWordsMode({index: imageIndex, mode: "Saving"}));
+                            break;
+                        case "ReadOnly":
+                            dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}))
+                            break;
+                        default:
+                    }
+                    
                 } else {
 
                 }

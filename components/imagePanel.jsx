@@ -55,34 +55,35 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
             </Row>
             {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
                 <div>
-                <Row>                
-                    <div>
-                        { editable?
-                            <DropdownButton variant="link" align="end" title={
+                    <Row>                
+                        <div>
+                            { editable?
+                                <DropdownButton variant="link" align="end" title={
                         <span>
                             <i className="text-dark fa fa-ellipsis-v" aria-hidden="true"></i>
                          </span>
                     }  className="pull-right" id="dropdown-menu-align-end">
                         <Dropdown.Item eventKey="1" className="changeImageBtn">Change Image</Dropdown.Item>
                         <Dropdown.Item eventKey="2" className="deleteImageBtn">Delete Image</Dropdown.Item>
-                            </DropdownButton>
-                            :""
-                        }
+                                </DropdownButton>
+                                :""
+                            }
                 
-                        <Button id={panelIndex} onClick={handleUpload} variant="link" className="text-dark btn btn-labeled pull-right">
+                            <Button id={panelIndex} onClick={handleUpload} variant="link" className="text-dark btn btn-labeled pull-right">
                         <i id={panelIndex} className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
-                        </Button>
-                        { editable?
-                            <Button variant="link" onClick={handlePenClicked} className="text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
-                            :""
-                        }
-                    </div>
-                </Row> 
-                <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} />
-                <br />
+                            </Button>
+                            { editable?
+                                <Button variant="link" onClick={handlePenClicked} className="text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                                :""
+                            }
+                        </div>
+                    </Row> 
+                    
                 </div>
                 :""
-            }		
+            }	
+            <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} />
+            <br />
         </div>    
     )   
 }

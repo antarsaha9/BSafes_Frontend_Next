@@ -108,13 +108,23 @@ const dataFetchedFunc = (state, action) => {
         if(item.images) {
             for(let i=0; i<item.images.length; i++) {
                 let image = item.images[i];
+                let encryptedWords,encodedWords, words;
                 state.imageDownloadQueue.push({s3Key: image.s3Key});
                 const queueId = 'd' + i;
+                if(image.words && image.words !== "") {
+                    encryptedWords = forge.util.decode64(image.words);
+                    encodedWords = decryptBinaryString(encryptedWords, state.itemKey);
+                    words = forge.util.decodeUtf8(encodedWords);
+                    words = DOMPurify.sanitize(words);
+                } else {
+                    words = "";
+                }
                 const newPanel = {
                     queueId: queueId,
                     s3Key: image.s3Key,
                     size: image.size,
                     status: "WaitingForDownload",
+                    words: words,
                     progress: 0
                 }
                 state.imagePanels.push(newPanel);
@@ -196,8 +206,11 @@ const pageSlice = createSlice({
             panel.progress = 100;
             panel.img = action.payload.img;
             panel.editorMode = "ReadOnly";
-            panel.words="";
             state.imageDownloadIndex += 1;
+        },
+        setImageWordsMode: (state, action) => {
+            let panel = state.imagePanels[action.payload.index];
+            panel.editorMode = action.payload.mode;
         },
         readOnlyImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
@@ -239,7 +252,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, readOnlyImageWords, writingImageWords, saveImageWords} = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -837,6 +850,43 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
 
         }
     });
+}
+
+export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Saving", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, encodedContent, encryptedContent, itemCopy, imagePanels;
+            const content = data.content;
+            const index = data.index;
+            state = getState().page;
+            
+            try {
+                
+                encodedContent = forge.util.encodeUtf8(content);
+                encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
+            
+                if (state.isBlankPageItem) {
+                } else {
+                    itemCopy = JSON.parse(JSON.stringify(state.itemCopy));
+                        
+                    itemCopy.images[index].words = forge.util.encode64(encryptedContent);
+                    itemCopy.update = "image words";
+            
+                    imagePanels = JSON.parse(JSON.stringify(state.imagePanels));
+                    for(let i=0; i< imagePanels.length; i++) {
+                        imagePanels[i].img = state.imagePanels[i].img;
+                    }
+                    imagePanels[index].words = content;
+                    
+                    await createNewItemVersionForPage(dispatch, itemCopy, {imagePanels});
+                    resolve();
+                }
+            } catch (error) {
+                reject();
+            }
+
+        });
+    })
 }
 
 /*export const addUploadImagesAsyncThunk = (data) => async (dispatch, getState) => {
