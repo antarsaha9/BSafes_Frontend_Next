@@ -11,7 +11,8 @@ import Workspace from '../components/workspace'
 export default function Safe() {
 
     const memberId = useSelector( state => state.auth.memberId );
-    const workspaceId = 'u:' + memberId;
+    const currentKeyVersion = 3;
+    const workspaceId = 'u:' + memberId + ':' + currentKeyVersion + ':' + '0'; ;
     return (
         <ContentPageLayout> 
             <Row className="justify-content-center">

@@ -1,5 +1,4 @@
-import { createSlice, current } from '@reduxjs/toolkit';
-import { startTransition } from 'react';
+import { createSlice} from '@reduxjs/toolkit';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
@@ -8,7 +7,6 @@ import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElement
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokens } from '../lib/crypto';
 import { createNewItemVersion } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
-import { createDispatchHook } from 'react-redux';
 
 const debugOn = true;
 
@@ -224,31 +222,6 @@ const pageSlice = createSlice({
             let panel = state.imagePanels[action.payload];
             panel.editorMode = "Saving";
         },
-/*        uploadAnImage: (state, action) => {
-            console.log("uploadAnImage");
-            console.log("action payload: ", action.payload)
-            console.log("imagePanelsIndex: ", current(state.imagePanelsIndex));
-            let i = state.imagePanelsIndex[action.payload];
-            console.log("index: ", i);
-            console.log("imagePanels :", current(state.imagePanels));
-            let thisPanel = state.imagePanels[i];
-            console.log("This panel: ", current(thisPanel));
-            state.imagePanels[i].status = "uploading";
-        },
-        doneUploadingAnImage: (state, action) => {
-            console.log("doneUploadingAnImage");
-            console.log("action payload: ", action.payload)
-            console.log("imagePanelsIndex: ", current(state.imagePanelsIndex));
-            let i = state.imagePanelsIndex[action.payload];
-            console.log("index: ", i);
-            console.log("imagePanels :", current(state.imagePanels));
-            let thisPanel = state.imagePanels[i];
-            console.log("This panel: ", current(thisPanel));
-            state.uploadQueue.shift();
-            console.log("uploadQueue: ", current(state.uploadQueue));
-            state.imagePanels[i].status = "displayed";
-        }
-*/
     }
 })
 
@@ -888,36 +861,6 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
         });
     })
 }
-
-/*export const addUploadImagesAsyncThunk = (data) => async (dispatch, getState) => {
-    const state = getState();
-    
-    console.log("Timeout");
-    let newPanels = data.files.map((file, index) => {
-        return {file: file, 
-        key: Date.now() + '-' + index,
-        status: "waitingForUpload"}
-    }) 
-    dispatch(addUploadImages({newPanels:newPanels, where: data.where}));
-
-    const uploadAnImageAsync = async () => {
-            await new Promise( resolve => setTimeout(resolve, 3000));
-    }
-
-    if(state.page.status === "idle") {
-        console.log("Page status is idle");
-
-        state = getState();
-
-        while(state.page.uploadQueue.length !== 0) {
-            let item = state.page.uploadQueue[0];
-            dispatch(uploadAnImage(item.key));
-            await uploadAnImageAsync();
-            dispatch(doneUploadingAnImage(item.key));
-            state = getState();
-        } 
-    }
-} */
 
 export const pageReducer = pageSlice.reducer;
 
