@@ -23,7 +23,7 @@ export default function Item() {
                 }}
             >
                 {/* Render custom icon here */}
-                <i className="fa fa-plus" aria-hidden="true"></i>
+                <i className="fa fa-plus text-dark" aria-hidden="true"></i>
                 {children}
             </a>
         )
@@ -41,7 +41,7 @@ export default function Item() {
                 }}
             >
                 {/* Render custom icon here */}
-                <i className="fa fa-sort" aria-hidden="true"></i>
+                <i className="fa fa-sort text-dark" aria-hidden="true"></i>
                 {children}
             </a>
         )
@@ -54,12 +54,12 @@ export default function Item() {
                 <Row className="">
                     <Col xs={9}>
                         <i className="fa fa-book fa-lg me-3" aria-hidden="true"></i><span></span>
-                        <h2>This is some text within a card body.</h2>
+                        This is some text within a card body.
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
                             <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                <Form.Check type="checkbox"/>
+                                <Form.Check className="" type="checkbox"/>
                             </Form.Group>
 
                             <Dropdown align="end" className="justify-content-end">

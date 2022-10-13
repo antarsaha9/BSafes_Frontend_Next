@@ -15,17 +15,20 @@ import NewItemModal from './newItemModal'
 import Item from './item'
 
 import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
+import { initWorkspace, listItemsThunk } from '../reduxStore/workspaceSlice';
 import { debugLog } from '../lib/helper'
 
-export default function Workspace({workspaceId}) {
+export default function Workspace() {
     const debugOn = true;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
+    const dispatch = useDispatch();
     
-    const expandedKey = useSelector( state => state.auth.expandedKey );
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-    
+    const workspaceId = useSelector( state => state.workspace.currentSpace);
+    const workspaceKey = useSelector( state => state.workspace.workspaceKey);
+    const searchKey = useSelector( state => state.workspace.searchKey);
+    const searchIV = useSelector( state => state.workspace.searchIV);
+
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
@@ -48,11 +51,17 @@ export default function Workspace({workspaceId}) {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, expandedKey, searchKey, searchIV );
+
+        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, workspaceKey, searchKey, searchIV );
         const link = getItemLink(item);
 
         router.push(link);
     }
+
+    useEffect(() => {
+        if(!workspaceId) return;
+        dispatch(listItemsThunk({pageNumber: 1}));
+    }, [workspaceId]);
 
     return (
         <Container>
@@ -62,7 +71,7 @@ export default function Workspace({workspaceId}) {
                         size="lg" type="text"
                     />
                     <Button variant="link">
-                        <i id="1" className="fa fa-search fa-lg" aria-hidden="true"></i>
+                        <i id="1" className="fa fa-search fa-lg text-dark" aria-hidden="true"></i>
                     </Button>
                 </InputGroup>
             </Row>
