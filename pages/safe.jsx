@@ -8,7 +8,7 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Workspace from '../components/workspace'
 import { useEffect } from 'react';
 
-import { initWorkspace } from '../reduxStore/workspaceSlice';
+import { initWorkspace } from '../reduxStore/containerSlice';
 
 export default function Safe() {
     const dispatch = useDispatch();

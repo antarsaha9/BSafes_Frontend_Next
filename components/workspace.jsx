@@ -1,21 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
-import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
-import Modal from 'react-bootstrap/Modal'
 
 import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import Item from './item'
 
 import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
-import { initWorkspace, listItemsThunk } from '../reduxStore/workspaceSlice';
+import { listItemsThunk } from '../reduxStore/containerSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace() {
@@ -24,15 +22,21 @@ export default function Workspace() {
     const router = useRouter();
     const dispatch = useDispatch();
     
-    const workspaceId = useSelector( state => state.workspace.currentSpace);
-    const workspaceKey = useSelector( state => state.workspace.workspaceKey);
-    const searchKey = useSelector( state => state.workspace.searchKey);
-    const searchIV = useSelector( state => state.workspace.searchIV);
+    const workspaceId = useSelector( state => state.container.currentSpace);
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const searchKey = useSelector( state => state.container.searchKey);
+    const searchIV = useSelector( state => state.container.searchIV);
+
+    const itemsState = useSelector( state => state.container.items);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
+
+    const items = itemsState.map( (item, index) => 
+        <Item key={index} item={item}/>
+    );
 
     const addAnItem = (itemType, addAction, targetItem = null) => {
     
@@ -42,8 +46,6 @@ export default function Workspace() {
         setShowNewItemModal(true);
         
     }
-
- 
 
     const handleClose = () => setShowNewItemModal(false);
 
@@ -80,11 +82,9 @@ export default function Workspace() {
             </Row>
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
-            <Row className="mt-5 justify-content-center">     
-                <Col>
-                    <Item />
-                </Col>   		
-            </Row>            
+            <br />
+            <br />
+            {items}
         </Container>
     )
 

@@ -1,7 +1,4 @@
 import { createSlice} from '@reduxjs/toolkit';
-const forge = require('node-forge');
-const DOMPurify = require('dompurify');
-const axios = require('axios');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
@@ -23,8 +20,8 @@ const initialState = {
     items:[],
 };
 
-const workspaceSlice = createSlice({
-    name: "workspace",
+const containerSlice = createSlice({
+    name: "container",
     initialState: initialState,
     reducers: { 
         activityChanged: (state, action) => {
@@ -54,7 +51,7 @@ const workspaceSlice = createSlice({
     }
 })
 
-export const {activityChanged, initWorkspace, pageLoaded} = workspaceSlice.actions;
+export const {activityChanged, initWorkspace, pageLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -69,7 +66,7 @@ const newActivity = async (dispatch, type, activity) => {
 export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            const state = getState().workspace;
+            const state = getState().container;
             const pageNumber = data.pageNumber;
             PostCall({
                 api:'/memberAPI/listItems',
@@ -97,6 +94,6 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const workspaceReducer = workspaceSlice.reducer;
+export const containerReducer = containerSlice.reducer;
 
-export default workspaceSlice;
+export default containerSlice;

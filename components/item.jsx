@@ -1,17 +1,24 @@
 import React from 'react'
+import { useRouter } from 'next/router';
+
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
-import Button from 'react-bootstrap/Button'
 import ButtonGroup from 'react-bootstrap/ButtonGroup'
-import DropdownButton from 'react-bootstrap/DropdownButton'
 import Dropdown from 'react-bootstrap/Dropdown'
 import Form from 'react-bootstrap/Form'
 
+import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function Item() {
+export default function Item({item}) {
+    const router = useRouter();
+
+    let temp = document.createElement('span');
+    temp.innerHTML = item.title;
+    const itemText = temp.textContent || temp.innerText;
+
     function plusButton({ children, onClick }, ref) {
         return (
             <a
@@ -48,13 +55,26 @@ export default function Item() {
     }
     const sortToggle = React.forwardRef(sortButton);
 
+    const cardClicked = () => {
+        const link = getItemLink(item);
+
+        router.push(link);
+    }
+
     return (
         <>
-            <Card body className={`${BSafesStyle.safeItem}`}>
+            <Card body className={`${BSafesStyle.safeItem}`} onClick={cardClicked}>
                 <Row className="">
                     <Col xs={9}>
-                        <i className="fa fa-book fa-lg me-3" aria-hidden="true"></i><span></span>
-                        This is some text within a card body.
+                        {item.itemPack.type === 'P'?
+                            <div>
+                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i><span></span>
+                                </span>
+                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
+                            </div>
+                            :""
+                        }
+                                
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
