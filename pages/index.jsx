@@ -18,6 +18,9 @@ import { preflightAsyncThunk } from '../reduxStore/auth';
 export default function Home() {
   const debugOn = true;
 
+  const host = process.env.NEXT_PUBLIC_DB_HOST;
+  debugLog(debugOn, `host: ${host}`);
+
   const dispatch = useDispatch();
   const scriptsLoaded = useSelector(state => state.scripts.done);
   const isLoggedIn = useSelector(state => state.auth.isLoggedIn);

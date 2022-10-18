@@ -5,9 +5,13 @@ import { debugLog } from '../lib/helper';
 const debugOn = false;
 
 const scripts = [
-    {id: "froala_editor.min.js",
-     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/froala_editor.min.js",
-     loaded: false,
+    {id: "bsafesAPI.js",
+     src:"/js/froalaEditorJS/bsafesAPI.js",
+     loaded: false
+    },
+    {id: "froalaEditor.js",
+     src:"https://www.imareader.com/javascripts/froalaEditorJS/froala_editor.js",
+     loaded: false
     },
     {id: "codemirror.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.3.0/codemirror.min.js",
@@ -55,6 +59,14 @@ const scripts = [
     },
     {id: "font_size.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/font_size.min.js",
+     loaded: false
+    },
+    {id: "froalaEncryptImage.js",
+     src:"/js/froalaEditorJS/froalaEncryptImage.js",
+     loaded: false
+    },
+    {id: "froalaEncryptVideo.js",
+     src:"/js/froalaEditorJS/froalaEncryptVideo.js",
      loaded: false
     },
     {id: "photoswipe.min.js",
