@@ -5,12 +5,12 @@ import { debugLog } from '../lib/helper';
 const debugOn = false;
 
 const scripts = [
-    {id: "bsafesAPI.js",
-     src:"/js/froalaEditorJS/bsafesAPI.js",
+    {id: "bsafesAPIHooks.js",
+     src:"/js/froalaEditorJS/bsafesAPIHooks.js",
      loaded: false
     },
     {id: "froalaEditor.js",
-     src:"https://www.imareader.com/javascripts/froalaEditorJS/froala_editor.js",
+     src:"/js/froalaEditorJS/froala_editor.js",
      loaded: false
     },
     {id: "codemirror.min.js",

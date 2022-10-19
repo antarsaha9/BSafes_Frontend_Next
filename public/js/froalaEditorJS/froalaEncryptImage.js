@@ -953,34 +953,19 @@
 
         function uploadToS3(data, fn) {
 					var signedURL;
-					var signedGalleryURL;
-					var signedThumbnailURL;
-
-					var prepareGalleryImgDeferred = $.Deferred();
-					var prepareGalleryImgPromise;
-					var prepareThumbnailImgDeferred = $.Deferred();
-					var prepareThumbnailImgPromise = prepareThumbnailImgDeferred.promise();
-					var uploadGalleryImgDeferred = $.Deferred();
-					var uploadGalleryImgPromise = uploadGalleryImgDeferred.promise();
-					var uploadThumbnailImgDeferred = $.Deferred();
-					var uploadThumbnailImgPromise = uploadThumbnailImgDeferred.promise();
-
 					var totalUploadedSize = 0;
 				
- 		      function preS3Upload(fn) {
-          	$.post('/memberAPI/preS3Upload', {
-							antiCSRF: bSafesCommonUIObj.antiCSRF
-          	}, function(data, textStatus, jQxhr) {
-            	if(data.status === 'ok') {
-              	s3Key = data.s3Key;
-              	signedURL = data.signedURL;
-								signedGalleryURL = data.signedGalleryURL;
-								signedThumbnailURL = data.signedThumbnailURL;
-              	fn(null);
-            	} else {
-              	fn(data.error);
-            	}
-          	}, 'json');
+ 		      async function callPreS3Upload(fn) {
+            const data = await preS3Upload();
+
+            if(data.status === 'ok') {
+              s3Key = data.s3Key;
+              signedURL = data.signedURL;
+              fn(null);
+            } else {
+              fn(data.error);
+            }
+
         	};
 	
 			  	function _uploadProgress (e) {
@@ -988,103 +973,30 @@
         			var complete = (e.loaded / e.total * 100 | 0);
         			_setProgressMessage(editor.language.translate('Uploading'), complete);
       			}
-
-						if(!prepareGalleryImgPromise) {
-							prepareGalleryImgPromise = prepareGalleryImgDeferred.promise();
-							_downscaleImgAndEncryptInUint8Array(480, prepareGalleryImgDeferred);
-								
-							prepareGalleryImgPromise.done(function(data){
-              	$.ajax({
-                	type: 'PUT',
-                	url: signedGalleryURL,
-                	// Content type must much with the parameter you signed your URL with
-                	contentType: 'binary/octet-stream',
-                	// this flag is important, if not set, it will try to send data as a form
-                	processData: false,
-                	// the actual data is sent raw
-                	data: data,
-                	xhr: function() {
-                  	var myXhr = $.ajaxSettings.xhr();
-                  	if(myXhr.upload){
-                    	myXhr.upload.addEventListener('progress', function(e){
-												if (e.lengthComputable) {
-					              	var complete = (e.loaded / e.total * 100 | 0);
-													console.log('Uploading Chunk', complete);
-            						}
-											}, false);
-                  	}
-                  	return myXhr;
-                	}
-              	})
-              	.success(function() {
-									console.log('Gallery uploading succeeded');
-									uploadGalleryImgDeferred.resolve();
-              	})
-              	.error(function(jqXHR, textStatus, errorThrown) {
-									console.log('Gallery uploading failed');
-									uploadGalleryImgDeferred.reject();
-              	});
-
-								prepareThumbnailImgPromise = prepareThumbnailImgDeferred.promise();
-								_downscaleImgAndEncryptInUint8Array(84, prepareThumbnailImgDeferred);
-								prepareThumbnailImgPromise.done(function(data){
-									$.ajax({
-                  	type: 'PUT',
-                  	url: signedThumbnailURL,
-                  	// Content type must much with the parameter you signed your URL with
-                  	contentType: 'binary/octet-stream',
-                  	// this flag is important, if not set, it will try to send data as a form
-                  	processData: false,
-                  	// the actual data is sent raw
-                  	data: data,
-                  	xhr: function() {
-                    	var myXhr = $.ajaxSettings.xhr();
-                    	if(myXhr.upload){
-                      	myXhr.upload.addEventListener('progress', function(e){
-                        	if (e.lengthComputable) {
-                          	var complete = (e.loaded / e.total * 100 | 0);
-                          	console.log('Uploading Thumbnail', complete);
-                        	}
-                      	}, false);
-                    	}
-                    	return myXhr;
-                  	}
-                	})
-                	.success(function() {
-                  	console.log('Thumbnail uploading succeeded');
-                  	uploadThumbnailImgDeferred.resolve();
-                	})
-                	.error(function(jqXHR, textStatus, errorThrown) {
-                  	console.log('Thumbnail uploading failed');
-                  	uploadThumbnailImgDeferred.reject();
-                	});
-								});
-							});
-						}
     			};
 
-					function _downscaleImgAndEncryptInUint8Array(size, deferred) {
-						_downScaleImage(imgDOM, exifOrientation, size, function(err, binaryString){
-							if(err) {
-								console.log(err);
-								deferred.reject();
-							} else {
-								encryptDataInBinaryString(binaryString, function(err, encryptedImageDataInUint8Array){
-									if(err) {
-                   	deferred.reject();
-									} else {
-                    deferred.resolve(encryptedImageDataInUint8Array);
-                  }
-								});
-							}
-						});
-					};
-
-          preS3Upload(function(err) {
+          callPreS3Upload(async function(err) {
             if(err) {
               fn(err);
             } else {
-							totalUploadedSize += data.byteLength;
+							totalUploadedSize += data.length;
+
+              try {
+                const result = await uploadData(data, signedURL, _uploadProgress);
+
+                $img.addClass('bSafesImage');
+                var id = s3Key + "&" + imageWidth + "x" + imageHeight + "&"+ totalUploadedSize;
+                $img.attr('id', id);
+                id = $img.attr('id');
+								_setProgressMessage(editor.language.translate('Processing'));
+
+								fn(null);
+              } catch (error) {
+                alert(error);
+                console.log(error);
+                fn(error);
+              }
+              /*
               $.ajax({
                 type: 'PUT',
                 url: signedURL,
@@ -1118,40 +1030,33 @@
                 alert(errorThrown);
                 console.log(errorThrown);
                 fn(errorThrown);
-              });
+              });*/
             }
           });
         };
 
-        function postS3Upload(fn) {
-          var expandedKey;
+        function callPostS3Upload(fn) {
+          let expandedKey;
 
-          bSafesPreflight(function(err, key) {
+          bSafesPreflight(async function(err, key) {
             if(err) {
               alert(err);
             } else {
               expandedKey = key;
-              var envelopeIV = forge.random.getBytesSync(16);
-							var ivEnvelopeIV = forge.random.getBytesSync(16);
-              var keyEnvelope = encryptBinaryString(itemKey, expandedKey, envelopeIV);
-              var ivEnvelope = encryptBinaryString(itemIV, expandedKey, ivEnvelopeIV);
-
-              $.post('/memberAPI/postS3Upload', {
+              var keyEnvelope = encryptBinaryString(itemKey, expandedKey);
+              const s3Object = {
                 "id": s3Key,
 								"itemId": itemId,
-                "keyEnvelope": keyEnvelope,
-                "ivEnvelope": ivEnvelope,
-                "envelopeIV": envelopeIV,
-								"ivEnvelopeIV": ivEnvelopeIV, 
+                "keyEnvelope": keyEnvelope, 
                 "size": s3ObjectSize,
-								antiCSRF: bSafesCommonUIObj.antiCSRF
-              }, function(data, textStatus, jQxhr) {
-                if(data.status === 'ok') {
-                  fn(null);
-                } else {
-                  fn(data.error);
-                }
-              }, 'json');
+              }; 
+              
+              try {
+                await postS3Upload(s3Object);
+                fn(null);
+              } catch(error){
+                fn(error);
+              }
             }
           });
         };
@@ -1161,11 +1066,8 @@
           var binaryStr = data;
           console.log('encrypting', binaryStr.length);
           var encryptedStr = encryptLargeBinaryString(binaryStr, itemKey, itemIV);
-          //console.log('decrypting', encryptedStr.length);
-          //var decryptedStr = decryptLargeBinaryString(encryptedStr, itemKey, itemIV);
-          var uint8Array = convertBinaryStringToUint8Array(encryptedStr);
-          var time2 = Date.now();
-          fn(null, uint8Array);
+
+          fn(null, encryptedStr);
         };
 
         if ($img.next().is('br')) {
@@ -1182,15 +1084,16 @@
         editor.edit.off();
 	
 	      setTimeout(function() {
-          encryptDataInBinaryString(imageDataInBinaryString, function(err, encryptedImageDataInUint8Array) {
+          encryptDataInBinaryString(imageDataInBinaryString, function(err, encryptedImageDataInBinaryString) {
             if(err) {
             } else {
-              uploadToS3(encryptedImageDataInUint8Array, function(err) {
+              uploadToS3(encryptedImageDataInBinaryString, function(err) {
                 if(err) {
                   alert('uploadToS3:' + err);
                 } else {
-                  s3ObjectSize = encryptedImageDataInUint8Array.byteLength;
-                  postS3Upload(function(err) {
+                  s3ObjectSize = encryptedImageDataInBinaryString.length;
+                  
+                  callPostS3Upload(function(err) {
                     if(err) {
                       alert(err);
                     } else {
@@ -1240,7 +1143,7 @@
 
 				var imageDataInUint8Array = new Uint8Array(imageData);
 				var blob = new Blob([imageDataInUint8Array], {
-          type: 'image/jpeg'});
+          type: 'image/*'});
 				console.log('blob', blob.size);
 				// Get local image link.
         link = window.URL.createObjectURL(blob);

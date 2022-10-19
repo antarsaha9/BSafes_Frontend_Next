@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from 'react-redux'
+import { useSelector } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -7,14 +7,17 @@ import Button from 'react-bootstrap/Button';
 
 import jquery from "jquery"
 
+const axios = require('axios');
+const forge = require('node-forge');
+
 import { debugLog, PostCall } from "../lib/helper";
-import { preflightAsyncThunk } from "../reduxStore/auth";
+import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
+import { rotateImage } from '../lib/wnImage';
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = true;    
     const editorRef = useRef(null);
     const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
-    const dispatch = useDispatch();
 
     const scriptsLoaded = useSelector(state => state.scripts.done);
 
@@ -117,14 +120,20 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     useEffect(()=>{
         if(!(scriptsLoaded && window)) return;
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
-        window.bsafesFroala.bSafesPreflight = bSafesPreflight;
+        window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
+        window.bsafesFroala.rotateImage = rotateImageHook;
+        window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
+        window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
+        window.bsafesFroala.preS3Upload = preS3UploadHook;
+        window.bsafesFroala.postS3Upload = postS3UploadHook;
+        window.bsafesFroala.uploadData = uploadDataHook;
     }, [scriptsLoaded])
 
     const handlePenClicked = () => {
         onPenClicked(editorId);
     }
 
-    const bSafesPreflight = (fn) => {
+    const bSafesPreflightHook = (fn) => {
         debugLog(debugOn, "bSafesPreflight");
         PostCall({
             api:'/memberAPI/preflight'
@@ -141,6 +150,89 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             debugLog(debugOn, "woo... bSafesPreflight failed.")
             fn(error);
         })
+    }
+
+    const rotateImageHook = async (link, exifOrientation, callback) => {
+        try {
+            const result = await rotateImage(link, exifOrientation);
+            debugLog(debugOn, 'Rotation done');
+            callback(null, result.blob, result.byteString);
+            
+        } catch(error) {
+            debugLog(debugOn, 'rotateImage error:', error)
+            callback(error);
+        }
+    }
+
+    const encryptBinaryStringHook = (binaryString, key) => {
+        return encryptBinaryString(binaryString, key);
+    }
+
+    const encryptLargeBinaryStringHook = (binaryString, key) => {
+        return encryptLargeBinaryString(binaryString, key);
+    }
+
+    const preS3UploadHook = () => {
+        return new Promise( async (resolve, reject) => {
+            PostCall({
+                api:'/memberAPI/preS3Upload',
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {  
+                    const s3Key = data.s3Key;
+                    const signedURL = data.signedURL;
+                    const signedGalleryURL = data.signedGalleryURL;
+                    const signedThumbnailURL = data.signedThumbnailURL;                                 
+                    resolve({status:"ok", s3Key, signedURL, signedGalleryURL, signedThumbnailURL});
+                } else {
+                    debugLog(debugOn, "preS3Upload failed: ", data.error);
+                    reject({status:"error", error:data.error});
+                }
+            }).catch( error => {
+                debugLog(debugOn, "preS3Upload failed: ", error)
+                reject({status:"error", error});
+            })
+        });
+    }
+
+    const postS3UploadHook = (s3Object) => {
+        return new Promise( async (resolve, reject) => {
+            s3Object.keyEnvelope = forge.util.encode64(s3Object.keyEnvelope);
+            PostCall({
+                api:'/memberAPI/postS3Upload',
+                body: s3Object
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    resolve({status:"ok"});
+                } else {
+                    debugLog(debugOn, "postS3Upload failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "postS3Upload failed: ", error)
+                reject(error);
+            })
+        });
+    }
+
+    const uploadDataHook = (data, signedURL, onProgress) => {
+        return new Promise( async (resolve, reject) => {
+            const config = {
+                onUploadProgress: async (progressEvent) => {
+                    onProgress(progressEvent);
+                },
+                headers: {
+                    'Content-Type': 'binary/octet-stream'
+                }
+            }
+            try {
+                const result = await axios.put(signedURL, Buffer.from(data, 'binary'), config);  
+                resolve(result);
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     return (
