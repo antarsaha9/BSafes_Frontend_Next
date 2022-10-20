@@ -495,7 +495,7 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
 	        const s3ObjectsSize = result.s3ObjectsSize;
             
             try {
-                encodedContent = forge.util.encodeUtf8(content);
+                encodedContent = forge.util.encodeUtf8(result.content);
                 encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
             
                 if (state.isBlankPageItem) {

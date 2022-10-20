@@ -247,7 +247,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 
                 :<></>
             }
-            <Row>
+            <Row className="fr-element fr-view">
                 <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                 </div>
             </Row>
