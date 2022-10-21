@@ -25,11 +25,14 @@ const initialState = {
     title: null,
     titleText: null,
     content:null,
+    contentImagesDownloadQueue: [],
+    contentImagedDownloadIndex: 0,
+    lastConentImageDownloaded: null,
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
     imageDownloadQueue:[],
-    imageDownloadIndex:0
+    imageDownloadIndex:0,
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -94,10 +97,21 @@ const dataFetchedFunc = (state, action) => {
 	        try {
 	            const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
 	            let content = forge.util.decodeUtf8(encodedContent);
-
-	            content = DOMPurify.sanitize(content);
-                             
+                content = DOMPurify.sanitize(content);            
                 state.content = content;
+
+                const tempElement = document.createElement("div");
+                tempElement.innerHTML = content;
+                const images = tempElement.querySelectorAll(".bSafesImage");
+
+                images.forEach((item) => {
+                    const id = item.id;
+                    const idParts = id.split('&');
+                    const s3Key = idParts[0];
+                    
+                    state.contentImagesDownloadQueue.push({s3Key});
+                });
+
 	        } catch (err) {
 	            state.error = err;
 	        }  	                            
@@ -239,6 +253,17 @@ const newActivity = async (dispatch, type, activity) => {
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
+        
+        const startDownloadingContentImages = async () => {
+            let state = getState().page; 
+            while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
+                const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+                //await downloadAnImage(image); 
+                
+                state = getState().page; 
+            }
+        }
+
         const startDownloadingImages = async () => {
             let state = getState().page; 
             const downloadAnImage = (image) => {
@@ -345,7 +370,10 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     if(result.item) {
                         dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
                         resolve();
-                        const state = getState().page;                        
+                        const state = getState().page;    
+                        if(state.contentImagesDownloadQueue.length) {
+                            //startDownloadingContentImages();
+                        }                    
                         if(state.imageDownloadQueue.length) {
                             startDownloadingImages();
                         }

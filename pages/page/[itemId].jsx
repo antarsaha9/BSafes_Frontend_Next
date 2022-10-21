@@ -13,7 +13,7 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { getPageItemThunk } from "../../reduxStore/pageSlice";
+import { initPageState, getPageItemThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {

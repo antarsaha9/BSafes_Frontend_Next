@@ -57,17 +57,16 @@ export default function Item({item}) {
 
     const cardClicked = () => {
         const link = getItemLink(item);
-
-        router.push(link);
+        window.location = link;
     }
 
     return (
         <>
-            <Card body className={`${BSafesStyle.safeItem}`} onClick={cardClicked}>
+            <Card body className={`${BSafesStyle.safeItem}`} >
                 <Row className="">
                     <Col xs={9}>
                         {item.itemPack.type === 'P'?
-                            <div>
+                            <div onClick={cardClicked}>
                                 <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i><span></span>
                                 </span>
                                 <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />

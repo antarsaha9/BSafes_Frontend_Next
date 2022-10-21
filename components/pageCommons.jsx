@@ -234,6 +234,13 @@ export default function PageCommons() {
         }
     }, [activity]);
 
+    useEffect(()=>{
+        if(contentEditorContent) {
+            const embeddedImages = document.getElementsByClassName('bSafesImage');
+            embeddedImages[0].src = "https://cdn.pixabay.com/photo/2014/12/16/22/25/woman-570883_960_720.jpg";
+        }
+    }, [contentEditorContent])
+
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
