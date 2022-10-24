@@ -46,7 +46,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                 <Col>
                     {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
                         <div>
-                            <Image src={panel.img.src} onClick={handleImageClicked} fluid/>
+                            <Image src={panel.src} onClick={handleImageClicked} fluid/>
                         </div>
                         :""
                     }

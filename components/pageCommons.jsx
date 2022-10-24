@@ -11,8 +11,8 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
-import { debugLog, updateComponentAfterRender } from '../lib/helper';
+import { updateContentImagesDisplayIndex, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
     const debugOn = true;
@@ -28,6 +28,9 @@ export default function PageCommons() {
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [editingEditorId, setEditingEditorId] = useState(null);
+
+    const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
+    const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const pswpRef = useRef(null);
@@ -234,12 +237,64 @@ export default function PageCommons() {
         }
     }, [activity]);
 
-    useEffect(()=>{
-        if(contentEditorContent) {
-            const embeddedImages = document.getElementsByClassName('bSafesImage');
-            embeddedImages[0].src = "https://cdn.pixabay.com/photo/2014/12/16/22/25/woman-570883_960_720.jpg";
+    useEffect(()=> {
+        let i;
+        for(i = contentImagesDisplayIndex; i < contentImagesDownloadQueue.length; i ++ ) {
+            const image = contentImagesDownloadQueue[i];
+            const imageElement = document.getElementById(image.id);
+            if(image.status === "Downloading") {
+                if(imageElement.classList.contains('Downloading')){
+
+                } else {
+                    const imageElementClone = imageElement.cloneNode(true);
+                    const downloadingContainer = document.createElement('div');
+                    imageElementClone.classList.add('Downloading');
+                    downloadingContainer.style.position = 'relative';
+                    downloadingContainer.className = 'downloadingImageContainer';
+                    downloadingContainer.appendChild(imageElementClone);
+                    imageElement.replaceWith(downloadingContainer);   
+                    
+                    const progressElement = document.createElement('div');
+                    progressElement.className = 'progress';
+                    progressElement.innerHTML = '<div class="progress-bar" style="width: 60%;"></div>';
+                    downloadingContainer.appendChild(progressElement);
+                }
+                /*
+                const contentImageDownloadingProgressElement = document.getElementById("contentImageDownloadingProgress");
+                debugLog(debugOn, "content image downloading progress: ", image.progress);
+                if(!contentImageDownloadingProgressElement) {
+                    const progressElement = document.createComment('div');
+                    progressElement.className = 'progress';
+                    progressElement.innerHTML = '<div class="progress-bar" style="width: 60%;"></div>';
+                    imageElement.appendChild(progressElement);
+                }*/
+                break;
+            }
+            if(image.status !== "Downloaded") break;
+            
+            imageElement.src = image.src;
         }
-    }, [contentEditorContent])
+        if(i !== contentImagesDisplayIndex) {
+            dispatch(updateContentImagesDisplayIndex(i));
+        }
+
+    }, [contentImagesDownloadQueue]);
+
+    useEffect(()=>{
+        if(contentEditorMode === "ReadOnly"){
+            debugLog(debugOn, "ReadOnly");
+
+            contentImagesDownloadQueue.forEach(image => {
+                if(image.status === "Downloaded") {
+                    const imageElement = document.getElementById(image.id);
+                    if(imageElement.src.startsWith('http')) {
+                        imageElement.src = image.src;
+                    }
+                }
+            });
+            
+        }
+    }, [contentEditorMode]);
 
     const photoSwipeGallery = () => {
         return (
