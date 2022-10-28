@@ -238,44 +238,51 @@ export default function PageCommons() {
     }, [activity]);
 
     useEffect(()=> {
-        let i;
-        for(i = contentImagesDisplayIndex; i < contentImagesDownloadQueue.length; i ++ ) {
-            const image = contentImagesDownloadQueue[i];
-            const imageElement = document.getElementById(image.id);
+        let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;
+        let i = contentImagesDisplayIndex;
+        if(i < contentImagesDownloadQueue.length) {
+            image = contentImagesDownloadQueue[i];
+            imageElement = document.getElementById(image.id);
             if(image.status === "Downloading") {
-                if(imageElement.classList.contains('Downloading')){
-
+                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+                progressElement = document.getElementById('progress_' + image.id);
+                if(contentImageContainer){
+                    if(!progressElement) {
+                        progressElement = document.createElement('div');
+                        progressElement.className = 'progress';
+                        progressElement.id = 'progress_' + image.id;
+                        progressElement.style.width = '250px';
+                        progressElement.style.margin = 'auto';
+                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
+                        contentImageContainer.appendChild(progressElement);
+                    }
+                    progressBarElement = document.getElementById('progressBar_' + image.id);
+                    if(progressBarElement) progressBarElement.style.width = image.progress + '%';
                 } else {
-                    const imageElementClone = imageElement.cloneNode(true);
-                    const downloadingContainer = document.createElement('div');
-                    imageElementClone.classList.add('Downloading');
-                    downloadingContainer.style.position = 'relative';
-                    downloadingContainer.className = 'downloadingImageContainer';
-                    downloadingContainer.appendChild(imageElementClone);
-                    imageElement.replaceWith(downloadingContainer);   
+                    imageElementClone = imageElement.cloneNode(true);
+                    contentImageContainer = document.createElement('div');
+                    contentImageContainer.style.position = 'relative';
+                
+                    contentImageContainer.id = 'imageContainer_' + image.id;
+                    contentImageContainer.appendChild(imageElementClone);
+                    imageElement.replaceWith(contentImageContainer);   
                     
-                    const progressElement = document.createElement('div');
+                    progressElement = document.createElement('div');
                     progressElement.className = 'progress';
-                    progressElement.innerHTML = '<div class="progress-bar" style="width: 60%;"></div>';
-                    downloadingContainer.appendChild(progressElement);
+                    progressElement.id = 'progress_' + image.id;
+                    progressElement.style.width = '250px';
+                    progressElement.style.margin = 'auto';
+                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
+                    contentImageContainer.appendChild(progressElement);
                 }
-                /*
-                const contentImageDownloadingProgressElement = document.getElementById("contentImageDownloadingProgress");
-                debugLog(debugOn, "content image downloading progress: ", image.progress);
-                if(!contentImageDownloadingProgressElement) {
-                    const progressElement = document.createComment('div');
-                    progressElement.className = 'progress';
-                    progressElement.innerHTML = '<div class="progress-bar" style="width: 60%;"></div>';
-                    imageElement.appendChild(progressElement);
-                }*/
-                break;
-            }
-            if(image.status !== "Downloaded") break;
-            
-            imageElement.src = image.src;
-        }
-        if(i !== contentImagesDisplayIndex) {
-            dispatch(updateContentImagesDisplayIndex(i));
+            } else if(image.status === "Downloaded") {
+                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+                progressElement = document.getElementById('progress_' + image.id);
+                if(progressElement) contentImageContainer.removeChild(progressElement);
+                imageElement = document.getElementById(image.id);
+                imageElement.src = image.src;
+                dispatch(updateContentImagesDisplayIndex(i+1));
+            }          
         }
 
     }, [contentImagesDownloadQueue]);
@@ -287,7 +294,7 @@ export default function PageCommons() {
             contentImagesDownloadQueue.forEach(image => {
                 if(image.status === "Downloaded") {
                     const imageElement = document.getElementById(image.id);
-                    if(imageElement.src.startsWith('http')) {
+                    if(imageElement && imageElement.src.startsWith('http')) {
                         imageElement.src = image.src;
                     }
                 }

@@ -10,7 +10,7 @@ import jquery from "jquery"
 const axios = require('axios');
 const forge = require('node-forge');
 
-import { debugLog, PostCall } from "../lib/helper";
+import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
 import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
@@ -122,6 +122,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
         window.bsafesFroala.rotateImage = rotateImageHook;
+        window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
         window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
         window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
         window.bsafesFroala.preS3Upload = preS3UploadHook;

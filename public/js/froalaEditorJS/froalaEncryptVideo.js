@@ -1171,25 +1171,19 @@
 
 			function uploadToS3(data, fn) {
 				var signedURL;
-				
-				var uploadVideoDeferred = $.Deferred();
-				var uploadVideoPromise = uploadVideoDeferred.promise();
 
-				function preS3Upload(fn) {
-					$.post('/memberAPI/preS3Upload', {
-						type: 'video',
-						antiCSRF: bSafesCommonUIObj.antiCSRF
-					}, function(data, textStatus, jQxhr) {
-						if(data.status === 'ok') {
-              s3Key = data.s3Key;
-              signedURL = data.signedURL;
+        async function callPreS3Upload(fn) {
+          const data = await preS3Upload();
 
-              fn(null);
-            } else {
-              fn(data.error);
-            }
-					}, 'json');
-				};
+          if(data.status === 'ok') {
+            s3Key = data.s3Key;
+            signedURL = data.signedURL;
+            fn(null);
+          } else {
+            fn(data.error);
+          }
+
+        };
 
 				function _uploadProgress (e) {
 					if (e.lengthComputable) {
@@ -1199,10 +1193,19 @@
           }
 				};
 
-				preS3Upload(function(err) {
+				callPreS3Upload(async function(err) {
 					if(err) {
 						fn(err);
 					} else {
+            try {
+              await uploadData(data, signedURL, _uploadProgress);
+              fn(null);
+            } catch(error) {
+              alert('Uploading failed');
+              console.log(error);
+              fn('Uploading failed');
+            }
+            /*
 						$.ajax({
               type: 'PUT',
               url: signedURL,
@@ -1227,12 +1230,11 @@
               alert('Uploading failed');
               console.log(errorThrown);
               fn('Uploading failed');
-            });
+            });*/
 					}
 				});
 			};
 	
-			//var videoLink;
       // Make sure we have what to upload.
       if (typeof videos != 'undefined' && videos.length > 0) {
 
@@ -1264,17 +1266,27 @@
         editor.edit.off();
         editor.events.enableBlur();
 
+        function encryptDataInBinaryString(data, fn) {
+          var time1 = Date.now();
+          var binaryStr = data;
+          console.log('encrypting', binaryStr.length);
+          var encryptedStr = encryptLargeBinaryString(binaryStr, itemKey, itemIV);
+
+          fn(null, encryptedStr);
+        };
+
 				var reader = new FileReader();
 				reader.addEventListener('load', function () {
 					var videoData = reader.result;
 					var videoInUint8Array = new Uint8Array(videoData);
+          var videoString = convertUint8ArrayToBinaryString(videoInUint8Array);
 					var videoSize = videoInUint8Array.length;
 					var videoBlob = new Blob([videoInUint8Array], {type: fileType});
 					$('#testVideo').attr('type', fileType);
 					videoLink = window.URL.createObjectURL(videoBlob);
 
-					encryptArrayBufferAsync(videoData, itemKey, itemIV, function(encryptedVideoDataInUint8Array) {
-						uploadToS3(encryptedVideoDataInUint8Array, function(err) {
+					encryptDataInBinaryString(videoString, function(error, encryptedVideoDataInBinaryString) {
+            uploadToS3(encryptedVideoDataInBinaryString, function(err) {
 							if(err) {
                 alert('uploadToS3:' + err);
 							} else {

@@ -12,6 +12,10 @@ function rotateImage(link, exifOrientation, callback) {
     window.bsafesFroala.rotateImage(link, exifOrientation, callback);
 }
 
+function convertUint8ArrayToBinaryString(u8Array) {
+    return window.bsafesFroala.convertUint8ArrayToBinaryString(u8Array);
+}
+
 function encryptBinaryString(binaryString, key) {
     return window.bsafesFroala.encryptBinaryString(binaryString, key);
 }
