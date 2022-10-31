@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector, useDispatch, createDispatchHook } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -236,6 +236,21 @@ export default function PageCommons() {
             }
         }
     }, [activity]);
+
+    useEffect(()=>{
+        if(contentEditorContent === null) return;
+        const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
+        Array.from(videoDownloads).forEach(element => {
+            const elementClone = element.cloneNode(true); // Remove all possible event listeners
+            elementClone.onclick = (e) => {
+                const idParts = e.target.id.split('&');
+	            const s3Key = idParts[0];
+                dispatch(downloadContentVideoThunk({s3Key}));
+            };
+            element.replaceWith(elementClone);
+        });
+
+    }, [contentEditorContent]);
 
     useEffect(()=> {
         let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;

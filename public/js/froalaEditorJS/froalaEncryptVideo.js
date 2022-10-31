@@ -1205,32 +1205,6 @@
               console.log(error);
               fn('Uploading failed');
             }
-            /*
-						$.ajax({
-              type: 'PUT',
-              url: signedURL,
-              // Content type must much with the parameter you signed your URL with
-              contentType: 'binary/octet-stream',
-              // this flag is important, if not set, it will try to send data as a form
-              processData: false,
-              // the actual data is sent raw
-              data: data,
-              xhr: function() {
-                var myXhr = $.ajaxSettings.xhr();
-                if(myXhr.upload){
-                  myXhr.upload.addEventListener('progress', _uploadProgress, false);
-                }
-                return myXhr;
-              }
-            })
-            .success(function() {
-							fn(null);
-            })
-            .error(function(jqXHR, textStatus, errorThrown) {
-              alert('Uploading failed');
-              console.log(errorThrown);
-              fn('Uploading failed');
-            });*/
 					}
 				});
 			};
@@ -1274,7 +1248,7 @@
 
           fn(null, encryptedStr);
         };
-
+        _setProgressMessage(editor.language.translate('Encrypting'), 0);
 				var reader = new FileReader();
 				reader.addEventListener('load', function () {
 					var videoData = reader.result;
