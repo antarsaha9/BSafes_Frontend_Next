@@ -30,7 +30,7 @@ const initialState = {
     contentImagesDisplayIndex:0,
     contentVideosDownloadQueue:[],
     contentVideosDownloadIndex:0,
-    contentVideoDisplayIndex:0,
+    contentVideosDisplayIndex:0,
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
@@ -189,8 +189,18 @@ const pageSlice = createSlice({
             state.contentVideosDownloadQueue.push(action.payload);
         },
         downloadingContentVideo: (state, action) => {
+            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            video.status = "Downloading";
+            video.progress = action.payload;
         },
         contentVideoDownloaded: (state, action) => {
+            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            video.status = "Downloaded";
+            video.src = action.payload.link;
+            state.contentVideosDownloadIndex += 1;
+        },
+        updateContentVideosDisplayIndex: (state, action) => {
+            state.contentVideosDisplayIndex = action.payload;
         },
         addUploadImages: (state, action) => {
             const files = action.payload.files;
@@ -263,7 +273,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -433,13 +443,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 export const downloadContentVideoThunk = (data) => async (dispatch, getState) => {
     let video;
     let state = getState().page;
-    const s3Key = data.s3Key;
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-        dispatch(downloadContentVideo({s3Key}));
+        dispatch(downloadContentVideo(data));
+        return;
     }
 
     const downloadAVideo = (video) => {
-        let decryptedVideoStr;
+        let decryptedVideoStr, link;
         return new Promise(async (resolve, reject) => {
             const s3Key = video.s3Key;
             const keyVersion = s3Key.split(":")[1];
@@ -450,24 +460,23 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 const response = await XHRDownload(dispatch, signedURL, downloadingContentVideo)                          
                 debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
                 
-                let decryptedVideoStr
                 if(keyVersion === '3') {
                     const buffer = Buffer.from(response, 'binary');
                     const downloadedBinaryString = buffer.toString('binary');
                     debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
                     decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                    debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+                    debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
         
                 } else if(keyVersion === '1') {
 
                 }
-                /*
-                const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                    type: 'image/*'
+                
+                const decryptedVideoDataInUint8Array = convertBinaryStringToUint8Array(decryptedVideoStr);
+                const link = window.URL.createObjectURL(new Blob([decryptedVideoDataInUint8Array]), {
+                    type: 'video/*'
                 });
 
-                dispatch(imageDownloaded({link}));*/
+                dispatch(contentVideoDownloaded({link}));
                 resolve();
 
             } catch(error) {
@@ -478,7 +487,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     }
 
     return new Promise(async (resolve, reject) => {
-        dispatch(downloadContentVideo({s3Key}));
+        dispatch(downloadContentVideo(data));
         state = getState().page;
         while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
             video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];

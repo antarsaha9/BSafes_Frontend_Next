@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -31,6 +31,9 @@ export default function PageCommons() {
 
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
+
+    const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
+    const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const pswpRef = useRef(null);
@@ -243,9 +246,10 @@ export default function PageCommons() {
         Array.from(videoDownloads).forEach(element => {
             const elementClone = element.cloneNode(true); // Remove all possible event listeners
             elementClone.onclick = (e) => {
-                const idParts = e.target.id.split('&');
+                const id =  e.target.id;
+                const idParts = id.split('&');
 	            const s3Key = idParts[0];
-                dispatch(downloadContentVideoThunk({s3Key}));
+                dispatch(downloadContentVideoThunk({id, s3Key}));
             };
             element.replaceWith(elementClone);
         });
@@ -301,6 +305,82 @@ export default function PageCommons() {
         }
 
     }, [contentImagesDownloadQueue]);
+
+    useEffect(()=> {
+        let video, videoElement, videoElementClone, contentVideoContainer, progressElement, progressBarElement;
+        let i = contentVideosDisplayIndex;
+        if(i < contentVideosDownloadQueue.length) {
+            video = contentVideosDownloadQueue[i];
+            videoElement = document.getElementById(video.id);
+            if(video.status === "Downloading") {
+                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
+                progressElement = document.getElementById('progress_' + video.id);
+                if(contentVideoContainer){
+                    if(!progressElement) {
+                        progressElement = document.createElement('div');
+                        progressElement.className = 'progress';
+                        progressElement.id = 'progress_' + video.id;
+                        progressElement.style.width = '250px';
+                        progressElement.style.margin = 'auto';
+                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
+                        contentVideoContainer.appendChild(progressElement);
+                    }
+                    progressBarElement = document.getElementById('progressBar_' + video.id);
+                    if(progressBarElement) progressBarElement.style.width = video.progress + '%';
+                } else {
+                    videoElementClone = videoElement.cloneNode(true);
+                    contentVideoContainer = document.createElement('div');
+                    contentVideoContainer.style.position = 'relative';
+                
+                    contentVideoContainer.id = 'videoContainer_' + video.id;
+                    contentVideoContainer.appendChild(videoElementClone);
+                    videoElement.replaceWith(contentVideoContainer);   
+                    
+                    progressElement = document.createElement('div');
+                    progressElement.className = 'progress';
+                    progressElement.id = 'progress_' + video.id;
+                    progressElement.style.width = '250px';
+                    progressElement.style.margin = 'auto';
+                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
+                    contentVideoContainer.appendChild(progressElement);
+                }
+            } else if(video.status === "Downloaded") {
+                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
+                progressElement = document.getElementById('progress_' + video.id);
+                if(progressElement) contentVideoContainer.removeChild(progressElement);
+                videoElement = document.getElementById(video.id);
+
+                const videoSpan = document.createElement('span'); 
+                
+                videoSpan.className = 'fr-video';
+                videoSpan.classList.add('fr-draggable');
+                videoSpan.setAttribute('contenteditable', 'true');
+                videoSpan.setAttribute('draggable', 'true');
+                
+                const newVideoElement = document.createElement('video');
+                newVideoElement.className = 'bSafesVideo';
+                newVideoElement.classList.add('fr-draggable');
+                newVideoElement.classList.add('fr-dvi');
+                newVideoElement.classList.add('fr-fvc');
+                newVideoElement.setAttribute('controls', '');
+                newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
+                newVideoElement.id = videoElement.id;
+                newVideoElement.src = video.src;
+                newVideoElement.style = videoElement.style;
+                
+	            if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
+	            if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
+	            if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
+	            if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
+	            if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
+
+                videoSpan.appendChild(newVideoElement);
+                videoElement.replaceWith(videoSpan);
+                dispatch(updateContentVideosDisplayIndex(i+1));
+            }          
+        }
+
+    }, [contentVideosDownloadQueue]);
 
     useEffect(()=>{
         if(contentEditorMode === "ReadOnly"){
