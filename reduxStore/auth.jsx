@@ -153,6 +153,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
         }).catch( error => {
+            console.trace(error)
             debugLog(debugOn, "woo... preflight failed.")
         })
 

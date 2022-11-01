@@ -38,6 +38,7 @@ export default function Page() {
     }, [router.isReady]);
 
     useEffect(()=>{
+        console.log('entered',pageItemId , expandedKey);
         if(pageItemId && expandedKey) {
             dispatch(getPageItemThunk({itemId, expandedKey}));
         }
@@ -48,7 +49,7 @@ export default function Page() {
             <ContentPageLayout>            
                 <Container> 
                     <div className={BSafesStyle.pagePanel}>
-                        <ItemTopRows />
+                        <ItemTopRows pageItemId={pageItemId} />
                         <Row className="justify-content-center">
                             <Col xs="12" sm="10" md="8">
                                 <hr />
