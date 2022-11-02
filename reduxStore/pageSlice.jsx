@@ -4,7 +4,7 @@ const DOMPurify = require('dompurify');
 const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokens } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { createNewItemVersion, preS3Download } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
@@ -520,6 +520,36 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
     })
 };
 
+export const saveTagsThunk = (tags, searchKey, searchIV) => async (dispatch, getState) => {
+    newActivity(dispatch, "Saving", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, encryptedTags, tagsTokens;
+            state = getState().page;
+            try {
+                encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
+	            encryptedTags.push('null');            
+	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
+            
+                if (state.isBlankPageItem) {
+                } else {
+                    let itemCopy = {
+                        ...state.itemCopy
+                    }
+        
+                    itemCopy.tags = encryptedTags;
+                    itemCopy.tagsTokens = tagsTokens;
+                    itemCopy.update = "tags";
+            
+                    await createNewItemVersionForPage(dispatch, itemCopy, {tags});
+                    resolve();
+                }
+            } catch (error) {
+                reject();
+            }
+        });
+    })
+}
+
 export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
@@ -529,7 +559,7 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
                 encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
-                titleTokens = stringToEncryptedTokens(titleText, searchKey, searchIV);
+                titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
             
                 if (state.isBlankPageItem) {
                 } else {

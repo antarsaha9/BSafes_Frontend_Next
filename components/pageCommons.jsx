@@ -262,6 +262,10 @@ export default function PageCommons() {
         if(i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
             imageElement = document.getElementById(image.id);
+            if(!imageElement) {
+                dispatch(updateContentImagesDisplayIndex(i+1));
+                return;
+            }
             if(image.status === "Downloading") {
                 contentImageContainer = document.getElementById('imageContainer_' + image.id);
                 progressElement = document.getElementById('progress_' + image.id);
@@ -312,6 +316,10 @@ export default function PageCommons() {
         if(i < contentVideosDownloadQueue.length) {
             video = contentVideosDownloadQueue[i];
             videoElement = document.getElementById(video.id);
+            if(!videoElement) {
+                dispatch(updateContentImagesDisplayIndex(i+1));
+                return;
+            }
             if(video.status === "Downloading") {
                 contentVideoContainer = document.getElementById('videoContainer_' + video.id);
                 progressElement = document.getElementById('progress_' + video.id);

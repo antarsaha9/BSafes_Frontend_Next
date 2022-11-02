@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -8,16 +10,45 @@ import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
+import { saveTagsThunk } from "../reduxStore/pageSlice";
+
 export default function ItemTopRows() {
+    const dispatch = useDispatch();
+
+    const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
+
+    const activity = useSelector( state => state.page.activity);
+    const tagsState = useSelector(state => state.page.tags);
+
     const [tags, setTags] = useState([]);
+    const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
 
     const handleChange = (tags) => {
         setTags(tags);
+        if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
+    }
+
+    const handleSave = () => {
+        dispatch(saveTagsThunk(tags, searchKey, searchIV));
+    }
+
+    const handleCancel = () => {
+        setTags(tagsState);
+        setShowTagsConfirmButton(false)
     }
 
     useEffect(()=>{
-        setTags(["Banana"]);
-    }, [])
+        setTags(tagsState);
+    }, [tagsState])
+
+    useEffect(() => {
+        if(activity === "Done") {
+            if (showTagsConfirmButton) setShowTagsConfirmButton(false);
+        } else if (activity === "Error") {
+
+        }
+    }, [activity]);
 
     return (
         <Container>
@@ -40,12 +71,12 @@ export default function ItemTopRows() {
                     <TagsInput value={tags} onChange={handleChange} />
                 </Col>
             </Row>
-            <Row>
+            {showTagsConfirmButton && <Row>
                 <Col md="10">
-                    <Button variant="link" className="pull-right"><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
-                    <Button variant="link" className="pull-right"><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
+                    <Button variant="link" className="pull-right" onClick={handleCancel}><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
+                    <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
-            </Row>
+            </Row>}
         </Container>
     )
 }
