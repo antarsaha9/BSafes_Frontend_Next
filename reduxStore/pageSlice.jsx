@@ -204,6 +204,9 @@ const pageSlice = createSlice({
         writingImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
             panel.editorMode = "Writing";
+        },
+        itemVersionFetched: (state, action) => {
+            state.itemVersions = action.payload;
         }
         /*        uploadAnImage: (state, action) => {
                     console.log("uploadAnImage");
@@ -233,7 +236,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords, itemVersionFetched } = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -346,7 +349,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/getPageItem',
-                body: { itemId: data.itemId },
+                body: { itemId: data.itemId, a: "a" },
             }).then(result => {
                 debugLog(debugOn, result);
                 if (result.status === 'ok') {
@@ -951,16 +954,16 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                 api: '/memberAPI/getItemVersionsHistory',
                 body: {
                     itemId: data.itemId,
-                    size: 20,
-                    from: 0,
+                    size: "20",
+                    from: "0",
                 },
             }).then(result => {
                 debugLog(debugOn, result);
                 if (result.status === 'ok') {
                     if (result.hits) {
-                        const hits = result.hits;
+                        const hits = result.hits.hits;
                         const modifiedHits = hits.map(hit => {
-                            const updatedTime = formatTimeDisplay(hits[i]._source.createdTime);
+                            const updatedTime = formatTimeDisplay(hit._source.createdTime);
                             const payload = {
                                 id: hit._source.version,
                                 version: hit._source.version,
@@ -970,7 +973,10 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                                 updatedTimestamp: updatedTime.charAt(updatedTime.length - 1) === 'o' ? timeToString(hit._source.createdTime) : ''
 
                             }
-                        })
+                            return payload;
+                        });
+                        dispatch(itemVersionFetched(modifiedHits));
+
                     } else {
                         reject("woo... failed to get a item version history!");
                     }
@@ -979,7 +985,7 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                     reject("woo... failed to get a item version history!");
                 }
             }).catch(error => {
-                debugLog(debugOn, "woo... failed to get a item version history.")
+                debugLog(debugOn, "woo... failed to get a item version history.", error)
                 reject("woo... failed to get a item version history!");
             })
         });

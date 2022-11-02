@@ -13,6 +13,7 @@ import Modal from "react-bootstrap/Modal";
 import ModalBody from "react-bootstrap/ModalBody";
 import ModalHeader from "react-bootstrap/ModalHeader";
 import ModalTitle from "react-bootstrap/ModalTitle";
+import DOMPurify from "dompurify";
 
 export default function ItemTopRows(props) {
     console.log(props);
@@ -34,10 +35,10 @@ export default function ItemTopRows(props) {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
     }
-    
-    const openVersionModal=()=>{
+
+    const openVersionModal = () => {
         _openVersionModal(true)
-        dispatch(getItemVersionsHistoryThunk(props.pageItemId));
+        dispatch(getItemVersionsHistoryThunk({ itemId: props.pageItemId }));
     }
 
     const handleSave = () => {
@@ -87,6 +88,7 @@ export default function ItemTopRows(props) {
 }
 
 function PageVersionModal({ versionModalOpened, closeVersionModal }) {
+    const itemVersions = useSelector(state => state.page.itemVersions);
     return (
         <Modal show={versionModalOpened} onHide={closeVersionModal}>
             <ModalHeader closeButton>
@@ -97,11 +99,41 @@ function PageVersionModal({ versionModalOpened, closeVersionModal }) {
             </ModalHeader>
             <ModalBody>
                 <div class="list-group itemVersionItemsList">
+                    {itemVersions?.map(ItemVersionCard)}
+
                 </div>
                 {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
                     <a href="#" onClick={handleMoreVersionClick}>More ...</a>
                 </div>} */}
             </ModalBody>
         </Modal>
+    )
+}
+function ItemVersionCard({id,updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
+
+    return (
+        <a href="#" class="list-group-item itemVersionItem">
+            <div class="row">
+                <div class="col-xs-3">
+                    <h4 class="itemVersion">v.{version}</h4>
+                </div>
+                <div class="col-xs-9">
+                    <h4 class="itemVersionUpdate pull-right">{updatedText}</h4>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-6">
+                    <h6 class="itemVersionUpdatedBy">{updatedBy}</h6>
+                </div>
+                <div class="col-xs-6">
+                    <h6 class="itemVersionUpdatedTime pull-right">{updatedTime}</h6>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xs-12">
+                    <h6 class="itemVersionUpdatedTimeStamp pull-right">{updatedTimeStamp}</h6>
+                </div>
+            </div>
+        </a>
     )
 }
