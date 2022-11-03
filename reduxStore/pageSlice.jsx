@@ -11,7 +11,7 @@ import { downScaleImage, rotateImage } from '../lib/wnImage';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",  //"Done", "Error", "Loading", "Saving", "UploadingImages"
+    activity: "Done",  //"Done", "Error", "Loading", "Saving", "UploadingImages", "LoadingVersionsHistory"
     error: null,
     itemCopy: null,
     id: null,
@@ -36,6 +36,7 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
+    itemVersions:null,
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -435,6 +436,52 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
             }).catch( error => {
                 debugLog(debugOn, "woo... failed to get a page item.")
                 reject("woo... failed to get a page item!");
+            })
+        });
+    });
+}
+
+export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "LoadingVersionsHistory", () => {
+
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getItemVersionsHistory',
+                body: {
+                    itemId: data.itemId,
+                    size: "20",
+                    from: "0",
+                },
+            }).then(result => {
+                debugLog(debugOn, result);
+                if (result.status === 'ok') {
+                    if (result.hits) {
+                        const hits = result.hits.hits;
+                        const modifiedHits = hits.map(hit => {
+                            const updatedTime = formatTimeDisplay(hit._source.createdTime);
+                            const payload = {
+                                id: hit._source.version,
+                                version: hit._source.version,
+                                updatedText: hit._source.version === 1 ? "Creation" : "Updated " + hit._source.update,
+                                updatedBy: DOMPurify.sanitize(hit._source.displayName ? hit._source.displayName : hit._source.updatedBy),
+                                updatedTime,
+                                updatedTimestamp: updatedTime.charAt(updatedTime.length - 1) === 'o' ? timeToString(hit._source.createdTime) : ''
+
+                            }
+                            return payload;
+                        });
+                        dispatch(itemVersionFetched(modifiedHits));
+
+                    } else {
+                        reject("woo... failed to get a item version history!");
+                    }
+                } else {
+                    debugLog(debugOn, "woo... failed to get a item version history!", data.error);
+                    reject("woo... failed to get a item version history!");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... failed to get a item version history.", error)
+                reject("woo... failed to get a item version history!");
             })
         });
     });
