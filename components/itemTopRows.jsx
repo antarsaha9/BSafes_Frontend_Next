@@ -9,12 +9,13 @@ import Modal from "react-bootstrap/Modal";
 import ModalHeader from "react-bootstrap/ModalHeader";
 import ModalTitle from "react-bootstrap/ModalTitle";
 import ModalBody from "react-bootstrap/ModalBody";
+import ListGroup from "react-bootstrap/ListGroup";
 
 import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { saveTagsThunk } from "../reduxStore/pageSlice";
+import { getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
 export default function ItemTopRows() {
     const dispatch = useDispatch();
@@ -23,7 +24,6 @@ export default function ItemTopRows() {
     const searchIV = useSelector( state => state.auth.searchIV);
 
     const activity = useSelector( state => state.page.activity);
-    const itemId = useSelector(state.page.id);
     const tagsState = useSelector(state => state.page.tags);
 
     const [tags, setTags] = useState([]);
@@ -46,7 +46,7 @@ export default function ItemTopRows() {
 
     const openVersionsHistoryModal = () => {
         setVersionsHistoryModalOpened(true)
-        dispatch(getItemVersionsHistoryThunk({ itemId }));
+        dispatch(getItemVersionsHistoryThunk());
     }
 
     useEffect(()=>{
@@ -100,14 +100,14 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
         <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
             <ModalHeader closeButton>
                 <ModalTitle>
-                    <h4 class="modal-title" id="itemVersionsModalLabel">Versions</h4>
-                    <a href="#" id="goToTopBtn" class="btn-xs">Go to top</a>
+                    <h4>Versions</h4>
+                    <Button variant="link" href="#" size="sm">Go to top</Button>
                 </ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <div>
+                <ListGroup>
                     {itemVersions?.map(ItemVersionCard)}
-                </div>
+                </ListGroup>
                 {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
                     <a href="#" onClick={handleMoreVersionClick}>More ...</a>
                 </div>} */}
@@ -119,28 +119,18 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
 function ItemVersionCard({id,updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
 
     return (
-        <a href="#" class="list-group-item itemVersionItem">
-            <div class="row">
-                <div class="col-xs-3">
-                    <h4 class="itemVersion">v.{version}</h4>
-                </div>
-                <div class="col-xs-9">
-                    <h4 class="itemVersionUpdate pull-right">{updatedText}</h4>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xs-6">
-                    <h6 class="itemVersionUpdatedBy">{updatedBy}</h6>
-                </div>
-                <div class="col-xs-6">
-                    <h6 class="itemVersionUpdatedTime pull-right">{updatedTime}</h6>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-xs-12">
-                    <h6 class="itemVersionUpdatedTimeStamp pull-right">{updatedTimeStamp}</h6>
-                </div>
-            </div>
-        </a>
+        <ListGroup.Item key={id}>
+            <Row>
+                <Col xs={3}><h4>v.{version}</h4></Col>
+                <Col xs={9}><h4 className="pull-right">{updatedText}</h4></Col>
+            </Row>
+            <Row>
+                <Col xs={6}><h6>{updatedBy}</h6></Col>
+                <Col xs={6}><h6 className="pull-right">{updatedTime}</h6></Col>
+            </Row>
+            <Row>
+                <Col xs={12}><h6 className="pull-right">{updatedTimeStamp}</h6></Col>
+            </Row>
+        </ListGroup.Item>
     )
 }

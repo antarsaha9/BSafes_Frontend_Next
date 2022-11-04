@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { createNewItemVersion, preS3Download } from '../lib/bSafesCommonUI';
+import { createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -36,7 +36,7 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
-    itemVersions:null,
+    itemVersions:[],
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -172,6 +172,9 @@ const pageSlice = createSlice({
                 state[key] = action.payload[key];
             }
         },
+        itemVersionsFetched: (state, action) => {
+            state.itemVersions.push(...action.payload);
+        },
         downloadingContentImage: (state, action) => {
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
             image.status = "Downloading";
@@ -274,7 +277,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -443,14 +446,14 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
 export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoadingVersionsHistory", () => {
-
         return new Promise(async (resolve, reject) => {
+            const state = getState().page;
             PostCall({
                 api: '/memberAPI/getItemVersionsHistory',
                 body: {
-                    itemId: data.itemId,
-                    size: "20",
-                    from: "0",
+                    itemId: state.id,
+                    size: 20,
+                    from: 0,
                 },
             }).then(result => {
                 debugLog(debugOn, result);
@@ -465,12 +468,12 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                                 updatedText: hit._source.version === 1 ? "Creation" : "Updated " + hit._source.update,
                                 updatedBy: DOMPurify.sanitize(hit._source.displayName ? hit._source.displayName : hit._source.updatedBy),
                                 updatedTime,
-                                updatedTimestamp: updatedTime.charAt(updatedTime.length - 1) === 'o' ? timeToString(hit._source.createdTime) : ''
+                                updatedTimeStamp: updatedTime.charAt(updatedTime.length - 1) === 'o' ? timeToString(hit._source.createdTime) : ''
 
                             }
                             return payload;
                         });
-                        dispatch(itemVersionFetched(modifiedHits));
+                        dispatch(itemVersionsFetched(modifiedHits));
 
                     } else {
                         reject("woo... failed to get a item version history!");
