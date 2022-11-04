@@ -24,6 +24,7 @@ export default function Stylesheets() {
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/line_breaker.min.css?v0.OB1.20211130" integrity="sha384-D8J0J9BDQDJZVMRnPv7mPcf3a10Lna3LIW9ectwVSp16upwpXa2FuKY5FKYFEOBd" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/quick_insert.min.css?v0.OB1.20211130" integrity="sha384-hIpOJCEpNcF9z9SBTc4LzPC6uxLaSc97x5PUzgQna1bAQHsYlO6Tp9z0grDZECWD" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/table.min.css?v0.OB1.20211130" integrity="sha384-Q3HbN07q2FZogwHXFAydCAVta/dmUDXVBV3mQPgbBH2joTjueoSlbZUcFh18njuN" crossOrigin="anonymous" />      
+				<link rel="stylesheet" href="/css/froalaEditorCSS/video.css?v0.OB1.20211130" integrity="sha384-zybqihXH2wZhyHcLTxMYKi/t544M/4UrFa93RrG4XnQf4z1nJx7t9xLIuzRpD9jJ" crossOrigin="anonymous"></link>
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css?v0.OB1.20211130" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossOrigin="anonymous" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css?v0.OB1.20211130" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossOrigin="anonymous" />
 		</div>

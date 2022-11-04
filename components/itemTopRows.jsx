@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
+import Modal from "react-bootstrap/Modal";
+import ModalHeader from "react-bootstrap/ModalHeader";
+import ModalTitle from "react-bootstrap/ModalTitle";
+import ModalBody from "react-bootstrap/ModalBody";
 
 import TagsInput from 'react-tagsinput-special'
 import { useDispatch, useSelector } from "react-redux";
@@ -15,52 +21,59 @@ import ModalHeader from "react-bootstrap/ModalHeader";
 import ModalTitle from "react-bootstrap/ModalTitle";
 import DOMPurify from "dompurify";
 
-export default function ItemTopRows(props) {
-    console.log(props);
-    const inittags = useSelector(state => state.page.tags);
-    const version = useSelector(state => state.page.version);
-    const searchKey = useSelector(state => state.auth.searchKey);
-    const dispatch = useDispatch();
-    useEffect(() => {
-        setTags(inittags);
+import { saveTagsThunk } from "../reduxStore/pageSlice";
 
-    }, [inittags])
+export default function ItemTopRows() {
+    const dispatch = useDispatch();
+
+    const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
+
+    const activity = useSelector( state => state.page.activity);
+    const itemId = useSelector(state.page.id);
+    const tagsState = useSelector(state => state.page.tags);
 
     const [tags, setTags] = useState([]);
-    const [versionModalOpened, _openVersionModal] = useState(false);
-
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
+    const [versionsHistoryModalOpened, setVersionsHistoryModalOpened] = useState(false);
 
     const handleChange = (tags) => {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
     }
 
-    const openVersionModal = () => {
-        _openVersionModal(true)
-        dispatch(getItemVersionsHistoryThunk({ itemId: props.pageItemId }));
+    const handleSave = () => {
+        dispatch(saveTagsThunk(tags, searchKey, searchIV));
     }
 
-    const handleSave = () => {
-        dispatch(saveTagThunk(tags, searchKey));
-        // setShowTagsConfirmButton(false)
-    }
-    const handleDiscard = () => {
-        // setTags(initialTags);
+    const handleCancel = () => {
+        setTags(tagsState);
         setShowTagsConfirmButton(false)
     }
-    // console.log(inittags);
-    // console.log(tags);
+
+    const openVersionsHistoryModal = () => {
+        setVersionsHistoryModalOpened(true)
+        dispatch(getItemVersionsHistoryThunk({ itemId }));
+    }
+
+    useEffect(()=>{
+        setTags(tagsState);
+    }, [tagsState])
+
+    useEffect(() => {
+        if(activity === "Done") {
+            if (showTagsConfirmButton) setShowTagsConfirmButton(false);
+        } else if (activity === "Error") {
+
+        }
+    }, [activity]);
 
     return (
         <Container>
             <Row>
                 <Col>
                     <div className="pull-right">
-                        <span>v.{version}</span>
-                        <Button variant="link" className="text-dark" onClick={openVersionModal} >
-                            <i className="fa fa-history" aria-hidden="true"></i>
-                        </Button>
+                        <span>v.1</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
                         <Button variant="link" className="text-dark" >
                             <i className="fa fa-share-square-o" aria-hidden="true"></i>
                         </Button>
@@ -78,29 +91,29 @@ export default function ItemTopRows(props) {
             </Row>
             {showTagsConfirmButton && <Row>
                 <Col md="10">
-                    <Button variant="link" className="pull-right" onClick={handleDiscard}><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
+                    <Button variant="link" className="pull-right" onClick={handleCancel}><i className={`fa fa-times fa-lg ${BSafesStyle.orangeText}`} aria-hidden="true"></i></Button>
                     <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
             </Row>}
-            <PageVersionModal versionModalOpened={versionModalOpened} closeVersionModal={() => _openVersionModal(false)} />
+            <VersionsHistoryModal versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
         </Container>
     )
 }
 
-function PageVersionModal({ versionModalOpened, closeVersionModal }) {
+function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
     const itemVersions = useSelector(state => state.page.itemVersions);
+
     return (
-        <Modal show={versionModalOpened} onHide={closeVersionModal}>
+        <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
             <ModalHeader closeButton>
                 <ModalTitle>
-                    <h4 class="modal-title" id="itemVersionsModalLabel">Page versions</h4>
+                    <h4 class="modal-title" id="itemVersionsModalLabel">Versions</h4>
                     <a href="#" id="goToTopBtn" class="btn-xs">Go to top</a>
                 </ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <div class="list-group itemVersionItemsList">
+                <div>
                     {itemVersions?.map(ItemVersionCard)}
-
                 </div>
                 {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
                     <a href="#" onClick={handleMoreVersionClick}>More ...</a>

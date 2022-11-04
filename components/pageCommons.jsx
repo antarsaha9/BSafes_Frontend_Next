@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector, useDispatch, createDispatchHook } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -11,8 +11,8 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { writingImageWords, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
-import { debugLog, updateComponentAfterRender } from '../lib/helper';
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
     const debugOn = true;
@@ -28,6 +28,12 @@ export default function PageCommons() {
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [editingEditorId, setEditingEditorId] = useState(null);
+
+    const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
+    const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
+
+    const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
+    const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const pswpRef = useRef(null);
@@ -73,9 +79,10 @@ export default function PageCommons() {
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
-        } else {
-            dispatch(writingImageWords(editorId));
-            setEditingEditorId(editorId.toString());
+        } else if(editorId.startsWith("image_")) {
+            const imageIndex = parseInt(editorId.split("_")[1]);
+            dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
+            setEditingEditorId(editorId);
         }
     }
     
@@ -96,18 +103,19 @@ export default function PageCommons() {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        } else {
-            const editorsCopy = [...imageTextEditors];
-            let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
-            thisEditor.editorContent = content;
-            thisEditor.editorMode = "ReadOnly";
-            setEditingEditorId("");
-            setImageTextEditors(editorsCopy);
+        } else if(editingEditorId.startsWith("image_")){
+            const imageIndex = parseInt(editingEditorId.split("_")[1]);
+            if(content !== imagePanelsState[imageIndex].words) {
+                dispatch(saveImageWordsThunk({index: imageIndex, content: content}));
+            } else {
+                dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}));
+                setEditingEditorId(null);
+            }
         }     
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
     )
 
     const handleWrite = () =>{
@@ -125,6 +133,21 @@ export default function PageCommons() {
                 setTitleEditorMode(mode);
                 break;
             default:
+                if(editingEditorId.startsWith("image_")){
+                    const imageIndex = parseInt(editingEditorId.split("_")[1]);
+                    switch(mode) {
+                        case "Saving":
+                            dispatch(setImageWordsMode({index: imageIndex, mode: "Saving"}));
+                            break;
+                        case "ReadOnly":
+                            dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}))
+                            break;
+                        default:
+                    }
+                    
+                } else {
+
+                }
         }
     }
 
@@ -217,6 +240,172 @@ export default function PageCommons() {
         }
     }, [activity]);
 
+    useEffect(()=>{
+        if(contentEditorContent === null) return;
+        const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
+        Array.from(videoDownloads).forEach(element => {
+            const elementClone = element.cloneNode(true); // Remove all possible event listeners
+            elementClone.onclick = (e) => {
+                const id =  e.target.id;
+                const idParts = id.split('&');
+	            const s3Key = idParts[0];
+                dispatch(downloadContentVideoThunk({id, s3Key}));
+            };
+            element.replaceWith(elementClone);
+        });
+
+    }, [contentEditorContent]);
+
+    useEffect(()=> {
+        let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;
+        let i = contentImagesDisplayIndex;
+        if(i < contentImagesDownloadQueue.length) {
+            image = contentImagesDownloadQueue[i];
+            imageElement = document.getElementById(image.id);
+            if(!imageElement) {
+                dispatch(updateContentImagesDisplayIndex(i+1));
+                return;
+            }
+            if(image.status === "Downloading") {
+                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+                progressElement = document.getElementById('progress_' + image.id);
+                if(contentImageContainer){
+                    if(!progressElement) {
+                        progressElement = document.createElement('div');
+                        progressElement.className = 'progress';
+                        progressElement.id = 'progress_' + image.id;
+                        progressElement.style.width = '250px';
+                        progressElement.style.margin = 'auto';
+                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
+                        contentImageContainer.appendChild(progressElement);
+                    }
+                    progressBarElement = document.getElementById('progressBar_' + image.id);
+                    if(progressBarElement) progressBarElement.style.width = image.progress + '%';
+                } else {
+                    imageElementClone = imageElement.cloneNode(true);
+                    contentImageContainer = document.createElement('div');
+                    contentImageContainer.style.position = 'relative';
+                
+                    contentImageContainer.id = 'imageContainer_' + image.id;
+                    contentImageContainer.appendChild(imageElementClone);
+                    imageElement.replaceWith(contentImageContainer);   
+                    
+                    progressElement = document.createElement('div');
+                    progressElement.className = 'progress';
+                    progressElement.id = 'progress_' + image.id;
+                    progressElement.style.width = '250px';
+                    progressElement.style.margin = 'auto';
+                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
+                    contentImageContainer.appendChild(progressElement);
+                }
+            } else if(image.status === "Downloaded") {
+                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+                progressElement = document.getElementById('progress_' + image.id);
+                if(progressElement) contentImageContainer.removeChild(progressElement);
+                imageElement = document.getElementById(image.id);
+                imageElement.src = image.src;
+                dispatch(updateContentImagesDisplayIndex(i+1));
+            }          
+        }
+
+    }, [contentImagesDownloadQueue]);
+
+    useEffect(()=> {
+        let video, videoElement, videoElementClone, contentVideoContainer, progressElement, progressBarElement;
+        let i = contentVideosDisplayIndex;
+        if(i < contentVideosDownloadQueue.length) {
+            video = contentVideosDownloadQueue[i];
+            videoElement = document.getElementById(video.id);
+            if(!videoElement) {
+                dispatch(updateContentImagesDisplayIndex(i+1));
+                return;
+            }
+            if(video.status === "Downloading") {
+                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
+                progressElement = document.getElementById('progress_' + video.id);
+                if(contentVideoContainer){
+                    if(!progressElement) {
+                        progressElement = document.createElement('div');
+                        progressElement.className = 'progress';
+                        progressElement.id = 'progress_' + video.id;
+                        progressElement.style.width = '250px';
+                        progressElement.style.margin = 'auto';
+                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
+                        contentVideoContainer.appendChild(progressElement);
+                    }
+                    progressBarElement = document.getElementById('progressBar_' + video.id);
+                    if(progressBarElement) progressBarElement.style.width = video.progress + '%';
+                } else {
+                    videoElementClone = videoElement.cloneNode(true);
+                    contentVideoContainer = document.createElement('div');
+                    contentVideoContainer.style.position = 'relative';
+                
+                    contentVideoContainer.id = 'videoContainer_' + video.id;
+                    contentVideoContainer.appendChild(videoElementClone);
+                    videoElement.replaceWith(contentVideoContainer);   
+                    
+                    progressElement = document.createElement('div');
+                    progressElement.className = 'progress';
+                    progressElement.id = 'progress_' + video.id;
+                    progressElement.style.width = '250px';
+                    progressElement.style.margin = 'auto';
+                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
+                    contentVideoContainer.appendChild(progressElement);
+                }
+            } else if(video.status === "Downloaded") {
+                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
+                progressElement = document.getElementById('progress_' + video.id);
+                if(progressElement) contentVideoContainer.removeChild(progressElement);
+                videoElement = document.getElementById(video.id);
+
+                const videoSpan = document.createElement('span'); 
+                
+                videoSpan.className = 'fr-video';
+                videoSpan.classList.add('fr-draggable');
+                videoSpan.setAttribute('contenteditable', 'true');
+                videoSpan.setAttribute('draggable', 'true');
+                
+                const newVideoElement = document.createElement('video');
+                newVideoElement.className = 'bSafesVideo';
+                newVideoElement.classList.add('fr-draggable');
+                newVideoElement.classList.add('fr-dvi');
+                newVideoElement.classList.add('fr-fvc');
+                newVideoElement.setAttribute('controls', '');
+                newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
+                newVideoElement.id = videoElement.id;
+                newVideoElement.src = video.src;
+                newVideoElement.style = videoElement.style;
+                
+	            if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
+	            if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
+	            if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
+	            if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
+	            if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
+
+                videoSpan.appendChild(newVideoElement);
+                videoElement.replaceWith(videoSpan);
+                dispatch(updateContentVideosDisplayIndex(i+1));
+            }          
+        }
+
+    }, [contentVideosDownloadQueue]);
+
+    useEffect(()=>{
+        if(contentEditorMode === "ReadOnly"){
+            debugLog(debugOn, "ReadOnly");
+
+            contentImagesDownloadQueue.forEach(image => {
+                if(image.status === "Downloaded") {
+                    const imageElement = document.getElementById(image.id);
+                    if(imageElement && imageElement.src.startsWith('http')) {
+                        imageElement.src = image.src;
+                    }
+                }
+            });
+            
+        }
+    }, [contentEditorMode]);
+
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
@@ -271,7 +460,7 @@ export default function PageCommons() {
         <>
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
@@ -281,9 +470,11 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" md="8" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
+            <br />
+            <br />
             <div className="images">
                 <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                 <Row>

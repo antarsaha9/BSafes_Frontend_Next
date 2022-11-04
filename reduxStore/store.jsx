@@ -4,6 +4,7 @@ import { createWrapper } from 'next-redux-wrapper'
 import scriptsSlice, { scriptsReducer } from './scriptsSlice';
 import stylesheetsSlice, { stylesheetsReducer } from './stylesheetsSlice';
 import authSlice, {authReducer} from './auth';
+import containerSlice, {containerReducer} from './containerSlice';
 import pageSlice, {pageReducer} from './pageSlice';
 
 const reduxStore = configureStore({
@@ -11,6 +12,7 @@ const reduxStore = configureStore({
         [stylesheetsSlice.name]: stylesheetsReducer,
         [scriptsSlice.name]: scriptsReducer,
         [authSlice.name]: authReducer,
+        [containerSlice.name]: containerReducer,
         [pageSlice.name]: pageReducer,
     },
     devTools: true,
