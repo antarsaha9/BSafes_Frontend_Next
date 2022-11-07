@@ -53,9 +53,9 @@ export default function PageCommons() {
             const thisPanel = imagePanelsState[i];
             if(thisPanel.status !== "Uploaded" &&  thisPanel.status !== "Downloaded") continue;
             const item = {};
-            item.src = thisPanel.img.src;
-            item.w = thisPanel.img.width;
-            item.h = thisPanel.img.height;
+            item.src = thisPanel.src;
+            item.w = thisPanel.width;
+            item.h = thisPanel.height;
             slides.push(item);
             if(thisPanel.queueId === queueId) {
                 startingIndex = slides.length - 1;

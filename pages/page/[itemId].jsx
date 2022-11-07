@@ -13,7 +13,8 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { initPageState, getPageItemThunk } from "../../reduxStore/pageSlice";
+import { initWorkspace } from '../../reduxStore/containerSlice';
+import { decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
@@ -28,8 +29,14 @@ export default function Page() {
     if(itemId && !pageItemId) {
         setPageItemId(itemId);
     }
-    
+
+    const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
+    
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+
+    const space = useSelector( state => state.page.space);
 
     useEffect(()=>{
         if(!router.isReady || pageItemId) return;
@@ -42,6 +49,21 @@ export default function Page() {
             dispatch(getPageItemThunk({itemId, expandedKey}));
         }
     }, [pageItemId, expandedKey]);
+
+    useEffect(()=>{
+        if(space) {
+            if (space.substring(0, 1) === 'u') {
+                dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
+	        } else {
+            }
+        }
+    }, [space]);
+
+    useEffect(()=>{
+        if(workspaceKey) {
+            dispatch(decryptPageItemThunk({workspaceKey}));
+        }
+    }, [workspaceKey])
     
     return (
         <div className={BSafesStyle.pageBackground}>

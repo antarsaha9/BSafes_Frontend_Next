@@ -11,7 +11,7 @@ import { downScaleImage, rotateImage } from '../lib/wnImage';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",  //"Done", "Error", "Loading", "Saving", "UploadingImages", "LoadingVersionsHistory"
+    activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory"
     error: null,
     itemCopy: null,
     id: null,
@@ -50,108 +50,104 @@ const dataFetchedFunc = (state, action) => {
     state.container = item.container;
     state.position = item.position;
 
-    function decryptPageItem(expandedKey) {
-        if ((item.keyEnvelope === undefined)) {      
-            debugLog(debugOn, "Error: undefined item key");
-            state.error = "Undefined item key";
+}
+
+function decryptPageItemFunc(state, workspaceKey) {
+    const item = state.itemCopy;
+    if ((item.keyEnvelope === undefined)) {      
+        debugLog(debugOn, "Error: undefined item key");
+        state.error = "Undefined item key";
+    }
+    if(item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
+        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), expandedKey, forge.util.decode64(item.envelopeIV));
+        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), expandedKey, forge.util.decode64(item.ivEnvelopeIV));
+    } else {
+        const decoded = forge.util.decode64(item.keyEnvelope);
+        state.itemKey = decryptBinaryString(decoded, workspaceKey);
+        state.itemIV = null;
+    }
+    let itemTags = [];
+    if (item.tags && item.tags.length > 1) {
+        const encryptedTags = item.tags;
+        for (let i = 0; i < (item.tags.length - 1); i++) {
+          try {
+            let encryptedTag = encryptedTags[i];
+            encryptedTag = forge.util.decode64(encryptedTag);
+            const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
+            const tag = forge.util.decodeUtf8(encodedTag);
+
+            itemTags.push(tag);
+          } catch (err) {
+            state.error = err;
+          }
         }
-        if(item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
-            state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), expandedKey, forge.util.decode64(item.envelopeIV));
-            state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), expandedKey, forge.util.decode64(item.ivEnvelopeIV));
-        } else {
-            const decoded = forge.util.decode64(item.keyEnvelope);
-            state.itemKey = decryptBinaryString(decoded, expandedKey);
-            state.itemIV = null;
+    };
+    state.tags = itemTags;
+
+    let titleText = "";
+    if (item.title) {
+        try {
+            const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
+            let title = forge.util.decodeUtf8(encodedTitle);
+            title = DOMPurify.sanitize(title);
+            state.title = title;
+            state.titleText = $(title).text();
+        } catch (err) {
+            state.error = err;
         }
-        let itemTags = [];
-        if (item.tags && item.tags.length > 1) {
-            const encryptedTags = item.tags;
-            for (let i = 0; i < (item.tags.length - 1); i++) {
-              try {
-                let encryptedTag = encryptedTags[i];
-                encryptedTag = forge.util.decode64(encryptedTag);
-                const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
-                const tag = forge.util.decodeUtf8(encodedTag);
-
-                itemTags.push(tag);
-              } catch (err) {
-                state.error = err;
-              }
-            }
-        };
-        state.tags = itemTags;
-
-        let titleText = "";
-        if (item.title) {
-            try {
-                const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
-                let title = forge.util.decodeUtf8(encodedTitle);
-                title = DOMPurify.sanitize(title);
-                state.title = title;
-                state.titleText = $(title).text();
-            } catch (err) {
-                state.error = err;
-            }
-        } else {
-            state.title = '<h2></h2>';
-            state.titleText = "";
-        }
-
-	    if (item.content) {
-	        try {
-	            const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
-	            let content = forge.util.decodeUtf8(encodedContent);
-                content = DOMPurify.sanitize(content);            
-                state.content = content;
-
-                const tempElement = document.createElement("div");
-                tempElement.innerHTML = content;
-                const images = tempElement.querySelectorAll(".bSafesImage");
-
-                images.forEach((item) => {
-                    const id = item.id;
-                    const idParts = id.split('&');
-                    const s3Key = idParts[0];
-                    
-                    state.contentImagesDownloadQueue.push({id, s3Key});
-                });
-
-	        } catch (err) {
-	            state.error = err;
-	        }  	                            
-	    }
-
-        if(item.images) {
-            for(let i=0; i<item.images.length; i++) {
-                let image = item.images[i];
-                let encryptedWords,encodedWords, words;
-                state.imageDownloadQueue.push({s3Key: image.s3Key});
-                const queueId = 'd' + i;
-                if(image.words && image.words !== "") {
-                    encryptedWords = forge.util.decode64(image.words);
-                    encodedWords = decryptBinaryString(encryptedWords, state.itemKey);
-                    words = forge.util.decodeUtf8(encodedWords);
-                    words = DOMPurify.sanitize(words);
-                } else {
-                    words = "";
-                }
-                const newPanel = {
-                    queueId: queueId,
-                    s3Key: image.s3Key,
-                    size: image.size,
-                    status: "WaitingForDownload",
-                    words: words,
-                    progress: 0
-                }
-                state.imagePanels.push(newPanel);
-            }            
-        }
+    } else {
+        state.title = '<h2></h2>';
+        state.titleText = "";
     }
 
-    if (item.space.substring(0, 1) === 'u') {
-        decryptPageItem(action.payload.expandedKey);
-    } else {
+    if (item.content) {
+        try {
+            const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
+            let content = forge.util.decodeUtf8(encodedContent);
+            content = DOMPurify.sanitize(content);            
+            state.content = content;
 
+            const tempElement = document.createElement("div");
+            tempElement.innerHTML = content;
+            const images = tempElement.querySelectorAll(".bSafesImage");
+
+            images.forEach((item) => {
+                const id = item.id;
+                const idParts = id.split('&');
+                const s3Key = idParts[0];
+                
+                state.contentImagesDownloadQueue.push({id, s3Key});
+            });
+
+        } catch (err) {
+            state.error = err;
+        }  	                            
+    }
+
+    if(item.images) {
+        for(let i=0; i<item.images.length; i++) {
+            let image = item.images[i];
+            let encryptedWords,encodedWords, words;
+            state.imageDownloadQueue.push({s3Key: image.s3Key});
+            const queueId = 'd' + i;
+            if(image.words && image.words !== "") {
+                encryptedWords = forge.util.decode64(image.words);
+                encodedWords = decryptBinaryString(encryptedWords, state.itemKey);
+                words = forge.util.decodeUtf8(encodedWords);
+                words = DOMPurify.sanitize(words);
+            } else {
+                words = "";
+            }
+            const newPanel = {
+                queueId: queueId,
+                s3Key: image.s3Key,
+                size: image.size,
+                status: "WaitingForDownload",
+                words: words,
+                progress: 0
+            }
+            state.imagePanels.push(newPanel);
+        }            
     }
 }
 
@@ -164,6 +160,9 @@ const pageSlice = createSlice({
         },
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
+        },
+        decryptPageItem: (state, action) => {
+            decryptPageItemFunc(state, action.payload.workspaceKey);
         },
         newVersionCreated: (state, action) => {
             const updatedKeys = Object.keys(action.payload);
@@ -255,6 +254,8 @@ const pageSlice = createSlice({
             panel.status = "Downloaded";
             panel.progress = 100;
             panel.src = action.payload.link;
+            panel.width = action.payload.width;
+            panel.height = action.payload.height;
             panel.editorMode = "ReadOnly";
             state.imageDownloadIndex += 1;
         },
@@ -277,7 +278,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -315,103 +316,6 @@ const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
-        const startDownloadingContentImages = async () => {
-            let state = getState().page; 
-            const downloadAnImage = (image) => {
-
-                return new Promise(async (resolve, reject) => {
-                    const s3Key = image.s3Key;
-                    const keyVersion = s3Key.split(":")[1];
-                    try {
-                        dispatch(downloadingContentImage(5));    
-                        const signedURL = await preS3Download(state.id, s3Key);
-                        dispatch(downloadingContentImage(5));
-
-                        const response = await XHRDownload(dispatch, signedURL, downloadingContentImage);                          
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                        
-                        let decryptedImageStr
-                        if(keyVersion === '3') {
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-                
-                        } else if(keyVersion === '1') {
-
-                        }
-                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                            type: 'image/*'
-                        });
-                                              
-                        dispatch(contentImageDownloaded({link}));
-                        resolve();
-                                                   
-                    } catch(error) {
-                        debugLog(debugOn, 'downloadFromS3 error: ', error)
-                        reject(error);
-                    }
-                });
-            }
-            while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
-                const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
-                await downloadAnImage(image); 
-                
-                state = getState().page; 
-            }
-        }
-
-        const startDownloadingImages = async () => {
-            let state = getState().page; 
-            const downloadAnImage = (image) => {
-
-
-                return new Promise(async (resolve, reject) => {
-                    const s3Key = image.s3Key + "_gallery";
-                    const keyVersion = s3Key.split(":")[1];
-                    try {
-                        dispatch(downloadingImage(5));
-                        const signedURL = await preS3Download(state.id, s3Key);
-                        dispatch(downloadingImage(10));
-                        const response = await XHRDownload(dispatch, signedURL, downloadingImage);                          
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                        
-                        let decryptedImageStr
-                        if(keyVersion === '3') {
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-                
-                        } else if(keyVersion === '1') {
-
-                        }
-                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                            type: 'image/*'
-                        });
-
-                        dispatch(imageDownloaded({link}));
-                        resolve();
-    
-                    } catch(error) {
-                        debugLog(debugOn, 'downloadFromS3 error: ', error)
-                        reject(error);
-                    }
-                });
-            }
-
-            while(state.imageDownloadIndex < state.imageDownloadQueue.length) {
-                const image = state.imageDownloadQueue[state.imageDownloadIndex];
-                await downloadAnImage(image); 
-                
-                state = getState().page; 
-            }
-        };
-
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api:'/memberAPI/getPageItem',
@@ -422,13 +326,6 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     if(result.item) {
                         dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
                         resolve();
-                        const state = getState().page;    
-                        if(state.contentImagesDownloadQueue.length) {
-                            startDownloadingContentImages();
-                        }                    
-                        if(state.imageDownloadQueue.length) {
-                            startDownloadingImages();
-                        }
                     } else {
                         reject("woo... failed to get a page item!");
                     }
@@ -441,6 +338,149 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 reject("woo... failed to get a page item!");
             })
         });
+    });
+}
+
+export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Decrypting", () => {
+        const startDownloadingContentImages = async () => {
+        let state = getState().page; 
+        const downloadAnImage = (image) => {
+
+            return new Promise(async (resolve, reject) => {
+                const s3Key = image.s3Key;
+                const keyVersion = s3Key.split(":")[1];
+                try {
+                    dispatch(downloadingContentImage(5));    
+                    const signedURL = await preS3Download(state.id, s3Key);
+                    dispatch(downloadingContentImage(5));
+
+                    const response = await XHRDownload(dispatch, signedURL, downloadingContentImage);                          
+                    debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                    
+                    let decryptedImageStr
+                    if(keyVersion === '3') {
+                        const buffer = Buffer.from(response, 'binary');
+                        const downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+            
+                    } else if(keyVersion === '1') {
+
+                    }
+                    const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                    const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                        type: 'image/*'
+                    });
+                                          
+                    dispatch(contentImageDownloaded({link}));
+                    resolve();
+                                               
+                } catch(error) {
+                    debugLog(debugOn, 'downloadFromS3 error: ', error)
+                    reject(error);
+                }
+            });
+        }
+        while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
+            const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            await downloadAnImage(image); 
+            
+            state = getState().page; 
+        }
+        }
+
+        const startDownloadingImages = async () => {
+        let state = getState().page; 
+        const downloadAnImage = (image) => {
+
+            return new Promise(async (resolve, reject) => {
+                const s3Key = image.s3Key + "_gallery";
+                const keyVersion = s3Key.split(":")[1];
+                try {
+                    dispatch(downloadingImage(5));
+                    const signedURL = await preS3Download(state.id, s3Key);
+                    dispatch(downloadingImage(10));
+                    const response = await XHRDownload(dispatch, signedURL, downloadingImage);                          
+                    debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                    
+                    let decryptedImageStr
+                    if(keyVersion === '3') {
+                        const buffer = Buffer.from(response, 'binary');
+                        const downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+            
+                    } else if(keyVersion === '1') {
+
+                    }
+                    const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                    const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                        type: 'image/*'
+                    });
+                    
+                    let img = new Image();
+                    img.src = link;
+    
+                    img.onload = () => {
+                        dispatch(imageDownloaded({link, width:img.width, height:img.height}));
+                        resolve();
+                    }
+                    
+
+                } catch(error) {
+                    debugLog(debugOn, 'downloadFromS3 error: ', error)
+                    reject(error);
+                }
+            });
+        }
+
+        while(state.imageDownloadIndex < state.imageDownloadQueue.length) {
+            const image = state.imageDownloadQueue[state.imageDownloadIndex];
+            await downloadAnImage(image); 
+            
+            state = getState().page; 
+        }
+        };
+
+        return new Promise(async (resolve) => {
+            dispatch(decryptPageItem({workspaceKey: data.workspaceKey}));
+            const state = getState().page;    
+            if(state.contentImagesDownloadQueue.length) {
+                startDownloadingContentImages();
+            }                    
+            if(state.imageDownloadQueue.length) {
+                startDownloadingImages();
+            }
+            resolve();
+        });
+    });
+}
+
+export const getItemThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        PostCall({
+            api:'/memberAPI/getItemData',
+            body: {itemId: data.itemId},
+        }).then( result => {
+            debugLog(debugOn, result);
+            if(result.status === 'ok') {                                   
+                if(result.item) {
+                    dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
+                    resolve();
+                } else {
+                    reject("woo... failed to get a page item!");
+                }
+            } else {
+                debugLog(debugOn, "woo... failed to get a page item!", data.error);
+                reject("woo... failed to get a page item!");
+            }
+        }).catch( error => {
+            debugLog(debugOn, "woo... failed to get a page item.")
+            reject("woo... failed to get a page item!");
+        })
     });
 }
 
