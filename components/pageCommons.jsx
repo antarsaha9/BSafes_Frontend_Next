@@ -5,7 +5,6 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
-import Scripts from './scripts'
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
@@ -503,7 +502,6 @@ export default function PageCommons() {
             </div>
             {photoSwipeGallery()}
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
-            <Scripts />
         </>
     )
 }

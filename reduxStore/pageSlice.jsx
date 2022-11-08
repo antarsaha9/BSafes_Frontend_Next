@@ -155,6 +155,9 @@ const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
     reducers: {
+        initPage: (state, action) => {
+            state = initialState;
+        },
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
@@ -238,6 +241,8 @@ const pageSlice = createSlice({
             panel.status = "Uploaded";
             panel.progress = 100;
             panel.src = action.payload.link;
+            panel.width = action.payload.width;
+            panel.height = action.payload.height;
             panel.s3Key = action.payload.s3Key;
             panel.size = action.payload.size;
             panel.editorMode = "ReadOnly";
@@ -278,7 +283,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { initPage, activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -324,7 +329,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, result);
                 if(result.status === 'ok') {                                   
                     if(result.item) {
-                        dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
+                        dispatch(dataFetched({item:result.item}));
                         resolve();
                     } else {
                         reject("woo... failed to get a page item!");
@@ -456,31 +461,6 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
             }
             resolve();
         });
-    });
-}
-
-export const getItemThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "Loading", () => {
-        PostCall({
-            api:'/memberAPI/getItemData',
-            body: {itemId: data.itemId},
-        }).then( result => {
-            debugLog(debugOn, result);
-            if(result.status === 'ok') {                                   
-                if(result.item) {
-                    dispatch(dataFetched({item:result.item, expandedKey:data.expandedKey}));
-                    resolve();
-                } else {
-                    reject("woo... failed to get a page item!");
-                }
-            } else {
-                debugLog(debugOn, "woo... failed to get a page item!", data.error);
-                reject("woo... failed to get a page item!");
-            }
-        }).catch( error => {
-            debugLog(debugOn, "woo... failed to get a page item.")
-            reject("woo... failed to get a page item!");
-        })
     });
 }
 
@@ -875,7 +855,7 @@ const uploadAnImage = async (dispatch, state, file) => {
                                     debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
                                     debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
                                     debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
-                                    resolve({s3Key, size: totalUploadedSize, link:img.src, buffer});
+                                    resolve({s3Key, size: totalUploadedSize, link:img.src, width:img.width, height:img.height, buffer});
                                 }
                             },
                             headers: {

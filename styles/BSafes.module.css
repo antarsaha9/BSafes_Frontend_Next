@@ -99,6 +99,35 @@
 }
 /* End of Safe */
 
+/*--****** Container *******/
+/*--**** Container general */
+.containerTitleLabel {
+  min-height:120px;
+  border-radius:5px;
+  background-color:white;
+  padding:10px 20px 10px 20px;
+}
+
+.containerControlPanel {
+  background-color:black;
+}
+
+.containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
+  min-height: 950px;
+  max-width:800px;
+  margin:0px auto;
+  padding-bottom:48px;
+}
+/* End of container general */
+/*--***** Notebook */
+.notebookCoverPanel {
+  border-left: 30px solid #000;
+  background-color:#F2F3F4;
+  border-radius:0 20px 20px 0;
+}
+/* End of notebook */
+
+
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
@@ -109,13 +138,10 @@
   padding-left:15px;
   padding-right:15px;
   padding-bottom:48px;
-  box-shadow:0px 1px 2px 2px #C9C9C9;
-  -webkit-box-shadow:0px 1px 2px 2px #C9C9C9;
-  -moz-box-shadow:0px 0px 1px 2px #C9C9C9;
 }
 
 .pageBackground {
-  background-color: black;
+  background-color: rgb(161, 158, 158);
   padding-bottom:30px;
 }
 

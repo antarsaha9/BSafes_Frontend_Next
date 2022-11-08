@@ -8,13 +8,14 @@ import Col from 'react-bootstrap/Col'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
+import Scripts from "../../components/scripts";
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { initWorkspace } from '../../reduxStore/containerSlice';
-import { decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
+import { initContainer, initWorkspace } from '../../reduxStore/containerSlice';
+import { initPage, decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
@@ -39,16 +40,21 @@ export default function Page() {
     const space = useSelector( state => state.page.space);
 
     useEffect(()=>{
+        dispatch(initPage());
+        dispatch(initContainer());
+    }, []);
+
+    useEffect(()=>{
         if(!router.isReady || pageItemId) return;
         const {itemId} = router.query;
         setPageItemId(itemId);
     }, [router.isReady]);
 
     useEffect(()=>{
-        if(pageItemId && expandedKey) {
-            dispatch(getPageItemThunk({itemId, expandedKey}));
+        if(pageItemId) {
+            dispatch(getPageItemThunk({itemId}));
         }
-    }, [pageItemId, expandedKey]);
+    }, [pageItemId]);
 
     useEffect(()=>{
         if(space) {
@@ -63,7 +69,7 @@ export default function Page() {
         if(workspaceKey) {
             dispatch(decryptPageItemThunk({workspaceKey}));
         }
-    }, [workspaceKey])
+    }, [workspaceKey]);
     
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -80,6 +86,7 @@ export default function Page() {
                     </div>
                 </Container>           
             </ContentPageLayout>
+            <Scripts />
         </div>
         
     )
