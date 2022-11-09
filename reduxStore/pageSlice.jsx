@@ -155,7 +155,7 @@ const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
     reducers: {
-        initPage: (state, action) => {
+        clearPage: (state, action) => {
             state = initialState;
         },
         activityChanged: (state, action) => {
@@ -283,7 +283,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { initPage, activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { clearPage, activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

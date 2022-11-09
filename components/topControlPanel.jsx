@@ -13,12 +13,12 @@ export default function TopControlPanel() {
                     <Card.Body>
                         <Row>
                             <Col xs={4}>
-                                <Button variant='link' size='sm' className='text-white'><i className="fa fa-square" aria-hidden="true"></i></Button>
+                                <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>
                             </Col>
                             <Col xs={4}>
                             </Col>
                             <Col xs={4}>
-                            <Button variant='link' size='sm' className='text-white pull-right'><i className="fa fa-ellipsis-v" aria-hidden="true"></i></Button>
+                            <Button variant='link' size='sm' className='text-white pull-right'><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
                             </Col>
                         </Row>
                     </Card.Body>

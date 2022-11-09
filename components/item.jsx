@@ -73,6 +73,14 @@ export default function Item({item}) {
                             </div>
                             :""
                         }
+                        {item.itemPack.type === 'N'?
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-book fa-lg me-3" aria-hidden="true"></i><span></span>
+                                </span>
+                                <div dangerouslySetInnerHTML={{__html: item.title}} />
+                            </div>
+                            :""
+                        }
                                 
                     </Col>
                     <Col xs={3}>

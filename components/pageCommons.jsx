@@ -17,8 +17,9 @@ export default function PageCommons() {
     const debugOn = true;
     const dispatch = useDispatch();
 
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector( state => state.page.activity);
 
@@ -97,7 +98,7 @@ export default function PageCommons() {
             }
         } else if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, searchKey, searchIV));
+                dispatch(saveTitleThunk(content, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);

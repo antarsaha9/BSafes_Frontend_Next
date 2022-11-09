@@ -13,11 +13,14 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../components/topControlPanel";
 import ItemTopRows from "../../components/itemTopRows";
 import Editor from "../../components/editor";
+import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import { initContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { initPage, getPageItemThunk, decryptPageItemThunk } from "../../reduxStore/pageSlice";
+import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
+import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
+
 import { debugLog } from "../../lib/helper";
+import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 
 export default function Notebook() {
     const debugOn = true;
@@ -26,6 +29,7 @@ export default function Notebook() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null); 
+    const [isOpen, setIsOpen] = useState(false);
 
     const {itemId} = router.query;
     if(itemId && !pageItemId) {
@@ -38,6 +42,8 @@ export default function Notebook() {
 
     const space = useSelector( state => state.page.space);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector( state => state.page.activity);
     const [editingEditorId, setEditingEditorId] = useState(null);
@@ -59,7 +65,7 @@ export default function Notebook() {
         
         if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, searchKey, searchIV));
+                dispatch(saveTitleThunk(content, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -93,9 +99,26 @@ export default function Notebook() {
         setEditingEditorId(null);
     }
 
+    const handleOpen = async () => {
+        debugLog(debugOn, "handleOpen");
+        try {
+            const item = await getLastAccessedItem(pageItemId);
+            if(item) {
+                debugLog(debugLog, item);
+            } else {
+                debugLog(debugLog, "lastAccessedItem not set");
+                const idParts = pageItemId.split(":");
+                const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+                router.push(firstPage);
+            }
+        } catch (error) {
+            debugLog(debugOn, error)
+        }
+    }
+
     useEffect(()=>{
-        dispatch(initPage());
-        dispatch(initContainer());
+        dispatch(clearPage());
+        dispatch(clearContainer());
     }, []);
 
     useEffect(()=>{
@@ -103,6 +126,19 @@ export default function Notebook() {
             dispatch(getPageItemThunk({itemId}));
         }
     }, [pageItemId]);
+
+    useEffect(() => {
+        if(activity === "Done") {
+            if(editingEditorId) {
+                setEditingEditorMode("ReadOnly");
+                setEditingEditorId(null);
+            }
+        } else if (activity === "Error") {
+            if(editingEditorId) {
+                setEditingEditorMode("Writing");
+            }
+        }
+    }, [activity]);
 
     useEffect(()=>{
         if(space) {
@@ -120,27 +156,52 @@ export default function Notebook() {
     }, [workspaceKey]);
 
     return (
-        <div className={BSafesStyle.pageBackground}>
-            <ContentPageLayout>            
-                <Container> 
-                    <br />
-                    <TopControlPanel></TopControlPanel>
-                    <br />
-                    <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
-                        <ItemTopRows />
+        <div>
+            <div className={BSafesStyle.pageBackground}>
+                <ContentPageLayout>
+                    <Container> 
+                        <br />
+                        <TopControlPanel></TopControlPanel>
+                        <br />                            
+                    { !isOpen &&
+                        <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
+                            <ItemTopRows />
+                            <br />
+                            <br />
+                            <Row className="justify-content-center">
+                                <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
+                                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                </Col> 
+                            </Row>
+                            <br />
+                            <Row>
+                                <Col>
+                                    <ContainerOpenButton handleOpen={handleOpen} />
+                                </Col>
+                            </Row>
+                            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+                        </div>                  
+                    }  
+                    { isOpen &&
+                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
                         <br />
                         <br />
-                        <Row className="justify-content-center">
-                            <Col className={BSafesStyle.containerTitleLabel} xs="12" sm="10" md="8" >
-                                <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+				        <h2 className="text-center">Contents</h2>
+
+                        <Row>
+                            <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+           	                    Page 
                             </Col> 
+                            <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
+              	                Title 
+                            </Col>
                         </Row>
                     </div>
-                    <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
-                </Container>           
-            </ContentPageLayout>
-            <Scripts />
+                    }  
+                    </Container> 
+                </ContentPageLayout>
+                <Scripts />
+            </div>
         </div>
-        
     )
 }

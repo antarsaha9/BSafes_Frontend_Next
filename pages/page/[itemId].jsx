@@ -14,8 +14,8 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { initContainer, initWorkspace } from '../../reduxStore/containerSlice';
-import { initPage, decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
+import { clearContainer, initWorkspace } from '../../reduxStore/containerSlice';
+import { clearPage, decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
@@ -40,8 +40,8 @@ export default function Page() {
     const space = useSelector( state => state.page.space);
 
     useEffect(()=>{
-        dispatch(initPage());
-        dispatch(initContainer());
+        dispatch(clearPage());
+        dispatch(clearContainer());
     }, []);
 
     useEffect(()=>{
