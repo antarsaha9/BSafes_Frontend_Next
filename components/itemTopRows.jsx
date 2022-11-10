@@ -11,14 +11,9 @@ import ModalTitle from "react-bootstrap/ModalTitle";
 import ModalBody from "react-bootstrap/ModalBody";
 
 import TagsInput from 'react-tagsinput-special'
-import { useDispatch, useSelector } from "react-redux";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 import { getItemVersionsHistoryThunk, saveTagThunk } from "../reduxStore/pageSlice";
-import Modal from "react-bootstrap/Modal";
-import ModalBody from "react-bootstrap/ModalBody";
-import ModalHeader from "react-bootstrap/ModalHeader";
-import ModalTitle from "react-bootstrap/ModalTitle";
 import DOMPurify from "dompurify";
 
 import { saveTagsThunk } from "../reduxStore/pageSlice";
@@ -28,9 +23,10 @@ export default function ItemTopRows() {
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
+    const version = useSelector(state => state.page.version);
 
     const activity = useSelector( state => state.page.activity);
-    const itemId = useSelector(state.page.id);
+    const itemId = useSelector(state =>state.page.id);
     const tagsState = useSelector(state => state.page.tags);
 
     const [tags, setTags] = useState([]);
@@ -73,7 +69,7 @@ export default function ItemTopRows() {
             <Row>
                 <Col>
                     <div className="pull-right">
-                        <span>v.1</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
+                        <span>v.{version}</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
                         <Button variant="link" className="text-dark" >
                             <i className="fa fa-share-square-o" aria-hidden="true"></i>
                         </Button>
