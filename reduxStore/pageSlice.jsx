@@ -666,6 +666,55 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
     })
 }
 
+export const saveCommentThunk = (comment) => async (dispatch, getState) => {
+    newActivity(dispatch, "Saving", () => {
+        return new Promise(async (resolve, reject) => {
+            state = getState().page;
+            try {
+                const result = preProcessEditorContentBeforeSaving(comment).content;
+                const encodedComment = forge.util.encodeUtf8(result);
+                const encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
+
+                if (state.isBlankPageItem) {
+                } else {
+                    // let itemCopy = {
+                    //     ...state.itemCopy
+                    // }
+                    const itemId = state.itemCopy.id;
+
+                    // itemCopy.title = forge.util.encode64(encryptedTitle);
+                    // itemCopy.titleTokens = titleTokens;
+                    // itemCopy.update = "title";
+
+                    // await createNewItemVersionForPage(dispatch, itemCopy, { title, titleText });
+                    PostCall({
+                        api: '/memberAPI/saveNewPageComment',
+                        body: {
+                            itemId,
+                            content: encryptedComment,
+                        }
+                    }).then(function (data) {
+                        if (data.status === 'ok') {
+                            const payload = {
+                                id: data.id,
+                                creationTime: formatTimeDisplay(data.creationTime),
+                                lastUpdateTime: formatTimeDisplay(data.lastUpdateTime),
+                                writerName: 'You',
+                                content: result
+                            }
+                            itemCommentsFetched([...state.itemComments, payload])
+                        }
+                    })
+                    resolve();
+                }
+            } catch (error) {
+                reject();
+            }
+
+        });
+    })
+}
+
 function preProcessEditorContentBeforeSaving(content) {
     var tempElement = document.createElement("div");
     tempElement.innerHTML = content;
