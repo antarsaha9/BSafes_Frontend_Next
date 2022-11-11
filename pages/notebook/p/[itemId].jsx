@@ -6,26 +6,27 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import BSafesStyle from '../../styles/BSafes.module.css'
+import BSafesStyle from '../../../styles/BSafes.module.css'
 
-import Scripts from "../../components/scripts";
-import ContentPageLayout from '../../components/layouts/contentPageLayout';
+import Scripts from "../../../components/scripts";
+import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 
-import TopControlPanel from "../../components/topControlPanel"
-import ItemTopRows from "../../components/itemTopRows";
-import PageCommons from "../../components/pageCommons";
+import TopControlPanel from "../../../components/topControlPanel"
+import ItemTopRows from "../../../components/itemTopRows";
+import PageCommons from "../../../components/pageCommons";
 
-import { clearContainer, initWorkspace } from '../../reduxStore/containerSlice';
-import { clearPage, decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
-import { debugLog } from "../../lib/helper";
+import { clearContainer, initWorkspace } from '../../../reduxStore/containerSlice';
+import { clearPage, decryptPageItemThunk, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { debugLog } from "../../../lib/helper";
 
-export default function Page() {
+export default function NotebookPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageItemId, setPageItemId] = useState(null); 
+    const [pageItemId, setPageItemId] = useState(null);
+    const [pageCleared, setPageCleared] = useState(false); 
 
     const {itemId} = router.query;
     if(itemId && !pageItemId) {
@@ -36,13 +37,14 @@ export default function Page() {
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
     
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-
     const space = useSelector( state => state.page.space);
+    const itemCopy = useSelector( state => state.page.itemCopy);
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     useEffect(()=>{
         dispatch(clearPage());
         dispatch(clearContainer());
+        setPageCleared(true);
     }, []);
 
     useEffect(()=>{
@@ -52,13 +54,13 @@ export default function Page() {
     }, [router.isReady]);
 
     useEffect(()=>{
-        if(pageItemId) {
+        if(pageItemId && pageCleared) {
             dispatch(getPageItemThunk({itemId}));
         }
-    }, [pageItemId]);
+    }, [pageCleared, pageItemId]);
 
     useEffect(()=>{
-        if(space) {
+        if(space && pageCleared ) {
             if (space.substring(0, 1) === 'u') {
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
@@ -67,10 +69,11 @@ export default function Page() {
     }, [space]);
 
     useEffect(()=>{
-        if(workspaceKey) {
+        if(workspaceKey && pageCleared && itemCopy) {
             dispatch(decryptPageItemThunk({workspaceKey}));
         }
     }, [workspaceKey]);
+
     
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -92,6 +95,6 @@ export default function Page() {
             </ContentPageLayout>
             <Scripts />
         </div>
-        
+
     )
 }

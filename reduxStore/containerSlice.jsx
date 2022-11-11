@@ -28,7 +28,11 @@ const containerSlice = createSlice({
             state.activity = action.payload;
         },
         clearContainer: (state, action) => {
-            state = initialState;
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
         },
         initWorkspace: (state, action) => {
             state.currentSpace = action.payload.workspaceId;

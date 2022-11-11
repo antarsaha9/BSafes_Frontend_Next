@@ -156,7 +156,11 @@ const pageSlice = createSlice({
     initialState: initialState,
     reducers: {
         clearPage: (state, action) => {
-            state = initialState;
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
         },
         activityChanged: (state, action) => {
             state.activity = action.payload;
@@ -322,17 +326,23 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
         return new Promise(async (resolve, reject) => {
+            let state;
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: {itemId: data.itemId},
             }).then( result => {
                 debugLog(debugOn, result);
+                state = getState().page;
                 if(result.status === 'ok') {                                   
                     if(result.item) {
                         dispatch(dataFetched({item:result.item}));
                         resolve();
                     } else {
-                        reject("woo... failed to get a page item!");
+                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                            resolve();
+                        } else {
+                            reject("woo... failed to get a page item!");
+                        }
                     }
                 } else {
                     debugLog(debugOn, "woo... failed to get a page item!", data.error);

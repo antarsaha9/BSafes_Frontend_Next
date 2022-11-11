@@ -28,7 +28,8 @@ export default function Notebook() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageItemId, setPageItemId] = useState(null); 
+    const [pageItemId, setPageItemId] = useState(null);
+    const [pageCleared, setPageCleared] = useState(false); 
     const [isOpen, setIsOpen] = useState(false);
 
     const {itemId} = router.query;
@@ -117,15 +118,22 @@ export default function Notebook() {
     }
 
     useEffect(()=>{
+        if(!router.isReady || pageItemId) return;
+        const {itemId} = router.query;
+        setPageItemId(itemId);
+    }, [router.isReady]);
+
+    useEffect(()=>{
         dispatch(clearPage());
         dispatch(clearContainer());
+        setPageCleared(true);
     }, []);
 
     useEffect(()=>{
-        if(pageItemId) {
+        if(pageItemId && pageCleared) {
             dispatch(getPageItemThunk({itemId}));
         }
-    }, [pageItemId]);
+    }, [pageCleared, pageItemId]);
 
     useEffect(() => {
         if(activity === "Done") {
@@ -141,7 +149,7 @@ export default function Notebook() {
     }, [activity]);
 
     useEffect(()=>{
-        if(space) {
+        if(space && pageCleared) {
             if (space.substring(0, 1) === 'u') {
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
@@ -150,7 +158,7 @@ export default function Notebook() {
     }, [space]);
 
     useEffect(()=>{
-        if(workspaceKey) {
+        if(workspaceKey && pageCleared) {
             dispatch(decryptPageItemThunk({workspaceKey}));
         }
     }, [workspaceKey]);

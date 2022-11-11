@@ -10,6 +10,8 @@ import jquery from "jquery"
 const axios = require('axios');
 const forge = require('node-forge');
 
+import BSafesStyle from '../styles/BSafes.module.css'
+
 import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
 import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
@@ -246,9 +248,15 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     </Col>
                 </Row>
                 
-                :<></>
+                :
+
+                <Row>
+                    <Col>
+                        <Button variant="link" className="text-dark pull-right"></Button>
+                    </Col>
+                </Row>
             }
-            <Row className="fr-element fr-view">
+            <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
                 <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                 </div>
             </Row>
