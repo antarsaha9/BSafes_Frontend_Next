@@ -160,7 +160,13 @@
   padding-bottom:30px;
 }
 
+.leftPagePanel {
+  border-radius: 20px 0 0 20px;
+}
 
+.rightPagePanel {
+  border-radius: 0 20px 20px 0;
+}
 .imagesDragDropZone {
   border: 2px dashed #e4e1e1;
   background-color: aliceblue;

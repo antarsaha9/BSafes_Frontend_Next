@@ -91,14 +91,14 @@ export default function PageCommons() {
         
         if(editingEditorId === "content") {
             if(content !== contentEditorContent) {
-                dispatch(saveContentThunk(content));
+                dispatch(saveContentThunk(content, workspaceKey));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
         } else if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, workspaceSearchKey, workspaceSearchIV));
+                dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -170,7 +170,7 @@ export default function PageCommons() {
     };
     
     const uploadImages = (files, where) => {
-        dispatch(uploadImagesThunk({files, where}));
+        dispatch(uploadImagesThunk({files, where, workspaceKey}));
     };
 
     const handleImageFiles = (e) => {

@@ -26,6 +26,7 @@ export default function Page() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null); 
+    const [pageCleared, setPageCleared] = useState(false); 
 
     const {itemId} = router.query;
     if(itemId && !pageItemId) {
@@ -43,6 +44,7 @@ export default function Page() {
     useEffect(()=>{
         dispatch(clearPage());
         dispatch(clearContainer());
+        setPageCleared(true);
     }, []);
 
     useEffect(()=>{
@@ -52,13 +54,13 @@ export default function Page() {
     }, [router.isReady]);
 
     useEffect(()=>{
-        if(pageItemId) {
+        if(pageItemId && pageCleared) {
             dispatch(getPageItemThunk({itemId}));
         }
-    }, [pageItemId]);
+    }, [pageCleared, pageItemId]);
 
     useEffect(()=>{
-        if(space) {
+        if(space && pageCleared) { 
             if (space.substring(0, 1) === 'u') {
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
@@ -67,7 +69,7 @@ export default function Page() {
     }, [space]);
 
     useEffect(()=>{
-        if(workspaceKey) {
+        if(workspaceKey && pageCleared) {
             dispatch(decryptPageItemThunk({workspaceKey}));
         }
     }, [workspaceKey]);

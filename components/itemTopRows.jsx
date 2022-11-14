@@ -20,6 +20,7 @@ import { getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSl
 export default function ItemTopRows() {
     const dispatch = useDispatch();
 
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -36,7 +37,7 @@ export default function ItemTopRows() {
     }
 
     const handleSave = () => {
-        dispatch(saveTagsThunk(tags, workspaceSearchKey, workspaceSearchIV));
+        dispatch(saveTagsThunk(tags, workspaceKey, workspaceSearchKey, workspaceSearchIV));
     }
 
     const handleCancel = () => {

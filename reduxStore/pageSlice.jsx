@@ -15,7 +15,6 @@ const initialState = {
     error: null,
     itemCopy: null,
     id: null,
-    isBlankPageItem: true,
     space: null,
     container: null,
     position: null,
@@ -36,6 +35,7 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
+    version:null,
     itemVersions:[],
 }
 
@@ -45,7 +45,6 @@ const dataFetchedFunc = (state, action) => {
     state.itemCopy = item;
 
     state.id = item.id;
-    state.isBlankPageItem = false;
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
@@ -168,8 +167,16 @@ const pageSlice = createSlice({
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
         },
+        containerDataFetched: (state, action) => {
+            state.space = action.payload.space;
+            state.container = action.payload.id;
+        },
         decryptPageItem: (state, action) => {
             decryptPageItemFunc(state, action.payload.workspaceKey);
+        },
+        newItemCreated: (state, action) => {
+            state.itemCopy = action.payload.itemCopy;
+            state.version = 1;
         },
         newVersionCreated: (state, action) => {
             const updatedKeys = Object.keys(action.payload);
@@ -287,7 +294,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -325,12 +332,39 @@ const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
+        const getContainerData = (itemId) => {
+            return new Promise(async (resolve, reject) => {
+                let itemIdParts, containerId;
+                itemIdParts = itemId.split(':');
+                itemIdParts.pop();
+                containerId = itemIdParts.join(':');
+                containerId = containerId.replace('p:', ':');
+                PostCall({
+                    api:'/memberAPI/getPageItem',
+                    body: {itemId: containerId},
+                }).then( result => {
+                    debugLog(debugOn, result);
+                    if(result.status === 'ok') {    
+                        if(result.item) {
+                            resolve(result.item);
+                        } else {
+                            debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                            reject("woo... failed to get the container data!");
+                        }
+                    } else {
+                        debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                        reject("woo... failed to get the container data!");
+                    }
+                });
+            });
+        }
+        
         return new Promise(async (resolve, reject) => {
             let state;
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: {itemId: data.itemId},
-            }).then( result => {
+            }).then( async result => {
                 debugLog(debugOn, result);
                 state = getState().page;
                 if(result.status === 'ok') {                                   
@@ -339,6 +373,12 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         resolve();
                     } else {
                         if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                            try {
+                                const container = await getContainerData(data.itemId);
+                                dispatch(containerDataFetched(container));
+                            } catch(error) {
+                                reject("woo... failed to get the container data!");
+                            }
                             resolve();
                         } else {
                             reject("woo... failed to get a page item!");
@@ -600,7 +640,32 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
     })
 };
 
-export const saveTagsThunk = (tags, searchKey, searchIV) => async (dispatch, getState) => {
+function createANotebookPage(dispatch) {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/createANotebookPage',
+            body: {itemId: containerId},
+        }).then( result => {
+            debugLog(debugOn, result);
+
+            if(result.status === 'ok') {    
+                if(result.item) {
+                    dispatch(newItemCreated({itemCopy: result.item}));
+                    
+                    resolve(result.item);
+                } else {
+                    debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
+                    reject("woo... failed to get the container data!");
+                }
+            } else {
+                debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
+                reject("woo... failed to get the container data!");
+            }
+        });
+    });
+}
+
+export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, encryptedTags, tagsTokens;
@@ -610,7 +675,7 @@ export const saveTagsThunk = (tags, searchKey, searchIV) => async (dispatch, get
 	            encryptedTags.push('null');            
 	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
             
-                if (state.isBlankPageItem) {
+                if (!state.itemCopy) {
                 } else {
                     let itemCopy = {
                         ...state.itemCopy
@@ -630,7 +695,7 @@ export const saveTagsThunk = (tags, searchKey, searchIV) => async (dispatch, get
     })
 }
 
-export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, getState) => {
+export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, titleText, encodedTitle, encryptedTitle, titleTokens;
@@ -641,7 +706,44 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
                 encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
                 titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
             
-                if (state.isBlankPageItem) {
+                if (!state.itemCopy) {
+                    if (state.container.substring(0, 1) === 'f') {
+
+                      } else if (state.container.substring(0, 1) === 'n') {
+                        $.ajax({
+                          url: '/memberAPI/createANotebookPage',
+                          type: 'POST',
+                          dataType: 'json',
+                          data: {
+                            "itemId": itemId,
+                            "keyEnvelope": forge.util.encode64(keyEnvelope),
+                            "ivEnvelope": forge.util.encode64(ivEnvelope),
+                            "envelopeIV": forge.util.encode64(envelopeIV),
+                            "ivEnvelopeIV": forge.util.encode64(ivEnvelopeIV),
+                            "title": forge.util.encode64(encryptedTitle),
+                            "titleTokens": JSON.stringify(titleTokens),
+                            antiCSRF: bSafesCommonUIObj.antiCSRF
+                          },
+                          error: function(jqXHR, textStatus, errorThrown) {
+                            $('.btnSave').LoadingOverlay('hide');
+                            $('.btnCancel').removeClass('hidden');
+                            alert(textStatus);
+                          },
+                          success: function(data) {
+                            if (data.status === 'ok') {
+                              itemCopy = data.item;
+                              setCurrentVersion(itemCopy.version);
+                              isBlankPageItem = false;
+                              doneEditing();
+                            } else {
+                              alert(data.err);
+                            }
+                          },
+                          timeout: 30000
+                        });
+                      } else if (state.container.substring(0, 1) === 'd') {
+                        
+                      }
                 } else {
                     let itemCopy = {
                         ...state.itemCopy
@@ -731,7 +833,7 @@ function preProcessEditorContentBeforeSaving(content) {
 	};
 };
 
-export const saveContentThunk = (content) => async (dispatch, getState) => {
+export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
             let state, encodedContent, encryptedContent;
@@ -744,7 +846,7 @@ export const saveContentThunk = (content) => async (dispatch, getState) => {
                 encodedContent = forge.util.encodeUtf8(result.content);
                 encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
             
-                if (state.isBlankPageItem) {
+                if (!state.itemCopy) {
                 } else {
                     let itemCopy = {
                         ...state.itemCopy
@@ -982,7 +1084,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
             let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
             images.push(image);
         }
-        if (state.isBlankPageItem) {
+        if (!state.itemCopy) {
         } else {
             let itemCopy = {
                 ...state.itemCopy
@@ -1009,7 +1111,7 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
                 encodedContent = forge.util.encodeUtf8(content);
                 encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
             
-                if (state.isBlankPageItem) {
+                if (!state.itemCopy) {
                 } else {
                     itemCopy = JSON.parse(JSON.stringify(state.itemCopy));
                         
