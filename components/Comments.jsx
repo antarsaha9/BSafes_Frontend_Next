@@ -34,12 +34,7 @@ export default function Comments({ editorMode, handlePenClicked, editingEditorId
 function CommentCard({ writerName = 'New', creationTime, lastUpdateTime, content, id, editorMode, handlePenClicked, editingEditorId, editable, onContentChanged }) {
   const newComment = writerName === 'New';
   const editorId = "comment-" + (id || 'New');
-  var commentEditorMode = 'ReadOnly';
-  if (editorMode === 'Writing') {
-    console.log(editingEditorId === editorId,editingEditorId , editorId);
-    if (editingEditorId === editorId)
-      commentEditorMode = editorMode;
-  }
+  const commentEditorMode = editingEditorId === editorId?editorMode:'ReadOnly';
   // const [editorMode, setEditorMode] = useState("ReadOnly");
   // const handleClick = () => {
   //   console.log('called');
