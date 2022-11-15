@@ -38,7 +38,8 @@ const initialState = {
     imageDownloadIndex: 0,
     isATeamItem: false,
     teamSearchKey: null,
-    itemVersions: null
+    itemVersions: null,
+    pageComments:[]
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -275,8 +276,8 @@ const pageSlice = createSlice({
         itemVersionFetched: (state, action) => {
             state.itemVersions = action.payload;
         },
-        itemCommentsFetched: (state, action) => {
-            state.itemComments = action.payload;
+        pageCommentsFetched: (state, action) => {
+            state.pageComments = action.payload;
         },
         saveImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
@@ -310,7 +311,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, itemVersionFetched, itemCommentsFetched } = pageSlice.actions;
+export const { activityChanged, dataFetched, newVersionCreated, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, writingImageWords, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, itemVersionFetched, pageCommentsFetched } = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -669,7 +670,7 @@ export const saveTitleThunk = (title, searchKey, searchIV) => async (dispatch, g
 export const saveCommentThunk = (comment) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            state = getState().page;
+            const state = getState().page;
             try {
                 const result = preProcessEditorContentBeforeSaving(comment).content;
                 const encodedComment = forge.util.encodeUtf8(result);
@@ -702,7 +703,7 @@ export const saveCommentThunk = (comment) => async (dispatch, getState) => {
                                 writerName: 'You',
                                 content: result
                             }
-                            itemCommentsFetched([...state.itemComments, payload])
+                            pageCommentsFetched([...state.pageComments, payload])
                         }
                     })
                     resolve();
@@ -1200,6 +1201,8 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoadingPageComments", () => {
 
         return new Promise(async (resolve, reject) => {
+            const state = getState().page;
+
             PostCall({
                 api: '/memberAPI/getPageComments',
                 body: {
@@ -1213,34 +1216,42 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                     if (result.hits) {
                         const hits = result.hits.hits;
                         const modifiedHits = hits.map(({ _source: comment, _id: id }) => {
-                            var encryptedContent = comment.content, content = '';
-                            if (encryptedContent) {
-                                var binaryContent = forge.util.decode64(encryptedContent);
-                                var encodedContent = decryptBinaryString(binaryContent, itemKey, itemIV);
-                                content = forge.util.decodeUtf8(encodedContent);
-                                content = DOMPurify.sanitize(content);
+                            try {
+                                const encryptedContent = comment.content;
+                                var content = '';
+                                if (encryptedContent) {
+                                    const binaryContent = forge.util.decode64(encryptedContent);
+                                    const encodedContent = decryptBinaryString(binaryContent, state.itemKey);
+                                    content = forge.util.decodeUtf8(encodedContent);
+                                    content = DOMPurify.sanitize(content);
+                                }
+                                const payload = {
+                                    id,
+                                    creationTime: formatTimeDisplay(comment.creationTime),
+                                    lastUpdateTime: formatTimeDisplay(comment.lastUpdateTime),
+                                    writerName: comment.writerName || 'You',
+                                    content
+                                }
+                                return payload;
+                                
+                            } catch (error) {
+                                console.trace(error);
+                                return {}
                             }
-                            const payload = {
-                                id,
-                                creationTime: formatTimeDisplay(comment.creationTime),
-                                lastUpdateTime: formatTimeDisplay(comment.lastUpdateTime),
-                                writerName: comment.writerName,
-                                content
-                            }
-                            return payload;
                         });
-                        dispatch(itemCommentsFetched(modifiedHits));
+                        console.log({modifiedHits});
+                        dispatch(pageCommentsFetched(modifiedHits));
 
                     } else {
-                        reject("woo... failed to get a item version history!");
+                        reject("woo... failed to get a page comments!");
                     }
                 } else {
-                    debugLog(debugOn, "woo... failed to get a item version history!", data.error);
-                    reject("woo... failed to get a item version history!");
+                    debugLog(debugOn, "woo... failed to get a page comments!", data.error);
+                    reject("woo... failed to get a page comments!");
                 }
             }).catch(error => {
-                debugLog(debugOn, "woo... failed to get a item version history.", error)
-                reject("woo... failed to get a item version history!");
+                debugLog(debugOn, "woo... failed to get a page comments.", error)
+                reject("woo... failed to get a page comments!");
             })
         });
     });

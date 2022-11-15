@@ -1,15 +1,14 @@
-import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { Col, Row } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
 import { getPageCommentsThunk } from "../reduxStore/pageSlice";
 import Editor from "./editor";
 
-export default function Comments({ editorMode, handlePenClicked, editingEditorId, editable }) {
-  const router = useRouter();
+export default function Comments({ editorMode, handlePenClicked, editingEditorId, editable, onContentChanged }) {
   const dispatch = useDispatch();
-  const { itemId } = router.query;
-  const itemComments = useSelector(state => state.page.itemComments);
+  // const { itemId } = router.query;
+  const pageComments = useSelector(state => state.page.pageComments);
+  const itemId = useSelector(state => state.page.id);
 
   useEffect(() => {
     if (itemId) {
@@ -25,18 +24,19 @@ export default function Comments({ editorMode, handlePenClicked, editingEditorId
         </Col>
       </Row>
       {/* comments */}
-      {itemComments?.map((p, i) => <CommentCard {...{ ...p, editorMode, handlePenClicked, editingEditorId, editable }} key={i} />)}
-      <CommentCard {...{ editorMode, handlePenClicked, editingEditorId, editable }} />
+      {pageComments?.map((p, i) => <CommentCard {...{ ...p, editorMode, handlePenClicked, editingEditorId, editable, onContentChanged }} key={i} />)}
+      <CommentCard {...{ editorMode, handlePenClicked, editingEditorId, editable, onContentChanged }} />
     </div>
   )
 
 }
 
-function CommentCard({ writerName = 'New', creationTime, lastUpdateTime, content, id, editorMode, handlePenClicked, editingEditorId, editable }) {
+function CommentCard({ writerName = 'New', creationTime, lastUpdateTime, content, id, editorMode, handlePenClicked, editingEditorId, editable, onContentChanged }) {
   const newComment = writerName === 'New';
-  const editorId = "comment-" + id || 'New';
+  const editorId = "comment-" + (id || 'New');
   var commentEditorMode = 'ReadOnly';
   if (editorMode === 'Writing') {
+    console.log(editingEditorId === editorId,editingEditorId , editorId);
     if (editingEditorId === editorId)
       commentEditorMode = editorMode;
   }
@@ -70,7 +70,7 @@ function CommentCard({ writerName = 'New', creationTime, lastUpdateTime, content
         </Row>}
         <Row>
           <Col xs={{ span: 6 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-            <Editor editorId={editorId} mode={editorMode} content={content} editable={editable} onPenClicked={handlePenClicked} />
+            <Editor editorId={editorId} mode={commentEditorMode} content={content} editable={editable} onPenClicked={handlePenClicked} onContentChanged={onContentChanged} />
           </Col>
         </Row>
       </div>

@@ -11,7 +11,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 import Comments from "./Comments";
 
@@ -116,6 +116,22 @@ export default function PageCommons() {
                 dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
+        } else if (editingEditorId.startsWith("comment-")) {
+            console.log('called');
+            const commentId = editingEditorId.split("-")[1];
+            if (commentId==='New'){
+                // const content = 
+                dispatch(saveCommentThunk(content));
+
+            }else{
+
+            }
+            // if (content !== imagePanelsState[imageIndex].words) {
+            //     dispatch(saveImageWordsThunk({ index: imageIndex, content: content }));
+            // } else {
+            //     dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }));
+            //     setEditingEditorId(null);
+            // }
         }
     }
 
@@ -130,6 +146,7 @@ export default function PageCommons() {
     }
 
     const setEditingEditorMode = (mode) => {
+        console.log();
         switch (editingEditorId) {
             case 'content':
                 setContentEditorMode(mode);
@@ -150,8 +167,9 @@ export default function PageCommons() {
                         default:
                     }
 
-                } else {
-
+                } else if(editingEditorId.startsWith("comment")) {
+                    setCommentEditorMode(mode);
+                    break;
                 }
         }
     }
@@ -507,7 +525,7 @@ export default function PageCommons() {
                 </Row>
             </div>
             {photoSwipeGallery()}
-            <Comments editorMode={commentEditorMode} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+            <Comments editorMode={commentEditorMode} onContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editingEditorId={editingEditorId} editable={!editingEditorId && (activity === "Done")} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
             <Scripts />
         </>
