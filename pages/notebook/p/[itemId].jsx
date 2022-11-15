@@ -27,7 +27,7 @@ export default function NotebookPage() {
 
     const [pageItemId, setPageItemId] = useState(null);
     const [pageNumber, setPageNumber] = useState(0);
-    const [isLeftPage, setIsLeftPage] = useState(true);
+    const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
 
     const {itemId} = router.query;
@@ -59,9 +59,12 @@ export default function NotebookPage() {
         if(pageItemId) {
             let thisPageNumber = parseInt(pageItemId.split(':')[4]);
             setPageNumber(thisPageNumber);
-            if(!thisPageNumber%2) {
-                setIsLeftPage(false);
-            } 
+            
+            if(thisPageNumber%2) {
+                setPageStyle(BSafesStyle.leftPagePanel);
+            } else {
+                setPageStyle(BSafesStyle.rightPagePanel);
+            }
         }
 
         if(pageItemId && pageCleared) {
@@ -92,7 +95,7 @@ export default function NotebookPage() {
                     <br />
                         <TopControlPanel></TopControlPanel>
                     <br />  
-                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${isLeftPage?BSafesStyle.leftPagePanel:BSafesStyle.rightPagePanel}`}>
+                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
                         <ItemTopRows />
                         <Row className="justify-content-center">
                             <Col xs="12" sm="10" md="8">

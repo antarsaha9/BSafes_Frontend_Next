@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -17,6 +17,7 @@ const initialState = {
     id: null,
     space: null,
     container: null,
+    pageNumber: null,
     position: null,
     itemKey: null,
     itemIV: null,
@@ -35,7 +36,6 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
-    version:null,
     itemVersions:[],
 }
 
@@ -168,15 +168,23 @@ const pageSlice = createSlice({
             dataFetchedFunc(state, action);
         },
         containerDataFetched: (state, action) => {
-            state.space = action.payload.space;
-            state.container = action.payload.id;
+            state.id = action.payload.itemId;
+            if(state.id.startsWith('np')) {
+                state.pageNumber = parseInt(state.id.split(':').pop())
+            }
+            state.space = action.payload.container.space;
+            state.container = action.payload.container.id;
+            state.title = "<h2></h2>";
         },
         decryptPageItem: (state, action) => {
             decryptPageItemFunc(state, action.payload.workspaceKey);
         },
         newItemCreated: (state, action) => {
-            state.itemCopy = action.payload.itemCopy;
-            state.version = 1;
+            const updatedKeys = Object.keys(action.payload);
+            for(let i=0; i<updatedKeys.length; i++) {
+                let key = updatedKeys[i];
+                state[key] = action.payload[key];
+            }
         },
         newVersionCreated: (state, action) => {
             const updatedKeys = Object.keys(action.payload);
@@ -375,11 +383,11 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
                             try {
                                 const container = await getContainerData(data.itemId);
-                                dispatch(containerDataFetched(container));
+                                dispatch(containerDataFetched({itemId: data.itemId, container}));
+                                resolve();
                             } catch(error) {
                                 reject("woo... failed to get the container data!");
                             }
-                            resolve();
                         } else {
                             reject("woo... failed to get a page item!");
                         }
@@ -618,17 +626,14 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     });
 }
 
-function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
+function createNewItemVersionForPage(itemCopy) {
     return new Promise(async (resolve, reject) => {
         try {
             const data = await createNewItemVersion(itemCopy);
             if (data.status === 'ok') {
                 const usage = JSON.parse(data.usage);
                 itemCopy.usage = usage;
-                dispatch(newVersionCreated({
-                    itemCopy,
-                    ...updatedData
-                }));
+
                 resolve();
             } else {
                 reject("Could not create a new item version!");
@@ -640,26 +645,24 @@ function createNewItemVersionForPage(dispatch, itemCopy, updatedData) {
     })
 };
 
-function createANotebookPage(dispatch) {
+function createANotebookPage(data) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api:'/memberAPI/createANotebookPage',
-            body: {itemId: containerId},
+            body: data
         }).then( result => {
             debugLog(debugOn, result);
 
             if(result.status === 'ok') {    
                 if(result.item) {
-                    dispatch(newItemCreated({itemCopy: result.item}));
-                    
                     resolve(result.item);
                 } else {
                     debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                    reject("woo... failed to get the container data!");
+                    reject("woo... failed to create a notebook page!");
                 }
             } else {
                 debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                reject("woo... failed to get the container data!");
+                reject("woo... failed to create a notebook page!");
             }
         });
     });
@@ -668,15 +671,49 @@ function createANotebookPage(dispatch) {
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encryptedTags, tagsTokens;
+            let state, encryptedTags, tagsTokens, itemKey, keyEnvelope, data, item;
             state = getState().page;
             try {
-                encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
-	            encryptedTags.push('null');            
+                       
 	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
             
                 if (!state.itemCopy) {
+                    itemKey = setupNewItemKey();
+                    keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+                    
+                    encryptedTags = tokenfieldToEncryptedArray(tags, itemKey);
+                    encryptedTags.push('null');  
+
+                    if (state.container.substring(0, 1) === 'f') {
+
+                      } else if (state.container.substring(0, 1) === 'n') {
+                        data = {
+                            "itemId": state.id,
+                            "keyEnvelope": forge.util.encode64(keyEnvelope),
+                            "tags": JSON.stringify(encryptedTags),
+                            "tagsTokens": JSON.stringify(tagsTokens)
+                        };
+                        try {
+                            item = await createANotebookPage(data);
+                            dispatch(newItemCreated({
+                                itemKey,
+                                itemCopy: item, 
+                                tags
+                            }));
+                            resolve();
+                        } catch (error) {
+                            debugLog(debugOn, "createANotebookPage failed: ", error);
+                            reject(error);
+                            return;
+                        }
+                      } else if (state.container.substring(0, 1) === 'd') {
+                        
+                      }             
+
                 } else {
+                    encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
+                    encryptedTags.push('null');  
+
                     let itemCopy = {
                         ...state.itemCopy
                     }
@@ -685,7 +722,11 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     itemCopy.tagsTokens = tagsTokens;
                     itemCopy.update = "tags";
             
-                    await createNewItemVersionForPage(dispatch, itemCopy, {tags});
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        tags
+                    }));
                     resolve();
                 }
             } catch (error) {
@@ -698,53 +739,47 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
 export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, titleText, encodedTitle, encryptedTitle, titleTokens;
+            let state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, data, item;
             state = getState().page;
             try {
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
-                encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
                 titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
             
                 if (!state.itemCopy) {
+                    itemKey = setupNewItemKey();
+                    keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+
+                    encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
                     if (state.container.substring(0, 1) === 'f') {
 
                       } else if (state.container.substring(0, 1) === 'n') {
-                        $.ajax({
-                          url: '/memberAPI/createANotebookPage',
-                          type: 'POST',
-                          dataType: 'json',
-                          data: {
-                            "itemId": itemId,
+                        data = {
+                            "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
-                            "ivEnvelope": forge.util.encode64(ivEnvelope),
-                            "envelopeIV": forge.util.encode64(envelopeIV),
-                            "ivEnvelopeIV": forge.util.encode64(ivEnvelopeIV),
                             "title": forge.util.encode64(encryptedTitle),
-                            "titleTokens": JSON.stringify(titleTokens),
-                            antiCSRF: bSafesCommonUIObj.antiCSRF
-                          },
-                          error: function(jqXHR, textStatus, errorThrown) {
-                            $('.btnSave').LoadingOverlay('hide');
-                            $('.btnCancel').removeClass('hidden');
-                            alert(textStatus);
-                          },
-                          success: function(data) {
-                            if (data.status === 'ok') {
-                              itemCopy = data.item;
-                              setCurrentVersion(itemCopy.version);
-                              isBlankPageItem = false;
-                              doneEditing();
-                            } else {
-                              alert(data.err);
-                            }
-                          },
-                          timeout: 30000
-                        });
+                            "titleTokens": JSON.stringify(titleTokens)
+                        };
+                        try {
+                            item = await createANotebookPage(data);
+                            dispatch(newItemCreated({
+                                itemKey,
+                                itemCopy: item, 
+                                title,
+                                titleText
+                            }));
+                            resolve();
+                        } catch (error) {
+                            debugLog(debugOn, "createANotebookPage failed: ", error);
+                            reject(error);
+                            return;
+                        }
                       } else if (state.container.substring(0, 1) === 'd') {
                         
                       }
                 } else {
+                    encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
+
                     let itemCopy = {
                         ...state.itemCopy
                     }
@@ -753,7 +788,12 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                     itemCopy.titleTokens = titleTokens;
                     itemCopy.update = "title";
             
-                    await createNewItemVersionForPage(dispatch, itemCopy, {title, titleText});
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        title,
+                        titleText
+                    }));
                     resolve();
                 }
             } catch (error) {
@@ -857,7 +897,11 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
 	                itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
             
-                    await createNewItemVersionForPage(dispatch, itemCopy, {content});
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        content
+                    }));
                     resolve();
                 }
             } catch (error) {
@@ -1092,7 +1136,10 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
 
             itemCopy.images = images;
             itemCopy.update = "images";    
-            await createNewItemVersionForPage(dispatch, itemCopy, {});
+            await createNewItemVersionForPage(itemCopy);
+            dispatch(newVersionCreated({
+                itemCopy
+            }));
 
         }
     });
@@ -1124,7 +1171,11 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
                     }
                     imagePanels[index].words = content;
                     
-                    await createNewItemVersionForPage(dispatch, itemCopy, {imagePanels});
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        imagePanels
+                    }));
                     resolve();
                 }
             } catch (error) {
