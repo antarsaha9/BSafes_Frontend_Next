@@ -179,6 +179,9 @@ const pageSlice = createSlice({
         decryptPageItem: (state, action) => {
             decryptPageItemFunc(state, action.payload.workspaceKey);
         },
+        newItemKey: (state, action) => {
+            state.itemKey = action.payload.itemKey;
+        },
         newItemCreated: (state, action) => {
             const updatedKeys = Object.keys(action.payload);
             for(let i=0; i<updatedKeys.length; i++) {
@@ -302,7 +305,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -668,47 +671,64 @@ function createANotebookPage(data) {
     });
 }
 
+function createANewPage(dispatch, state, newPageData, updatedState) {
+    return new Promise(async (resolve, reject) => {
+        let item;
+        if (state.container.substring(0, 1) === 'f') {
+
+        } else if (state.container.substring(0, 1) === 'n') {
+
+            try {
+                item = await createANotebookPage(newPageData);
+                dispatch(newItemCreated({
+                    ...updatedState,
+                    itemCopy: item
+                }));
+                resolve();
+            } catch (error) {
+                debugLog(debugOn, "createANotebookPage failed: ", error);
+                reject(error);
+            }
+        } else if (state.container.substring(0, 1) === 'd') {
+                        
+        }
+    });
+}
+
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encryptedTags, tagsTokens, itemKey, keyEnvelope, data, item;
+            let state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
             state = getState().page;
             try {
                        
 	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
             
                 if (!state.itemCopy) {
-                    itemKey = setupNewItemKey();
-                    keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+                    try {
+                        itemKey = setupNewItemKey();
+                        keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
                     
-                    encryptedTags = tokenfieldToEncryptedArray(tags, itemKey);
-                    encryptedTags.push('null');  
+                        encryptedTags = tokenfieldToEncryptedArray(tags, itemKey);
+                        encryptedTags.push('null');  
 
-                    if (state.container.substring(0, 1) === 'f') {
-
-                      } else if (state.container.substring(0, 1) === 'n') {
-                        data = {
+                        newPageData = {
                             "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
                             "tags": JSON.stringify(encryptedTags),
                             "tagsTokens": JSON.stringify(tagsTokens)
                         };
-                        try {
-                            item = await createANotebookPage(data);
-                            dispatch(newItemCreated({
-                                itemKey,
-                                itemCopy: item, 
-                                tags
-                            }));
-                            resolve();
-                        } catch (error) {
-                            debugLog(debugOn, "createANotebookPage failed: ", error);
-                            reject(error);
-                            return;
+
+                        updatedState = {
+                            itemKey,
+                            tags
                         }
-                      } else if (state.container.substring(0, 1) === 'd') {
-                        
-                      }             
+
+                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        resolve();
+                    } catch(error) {
+                        reject(error);
+                    }       
 
                 } else {
                     encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
@@ -739,7 +759,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
 export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, data, item;
+            let state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
             state = getState().page;
             try {
                 titleText = extractHTMLElementText(title);
@@ -747,36 +767,30 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                 titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
             
                 if (!state.itemCopy) {
-                    itemKey = setupNewItemKey();
-                    keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+                    try {
+                        itemKey = setupNewItemKey();
+                        keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
 
-                    encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
-                    if (state.container.substring(0, 1) === 'f') {
+                        encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
 
-                      } else if (state.container.substring(0, 1) === 'n') {
-                        data = {
+                        newPageData = {
                             "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
                             "title": forge.util.encode64(encryptedTitle),
                             "titleTokens": JSON.stringify(titleTokens)
                         };
-                        try {
-                            item = await createANotebookPage(data);
-                            dispatch(newItemCreated({
-                                itemKey,
-                                itemCopy: item, 
-                                title,
-                                titleText
-                            }));
-                            resolve();
-                        } catch (error) {
-                            debugLog(debugOn, "createANotebookPage failed: ", error);
-                            reject(error);
-                            return;
+
+                        updatedState = {
+                            itemKey, 
+                            title,
+                            titleText
                         }
-                      } else if (state.container.substring(0, 1) === 'd') {
-                        
-                      }
+
+                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        resolve();
+                    } catch(error) {
+                        reject(error);
+                    }   
                 } else {
                     encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
 
@@ -876,7 +890,7 @@ function preProcessEditorContentBeforeSaving(content) {
 export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encodedContent, encryptedContent;
+            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState;
             state = getState().page;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
@@ -884,10 +898,34 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
             
             try {
                 encodedContent = forge.util.encodeUtf8(result.content);
-                encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
             
                 if (!state.itemCopy) {
+                    try {
+                        itemKey = setupNewItemKey();
+                        keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+
+                        encryptedContent = encryptBinaryString(encodedContent, itemKey);
+
+                        newPageData = {
+                            "itemId": state.id,
+                            "keyEnvelope": forge.util.encode64(keyEnvelope),
+                            "content":  forge.util.encode64(encryptedContent),
+                            "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
+                            "s3ObjectsSizeInContent": s3ObjectsSize
+                        };
+                        
+                        updatedState = {
+                            itemKey, 
+                            content
+                        }
+
+                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        resolve();
+                    } catch(error) {
+                        reject(error);
+                    }   
                 } else {
+                    encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
                     let itemCopy = {
                         ...state.itemCopy
                     }
@@ -1105,14 +1143,21 @@ const uploadAnImage = async (dispatch, state, file) => {
 };
 
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
-    let state;
+    let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
+    workspaceKey = data.workspaceKey;
+    
     if(state.activity === "UploadingImages") {
         dispatch(addUploadImages({files:data.files, where:data.where}));
         return;
     } 
     newActivity(dispatch, "UploadingImages",  async () => {
         dispatch(addUploadImages({files:data.files, where:data.where}));
+        state = getState().page;
+        if(!state.itemCopy) {
+            itemKey = setupNewItemKey();
+            dispatch(newItemKey({itemKey}));
+        }
         state = getState().page;
         while(state.imageUploadQueue.length > state.imageUploadIndex){
             console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
@@ -1129,6 +1174,25 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
             images.push(image);
         }
         if (!state.itemCopy) {
+            try {
+                
+                keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
+
+                newPageData = {
+                    "itemId": state.id,
+                    "keyEnvelope": forge.util.encode64(keyEnvelope),
+                    "images":  JSON.stringify(images),
+                };
+                
+                updatedState = {
+                    itemKey
+                }
+
+                await createANewPage(dispatch, state, newPageData, updatedState);
+                resolve();
+            } catch(error) {
+                reject(error);
+            } 
         } else {
             let itemCopy = {
                 ...state.itemCopy
