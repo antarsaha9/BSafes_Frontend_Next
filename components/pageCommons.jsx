@@ -8,9 +8,10 @@ import Button from 'react-bootstrap/Button'
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
+import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { clearPage, updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -36,6 +37,8 @@ export default function PageCommons() {
     const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
+    const comments = useSelector(state => state.page.comments);
+
     const pswpRef = useRef(null);
 
     const imageFilesInputRef = useRef(null);
@@ -83,6 +86,13 @@ export default function PageCommons() {
             const imageIndex = parseInt(editorId.split("_")[1]);
             dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
             setEditingEditorId(editorId);
+        } else if(editorId.startsWith("comment_")) {
+            if(editorId === 'comment_New') {
+                dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
+                setEditingEditorId(editorId);
+            } else {
+
+            }
         }
     }
     
@@ -111,11 +121,18 @@ export default function PageCommons() {
                 dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}));
                 setEditingEditorId(null);
             }
-        }     
+        } else if(editingEditorId.startsWith("comment_")){
+            
+            if(editingEditorId === 'comment_New') {
+                dispatch(saveCommentThunk({index: editingEditorId, content}));
+            } else {
+                
+            }
+        }    
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === "Done")} />
     )
 
     const handleWrite = () =>{
@@ -137,14 +154,20 @@ export default function PageCommons() {
                     const imageIndex = parseInt(editingEditorId.split("_")[1]);
                     switch(mode) {
                         case "Saving":
-                            dispatch(setImageWordsMode({index: imageIndex, mode: "Saving"}));
-                            break;
                         case "ReadOnly":
-                            dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}))
+                            dispatch(setImageWordsMode({index: imageIndex, mode}))
                             break;
                         default:
                     }
                     
+                } else if(editingEditorId.startsWith("comment_")){
+                    switch(mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setCommentEditorMode({index: editingEditorId, mode}))
+                            break;
+                        default:
+                    }
                 } else {
 
                 }
@@ -502,6 +525,7 @@ export default function PageCommons() {
                 </Row>	
             </div>
             {photoSwipeGallery()}
+            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
         </>
     )

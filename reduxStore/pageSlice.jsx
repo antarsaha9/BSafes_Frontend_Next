@@ -37,6 +37,8 @@ const initialState = {
     imageDownloadQueue:[],
     imageDownloadIndex:0,
     itemVersions:[],
+    newCommentEditorMode: 'ReadOnly',
+    comments:[]
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -302,10 +304,17 @@ const pageSlice = createSlice({
             let panel = state.imagePanels[action.payload];
             panel.editorMode = "Saving";
         },
+        setCommentEditorMode: (state, action) => {
+            if(action.payload.index === 'comment_New') {
+                state.newCommentEditorMode = action.payload.mode;
+            } else {
+
+            }
+        }
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode} = pageSlice.actions;
+export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1241,6 +1250,61 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
                         imagePanels
                     }));
                     resolve();
+                }
+            } catch (error) {
+                reject();
+            }
+
+        });
+    })
+}
+
+export const saveCommentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Saving", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, result, encodedComment, encryptedComment, itemId;
+            state = getState().page;
+            try {
+                
+                if (!state.itemCopy) {
+                } else {
+                    result = preProcessEditorContentBeforeSaving(data.content).content;
+                    encodedComment = forge.util.encodeUtf8(result);
+                    encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
+
+                    // let itemCopy = {
+                    //     ...state.itemCopy
+                    // }
+                    itemId = state.id;
+
+                    // itemCopy.title = forge.util.encode64(encryptedTitle);
+                    // itemCopy.titleTokens = titleTokens;
+                    // itemCopy.update = "title";
+
+                    // await createNewItemVersionForPage(dispatch, itemCopy, { title, titleText });
+                    if(data.index === 'comment_New') {
+                        PostCall({
+                            api: '/memberAPI/saveNewPageComment',
+                            body: {
+                                itemId,
+                                content: encryptedComment,
+                            }
+                        }).then(function (data) {
+                            if (data.status === 'ok') {
+                                const payload = {
+                                    id: data.id,
+                                    creationTime: formatTimeDisplay(data.creationTime),
+                                    lastUpdateTime: formatTimeDisplay(data.lastUpdateTime),
+                                    writerName: 'You',
+                                    content: result
+                                }
+                                //dispatch(newCommentAdded(payload));
+                                resolve();
+                            } else {
+                                reject();
+                            }
+                        })
+                    }   
                 }
             } catch (error) {
                 reject();
