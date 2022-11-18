@@ -1304,7 +1304,9 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                                 reject();
                             }
                         })
-                    }   
+                    } else {
+                        
+                    }
                 }
             } catch (error) {
                 reject();
