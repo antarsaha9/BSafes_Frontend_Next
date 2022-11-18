@@ -11,7 +11,7 @@ import { downScaleImage, rotateImage } from '../lib/wnImage';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory"
+    activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
     error: null,
     itemCopy: null,
     id: null,
@@ -310,11 +310,22 @@ const pageSlice = createSlice({
             } else {
 
             }
-        }
+        },
+        pageCommentsFetched: (state, action) => {
+            state.comments.push(...action.payload);
+        },
+        newCommentAdded: (state, action) => {
+            state.comments.unshift(action.payload);
+        },
+        commentUpdated: (state, action) => {
+            const comment = state.comments[action.payload.commentIndex];
+            comment.content = action.payload.content;
+            comment.lastUpdateTime = action.payload.lastUpdateTime;
+        },
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode} = pageSlice.actions;
+export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1259,29 +1270,83 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
     })
 }
 
+export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "LoadingPageComments", () => {
+        let state, yourName, hits, comments,content, encryptedContent, binaryContent, encodedContent, payload ;
+        return new Promise(async (resolve, reject) => {
+            state = getState().page;
+            
+            PostCall({
+                api: '/memberAPI/getPageComments',
+                body: {
+                    itemId: data.itemId,
+                    size: 10,
+                    from: 0,
+                },
+            }).then(result => {
+                debugLog(debugOn, result);
+                if (result.status === 'ok') {
+                    if (result.hits) {
+                        
+                        hits = result.hits.hits;
+                        yourName = getState().auth.displayName;
+                        comments = hits.map(({ _source: comment, _id: id }) => {
+                            try {
+                                encryptedContent = comment.content;
+                                content = '';
+                                if(encryptedContent) {
+                                    binaryContent = forge.util.decode64(encryptedContent);
+                                    encodedContent = decryptBinaryString(binaryContent, state.itemKey);
+                                    content = forge.util.decodeUtf8(encodedContent);
+                                    content = DOMPurify.sanitize(content);
+                                }
+                                payload = {
+                                    id,
+                                    commentId: comment.commendId,
+                                    creationTime: comment.creationTime,
+                                    lastUpdateTime: comment.lastUpdateTime,
+                                    writerName: (comment.writerName === yourName)?'You':comment.writerName,
+                                    content
+                                }
+                                return payload;
+                                
+                            } catch (error) {
+                                console.trace(error);
+                                return {}
+                            }
+                        });
+                        dispatch(pageCommentsFetched(comments));
+                        resolve();
+                    } else {
+                        reject("woo... failed to get a page comments!");
+                    }
+                } else {
+                    debugLog(debugOn, "woo... failed to get a page comments!", data.error);
+                    reject("woo... failed to get a page comments!");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... failed to get a page comments.", error)
+                reject("woo... failed to get a page comments!");
+            }) 
+        });
+    });
+}
+
+
 export const saveCommentThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, result, encodedComment, encryptedComment, itemId;
+            let state, content, encodedComment, encryptedComment, itemId, commentIndex, commentId;
             state = getState().page;
-            try {
-                
+            try {     
                 if (!state.itemCopy) {
                 } else {
-                    result = preProcessEditorContentBeforeSaving(data.content).content;
+                    content = preProcessEditorContentBeforeSaving(data.content).content;
                     encodedComment = forge.util.encodeUtf8(result);
                     encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
 
-                    // let itemCopy = {
-                    //     ...state.itemCopy
-                    // }
                     itemId = state.id;
 
-                    // itemCopy.title = forge.util.encode64(encryptedTitle);
-                    // itemCopy.titleTokens = titleTokens;
-                    // itemCopy.update = "title";
-
-                    // await createNewItemVersionForPage(dispatch, itemCopy, { title, titleText });
                     if(data.index === 'comment_New') {
                         PostCall({
                             api: '/memberAPI/saveNewPageComment',
@@ -1293,19 +1358,37 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                             if (data.status === 'ok') {
                                 const payload = {
                                     id: data.id,
-                                    creationTime: formatTimeDisplay(data.creationTime),
-                                    lastUpdateTime: formatTimeDisplay(data.lastUpdateTime),
+                                    commendId: data.commendId,
+                                    creationTime: data.creationTime,
+                                    lastUpdateTime: data.lastUpdateTime,
                                     writerName: 'You',
-                                    content: result
+                                    content
                                 }
-                                //dispatch(newCommentAdded(payload));
+                                dispatch(newCommentAdded(payload));
                                 resolve();
                             } else {
                                 reject();
                             }
                         })
                     } else {
-                        
+                        commentIndex = parseInt(data.index.split('_')[1]);
+                        commentId = state.comments[commentIndex].commentId;
+
+                        PostCall({
+                            api: '/memberAPI/updatePageComment',
+                            body: {
+                                itemId,
+                                commentId: commentId,
+                                content: encryptedComment,
+                            }
+                        }).then(function (data) {
+                            if (data.status === 'ok') {                               
+                                dispatch(commentUpdated({commentIndex, content, lastUpdateTime: data.lastUpdateTime}));
+                                resolve();
+                            } else {
+                                reject();
+                            }
+                        })
                     }
                 }
             } catch (error) {
@@ -1315,6 +1398,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
         });
     })
 }
+
 
 export const pageReducer = pageSlice.reducer;
 

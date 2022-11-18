@@ -25,7 +25,7 @@ export default function PageCommons() {
     const activity = useSelector( state => state.page.activity);
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
-    let titleEditorContent = useSelector(state => state.page.title);
+    const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [editingEditorId, setEditingEditorId] = useState(null);
