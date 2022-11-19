@@ -99,27 +99,74 @@
 }
 /* End of Safe */
 
+/*--****** Container *******/
+/*--**** Container general */
+.containerTitleLabel {
+  min-height:120px;
+  border-radius:5px;
+  background-color:white;
+  padding:10px 20px 10px 20px;
+}
+
+.containerControlPanel {
+  background-color:black;
+}
+
+.containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
+  position: relative;
+  min-height: 860px;
+  max-width:800px;
+  margin:0px auto;
+  padding-bottom:48px;
+}
+
+.containerOpenBtn {
+  background: #7F8C8D;
+  display: inline-block;
+  margin: 0 1em 1em 0;
+  padding-top:16px;
+	width: 48px;
+	height: 96px;
+	border-bottom-left-radius: 12px;
+  border-top-left-radius: 12px;
+	position: absolute;
+  right: -18px;
+}
+
+/* End of container general */
+/*--***** Notebook */
+.notebookCoverPanel {
+  border-left: 30px solid #000;
+  background-color:#F2F3F4;
+  border-radius:0 20px 20px 0;
+}
+/* End of notebook */
+
+
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
   background-color:rgb(255, 255, 255);
-  min-height:980px;
+  min-height:860px;
   margin-top:20px;
   margin-bottom:20px;
   padding-left:15px;
   padding-right:15px;
   padding-bottom:48px;
-  box-shadow:0px 1px 2px 2px #C9C9C9;
-  -webkit-box-shadow:0px 1px 2px 2px #C9C9C9;
-  -moz-box-shadow:0px 0px 1px 2px #C9C9C9;
 }
 
 .pageBackground {
-  background-color: black;
+  background-color: rgb(161, 158, 158);
   padding-bottom:30px;
 }
 
+.leftPagePanel {
+  border-radius: 20px 0 0 20px;
+}
 
+.rightPagePanel {
+  border-radius: 0 20px 20px 0;
+}
 .imagesDragDropZone {
   border: 2px dashed #e4e1e1;
   background-color: aliceblue;
@@ -144,5 +191,11 @@
   margin-bottom: 10px;
 }
 
+/* End of Page */
 
+/*--****** Editor *******/
+/*--***** Editor general */
+.editorRow {
+  min-height:60px;
+}
 /* End of Page */

@@ -5,13 +5,13 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
-import Scripts from './scripts'
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
+import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, saveCommentThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 import Comments from "./Comments";
 
@@ -19,8 +19,9 @@ export default function PageCommons() {
     const debugOn = true;
     const dispatch = useDispatch();
 
-    const searchKey = useSelector(state => state.auth.searchKey);
-    const searchIV = useSelector(state => state.auth.searchIV);
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector(state => state.page.activity);
 
@@ -38,6 +39,8 @@ export default function PageCommons() {
     const contentVideosDisplayIndex = useSelector(state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
+    const comments = useSelector(state => state.page.comments);
+
     const pswpRef = useRef(null);
 
     const imageFilesInputRef = useRef(null);
@@ -55,9 +58,9 @@ export default function PageCommons() {
             const thisPanel = imagePanelsState[i];
             if (thisPanel.status !== "Uploaded" && thisPanel.status !== "Downloaded") continue;
             const item = {};
-            item.src = thisPanel.img.src;
-            item.w = thisPanel.img.width;
-            item.h = thisPanel.img.height;
+            item.src = thisPanel.src;
+            item.w = thisPanel.width;
+            item.h = thisPanel.height;
             slides.push(item);
             if (thisPanel.queueId === queueId) {
                 startingIndex = slides.length - 1;
@@ -88,22 +91,29 @@ export default function PageCommons() {
         } else if (editorId.startsWith("comment")) {
             setCommentEditorMode("Writing");
             setEditingEditorId(editorId);
+        } else if(editorId.startsWith("comment_")) {
+            if(editorId === 'comment_New') {
+                dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
+                setEditingEditorId(editorId);
+            } else {
+
+            }
         }
     }
 
     const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
-
-        if (editingEditorId === "content") {
-            if (content !== contentEditorContent) {
-                dispatch(saveContentThunk(content));
+        
+        if(editingEditorId === "content") {
+            if(content !== contentEditorContent) {
+                dispatch(saveContentThunk(content, workspaceKey));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        } else if (editingEditorId === "title") {
-            if (content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, searchKey, searchIV));
+        } else if(editingEditorId === "title") {
+            if(content !== titleEditorContent) {
+                dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -116,27 +126,18 @@ export default function PageCommons() {
                 dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
-        } else if (editingEditorId.startsWith("comment-")) {
-            console.log('called');
-            const commentId = editingEditorId.split("-")[1];
-            if (commentId==='New'){
-                // const content = 
-                dispatch(saveCommentThunk(content));
-
-            }else{
-
+        } else if(editingEditorId.startsWith("comment_")){
+            
+            if(editingEditorId === 'comment_New') {
+                dispatch(saveCommentThunk({index: editingEditorId, content}));
+            } else {
+                
             }
-            // if (content !== imagePanelsState[imageIndex].words) {
-            //     dispatch(saveImageWordsThunk({ index: imageIndex, content: content }));
-            // } else {
-            //     dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }));
-            //     setEditingEditorId(null);
-            // }
-        }
+        }    
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === "Done")} />
     )
 
     const handleWrite = () => {
@@ -159,10 +160,17 @@ export default function PageCommons() {
                     const imageIndex = parseInt(editingEditorId.split("_")[1]);
                     switch (mode) {
                         case "Saving":
-                            dispatch(setImageWordsMode({ index: imageIndex, mode: "Saving" }));
-                            break;
                         case "ReadOnly":
-                            dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }))
+                            dispatch(setImageWordsMode({index: imageIndex, mode}))
+                            break;
+                        default:
+                    }
+                    
+                } else if(editingEditorId.startsWith("comment_")){
+                    switch(mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setCommentEditorMode({index: editingEditorId, mode}))
                             break;
                         default:
                     }
@@ -193,7 +201,7 @@ export default function PageCommons() {
     };
 
     const uploadImages = (files, where) => {
-        dispatch(uploadImagesThunk({ files, where }));
+        dispatch(uploadImagesThunk({files, where, workspaceKey}));
     };
 
     const handleImageFiles = (e) => {
@@ -525,9 +533,8 @@ export default function PageCommons() {
                 </Row>
             </div>
             {photoSwipeGallery()}
-            <Comments editorMode={commentEditorMode} onContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editingEditorId={editingEditorId} editable={!editingEditorId && (activity === "Done")} />
-            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
-            <Scripts />
+            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
         </>
     )
 }

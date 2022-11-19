@@ -7,6 +7,7 @@ const debugOn = true;
 
 const initialState = {
     memberId: null,
+    displayName: null,
     isLoggedIn: false,
     expandedKey: null,
     publicKey: null,
@@ -21,9 +22,9 @@ const authSlice = createSlice({
     reducers: {
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
-
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
             state.memberId = credentials.memberId;
+            state.displayName = credentials.displayName;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
@@ -52,6 +53,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
                 credentials.memberId = data.memberId;
+                credentials.displayName = data.displayName;
                 saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                 
                 dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
@@ -77,6 +79,10 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                 body: credentials.keyPack,
             }).then( data => {
                 debugLog(debugOn, data);
+                if(data.status !== 'ok') {
+                    debugLog(debugOn, "woo... failed to login.")
+                    return;
+                }
                 credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
                 credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
                 credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
@@ -103,6 +109,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         if(data.status == "ok") {
                             debugLog(debugOn, "Logged in.");
                             credentials.memberId = data.memberId;
+                            credentials.displayName = data.displayName;
                             saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                             
                             dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));

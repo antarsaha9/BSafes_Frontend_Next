@@ -27,6 +27,13 @@ const containerSlice = createSlice({
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
+        clearContainer: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
         initWorkspace: (state, action) => {
             state.currentSpace = action.payload.workspaceId;
             state.workspaceKey = action.payload.workspaceKey;
@@ -51,7 +58,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, initWorkspace, pageLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, initWorkspace, pageLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
