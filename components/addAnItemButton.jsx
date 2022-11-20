@@ -15,10 +15,10 @@ export default function AddAnItemButton({addAnItem, pageOnly=false}) {
     const handleShow = () => setShow(true);
 
     const optionSelected = (e) => {
-        debugLog(debugOn, e.target.id)
+        debugLog(debugOn, e)
         
         setShow(false);
-        addAnItem(e.target.id, 'addAnItemOnTop');
+        addAnItem(e, 'addAnItemOnTop');
     }
 
     return (
