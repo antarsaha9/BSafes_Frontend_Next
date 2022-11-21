@@ -308,7 +308,8 @@ const pageSlice = createSlice({
             if(action.payload.index === 'comment_New') {
                 state.newCommentEditorMode = action.payload.mode;
             } else {
-
+                let index = parseInt(action.payload.index.split('_')[1]);
+                state.comments[index].editorMode = action.payload.mode;
             }
         },
         pageCommentsFetched: (state, action) => {
@@ -1306,7 +1307,8 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                                     creationTime: comment.creationTime,
                                     lastUpdateTime: comment.lastUpdateTime,
                                     writerName: (comment.writerName === yourName)?'You':comment.writerName,
-                                    content
+                                    content,
+                                    editorMode: 'ReadOnly'
                                 }
                                 return payload;
                                 
@@ -1342,7 +1344,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                 if (!state.itemCopy) {
                 } else {
                     content = preProcessEditorContentBeforeSaving(data.content).content;
-                    encodedComment = forge.util.encodeUtf8(result);
+                    encodedComment = forge.util.encodeUtf8(content);
                     encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
 
                     itemId = state.id;
@@ -1358,7 +1360,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                             if (data.status === 'ok') {
                                 const payload = {
                                     id: data.id,
-                                    commendId: data.commendId,
+                                    commentId: data.commentId,
                                     creationTime: data.creationTime,
                                     lastUpdateTime: data.lastUpdateTime,
                                     writerName: 'You',
