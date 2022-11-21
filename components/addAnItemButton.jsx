@@ -14,11 +14,11 @@ export default function AddAnItemButton({addAnItem, pageOnly=false}) {
     const handleClose = () => setShow(false);
     const handleShow = () => setShow(true);
 
-    const optionSelected = (e) => {
-        debugLog(debugOn, e.target.id)
+    const optionSelected = (itemType) => {
+        debugLog(debugOn, itemType)
         
         setShow(false);
-        addAnItem(e.target.id, 'addAnItemOnTop');
+        addAnItem(itemType, 'addAnItemOnTop');
     }
 
     return (

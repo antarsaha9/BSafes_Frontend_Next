@@ -16,7 +16,7 @@ import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
 import { clearContainer, initWorkspace } from '../../reduxStore/containerSlice';
-import { clearPage, decryptPageItemThunk, getPageItemThunk } from "../../reduxStore/pageSlice";
+import { clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
@@ -71,6 +71,7 @@ export default function Page() {
     useEffect(()=>{
         if(workspaceKey && pageCleared) {
             dispatch(decryptPageItemThunk({workspaceKey}));
+            dispatch(getPageCommentsThunk({itemId}));
         }
     }, [workspaceKey]);
     

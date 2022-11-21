@@ -17,13 +17,6 @@ export default function Comments({handlePenClicked, handleContentChanged, editab
   const newCommentEditorMode = useSelector(state => state.page.newCommentEditorMode);
   const comments = useSelector(state => state.page.comments);
 
-
-  useEffect(() => {
-    if(itemKey) {
-      dispatch(getPageCommentsThunk({itemId}));
-    } 
-}, [itemKey]);
-
   return (
     <div>
       <Row>

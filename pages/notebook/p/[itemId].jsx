@@ -16,7 +16,7 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 
 import { clearContainer, initWorkspace } from '../../../reduxStore/containerSlice';
-import { clearPage, decryptPageItemThunk, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
@@ -72,6 +72,8 @@ export default function NotebookPage() {
         }
     }, [pageCleared, pageItemId]);
 
+
+
     useEffect(()=>{
         if(space && pageCleared ) {
             if (space.substring(0, 1) === 'u') {
@@ -84,6 +86,7 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(workspaceKey && pageCleared && itemCopy) {
             dispatch(decryptPageItemThunk({workspaceKey}));
+            dispatch(getPageCommentsThunk({itemId}));
         }
     }, [workspaceKey]);
 
