@@ -112,6 +112,22 @@
   background-color:black;
 }
 
+.pageNavigationPart {
+  float:left;
+}
+
+.pageNumberInput {
+  background-color:transparent;
+  margin-bottom:6px;
+  max-width:50px;
+  text-align:center;
+  color: white;
+}
+
+.pageNumberInput:focus {
+  color: white;
+}
+
 .containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
   position: relative;
   min-height: 860px;
