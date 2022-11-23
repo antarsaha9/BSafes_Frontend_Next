@@ -14,6 +14,7 @@ import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/topControlPanel"
 import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
+import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initWorkspace } from '../../../reduxStore/containerSlice';
 import { clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
@@ -76,6 +77,7 @@ export default function NotebookPage() {
 
     useEffect(()=>{
         if(space && pageCleared ) {
+            
             if (space.substring(0, 1) === 'u') {
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
@@ -85,6 +87,7 @@ export default function NotebookPage() {
 
     useEffect(()=>{
         if(workspaceKey && pageCleared && itemCopy) {
+            setPageCleared(false);
             dispatch(decryptPageItemThunk({workspaceKey}));
             dispatch(getPageCommentsThunk({itemId}));
         }
@@ -94,19 +97,26 @@ export default function NotebookPage() {
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
-                <Container> 
+                <Container fluid>
                     <br />
                         <TopControlPanel></TopControlPanel>
                     <br />  
-                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
-                        <ItemTopRows />
-                        <Row className="justify-content-center">
-                            <Col xs="12" sm="10" md="8">
-                                <hr />
-                            </Col>
-                        </Row>
-                        <PageCommons />
-                    </div>
+                    <Row>
+                        <Col lg={{span:10, offset:1}}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
+                                <ItemTopRows />
+                                <Row className="justify-content-center">
+                                    <Col xs="12" sm="10" md="8">
+                                        <hr />
+                                    </Col>
+                                </Row>
+                                <PageCommons />
+                            </div>  
+                        </Col>
+                    </Row> 
+
+                    <TurningPageControls />
+   
                 </Container>           
             </ContentPageLayout>
             <Scripts />

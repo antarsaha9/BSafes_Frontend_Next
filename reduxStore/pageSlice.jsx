@@ -5,13 +5,14 @@ const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
 
 const initialState = {
     activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
+    activeRequest: null,
     error: null,
     itemCopy: null,
     id: null,
@@ -165,6 +166,9 @@ const pageSlice = createSlice({
         },
         activityChanged: (state, action) => {
             state.activity = action.payload;
+        },
+        setActiveRequest: (state, action) => {
+            state.activeRequest = action.payload;
         },
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
@@ -326,7 +330,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setActiveRequest, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -334,6 +338,7 @@ const newActivity = async (dispatch, type, activity) => {
         await activity();
         dispatch(activityChanged("Done"));
     } catch(error) {
+        if(error === "Aborted") return;
         dispatch(activityChanged("Error"));
     }
 }
@@ -393,6 +398,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         
         return new Promise(async (resolve, reject) => {
             let state;
+            dispatch(setActiveRequest(data.itemId));
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: {itemId: data.itemId},
@@ -401,14 +407,22 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 state = getState().page;
                 if(result.status === 'ok') {                                   
                     if(result.item) {
-                        dispatch(dataFetched({item:result.item}));
-                        resolve();
+                        if(data.itemId === state.activeRequest) {
+                            dispatch(dataFetched({item:result.item}));
+                            resolve();
+                        } else {
+                            reject("Aborted");
+                        }
                     } else {
                         if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
                             try {
                                 const container = await getContainerData(data.itemId);
-                                dispatch(containerDataFetched({itemId: data.itemId, container}));
-                                resolve();
+                                if(data.itemId === state.activeRequest) {
+                                    dispatch(containerDataFetched({itemId: data.itemId, container}));
+                                    resolve();
+                                } else {
+                                    reject("Aborted");
+                                }
                             } catch(error) {
                                 reject("woo... failed to get the container data!");
                             }

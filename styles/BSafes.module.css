@@ -131,8 +131,6 @@
 .containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
   position: relative;
   min-height: 860px;
-  max-width:800px;
-  margin:0px auto;
   padding-bottom:48px;
 }
 
@@ -148,6 +146,30 @@
 	position: absolute;
   right: -18px;
 }
+
+.turningPageRow {
+  position:fixed;
+  left: 0px;
+  right:0px;
+  top:60%;
+  width:100%;
+}
+
+.pageBtn {
+  background-color:transparent;
+  display: inline-block;
+  z-index:1000;
+  color: black;
+}
+
+.previousPageBtn {
+  left:-10px;
+}
+
+.nextPageBtn {
+  right:-10px;
+}
+
 
 /* End of container general */
 /*--***** Notebook */

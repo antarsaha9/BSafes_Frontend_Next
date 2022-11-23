@@ -49,6 +49,7 @@ export default function Notebook() {
     const activity = useSelector( state => state.page.activity);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
+    const itemCopy = useSelector( state => state.page.itemCopy);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
 
@@ -157,8 +158,8 @@ export default function Notebook() {
         }
     }, [space]);
 
-    useEffect(()=>{
-        if(workspaceKey && pageCleared) {
+    useEffect(()=>{ 
+        if(workspaceKey && pageCleared && itemCopy) {
             dispatch(decryptPageItemThunk({workspaceKey}));
         }
     }, [workspaceKey]);
@@ -167,45 +168,49 @@ export default function Notebook() {
         <div>
             <div className={BSafesStyle.pageBackground}>
                 <ContentPageLayout>
-                    <Container> 
+                    <Container fluid> 
                         <br />
                         <TopControlPanel></TopControlPanel>
-                        <br />                            
-                    { !isOpen &&
-                        <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
-                            <ItemTopRows />
-                            <br />
-                            <br />
-                            <Row className="justify-content-center">
-                                <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
-                                </Col> 
-                            </Row>
-                            <br />
-                            <Row>
-                                <Col>
-                                    <ContainerOpenButton handleOpen={handleOpen} />
-                                </Col>
-                            </Row>
-                            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
-                        </div>                  
-                    }  
-                    { isOpen &&
-                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
-                        <br />
-                        <br />
-				        <h2 className="text-center">Contents</h2>
-
+                        <br />  
                         <Row>
-                            <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                    Page 
-                            </Col> 
-                            <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
-              	                Title 
+                            <Col lg={{span:10, offset:1}}>                       
+                            { !isOpen &&
+                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
+                                    <ItemTopRows />
+                                    <br />
+                                    <br />
+                                    <Row className="justify-content-center">
+                                        <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                        </Col> 
+                                    </Row>
+                                    <br />
+                                    <Row>
+                                        <Col>
+                                            <ContainerOpenButton handleOpen={handleOpen} />
+                                        </Col>
+                                    </Row>
+                                    <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+                                </div> 
+                            }
+                            { isOpen &&
+                                <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
+                                    <br />
+                                    <br />
+				                    <h2 className="text-center">Contents</h2>
+
+                                    <Row>
+                                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+           	                                Page 
+                                        </Col> 
+                                        <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
+              	                            Title 
+                                        </Col>
+                                    </Row>
+                                </div>
+                            }  
                             </Col>
                         </Row>
-                    </div>
-                    }  
                     </Container> 
                 </ContentPageLayout>
                 <Scripts />
