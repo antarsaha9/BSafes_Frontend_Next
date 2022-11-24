@@ -7,7 +7,7 @@ import Form from 'react-bootstrap/Form'
 import { debugLog } from '../lib/helper'
 
 export default function NewItemModal({show=false, handleClose, handleCreateANewItem}) {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering NewItemModal: ", `${show}}`);
 
     const inputRef = useRef(null);

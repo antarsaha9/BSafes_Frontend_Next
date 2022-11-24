@@ -23,7 +23,7 @@ import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 
 export default function Notebook() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();

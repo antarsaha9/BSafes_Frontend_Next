@@ -16,7 +16,7 @@ import ImagesGallery from '../components/imagesGallery';
 import { preflightAsyncThunk } from '../reduxStore/auth';
 
 export default function Home() {
-  const debugOn = true;
+  const debugOn = false;
 
   const host = process.env.NEXT_PUBLIC_DB_HOST;
   debugLog(debugOn, `host: ${host}`);

@@ -4,7 +4,7 @@ import ListGroup from 'react-bootstrap/ListGroup';
 import { debugLog } from '../lib/helper'
 
 export default function ItemTypeModal({show=false, optionSelected, handleClose, pageOnly=false}) {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering ItemTypeModal: ", `${show}}`);
     
     return (

@@ -17,7 +17,7 @@ import { listItemsThunk } from '../reduxStore/containerSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
     const dispatch = useDispatch();

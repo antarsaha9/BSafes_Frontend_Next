@@ -17,7 +17,7 @@ import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
-    const debugOn = true;    
+    const debugOn = false;    
     const editorRef = useRef(null);
     const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
 

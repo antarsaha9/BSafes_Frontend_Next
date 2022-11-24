@@ -3,7 +3,7 @@ import { createSlice} from '@reduxjs/toolkit';
 import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching

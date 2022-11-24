@@ -48,6 +48,11 @@ const dataFetchedFunc = (state, action) => {
     state.itemCopy = item;
 
     state.id = item.id;
+
+    if(state.id.startsWith('np')) {
+        state.pageNumber = parseInt(state.id.split(':').pop())
+    }
+
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
@@ -170,14 +175,14 @@ const pageSlice = createSlice({
         setActiveRequest: (state, action) => {
             state.activeRequest = action.payload;
         },
+        setPageNumber: (state, action) => {
+            state.pageNumber = action.payload;
+        },
         dataFetched: (state, action) => {
             dataFetchedFunc(state, action);
         },
         containerDataFetched: (state, action) => {
             state.id = action.payload.itemId;
-            if(state.id.startsWith('np')) {
-                state.pageNumber = parseInt(state.id.split(':').pop())
-            }
             state.space = action.payload.container.space;
             state.container = action.payload.container.id;
             state.title = "<h2></h2>";
@@ -330,7 +335,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setActiveRequest, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setActiveRequest, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -369,6 +374,10 @@ const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
+        if(data.itemId.startsWith('np')) {
+            dispatch(setPageNumber(parseInt(data.itemId.split(':').pop())));
+        }
+
         const getContainerData = (itemId) => {
             return new Promise(async (resolve, reject) => {
                 let itemIdParts, containerId;
@@ -376,12 +385,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 itemIdParts.pop();
                 containerId = itemIdParts.join(':');
                 containerId = containerId.replace('p:', ':');
+                debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
                 PostCall({
                     api:'/memberAPI/getPageItem',
                     body: {itemId: containerId},
                 }).then( result => {
-                    debugLog(debugOn, result);
                     if(result.status === 'ok') {    
+                        debugLog(debugOn, "getContainerData: ", result);
                         if(result.item) {
                             resolve(result.item);
                         } else {
@@ -399,24 +409,27 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             let state;
             dispatch(setActiveRequest(data.itemId));
+            debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: {itemId: data.itemId},
             }).then( async result => {
                 debugLog(debugOn, result);
                 state = getState().page;
-                if(result.status === 'ok') {                                   
+                if(result.status === 'ok') {    
+                    if(data.itemId !== state.activeRequest) {
+                        debugLog(debugOn, "Aborted");
+                        reject("Aborted");
+                        return;
+                    }                            
                     if(result.item) {
-                        if(data.itemId === state.activeRequest) {
-                            dispatch(dataFetched({item:result.item}));
-                            resolve();
-                        } else {
-                            reject("Aborted");
-                        }
+                        dispatch(dataFetched({item:result.item}));
+                        resolve();
                     } else {
                         if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
                             try {
                                 const container = await getContainerData(data.itemId);
+                                state = getState().page;
                                 if(data.itemId === state.activeRequest) {
                                     dispatch(containerDataFetched({itemId: data.itemId, container}));
                                     resolve();

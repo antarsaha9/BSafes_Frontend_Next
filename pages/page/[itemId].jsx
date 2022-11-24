@@ -20,7 +20,7 @@ import { clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();

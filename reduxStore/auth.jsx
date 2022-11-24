@@ -3,7 +3,7 @@ const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     memberId: null,

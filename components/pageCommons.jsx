@@ -15,7 +15,7 @@ import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downl
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);

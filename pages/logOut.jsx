@@ -17,7 +17,7 @@ import Scripts from '../components/scripts'
 import { logOutAsyncThunk } from '../reduxStore/auth'
 
 export default function LogOut() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const scriptsLoaded = useSelector(state => state.scripts.done);
