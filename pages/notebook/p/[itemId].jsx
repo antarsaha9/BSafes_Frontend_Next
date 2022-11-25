@@ -30,11 +30,11 @@ export default function NotebookPage() {
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
-
+/*
     const {itemId} = router.query;
     if(itemId && (!pageItemId || (pageItemId !== itemId))) {
         setPageItemId(itemId);
-    }
+    }*/
     debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -46,9 +46,6 @@ export default function NotebookPage() {
 
     function gotoAnotherPage (anotherPageNumber) {
         if(!(pageItemId && pageNumber)) return;
-        dispatch(clearPage());
-        dispatch(clearContainer());
-        setPageCleared(true);
 
         let idParts, nextPageId;
         idParts = pageItemId.split(':');
@@ -87,26 +84,25 @@ export default function NotebookPage() {
     }
 
     useEffect(()=>{
-        dispatch(clearPage());
-        dispatch(clearContainer());
-        setPageCleared(true);
-    }, []);
-
-    useEffect(()=>{
-        if(!router.isReady || pageItemId) return;
-        const {itemId} = router.query;
-        setPageItemId(itemId);
-    }, [router.isReady]);
+        if(router.query.itemId) {
+            dispatch(clearPage());
+            dispatch(clearContainer());
+            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
+            setPageItemId(router.query.itemId);
+            setPageCleared(true);
+        }
+    }, [router.query.itemId]);
 
     useEffect(()=>{
         if(pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
             dispatch(getPageItemThunk({itemId:pageItemId}));
         }
-    }, [pageCleared, pageItemId]);
+    }, [pageItemId, pageCleared]);
 
     useEffect(()=>{
         if(pageNumber) {
+            debugLog(debugOn, "pageNumber: ", pageNumber);
             if(pageNumber%2) {
                 setPageStyle(BSafesStyle.leftPagePanel);
             } else {
@@ -116,7 +112,7 @@ export default function NotebookPage() {
     }, [pageNumber])
 
     useEffect(()=>{
-        if(space && pageCleared ) {
+        if(space && pageCleared) {
             
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
@@ -128,7 +124,7 @@ export default function NotebookPage() {
 
     useEffect(()=>{
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if(workspaceKey && pageCleared && itemCopy) {
+        if(workspaceKey && itemCopy && pageCleared) {
             setPageCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({workspaceKey}));
