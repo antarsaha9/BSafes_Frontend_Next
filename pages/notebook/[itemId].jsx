@@ -17,7 +17,7 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
@@ -31,11 +31,6 @@ export default function Notebook() {
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false); 
     const [isOpen, setIsOpen] = useState(false);
-
-    const {itemId} = router.query;
-    if(itemId && !pageItemId) {
-        setPageItemId(itemId);
-    }
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -118,21 +113,39 @@ export default function Notebook() {
         }
     }
 
-    useEffect(()=>{
-        if(!router.isReady || pageItemId) return;
-        const {itemId} = router.query;
-        setPageItemId(itemId);
-    }, [router.isReady]);
-
-    useEffect(()=>{
-        dispatch(clearPage());
-        dispatch(clearContainer());
-        setPageCleared(true);
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
     }, []);
 
     useEffect(()=>{
+        if(router.query.itemId) {
+            dispatch(clearPage());
+            dispatch(clearContainer());
+            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
+            setPageItemId(router.query.itemId);
+            setPageCleared(true);
+        }
+    }, [router.query.itemId]);
+
+    useEffect(()=>{
         if(pageItemId && pageCleared) {
-            dispatch(getPageItemThunk({itemId}));
+            debugLog(debugOn, "Dispatch getPageItemThunk ...");
+            dispatch(getPageItemThunk({itemId:pageItemId}));
         }
     }, [pageCleared, pageItemId]);
 
@@ -152,6 +165,7 @@ export default function Notebook() {
     useEffect(()=>{
         if(space && pageCleared) {
             if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
             }
@@ -159,8 +173,11 @@ export default function Notebook() {
     }, [space]);
 
     useEffect(()=>{ 
+        debugLog(debugOn, "useEffect [workspaceKey] ...");
         if(workspaceKey && pageCleared && itemCopy) {
-            dispatch(decryptPageItemThunk({workspaceKey}));
+            setPageCleared(false);
+            debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
+            dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
         }
     }, [workspaceKey]);
 

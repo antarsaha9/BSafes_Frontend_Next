@@ -17,7 +17,7 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initWorkspace } from '../../../reduxStore/containerSlice';
-import { clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
@@ -30,11 +30,7 @@ export default function NotebookPage() {
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
-/*
-    const {itemId} = router.query;
-    if(itemId && (!pageItemId || (pageItemId !== itemId))) {
-        setPageItemId(itemId);
-    }*/
+
     debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -83,6 +79,25 @@ export default function NotebookPage() {
         gotoAnotherPage(anotherPageNumber);
     }
 
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
+
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
@@ -127,7 +142,7 @@ export default function NotebookPage() {
         if(workspaceKey && itemCopy && pageCleared) {
             setPageCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
-            dispatch(decryptPageItemThunk({workspaceKey}));
+            dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
         }
     }, [workspaceKey]);
