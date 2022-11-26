@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build && next export",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "windowsDebug": "set PORT=8444 && node server.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.8.2",
@@ -22,6 +23,7 @@
     "node-forge": "^1.3.1",
     "react": "18.2.0",
     "react-bootstrap": "^2.4.0",
+    "react-datepicker": "^4.8.0",
     "react-dom": "18.2.0",
     "react-redux": "^8.0.2",
     "react-tagsinput-special": "^1.6.0"
