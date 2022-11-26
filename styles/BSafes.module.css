@@ -226,4 +226,14 @@
 .diaryHRBelowDate {
 	margin-top:0px;
 }	
+.containerContentsPageTitle {
+  color:#000;
+  font-size:100%;
+  font-family:Ariel, Verdana;
+  text-decoration: none;
+}
+.marginTopBottom0Px {
+	margin-top:0px;
+	margin-bottom:0px;
+}
 /* End of diary */
