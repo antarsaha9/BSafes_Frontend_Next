@@ -5,13 +5,15 @@ const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr, decryptDecode1 } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
 
 const initialState = {
+    aborted: false,
     activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
+    activeRequest: null,
     error: null,
     itemCopy: null,
     id: null,
@@ -50,6 +52,11 @@ const dataFetchedFunc = (state, action) => {
     state.itemCopy = item;
 
     state.id = item.id;
+
+    if(state.id.startsWith('np')) {
+        state.pageNumber = parseInt(state.id.split(':').pop())
+    }
+
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
@@ -166,22 +173,35 @@ const pageSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        abort: (state, action) => {
+            state.aborted = true;
+        },
         activityChanged: (state, action) => {
+            if(state.aborted ) return;
             state.activity = action.payload;
         },
+        setActiveRequest: (state, action) => {
+            state.activeRequest = action.payload;
+        },
+        setPageNumber: (state, action) => {
+            state.pageNumber = action.payload;
+        },
         dataFetched: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.item.id !== state.activeRequest) return;
             dataFetchedFunc(state, action);
         },
         containerDataFetched: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             state.id = action.payload.itemId;
-            if(state.id.startsWith('np')) {
-                state.pageNumber = parseInt(state.id.split(':').pop())
-            }
             state.space = action.payload.container.space;
             state.container = action.payload.container.id;
             state.title = "<h2></h2>";
         },
         decryptPageItem: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             decryptPageItemFunc(state, action.payload.workspaceKey);
         },
         newItemKey: (state, action) => {
@@ -208,29 +228,42 @@ const pageSlice = createSlice({
             state.containerContents = action.payload;
         },
         downloadingContentImage: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            if(!image) return;
             image.status = "Downloading";
             image.progress = action.payload;
         },
         contentImageDownloaded: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            if(!image) return;
             image.status = "Downloaded";
             image.src = action.payload.link;
             state.contentImagedDownloadIndex += 1;
         },
-        updateContentImagesDisplayIndex: (state, action) => {
+        updateContentImagesDisplayIndex: (state, action) => {        
             state.contentImagesDisplayIndex = action.payload;
         },
         downloadContentVideo: (state, action) => {
+            if(state.aborted ) return;
             state.contentVideosDownloadQueue.push(action.payload);
         },
         downloadingContentVideo: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            if(!video) return;
             video.status = "Downloading";
             video.progress = action.payload;
         },
         contentVideoDownloaded: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            if(!video) return;
             video.status = "Downloaded";
             video.src = action.payload.link;
             state.contentVideosDownloadIndex += 1;
@@ -239,6 +272,7 @@ const pageSlice = createSlice({
             state.contentVideosDisplayIndex = action.payload;
         },
         addUploadImages: (state, action) => {
+            if(state.aborted ) return;
             const files = action.payload.files;
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
@@ -262,12 +296,15 @@ const pageSlice = createSlice({
             }
         },
         uploadingImage: (state, action) => {
+            if(state.aborted ) return;
             let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
             panel.status = "Uploading";
             panel.progress = action.payload;
         },
         imageUploaded: (state, action) => {
+            if(state.aborted ) return;
             let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
+            if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
             panel.src = action.payload.link;
@@ -279,13 +316,19 @@ const pageSlice = createSlice({
             panel.words="";
             state.imageUploadIndex += 1;
         },
-        downloadingImage: (state, action) => {
+        downloadingImage: (state, action) => {     
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
             let panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(!panel) return;
             panel.status = "Downloading";
-            panel.progress = action.payload;
+            panel.progress = action.payload.progress;
         },
         imageDownloaded: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;  
             let panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(!panel) return;
             panel.status = "Downloaded";
             panel.progress = 100;
             panel.src = action.payload.link;
@@ -296,14 +339,17 @@ const pageSlice = createSlice({
         },
         setImageWordsMode: (state, action) => {
             let panel = state.imagePanels[action.payload.index];
+            if(!panel) return;
             panel.editorMode = action.payload.mode;
         },
         readOnlyImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
+            if(!panel) return;
             panel.editorMode = "ReadOnly";
         },
         writingImageWords: (state, action) => {
             let panel = state.imagePanels[action.payload];
+            if(!panel) return;
             panel.editorMode = "Writing";
         },
         saveImageWords: (state, action) => {
@@ -314,11 +360,14 @@ const pageSlice = createSlice({
             if(action.payload.index === 'comment_New') {
                 state.newCommentEditorMode = action.payload.mode;
             } else {
-
+                let index = parseInt(action.payload.index.split('_')[1]);
+                state.comments[index].editorMode = action.payload.mode;
             }
         },
         pageCommentsFetched: (state, action) => {
-            state.comments.push(...action.payload);
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
+            state.comments.push(...action.payload.comments);
         },
         newCommentAdded: (state, action) => {
             state.comments.unshift(action.payload);
@@ -331,7 +380,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, abort, setActiveRequest, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -339,12 +388,13 @@ const newActivity = async (dispatch, type, activity) => {
         await activity();
         dispatch(activityChanged("Done"));
     } catch(error) {
+        if(error === "Aborted") return;
         dispatch(activityChanged("Error"));
     }
 }
 
 
-const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
+const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction) => {
     return new Promise( async (resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', signedURL, true);
@@ -354,7 +404,7 @@ const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
             if (evt.lengthComputable) {
                 let percentComplete = evt.loaded / evt.total * 90 + 10;
                 debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
-                dispatch(downloadingFunction(percentComplete));
+                dispatch(downloadingFunction({itemId, progress:percentComplete}));
             }
         }, false);
 
@@ -408,6 +458,10 @@ export const getContainerContentsThunk = (data)=> async(dispatch, getState)=>{
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
+        if(data.itemId.startsWith('np')) {
+            dispatch(setPageNumber(parseInt(data.itemId.split(':').pop())));
+        }
+
         const getContainerData = (itemId) => {
             return new Promise(async (resolve, reject) => {
                 let itemIdParts, containerId;
@@ -415,12 +469,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 itemIdParts.pop();
                 containerId = itemIdParts.join(':');
                 containerId = containerId.replace('p:', ':');
+                debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
                 PostCall({
                     api:'/memberAPI/getPageItem',
                     body: {itemId: containerId},
                 }).then( result => {
-                    debugLog(debugOn, result);
                     if(result.status === 'ok') {    
+                        debugLog(debugOn, "getContainerData: ", result);
                         if(result.item) {
                             resolve(result.item);
                         } else {
@@ -437,13 +492,20 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         
         return new Promise(async (resolve, reject) => {
             let state;
+            dispatch(setActiveRequest(data.itemId));
+            debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: {itemId: data.itemId},
             }).then( async result => {
                 debugLog(debugOn, result);
                 state = getState().page;
-                if(result.status === 'ok') {                                   
+                if(result.status === 'ok') {    
+                    if(data.itemId !== state.activeRequest) {
+                        debugLog(debugOn, "Aborted");
+                        reject("Aborted");
+                        return;
+                    }                            
                     if(result.item) {
                         dispatch(dataFetched({item:result.item}));
                         resolve();
@@ -451,8 +513,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
                             try {
                                 const container = await getContainerData(data.itemId);
-                                dispatch(containerDataFetched({itemId: data.itemId, container}));
-                                resolve();
+                                state = getState().page;
+                                if(data.itemId === state.activeRequest) {
+                                    dispatch(containerDataFetched({itemId: data.itemId, container}));
+                                    resolve();
+                                } else {
+                                    reject("Aborted");
+                                }
                             } catch(error) {
                                 reject("woo... failed to get the container data!");
                             }
@@ -473,112 +540,121 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 }
 
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
+    let state;
+    state = getState().page; 
     newActivity(dispatch, "Decrypting", () => {
+        const itemId = data.itemId;
         const startDownloadingContentImages = async () => {
-        let state = getState().page; 
-        const downloadAnImage = (image) => {
-
-            return new Promise(async (resolve, reject) => {
-                const s3Key = image.s3Key;
-                const keyVersion = s3Key.split(":")[1];
-                try {
-                    dispatch(downloadingContentImage(5));    
-                    const signedURL = await preS3Download(state.id, s3Key);
-                    dispatch(downloadingContentImage(5));
-
-                    const response = await XHRDownload(dispatch, signedURL, downloadingContentImage);                          
-                    debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                    
-                    let decryptedImageStr
-                    if(keyVersion === '3') {
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-            
-                    } else if(keyVersion === '1') {
-
-                    }
-                    const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                    const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                        type: 'image/*'
-                    });
-                                          
-                    dispatch(contentImageDownloaded({link}));
-                    resolve();
-                                               
-                } catch(error) {
-                    debugLog(debugOn, 'downloadFromS3 error: ', error)
-                    reject(error);
-                }
-            });
-        }
-        while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
-            const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
-            await downloadAnImage(image); 
-            
             state = getState().page; 
-        }
+            const downloadAnImage = (image) => {
+
+                return new Promise(async (resolve, reject) => {
+                    const s3Key = image.s3Key;
+                    const keyVersion = s3Key.split(":")[1];
+                    try {
+                        dispatch(downloadingContentImage({itemId, progress:5}));    
+                        const signedURL = await preS3Download(state.id, s3Key);
+                        dispatch(downloadingContentImage({itemId, progress:10}));
+
+                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
+                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                    
+                        let decryptedImageStr
+                        if(keyVersion === '3') {
+                            const buffer = Buffer.from(response, 'binary');
+                            const downloadedBinaryString = buffer.toString('binary');
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+            
+                        } else if(keyVersion === '1') {
+
+                        }
+                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                            type: 'image/*'
+                        });
+                                          
+                        dispatch(contentImageDownloaded({itemId, link}));
+                        resolve();
+                                               
+                    } catch(error) {
+                        debugLog(debugOn, 'downloadFromS3 error: ', error)
+                        reject(error);
+                    }
+                });
+            }
+            while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
+                if(state.abort) break;
+                const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+                await downloadAnImage(image); 
+            
+                state = getState().page; 
+            }
         }
 
         const startDownloadingImages = async () => {
-        let state = getState().page; 
-        const downloadAnImage = (image) => {
-
-            return new Promise(async (resolve, reject) => {
-                const s3Key = image.s3Key + "_gallery";
-                const keyVersion = s3Key.split(":")[1];
-                try {
-                    dispatch(downloadingImage(5));
-                    const signedURL = await preS3Download(state.id, s3Key);
-                    dispatch(downloadingImage(10));
-                    const response = await XHRDownload(dispatch, signedURL, downloadingImage);                          
-                    debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                    
-                    let decryptedImageStr
-                    if(keyVersion === '3') {
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-            
-                    } else if(keyVersion === '1') {
-
-                    }
-                    const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                    const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                        type: 'image/*'
-                    });
-                    
-                    let img = new Image();
-                    img.src = link;
-    
-                    img.onload = () => {
-                        dispatch(imageDownloaded({link, width:img.width, height:img.height}));
-                        resolve();
-                    }
-                    
-
-                } catch(error) {
-                    debugLog(debugOn, 'downloadFromS3 error: ', error)
-                    reject(error);
-                }
-            });
-        }
-
-        while(state.imageDownloadIndex < state.imageDownloadQueue.length) {
-            const image = state.imageDownloadQueue[state.imageDownloadIndex];
-            await downloadAnImage(image); 
-            
             state = getState().page; 
-        }
+            const downloadAnImage = (image) => {
+
+                return new Promise(async (resolve, reject) => {
+                    const s3Key = image.s3Key + "_gallery";
+                    const keyVersion = s3Key.split(":")[1];
+                    try {
+                        dispatch(downloadingImage({itemId, progress:5}));
+                        const signedURL = await preS3Download(state.id, s3Key);
+                        dispatch(downloadingImage({itemId, progress:10}));
+                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);                          
+                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                    
+                        let decryptedImageStr
+                        if(keyVersion === '3') {
+                            const buffer = Buffer.from(response, 'binary');
+                            const downloadedBinaryString = buffer.toString('binary');
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+            
+                        } else if(keyVersion === '1') {
+
+                        }
+                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                            type: 'image/*'
+                        });
+                    
+                        let img = new Image();
+                        img.src = link;
+    
+                        img.onload = () => {
+                            dispatch(imageDownloaded({itemId, link, width:img.width, height:img.height}));
+                            resolve();
+                        }
+                    
+
+                    } catch(error) {
+                        debugLog(debugOn, 'downloadFromS3 error: ', error)
+                        reject(error);
+                    }
+                });
+            }
+
+            while(state.imageDownloadIndex < state.imageDownloadQueue.length) {
+                if(state.abort) break;
+                const image = state.imageDownloadQueue[state.imageDownloadIndex];
+                await downloadAnImage(image); 
+            
+                state = getState().page; 
+                if(itemId !== state.activeRequest){
+                    break;
+                }
+            }
         };
 
-        return new Promise(async (resolve) => {
-            dispatch(decryptPageItem({workspaceKey: data.workspaceKey}));
-            const state = getState().page;    
+        return new Promise(async (resolve, reject) => {
+            if(itemId !== state.activeRequest) { reject("Aborted")};
+            dispatch(decryptPageItem({itemId, workspaceKey: data.workspaceKey}));
+            state = getState().page;    
             if(state.contentImagesDownloadQueue.length) {
                 startDownloadingContentImages();
             }                    
@@ -639,6 +715,7 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
 export const downloadContentVideoThunk = (data) => async (dispatch, getState) => {
     let video;
     let state = getState().page;
+    const itemId = state.id;
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
         dispatch(downloadContentVideo(data));
         return;
@@ -650,10 +727,10 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
             const s3Key = video.s3Key;
             const keyVersion = s3Key.split(":")[1];
             try {
-                dispatch(downloadingContentVideo(5));
+                dispatch(downloadingContentVideo({itemId, progress:5}));
                 const signedURL = await preS3Download(state.id, s3Key);
-                dispatch(downloadingContentVideo(10));
-                const response = await XHRDownload(dispatch, signedURL, downloadingContentVideo)                          
+                dispatch(downloadingContentVideo({itemId, progress:10}));
+                const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
                 debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
                 
                 if(keyVersion === '3') {
@@ -672,7 +749,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     type: 'video/*'
                 });
 
-                dispatch(contentVideoDownloaded({link}));
+                dispatch(contentVideoDownloaded({itemId, link}));
                 resolve();
 
             } catch(error) {
@@ -686,6 +763,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         dispatch(downloadContentVideo(data));
         state = getState().page;
         while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
+            if(state.abort) break;
             video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
             await downloadAVideo(video);
             state = getState().page;
@@ -1225,6 +1303,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         }
         state = getState().page;
         while(state.imageUploadQueue.length > state.imageUploadIndex){
+            if(state.abort) break;
             console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
             const file = state.imageUploadQueue[state.imageUploadIndex].file;
             const uploadResult = await uploadAnImage(dispatch, state, file);
@@ -1330,6 +1409,12 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                 },
             }).then(result => {
                 debugLog(debugOn, result);
+                state = getState().page;
+                if(data.itemId !== state.activeRequest) {
+                    debugLog(debugOn, "Aborted");
+                    reject("Aborted");
+                    return;
+                }        
                 if (result.status === 'ok') {
                     if (result.hits) {
                         
@@ -1351,7 +1436,8 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                                     creationTime: comment.creationTime,
                                     lastUpdateTime: comment.lastUpdateTime,
                                     writerName: (comment.writerName === yourName)?'You':comment.writerName,
-                                    content
+                                    content,
+                                    editorMode: 'ReadOnly'
                                 }
                                 return payload;
                                 
@@ -1360,7 +1446,7 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                                 return {}
                             }
                         });
-                        dispatch(pageCommentsFetched(comments));
+                        dispatch(pageCommentsFetched({itemId:data.itemId, comments}));
                         resolve();
                     } else {
                         reject("woo... failed to get a page comments!");
@@ -1387,7 +1473,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                 if (!state.itemCopy) {
                 } else {
                     content = preProcessEditorContentBeforeSaving(data.content).content;
-                    encodedComment = forge.util.encodeUtf8(result);
+                    encodedComment = forge.util.encodeUtf8(content);
                     encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
 
                     itemId = state.id;
@@ -1403,7 +1489,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                             if (data.status === 'ok') {
                                 const payload = {
                                     id: data.id,
-                                    commendId: data.commendId,
+                                    commentId: data.commentId,
                                     creationTime: data.creationTime,
                                     lastUpdateTime: data.lastUpdateTime,
                                     writerName: 'You',

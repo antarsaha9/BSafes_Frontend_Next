@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector, useDispatch, createDispatchHook } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -15,7 +15,7 @@ import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downl
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -87,12 +87,8 @@ export default function PageCommons() {
             dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
             setEditingEditorId(editorId);
         } else if(editorId.startsWith("comment_")) {
-            if(editorId === 'comment_New') {
-                dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
-                setEditingEditorId(editorId);
-            } else {
-
-            }
+            dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
+            setEditingEditorId(editorId);
         }
     }
     
@@ -122,12 +118,15 @@ export default function PageCommons() {
                 setEditingEditorId(null);
             }
         } else if(editingEditorId.startsWith("comment_")){
-            
-            if(editingEditorId === 'comment_New') {
-                dispatch(saveCommentThunk({index: editingEditorId, content}));
-            } else {
-                
+            if(editingEditorId !== 'comment_New') {
+                let index = parseInt(editingEditorId.split('_')[1]);
+                if(comments[index].content === content){ 
+                    dispatch(setCommentEditorMode({index: editingEditorId, mode: "ReadOnly"}));
+                    setEditingEditorId(null);
+                    return;
+                }         
             }
+            dispatch(saveCommentThunk({index: editingEditorId, content}));
         }    
     }
 
@@ -162,6 +161,7 @@ export default function PageCommons() {
                     
                 } else if(editingEditorId.startsWith("comment_")){
                     switch(mode) {
+                        case "Writing":
                         case "Saving":
                         case "ReadOnly":
                             dispatch(setCommentEditorMode({index: editingEditorId, mode}))

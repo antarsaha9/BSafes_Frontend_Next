@@ -18,7 +18,7 @@ import KeyInput from "../components/keyInput";
 import { logInAsyncThunk } from '../reduxStore/auth'
 
 export default function LogIn() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
     
     const [keyPassword, setKeyPassword] = useState("");

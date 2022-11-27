@@ -17,13 +17,13 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 
 export default function Notebook() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();
@@ -31,11 +31,6 @@ export default function Notebook() {
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false); 
     const [isOpen, setIsOpen] = useState(false);
-
-    const {itemId} = router.query;
-    if(itemId && !pageItemId) {
-        setPageItemId(itemId);
-    }
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -49,6 +44,7 @@ export default function Notebook() {
     const activity = useSelector( state => state.page.activity);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
+    const itemCopy = useSelector( state => state.page.itemCopy);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
 
@@ -117,21 +113,39 @@ export default function Notebook() {
         }
     }
 
-    useEffect(()=>{
-        if(!router.isReady || pageItemId) return;
-        const {itemId} = router.query;
-        setPageItemId(itemId);
-    }, [router.isReady]);
-
-    useEffect(()=>{
-        dispatch(clearPage());
-        dispatch(clearContainer());
-        setPageCleared(true);
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
     }, []);
 
     useEffect(()=>{
+        if(router.query.itemId) {
+            dispatch(clearPage());
+            dispatch(clearContainer());
+            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
+            setPageItemId(router.query.itemId);
+            setPageCleared(true);
+        }
+    }, [router.query.itemId]);
+
+    useEffect(()=>{
         if(pageItemId && pageCleared) {
-            dispatch(getPageItemThunk({itemId}));
+            debugLog(debugOn, "Dispatch getPageItemThunk ...");
+            dispatch(getPageItemThunk({itemId:pageItemId}));
         }
     }, [pageCleared, pageItemId]);
 
@@ -151,15 +165,19 @@ export default function Notebook() {
     useEffect(()=>{
         if(space && pageCleared) {
             if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
 	        } else {
             }
         }
     }, [space]);
 
-    useEffect(()=>{
-        if(workspaceKey && pageCleared) {
-            dispatch(decryptPageItemThunk({workspaceKey}));
+    useEffect(()=>{ 
+        debugLog(debugOn, "useEffect [workspaceKey] ...");
+        if(workspaceKey && pageCleared && itemCopy) {
+            setPageCleared(false);
+            debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
+            dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
         }
     }, [workspaceKey]);
 
@@ -167,45 +185,49 @@ export default function Notebook() {
         <div>
             <div className={BSafesStyle.pageBackground}>
                 <ContentPageLayout>
-                    <Container> 
+                    <Container fluid> 
                         <br />
                         <TopControlPanel></TopControlPanel>
-                        <br />                            
-                    { !isOpen &&
-                        <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
-                            <ItemTopRows />
-                            <br />
-                            <br />
-                            <Row className="justify-content-center">
-                                <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
-                                </Col> 
-                            </Row>
-                            <br />
-                            <Row>
-                                <Col>
-                                    <ContainerOpenButton handleOpen={handleOpen} />
-                                </Col>
-                            </Row>
-                            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
-                        </div>                  
-                    }  
-                    { isOpen &&
-                    <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
-                        <br />
-                        <br />
-				        <h2 className="text-center">Contents</h2>
-
+                        <br />  
                         <Row>
-                            <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                    Page 
-                            </Col> 
-                            <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
-              	                Title 
+                            <Col lg={{span:10, offset:1}}>                       
+                            { !isOpen &&
+                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
+                                    <ItemTopRows />
+                                    <br />
+                                    <br />
+                                    <Row className="justify-content-center">
+                                        <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                        </Col> 
+                                    </Row>
+                                    <br />
+                                    <Row>
+                                        <Col>
+                                            <ContainerOpenButton handleOpen={handleOpen} />
+                                        </Col>
+                                    </Row>
+                                    <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+                                </div> 
+                            }
+                            { isOpen &&
+                                <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
+                                    <br />
+                                    <br />
+				                    <h2 className="text-center">Contents</h2>
+
+                                    <Row>
+                                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+           	                                Page 
+                                        </Col> 
+                                        <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
+              	                            Title 
+                                        </Col>
+                                    </Row>
+                                </div>
+                            }  
                             </Col>
                         </Row>
-                    </div>
-                    }  
                     </Container> 
                 </ContentPageLayout>
                 <Scripts />

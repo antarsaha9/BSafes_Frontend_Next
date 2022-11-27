@@ -3,12 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import Modal from 'react-bootstrap/Modal'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
-import Row from 'react-bootstrap/Row'
 
 import { debugLog } from '../lib/helper'
 
 export default function NewItemModal({show=false, handleClose, handleCreateANewItem}) {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering NewItemModal: ", `${show}}`);
 
     const inputRef = useRef(null);

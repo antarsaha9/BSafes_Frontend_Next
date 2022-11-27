@@ -23,7 +23,7 @@ import KeyInput from "../components/keyInput";
 import { keySetupAsyncThunk } from '../reduxStore/auth'
 
 export default function KeySetup() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const [keyPassword, setKeyPassword] = useState("");
