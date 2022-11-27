@@ -42,6 +42,7 @@ export default function Notebook() {
             setPageDate(parse(itemId.split(':').pop(), 'yyyy-MM-dd', new Date()));
         }
     }, [router.isReady]);
+    console.log(pageItemId);
     // const [pageCleared, setPageCleared] = useState(false); 
     // const [isOpen, setIsOpen] = useState(false);
 

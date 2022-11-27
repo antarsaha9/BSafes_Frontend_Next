@@ -3,7 +3,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
 
-import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
+import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr, decryptDecode1 } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
@@ -37,6 +37,9 @@ const initialState = {
     imageDownloadQueue:[],
     imageDownloadIndex:0,
     itemVersions:[],
+    containerContents:{'20221127':{
+        title:'test'
+    }},
     newCommentEditorMode: 'ReadOnly',
     comments:[]
 }
@@ -201,6 +204,9 @@ const pageSlice = createSlice({
         itemVersionsFetched: (state, action) => {
             state.itemVersions.push(...action.payload);
         },
+        containerContentsFetched: (state, action) => {
+            state.containerContents = action.payload;
+        },
         downloadingContentImage: (state, action) => {
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
             image.status = "Downloading";
@@ -358,6 +364,45 @@ const XHRDownload = (dispatch, signedURL, downloadingFunction) => {
 
         xhr.send();
     });
+}
+export const getContainerContentsThunk = (data)=> async(dispatch, getState)=>{
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            let state;
+            PostCall({
+                api:'/memberAPI/getContainerContents',
+                body: data,
+            }).then( async result => {
+                debugLog(debugOn, result);
+                state = getState().page;
+                if (result.status === 'ok') {
+                    if (result.hits) {
+                        const hits = result.hits.hits;
+                        const modifiedHits = hits.reduce((previous, hit) => {
+                            const updatedTime = formatTimeDisplay(hit._source.createdTime);
+                            const payload = {
+                                id: hit._id,
+                                position: hit._source.position,
+                                pageNumber: hit._source.pageNumber,
+                                title: decryptDecode1(hit._source.title, state.itemKey, state.itemIV),
+                            }
+                            return {...previous, [pageNumber.toString()]:payload};
+                        }, {});
+                        dispatch(containerContentsFetched(modifiedHits));
+
+                    } else {
+                        reject("woo... failed to get a item version history!");
+                    }
+                } else {
+                    debugLog(debugOn, "woo... failed to get a item version history!", data.error);
+                    reject("woo... failed to get a item version history!");
+                }
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to get a page item.")
+                reject("woo... failed to get a page item!");
+            })
+        }); 
+    })  
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {

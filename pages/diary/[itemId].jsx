@@ -17,12 +17,13 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getContainerContentsThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 import format from "date-fns/format";
 import getDaysInMonth from "date-fns/getDaysInMonth";
+import Link from "next/link";
 
 export default function Diary() {
     const debugOn = true;
@@ -32,14 +33,9 @@ export default function Diary() {
 
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false);
-    // const [isOpen, setIsOpen] = useState(true);
-
-    const { itemId, initialDisplay } = router.query;
-    const isOpen = !(initialDisplay && initialDisplay === 'cover');
-
-    if (itemId && !pageItemId) {
-        setPageItemId(itemId);
-    }
+    const { initialDisplay } = router.query;
+    // const isOpen = !(initialDisplay && initialDisplay === 'cover');
+    const [isOpen, setIsOpen] = useState((initialDisplay && initialDisplay === 'cover'));
 
     const searchKey = useSelector(state => state.auth.searchKey);
     const searchIV = useSelector(state => state.auth.searchIV);
@@ -53,8 +49,10 @@ export default function Diary() {
     const activity = useSelector(state => state.page.activity);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
+    const itemCopy = useSelector(state => state.page.itemCopy);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
+    const containerContents = useSelector(state => state.page.containerContents);
 
 
     const handlePenClicked = (editorId) => {
@@ -107,35 +105,62 @@ export default function Diary() {
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
         try {
-            const item = await getLastAccessedItem(pageItemId);
-            if (item) {
-                debugLog(debugLog, item);
-            } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/diary/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
-                router.push(firstPage);
-            }
+            setIsOpen(true);
+            const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), getDaysInMonth(startDate));
+            dispatch(getContainerContentsThunk({
+                itemId: pageItemId,
+                size: 31,
+                from: 0,
+                selectedDiaryContentStartPosition: format(startDate, 'yyyyLLdd'),
+                selectedDiaryContentEndPosition: format(endDate, 'yyyyLLdd'),
+            }));
+            // const item = await getLastAccessedItem(pageItemId);
+            // if (item) {
+            //     debugLog(debugLog, item);
+            // } else {
+            //     debugLog(debugLog, "lastAccessedItem not set");
+            //     const idParts = pageItemId.split(":");
+            //     const firstPage = `/diary/p/dp:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+            //     router.push(firstPage);
+            // }
+
         } catch (error) {
             debugLog(debugOn, error)
         }
     }
 
     useEffect(() => {
-        if (!router.isReady || pageItemId) return;
-        const { itemId } = router.query;
-        setPageItemId(itemId);
-    }, [router.isReady]);
+        const handleRouteChange = (url, { shallow }) => {
+            console.log(
+                `App is changing to ${url} ${shallow ? 'with' : 'without'
+                } shallow routing`
+            )
+            dispatch(abort());
+        }
 
-    useEffect(() => {
-        dispatch(clearPage());
-        dispatch(clearContainer());
-        setPageCleared(true);
+        // router.events.on('routeChangeStart', handleRouteChange)
+
+        // // If the component is unmounted, unsubscribe
+        // // from the event with the `off` method:
+        // return () => {
+        //     router.events.off('routeChangeStart', handleRouteChange)
+        // }
     }, []);
 
     useEffect(() => {
+        if (router.query.itemId) {
+            dispatch(clearPage());
+            dispatch(clearContainer());
+            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
+            setPageItemId(router.query.itemId);
+            setPageCleared(true);
+        }
+    }, [router.query.itemId]);
+
+    useEffect(() => {
         if (pageItemId && pageCleared) {
-            dispatch(getPageItemThunk({ itemId }));
+            debugLog(debugOn, "Dispatch getPageItemThunk ...");
+            dispatch(getPageItemThunk({ itemId: pageItemId }));
         }
     }, [pageCleared, pageItemId]);
 
@@ -155,6 +180,7 @@ export default function Diary() {
     useEffect(() => {
         if (space && pageCleared) {
             if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initWorkspace({ space, workspaceKey: expandedKey, searchKey, searchIV }));
             } else {
             }
@@ -162,8 +188,11 @@ export default function Diary() {
     }, [space]);
 
     useEffect(() => {
-        if (workspaceKey && pageCleared) {
-            dispatch(decryptPageItemThunk({ workspaceKey }));
+        debugLog(debugOn, "useEffect [workspaceKey] ...");
+        if (workspaceKey && pageCleared && itemCopy) {
+            setPageCleared(false);
+            debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
+            dispatch(decryptPageItemThunk({ itemId: pageItemId, workspaceKey }));
         }
     }, [workspaceKey]);
     const [startDate, setStartDate] = useState(new Date());
@@ -177,7 +206,7 @@ export default function Diary() {
                 <ContentPageLayout>
                     <Container>
                         <br />
-                        <TopControlPanel {...{startDate, setStartDate}} datePickerViewMode={isOpen?"monthYear":"dayMonth"} showSearchIcon/>
+                        <TopControlPanel {...{ startDate, setStartDate }} datePickerViewMode={isOpen ? "monthYear" : "dayMonth"} showSearchIcon />
                         <br />
                         {!isOpen &&
                             <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.diaryCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
@@ -217,20 +246,29 @@ export default function Diary() {
                                         {(() => {
                                             const fromDate = new Date(showingMonthDate.valueOf());
                                             fromDate.setDate(0)
+                                            console.log(containerContents);
 
                                             const list = [];
                                             for (let index = 0; index < getDaysInMonth(fromDate); index++) {
                                                 fromDate.setDate(fromDate.getDate() + 1);
-                                                const backgroundColor = showingMonthDate.getDate() === fromDate.getDate() ? '#EBF5FB' : (fromDate.getDay() % 6 === 0 ? '#F2F3F4' : null);
+                                                const dateString = format(fromDate, 'yyyyLLdd');
+                                                const title = containerContents[dateString]?.title || '';
+                                                const backgroundColor = showingMonthDate.getDate() === fromDate.getDate() ? '#EBF5FB' : (fromDate.getDay() % 6 === 0 ? '#d4d5d5' : null);
+                                                const newId = pageItemId.replace('d:', 'dp:') + ':' + format(fromDate, 'yyyy-LL-dd');
+                                                console.log(newId);
                                                 const row = (
-                                                    <Row>
+                                                    <Row key={index}>
                                                         <Col xs={{ span: 3, offset: 1 }} sm={{ span: 3, offset: 1 }} md={{ span: 2, offset: 1 }} style={{ backgroundColor }}>
-                                                            <a className={`${BSafesStyle.containerContentsPageTitle} itemPage`} id="pageNumberLink" href="#">{format(fromDate, 'd EEEEE')}</a>
+                                                            <Link href={{ pathname: '/diary/p/[itemId]', query: { itemId: newId } }}>
+                                                                <a className={`${BSafesStyle.containerContentsPageTitle} itemPage`} id="pageNumberLink" >{format(fromDate, 'd EEEEE')}</a>
+                                                            </Link>
                                                         </Col>
                                                         <Col xs={8} sm={8} md={9}>
-                                                            <a href="#" className="itemLink blackText">
-                                                                <p className={`${BSafesStyle.containerContentsPageTitle} itemTitle`} id="titleLink"></p>
-                                                            </a>
+                                                            <Link href={{ pathname: '/diary/p/[itemId]', query: { itemId: newId } }}>
+                                                                <a className="itemLink blackText text-decoration-none">
+                                                                    <p className={`${BSafesStyle.containerContentsPageTitle} my-0`} id="titleLink">{title}</p>
+                                                                </a>
+                                                            </Link>
                                                         </Col>
                                                         <Col xs={{ span: 10, offset: 1 }}>
                                                             <hr className={BSafesStyle.marginTopBottom0Px} />

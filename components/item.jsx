@@ -81,7 +81,14 @@ export default function Item({item}) {
                             </div>
                             :""
                         }
-                                
+                        {item.itemPack.type === 'D' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span className="h5" dangerouslySetInnerHTML={{ __html: itemText }} />
+                            </div>
+                        }
+
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
@@ -91,28 +98,28 @@ export default function Item({item}) {
 
                             <Dropdown align="end" className="justify-content-end">
                                 <Dropdown.Toggle as={plusToggle}  variant="link">
-                                    
+
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu>
                                     <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>                           
+                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                             <Dropdown align="end" className="justify-content-end">
                                 <Dropdown.Toggle as={sortToggle}  variant="link">
-                                    
+
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu>
                                     <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>                           
+                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
                         </ButtonGroup>
                     </Col>
                 </Row>
-                
+
             </Card>
         </>
     )

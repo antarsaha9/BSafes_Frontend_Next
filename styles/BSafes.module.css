@@ -94,8 +94,9 @@
   margin-right:20px;
 }
 
-.safeItem h2 {
+.safeItem {
   margin-top:10px;
+  cursor: pointer;
 }
 /* End of Safe */
 
