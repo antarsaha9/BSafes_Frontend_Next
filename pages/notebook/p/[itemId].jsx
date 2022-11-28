@@ -16,7 +16,7 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initWorkspace } from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer } from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -30,6 +30,8 @@ export default function NotebookPage() {
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
+    const [containerCleared, setContainerCleared] = useState(false);
+    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -37,7 +39,10 @@ export default function NotebookPage() {
     const expandedKey = useSelector( state => state.auth.expandedKey );
     
     const space = useSelector( state => state.page.space);
+    const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
+
+    const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     function gotoAnotherPage (anotherPageNumber) {
@@ -74,6 +79,15 @@ export default function NotebookPage() {
         gotoAnotherPage('-1');
     }
 
+    const handleCoverClicked = () => {
+
+    }
+
+    const handleContentsClicked = () => {
+        const contentsPageLink = `/notebook/contents/${container}`;
+        router.push(contentsPageLink);
+    }
+
     const handlePageNumberChanged = (anotherPageNumber) => {
         debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
         gotoAnotherPage(anotherPageNumber);
@@ -101,7 +115,7 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            dispatch(clearContainer());
+            setWorkspaceKeyReady(false);
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -128,24 +142,36 @@ export default function NotebookPage() {
 
     useEffect(()=>{
         if(space && pageCleared) {
-            
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
-	        } else {
+            if(container === containerInWorkspace ) {
+                setWorkspaceKeyReady(true);
+                return;
             }
+        
+            dispatch(clearContainer());
+            setContainerCleared(true);
         }
     }, [space]);
 
     useEffect(()=>{
-        debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if(workspaceKey && itemCopy && pageCleared) {
+        if(containerCleared) {
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                setWorkspaceKeyReady(true);
+            } else {
+            }
+        }        
+    }, [containerCleared]);
+
+    useEffect(()=>{
+        debugLog(debugOn, "useEffect [workspaceKeyReady] ...");
+        if(workspaceKeyReady && workspaceKey && itemCopy && pageCleared) {
             setPageCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
         }
-    }, [workspaceKey]);
+    }, [workspaceKeyReady, itemCopy]);
 
     
     return (
@@ -153,7 +179,7 @@ export default function NotebookPage() {
             <ContentPageLayout>            
                 <Container fluid>
                     <br />
-                        <TopControlPanel pageNumber={pageNumber} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
+                        <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>

@@ -16,7 +16,7 @@ import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
+import { clearContainer, initContainer } from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
@@ -29,7 +29,9 @@ export default function Notebook() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null);
-    const [pageCleared, setPageCleared] = useState(false); 
+    const [pageCleared, setPageCleared] = useState(false);
+    const [containerCleared, setContainerCleared] = useState(false);
+    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -37,6 +39,9 @@ export default function Notebook() {
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const space = useSelector( state => state.page.space);
+    const container = useSelector( state => state.page.container);
+    
+    const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
@@ -135,7 +140,7 @@ export default function Notebook() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            dispatch(clearContainer());
+            setWorkspaceKeyReady(false);
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -163,23 +168,35 @@ export default function Notebook() {
     }, [activity]);
 
     useEffect(()=>{
-        if(space && pageCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
-	        } else {
+        if(space && pageCleared) {             
+            if(container === containerInWorkspace ) {
+                setWorkspaceKeyReady(true);
+                return;
             }
+            dispatch(clearContainer());
+            setContainerCleared(true);
         }
     }, [space]);
 
+    useEffect(()=>{
+        if(containerCleared) {
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                setWorkspaceKeyReady(true);
+            } else {
+            }
+        }
+    }, [containerCleared]);
+
     useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if(workspaceKey && pageCleared && itemCopy) {
+        if(workspaceKeyReady && workspaceKey && pageCleared && itemCopy) {
             setPageCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
         }
-    }, [workspaceKey]);
+    }, [workspaceKeyReady]);
 
     return (
         <div>

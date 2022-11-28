@@ -11,7 +11,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from "../lib/helper";
 
-export default function TopControlPanel({pageNumber=null, onPageNumberChanged=null}) {
+export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const pageNumberInputRef = useRef(null);
@@ -38,8 +38,8 @@ export default function TopControlPanel({pageNumber=null, onPageNumberChanged=nu
                             <Col xs={4}>
                                 {!pageNumber && !container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
                                 {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && container.startsWith('n'))) && <Button variant='link' size='sm' className='text-white'><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && container.startsWith('n'))) && <Button variant='link' size='sm' className='text-white'><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
+                                {( pageNumber || (container && container.startsWith('n'))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                {( pageNumber || (container && container.startsWith('n'))) && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                             <Col xs={8}>
                                 { ( pageNumber || (container && container.startsWith('n'))) && 
