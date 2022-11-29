@@ -10,8 +10,9 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/topControlPanel";
+import ItemRow from "../../../components/itemRow";
 
-import { clearContainer, initContainer } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -22,18 +23,30 @@ export default function NotebookContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [containerItemId, setContainerItemId] = useState(null);
+    const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false);
-    
+    const [containerCleared, setContainerCleared] = useState(false);
+    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
+
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
+    const itemCopy = useSelector( state => state.page.itemCopy);
+
+
+    const workspace = useSelector( state => state.container.workspace);
+    const containerInWorkspace = useSelector( state => state.container.container);
+    const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+
+    const items = itemsState.map( (item, index) => 
+        <ItemRow key={index} item={item}/>
+    );
 
 
     const handleCoverClicked = () => {
@@ -47,42 +60,57 @@ export default function NotebookContents() {
 
     useEffect(()=>{
         if(router.query.itemId) {
-            if(router.query.itemId === container) {
-                setContainerItemId(router.query.itemId);
-                return;
-            }
+
             dispatch(clearPage());
-            dispatch(clearContainer());
+            
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
-            setContainerItemId(router.query.itemId);
+            setPageItemId(router.query.itemId);
             setPageCleared(true);
         }
     }, [router.query.itemId]);
 
     useEffect(()=>{
-        if(containerItemId && pageCleared) {
+        if(pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:containerItemId}));
+            dispatch(getPageItemThunk({itemId:pageItemId}));
         }
-    }, [pageCleared, containerItemId]);
+    }, [pageCleared, pageItemId]);
 
     useEffect(()=>{
         if(space && pageCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
-	        } else {
+            if(space === workspace) {
+                if(pageItemId !== containerInWorkspace) {
+                    dispatch(changeContainerOnly({container:pageItemId}));
+                }
+                setWorkspaceKeyReady(true);
+                return;
             }
+
+            dispatch(clearContainer());
+            setContainerCleared(true); 
+
         }
     }, [space]);
 
+    useEffect(()=>{
+        if(containerCleared) {
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initContainer({container: pageItemId, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                setWorkspaceKeyReady(true);
+            } else {
+            }
+        }        
+    }, [containerCleared]);
+
     useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if(workspaceKey && pageCleared) {
+        if( itemCopy &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
-
+            setContainerCleared(false);
+            dispatch(listItemsThunk({pageNumber: 1}));
         }
-    }, [workspaceKey]);
+    }, [workspaceKeyReady, itemCopy]);
 
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -99,12 +127,13 @@ export default function NotebookContents() {
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row>
                                     <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                            Page 
+           	                            <p>Page</p> 
                                     </Col> 
                                     <Col xs={8} sm={8} md={9}>
-              	                        Title 
+              	                        <p>Title</p> 
                                     </Col>
                                 </Row>
+                                {items}
                             </div>
                         </Col>
                     </Row>

@@ -167,6 +167,7 @@ export default function NotebookPage() {
         debugLog(debugOn, "useEffect [workspaceKeyReady] ...");
         if(workspaceKeyReady && workspaceKey && itemCopy && pageCleared) {
             setPageCleared(false);
+            setContainerCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
