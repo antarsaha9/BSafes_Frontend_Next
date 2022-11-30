@@ -12,7 +12,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from "../lib/helper";
 import { useEffect } from "react";
 
-export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null}) {
+export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const pageNumberInputRef = useRef(null);
@@ -52,8 +52,8 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                     <Form.Group className='pull-right'>                
                                         <Form.Control ref={pageNumberInputRef} type="text" defaultValue={pageNumber?pageNumber:''} className={`${BSafesStyle.pageNavigationPart} ${BSafesStyle.pageNumberInput} pt-0 pb-0`} />                    
                                         <Button variant='link' size='sm' className='text-white' id="gotoPageBtn" onClick={pageNumberChanged}><i className="fa fa-arrow-right fa-lg" aria-hidden="true"></i></Button>
-										<Button variant='link' size='sm' className='text-white' id="gotoFirstItemBtn"><i className="fa fa-step-backward fa-lg" aria-hidden="true"></i></Button>
-										<Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn"><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>
+										<Button variant='link' size='sm' className='text-white' id="gotoFirstItemBtn" onClick={onGotoFirstItem}><i className="fa fa-step-backward fa-lg" aria-hidden="true"></i></Button>
+										<Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn" onClick={onGotoLastItem}><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>
                                     </Form.Group>
                                 }
                                 

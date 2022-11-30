@@ -16,7 +16,7 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer } from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -96,6 +96,26 @@ export default function NotebookPage() {
     const handlePageNumberChanged = (anotherPageNumber) => {
         debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
         gotoAnotherPage(anotherPageNumber);
+    }
+
+    const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
+    }
+
+    const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
     }
 
     useEffect(() => {
@@ -185,7 +205,7 @@ export default function NotebookPage() {
             <ContentPageLayout>            
                 <Container fluid>
                     <br />
-                        <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
+                        <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>

@@ -128,6 +128,58 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const getFirstItemInContainer = async (container) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/getFirstItemInContainer',
+            body: {
+                container
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {                                  
+                let itemId = null;
+                if (data.hits.hits.length) {
+                    itemId = data.hits.hits[0]._id;
+                }
+                resolve(itemId);
+            } else {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+            reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
+export const getLastItemInContainer = async (container) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/getLastItemInContainer',
+            body: {
+                container
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {                                  
+                let itemId = null;
+                if (data.hits.hits.length) {
+                    itemId = data.hits.hits[0]._id;
+                }
+                resolve(itemId);
+            } else {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+            reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
 export const containerReducer = containerSlice.reducer;
 
 export default containerSlice;
