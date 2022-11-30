@@ -17,6 +17,7 @@ const initialState = {
     itemsPerPage: 20,
     pageNumber: 1,
     total: 0,
+    totalNumberOfPages:0,
     hits:[],
     items:[],
 };
@@ -53,6 +54,7 @@ const containerSlice = createSlice({
         },
         pageLoaded: (state, action) => {
             state.total = action.payload.total;
+            state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
             state.pageNumber = action.payload.pageNumber;
             state.hits = action.payload.hits;
             

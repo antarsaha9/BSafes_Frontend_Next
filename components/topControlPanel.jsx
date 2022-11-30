@@ -10,13 +10,14 @@ import Form from 'react-bootstrap/Form'
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from "../lib/helper";
+import { useEffect } from "react";
 
 export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const pageNumberInputRef = useRef(null);
     
-    const container = useSelector( state => state.page.container);
+    const container = useSelector( state => state.container.container);
 
     const pageNumberChanged = (e) => {
         if(onPageNumberChanged) {
@@ -28,6 +29,11 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     const onChange = () => {
 
     }
+
+    useEffect(()=>{
+        if(!pageNumberInputRef.current ) return;
+        pageNumberInputRef.current.value = pageNumber;
+    }, [pageNumber]);
     
     return (
         <Row>

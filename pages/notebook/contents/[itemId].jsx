@@ -11,6 +11,7 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
+import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
@@ -33,12 +34,13 @@ export default function NotebookContents() {
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const space = useSelector( state => state.page.space);
-    const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
 
     const workspace = useSelector( state => state.container.workspace);
     const containerInWorkspace = useSelector( state => state.container.container);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
@@ -49,13 +51,55 @@ export default function NotebookContents() {
     );
 
 
-    const handleCoverClicked = () => {
+    function gotoAnotherPage (anotherPageNumber) {
+        if(!(pageItemId)) return;
 
+        let idParts, nextPageId, newLink;
+        idParts = pageItemId.split(':');
+        idParts.splice(0, 1);
+        switch(anotherPageNumber) {
+            case '-1':
+                if(pageNumber > 1) {
+
+                } else {
+                    newLink = `/notebook/${containerInWorkspace}`;  
+                }
+                break;
+            case '+1':
+                if(pageNumber === totalNumberOfPages) {
+                    nextPageId = 'np:'+ idParts.join(':') + ':1';
+                    newLink = `/notebook/p/${nextPageId}`; 
+                } else {
+
+                }
+                break;
+            default:
+                idParts.push(anotherPageNumber);
+                nextPageId = 'np:'+ idParts.join(':');
+                newLink = `/notebook/p/${nextPageId}`;         
+        }      
+
+        router.push(newLink);
+    }
+
+    const gotoNextPage = () =>{
+        debugLog(debugOn, "Next Page ");
+        gotoAnotherPage('+1');
+    }
+
+    const gotoPreviousPage = () => {
+        debugLog(debugOn, "Previous Page ");
+        gotoAnotherPage('-1');
+    }
+
+    const handleCoverClicked = () => {
+        let newLink = `/notebook/${containerInWorkspace}`;
+        router.push(newLink);
     }
 
     const handlePageNumberChanged = (anotherPageNumber) => {
         debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-
+        gotoAnotherPage(anotherPageNumber);
     }
 
     useEffect(()=>{
@@ -105,12 +149,12 @@ export default function NotebookContents() {
 
     useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if( itemCopy &&  workspaceKeyReady && pageCleared) {
+        if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
             setContainerCleared(false);
             dispatch(listItemsThunk({pageNumber: 1}));
         }
-    }, [workspaceKeyReady, itemCopy]);
+    }, [workspaceKeyReady, containerInWorkspace]);
 
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -137,6 +181,7 @@ export default function NotebookContents() {
                             </div>
                         </Col>
                     </Row>
+                    <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
                 </Container>
             </ContentPageLayout>
         </div>

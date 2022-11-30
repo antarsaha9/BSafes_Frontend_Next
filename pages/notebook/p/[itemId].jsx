@@ -55,6 +55,10 @@ export default function NotebookPage() {
             case '-1':
                 if(pageNumber > 1) {
                     idParts.push((pageNumber-1));
+                } else {
+                    if(!containerInWorkspace) return;
+                    router.push(`/notebook/contents/${containerInWorkspace}`);
+                    return;
                 }
                 break;
             case '+1':
@@ -80,7 +84,8 @@ export default function NotebookPage() {
     }
 
     const handleCoverClicked = () => {
-
+        let newLink = `/notebook/${containerInWorkspace}`;
+        router.push(newLink);
     }
 
     const handleContentsClicked = () => {
