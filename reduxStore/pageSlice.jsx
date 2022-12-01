@@ -668,7 +668,10 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                 });
             }
             while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
-                if(state.abort) break;
+                if(state.aborted) {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                } 
                 const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
                 await downloadAnImage(image);
 
@@ -723,7 +726,11 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
             }
 
             while(state.imageDownloadIndex < state.imageDownloadQueue.length) {
-                if(state.abort) break;
+               
+                if(state.aborted) {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
                 const image = state.imageDownloadQueue[state.imageDownloadIndex];
                 await downloadAnImage(image);
 
@@ -846,7 +853,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         dispatch(downloadContentVideo(data));
         state = getState().page;
         while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-            if(state.abort) break;
+            if(state.aborted) break;
             video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
             await downloadAVideo(video);
             state = getState().page;
@@ -1420,7 +1427,11 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         }
         state = getState().page;
         while(state.imageUploadQueue.length > state.imageUploadIndex){
-            if(state.abort) break;
+            if(state.aborted) 
+            {
+                debugLog(debugOn, "abort: ", state.aborted);
+                break;
+            }
             console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
             const file = state.imageUploadQueue[state.imageUploadIndex].file;
             const uploadResult = await uploadAnImage(dispatch, state, file);

@@ -8,7 +8,8 @@ const debugOn = false;
 const initialState = {
     activity: "Done", // Done, Loading, Searching
     error: null,
-    currentSpace: null,
+    container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
+    workspace: null,
     workspaceKey: null,
     searchKey: null,
     searchIV: null,
@@ -16,6 +17,7 @@ const initialState = {
     itemsPerPage: 20,
     pageNumber: 1,
     total: 0,
+    totalNumberOfPages:0,
     hits:[],
     items:[],
 };
@@ -34,14 +36,25 @@ const containerSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
-        initWorkspace: (state, action) => {
-            state.currentSpace = action.payload.workspaceId;
+        initContainer: (state, action) => {
+            state.container = action.payload.container;
+            state.workspace = action.payload.workspaceId;
             state.workspaceKey = action.payload.workspaceKey;
             state.searchKey = action.payload.searchKey;
             state.searchIV = action.payload.searchIV;
+            state.total = 0;
+            state.hits = [];
+            state.items = [];
+        },
+        changeContainerOnly: (state, action) => {
+            state.container = action.payload.container;
+            state.total = 0;
+            state.hits = [];
+            state.items = [];
         },
         pageLoaded: (state, action) => {
             state.total = action.payload.total;
+            state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
             state.pageNumber = action.payload.pageNumber;
             state.hits = action.payload.hits;
             
@@ -58,7 +71,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, initWorkspace, pageLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -73,15 +86,29 @@ const newActivity = async (dispatch, type, activity) => {
 export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            const state = getState().container;
+            let state;
+            state = getState().container;
             const pageNumber = data.pageNumber;
-            PostCall({
-                api:'/memberAPI/listItems',
-                body: {
-                    container: state.currentSpace,
+            let body;
+            if(state.container.startsWith('n')) {
+                body = {
+                    container: state.container,
                     size: state.itemsPerPage,
                     from: (pageNumber - 1) * state.itemsPerPage,
                 }
+            } else if(state.container.startsWith('d')) {
+                
+            } else {
+                body = {
+                    container: state.workspace,
+                    size: state.itemsPerPage,
+                    from: (pageNumber - 1) * state.itemsPerPage,
+                }
+            }
+
+            PostCall({
+                api:'/memberAPI/listItems',
+                body
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -98,6 +125,58 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                 reject("listItems failed!");
             })
         });
+    });
+}
+
+export const getFirstItemInContainer = async (container) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/getFirstItemInContainer',
+            body: {
+                container
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {                                  
+                let itemId = null;
+                if (data.hits.hits.length) {
+                    itemId = data.hits.hits[0]._id;
+                }
+                resolve(itemId);
+            } else {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+            reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
+export const getLastItemInContainer = async (container) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/getLastItemInContainer',
+            body: {
+                container
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {                                  
+                let itemId = null;
+                if (data.hits.hits.length) {
+                    itemId = data.hits.hits[0]._id;
+                }
+                resolve(itemId);
+            } else {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+            reject("getFirstItemInContainer failed!");
+        })
     });
 }
 

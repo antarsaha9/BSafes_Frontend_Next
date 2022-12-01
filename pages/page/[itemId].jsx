@@ -15,26 +15,30 @@ import TopControlPanel from "../../components/topControlPanel"
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { clearContainer, initWorkspace } from '../../reduxStore/containerSlice';
+import { clearContainer, initContainer} from '../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 
 export default function Page() {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null); 
     const [pageCleared, setPageCleared] = useState(false); 
+    const [containerCleared, setContainerCleared] = useState(false);
+    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
     
+    const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     const space = useSelector( state => state.page.space);
+    const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
     useEffect(() => {
@@ -59,7 +63,7 @@ export default function Page() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            dispatch(clearContainer());
+            setWorkspaceKeyReady(false);
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -74,24 +78,37 @@ export default function Page() {
     }, [pageItemId, pageCleared]);
 
     useEffect(()=>{
-        if(space && pageCleared) { 
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initWorkspace({space, workspaceKey: expandedKey, searchKey, searchIV }));
-	        } else {
+        if(space && pageCleared) {             
+            if(container === containerInWorkspace ) {
+                setWorkspaceKeyReady(true);
+                return;
             }
+            dispatch(clearContainer());
+            setContainerCleared(true);
         }
     }, [space]);
 
     useEffect(()=>{
+        if(containerCleared) {
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                setWorkspaceKeyReady(true);
+            } else {
+            }
+        }
+    }, [containerCleared]);
+
+    useEffect(()=>{
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if(workspaceKey && itemCopy && pageCleared) {
+        if((workspaceKeyReady && workspaceKey && itemCopy && pageCleared)) {
             setPageCleared(false);
+            setContainerCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
         }
-    }, [workspaceKey]);
+    }, [workspaceKeyReady]);
     
     return (
         <div className={BSafesStyle.pageBackground}>

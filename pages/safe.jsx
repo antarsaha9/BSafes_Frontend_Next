@@ -8,7 +8,7 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Workspace from '../components/workspace'
 import { useEffect } from 'react';
 
-import { initWorkspace } from '../reduxStore/containerSlice';
+import { initContainer } from '../reduxStore/containerSlice';
 
 export default function Safe() {
     const dispatch = useDispatch();
@@ -21,7 +21,7 @@ export default function Safe() {
         if(memberId) {
             const currentKeyVersion = 3;
             const workspaceId = 'u:' + memberId + ':' + currentKeyVersion + ':' + '0'; ;
-            dispatch(initWorkspace({workspaceId, workspaceKey, searchKey, searchIV }));
+            dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
         }
     }, [memberId])
     

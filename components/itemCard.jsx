@@ -12,8 +12,7 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function Item({item}) {
-    const router = useRouter();
+export default function ItemCard({item}) {
 
     let temp = document.createElement('span');
     temp.innerHTML = item.title;

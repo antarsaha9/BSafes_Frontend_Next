@@ -10,7 +10,7 @@ import InputGroup from 'react-bootstrap/InputGroup'
 
 import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
-import Item from './item'
+import ItemCard from './itemCard'
 
 import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
 import { listItemsThunk } from '../reduxStore/containerSlice';
@@ -22,7 +22,7 @@ export default function Workspace() {
     const router = useRouter();
     const dispatch = useDispatch();
     
-    const workspaceId = useSelector( state => state.container.currentSpace);
+    const workspaceId = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const searchKey = useSelector( state => state.container.searchKey);
     const searchIV = useSelector( state => state.container.searchIV);
@@ -35,7 +35,7 @@ export default function Workspace() {
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
     const items = itemsState.map( (item, index) => 
-        <Item key={index} item={item}/>
+        <ItemCard key={index} item={item}/>
     );
 
     const addAnItem = (itemType, addAction, targetItem = null) => {
