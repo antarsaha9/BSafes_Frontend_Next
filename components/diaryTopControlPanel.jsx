@@ -11,7 +11,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import ReactDatePicker from 'react-datepicker'
 import "react-datepicker/dist/react-datepicker.css";
 
-export default function TopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false }) {
+export default function TopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, closeDiary, handleIndexClick }) {
     const [showSearchBox, setShowSearchBox] = useState(false);
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
         <Button variant='link' size='sm' className='text-white pull-right' onClick={onClick} ref={ref}><i className="fa fa-calendar fa-lg" aria-hidden="true"></i></Button>
@@ -24,8 +24,7 @@ export default function TopControlPanel({ datePickerViewMode = "dayMonth", start
 
     const closeSearhBox = () => setShowSearchBox(false);
     const openSearchBox = () => setShowSearchBox(true);
-
-    console.log(startDate);
+    const [searchValue, setSearchValue] = useState('');    
     return (
         <>
             <Row>
@@ -34,8 +33,8 @@ export default function TopControlPanel({ datePickerViewMode = "dayMonth", start
                         <Card.Body className='py-2'>
                             <Row>
                                 <Col xs={4}>
-                                    <Button variant='link' size='sm' className='text-white'><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>
-                                    {showListIcon && <Button variant='link' size='sm' className='text-white'><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
+                                    <Button variant='link' size='sm' className='text-white' onClick={closeDiary}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>
+                                    {showListIcon && <Button variant='link' size='sm' className='text-white' onClick={handleIndexClick}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                                 </Col>
                                 <Col xs={4}>
                                 </Col>
@@ -67,8 +66,8 @@ export default function TopControlPanel({ datePickerViewMode = "dayMonth", start
                                         <Col xs={{ span: 12, }} sm={{ span: 10, offset: 1 }} lg={{ span: 8, offset: 2 }} >
                                             <Form.Group>
                                                 <InputGroup>
-                                                    <Form.Control />
-                                                    <Button variant="link"><i className="fa fa-search" aria-hidden="true"></i></Button>
+                                                    <Form.Control onChange={e=>setSearchValue(e.target.value)} value={searchValue}/>
+                                                    <Button variant="link" onClick={()=>handleSearch(searchValue)}><i className="fa fa-search" aria-hidden="true"></i></Button>
                                                     <Button variant="link" onClick={closeSearhBox}><i className="fa fa-times" aria-hidden="true"></i></Button>
                                                 </InputGroup>
                                             </Form.Group>

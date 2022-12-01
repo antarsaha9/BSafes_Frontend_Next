@@ -17,7 +17,7 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { clearContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getContainerContentsThunk } from "../../reduxStore/pageSlice";
+import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getContainerContentsThunk, searchContainerContentsThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
@@ -35,7 +35,7 @@ export default function Diary() {
     const [pageCleared, setPageCleared] = useState(false);
     const { initialDisplay } = router.query;
     // const isOpen = !(initialDisplay && initialDisplay === 'cover');
-    const [isOpen, setIsOpen] = useState((initialDisplay && initialDisplay === 'cover'));
+    const [isOpen, setIsOpen] = useState(false);
 
     const searchKey = useSelector(state => state.auth.searchKey);
     const searchIV = useSelector(state => state.auth.searchIV);
@@ -102,18 +102,24 @@ export default function Diary() {
         setEditingEditorId(null);
     }
 
+    const handleSearch = (value) => {
+        dispatch(searchContainerContentsThunk(value, workspaceKey));
+    }
+
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
         try {
             setIsOpen(true);
+            const fromDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
             const endDate = new Date(startDate.getFullYear(), startDate.getMonth(), getDaysInMonth(startDate));
-            dispatch(getContainerContentsThunk({
-                itemId: pageItemId,
-                size: 31,
-                from: 0,
-                selectedDiaryContentStartPosition: format(startDate, 'yyyyLLdd'),
-                selectedDiaryContentEndPosition: format(endDate, 'yyyyLLdd'),
-            }));
+            // if (!containerContents)
+                dispatch(getContainerContentsThunk({
+                    itemId: pageItemId,
+                    size: 31,
+                    from: 0,
+                    fromDate,
+                    endDate,
+                }, expandedKey));
             // const item = await getLastAccessedItem(pageItemId);
             // if (item) {
             //     debugLog(debugLog, item);
@@ -147,6 +153,14 @@ export default function Diary() {
         // }
     }, []);
 
+    useEffect(() => {
+        setIsOpen(!initialDisplay && initialDisplay !== 'cover');
+
+    }, [initialDisplay, itemCopy])
+    useEffect(() => {
+        if (isOpen && itemCopy)
+            handleOpen();
+    }, [isOpen, itemCopy])
     useEffect(() => {
         if (router.query.itemId) {
             dispatch(clearPage());
@@ -206,7 +220,7 @@ export default function Diary() {
                 <ContentPageLayout>
                     <Container>
                         <br />
-                        <TopControlPanel {...{ startDate, setStartDate }} datePickerViewMode={isOpen ? "monthYear" : "dayMonth"} showSearchIcon />
+                        {isOpen && <TopControlPanel {...{ startDate, setStartDate, handleSearch }} closeDiary={() => setIsOpen(false)} datePickerViewMode={"monthYear"} showSearchIcon />}
                         <br />
                         {!isOpen &&
                             <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.diaryCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
@@ -221,7 +235,7 @@ export default function Diary() {
                                 <br />
                                 <Row>
                                     <Col>
-                                        <ContainerOpenButton handleOpen={handleOpen} />
+                                        <ContainerOpenButton handleOpen={()=>setIsOpen(true)} />
                                     </Col>
                                 </Row>
                                 <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
@@ -248,19 +262,20 @@ export default function Diary() {
                                             fromDate.setDate(0)
                                             console.log(containerContents);
 
-                                            const list = [];
-                                            for (let index = 0; index < getDaysInMonth(fromDate); index++) {
-                                                fromDate.setDate(fromDate.getDate() + 1);
-                                                const dateString = format(fromDate, 'yyyyLLdd');
-                                                const title = containerContents[dateString]?.title || '';
-                                                const backgroundColor = showingMonthDate.getDate() === fromDate.getDate() ? '#EBF5FB' : (fromDate.getDay() % 6 === 0 ? '#d4d5d5' : null);
-                                                const newId = pageItemId.replace('d:', 'dp:') + ':' + format(fromDate, 'yyyy-LL-dd');
-                                                console.log(newId);
+                                            const list = containerContents.map((cont, index) => {
+
+                                                // })
+                                                // for (let index = 0; index < getDaysInMonth(fromDate); index++) {
+                                                // fromDate.setDate(fromDate.getDate() + 1);
+                                                const contDate = cont.date;
+                                                const title = cont.title || '';
+                                                const backgroundColor = showingMonthDate.getDate() === contDate.getDate() ? '#EBF5FB' : (contDate.getDay() % 6 === 0 ? '#d4d5d5' : null);
+                                                const newId = pageItemId.replace('d:', 'dp:') + ':' + format(contDate, 'yyyy-LL-dd');
                                                 const row = (
                                                     <Row key={index}>
                                                         <Col xs={{ span: 3, offset: 1 }} sm={{ span: 3, offset: 1 }} md={{ span: 2, offset: 1 }} style={{ backgroundColor }}>
                                                             <Link href={{ pathname: '/diary/p/[itemId]', query: { itemId: newId } }}>
-                                                                <a className={`${BSafesStyle.containerContentsPageTitle} itemPage`} id="pageNumberLink" >{format(fromDate, 'd EEEEE')}</a>
+                                                                <a className={`${BSafesStyle.containerContentsPageTitle} itemPage`} id="pageNumberLink" >{format(contDate, 'd EEEEE')}</a>
                                                             </Link>
                                                         </Col>
                                                         <Col xs={8} sm={8} md={9}>
@@ -275,8 +290,8 @@ export default function Diary() {
                                                         </Col>
                                                     </Row>
                                                 )
-                                                list.push(row);
-                                            }
+                                                return row;
+                                            })
                                             return list;
                                         })()}
                                     </div>

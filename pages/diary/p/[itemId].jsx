@@ -17,7 +17,7 @@ import ContainerOpenButton from "../../../components/containerOpenButton";
 import PageCommonControls from "../../../components/pageCommonControls";
 
 import { clearContainer, initWorkspace } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../../reduxStore/pageSlice";
+import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getPageCommentsThunk, abort } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
 import { getLastAccessedItem } from "../../../lib/bSafesCommonUI";
@@ -26,45 +26,96 @@ import format from "date-fns/format";
 import isSameDay from "date-fns/isSameDay";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import PageCommons from "../../../components/pageCommons";
+import TurningPageControls from "../../../components/turningPageControls";
 
-export default function Notebook() {
+export default function Diary() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
-    // const dispatch = useDispatch();
+    const dispatch = useDispatch();
     const router = useRouter();
-    const [today] = useState(new Date());
-    const [pageDate, setPageDate] = useState();
+
     const [pageItemId, setPageItemId] = useState(null);
+    const pageNumber = useSelector(state => state.page.pageNumber);
+    const [pageStyle, setPageStyle] = useState('');
+    const [pageCleared, setPageCleared] = useState(false);
+    const [pageDate, setPageDate] = useState();
+
+    const searchKey = useSelector(state => state.auth.searchKey);
+    const searchIV = useSelector(state => state.auth.searchIV);
+    const expandedKey = useSelector(state => state.auth.expandedKey);
+
+    const space = useSelector(state => state.page.space);
+    const itemCopy = useSelector(state => state.page.itemCopy);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+
     useEffect(() => {
-        if (router.isReady && !pageItemId) {
-            const { itemId } = router.query;
-            setPageItemId(itemId);
-            setPageDate(parse(itemId.split(':').pop(), 'yyyy-MM-dd', new Date()));
+        const handleRouteChange = (url, { shallow }) => {
+            console.log(
+                `App is changing to ${url} ${shallow ? 'with' : 'without'
+                } shallow routing`
+            )
+            dispatch(abort());
         }
-    }, [router.isReady]);
-    console.log(pageItemId);
-    // const [pageCleared, setPageCleared] = useState(false); 
-    // const [isOpen, setIsOpen] = useState(false);
 
-    // const { itemId } = router.query;
-    // if(itemId && !pageItemId) {
-    //     setPageItemId(itemId);
-    // }
+        router.events.on('routeChangeStart', handleRouteChange)
 
-    // const searchKey = useSelector( state => state.auth.searchKey);
-    // const searchIV = useSelector( state => state.auth.searchIV);
-    // const expandedKey = useSelector( state => state.auth.expandedKey );
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+            router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
 
-    // const space = useSelector( state => state.page.space);
-    // const workspaceKey = useSelector( state => state.container.workspaceKey);
-    // const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    // const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    useEffect(() => {
+        if (router.query.itemId) {
+            dispatch(clearPage());
+            dispatch(clearContainer());
+            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
+            setPageItemId(router.query.itemId);
+            setPageCleared(true);
+            setPageDate(parse(router.query.itemId.split(':').pop(), 'yyyyLLdd', new Date()));
+        }
+    }, [router.query.itemId]);
 
-    const activity = useSelector(state => state.page.activity);
-    const [editingEditorId, setEditingEditorId] = useState(null);
+    useEffect(() => {
+        if (pageItemId && pageCleared) {
+            debugLog(debugOn, "Dispatch getPageItemThunk ...");
+            dispatch(getPageItemThunk({ itemId: pageItemId }));
+        }
+    }, [pageItemId, pageCleared]);
 
-    const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
-    const titleEditorContent = useSelector(state => state.page.title);
+    useEffect(() => {
+        if (pageNumber) {
+            debugLog(debugOn, "pageNumber: ", pageNumber);
+            if (pageNumber % 2) {
+                setPageStyle(BSafesStyle.leftPagePanel);
+            } else {
+                setPageStyle(BSafesStyle.rightPagePanel);
+            }
+        }
+    }, [pageNumber])
+
+    useEffect(() => {
+        if (space && pageCleared) {
+
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initWorkspace({ space, workspaceKey: expandedKey, searchKey, searchIV }));
+            } else {
+            }
+        }
+    }, [space]);
+
+    useEffect(() => {
+        debugLog(debugOn, "useEffect [workspaceKey] ...");
+        if (workspaceKey && itemCopy && pageCleared) {
+            setPageCleared(false);
+            debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
+            dispatch(decryptPageItemThunk({ itemId: pageItemId, workspaceKey }));
+            dispatch(getPageCommentsThunk({ itemId: pageItemId }));
+        }
+    }, [workspaceKey]);
+    const [today] = useState(new Date());
     var distance = Math.ceil((today - pageDate) / (1000 * 60 * 60 * 24));
     if (isSameDay(pageDate, today))
         distance = 'Today';
@@ -73,32 +124,39 @@ export default function Notebook() {
     else if (distance === 2)
         distance = '2 days ago'
     else distance = null;
-    const handleContentChanged = (editorId, content) => {
-        debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
 
-        if (editingEditorId === "title") {
-            if (content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, workspaceSearchKey, workspaceSearchIV));
-            } else {
-                setEditingEditorMode("ReadOnly");
-                setEditingEditorId(null);
-            }
-        }
-    }
-    const handlePenClicked = (editorId) => {
-        debugLog(debugOn, `pen ${editorId} clicked`);
-        if (editorId === 'title') {
-            setTitleEditorMode("Writing");
-            setEditingEditorId("title");
-        }
-    }
-    const setEditingEditorMode = (mode) => {
-        switch (editingEditorId) {
-            case 'title':
-                setTitleEditorMode(mode);
+    const gotoAnotherPage = (anotherPageNumber) => {
+        if (!(pageItemId && pageDate)) return;
+
+        let idParts, nextPageId;
+        idParts = pageItemId.split(':');
+        idParts.splice(-1);
+        const newDate = new Date(pageDate.valueOf());
+        switch (anotherPageNumber) {
+            case '-1':
+                newDate.setDate(newDate.getDate() - 1);
+                idParts.push(format(newDate, 'yyyyLLdd'));
+                break;
+            case '+1':
+                newDate.setDate(newDate.getDate() + 1);
+                idParts.push(format(newDate, 'yyyyLLdd'));
                 break;
             default:
+                idParts.push(anotherPageNumber);
+
         }
+
+        nextPageId = idParts.join(':');
+        router.push(`/diary/p/${nextPageId}`);
+    }
+    const gotoNextPage = () => {
+        debugLog(debugOn, "Next Page ");
+        gotoAnotherPage('+1');
+    }
+
+    const gotoPreviousPage = () => {
+        debugLog(debugOn, "Previous Page ");
+        gotoAnotherPage('-1');
     }
 
     return (
@@ -108,14 +166,24 @@ export default function Notebook() {
                     {pageItemId ?
                         <Container>
                             <br />
-                            <TopControlPanel showListIcon />
+                            <TopControlPanel
+                                showListIcon
+                                closeDiary={() => {
+                                    const parts = pageItemId.split(':');
+                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}?initialDisplay=cover`)
+                                }}
+                                handleIndexClick={() => {
+                                    const parts = pageItemId.split(':');
+                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}`)
+                                }}
+                            />
                             <br />
                             <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.pagePanel} ${BSafesStyle.rightPagePanel} ${BSafesStyle.containerPanel}`}>
                                 <ItemTopRows />
                                 <Row style={{ marginTop: '20px' }} className=" mx-0">
                                     <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
                                         {distance && <h2>{distance}</h2>}
-                                        <h4>{format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
+                                        <h4>{pageDate && format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
                                     </Col>
                                 </Row>
                                 <Row className="justify-content-center">
@@ -125,6 +193,8 @@ export default function Notebook() {
                                 </Row>
                                 <PageCommons />
                             </div>
+                            <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
+
                         </Container> :
                         <LoadingSpinner />}
                 </ContentPageLayout>

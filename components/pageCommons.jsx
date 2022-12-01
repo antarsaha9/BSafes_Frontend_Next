@@ -15,7 +15,7 @@ import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downl
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -103,6 +103,7 @@ export default function PageCommons() {
                 setEditingEditorId(null);
             }
         } else if(editingEditorId === "title") {
+            console.log('here');
             if(content !== titleEditorContent) {
                 dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
