@@ -130,7 +130,7 @@
 
 .containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
   position: relative;
-  min-height: 860px;
+  min-height: 925px;
   padding-bottom:48px;
 }
 
@@ -180,6 +180,13 @@
 }
 /* End of notebook */
 
+/*--****** Diary */
+.diaryCoverPanel {
+  border-left: 30px solid #000;
+  background-color:#FEF5E7;
+  border-radius:0 20px 20px 0;
+}
+/* End of diary */
 
 /*--****** Page *******/
 /*--***** Page general */

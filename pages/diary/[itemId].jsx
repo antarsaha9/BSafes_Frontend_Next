@@ -20,9 +20,8 @@ import { clearContainer, initContainer } from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 
-export default function Notebook() {
+export default function Diary() {
     const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
@@ -32,7 +31,7 @@ export default function Notebook() {
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
     const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
-
+    
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
@@ -51,7 +50,6 @@ export default function Notebook() {
     const itemCopy = useSelector( state => state.page.itemCopy);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
-
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
@@ -103,15 +101,16 @@ export default function Notebook() {
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
         try {
-            const item = await getLastAccessedItem(pageItemId);
-            if(item) {
-                debugLog(debugLog, item);
-            } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
-                router.push(firstPage);
-            }
+            const currentTime = new Date();
+            const year = currentTime.getFullYear();
+            let month, date, pageIndex, link;
+            month = currentTime.getMonth() + 1;
+            if (month < 10) month = '0' + month;
+            date = currentTime.getDate();
+            if (date < 10) date = '0' + date;
+            pageIndex = year + '-' + month + '-' + date;
+            link = '/diary/p/' + pageItemId.replace('d:', 'dp:') + ':' + pageIndex;
+            router.push(link);
         } catch (error) {
             debugLog(debugOn, error)
         }
@@ -196,19 +195,19 @@ export default function Notebook() {
             dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
         }
     }, [workspaceKeyReady]);
-
+    
     return (
         <div>
             <div className={BSafesStyle.pageBackground}>
                 <ContentPageLayout>
-                    <Container fluid> 
+                    <Container fluid>
                         <br />
                         <TopControlPanel></TopControlPanel>
                         <br />  
                         <Row>
-                            <Col lg={{span:10, offset:1}}>                       
+                            <Col lg={{span:10, offset:1}}>
                             { 
-                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
+                                <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.diaryCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
                                     <ItemTopRows />
                                     <br />
                                     <br />

@@ -64,21 +64,26 @@ export default function ItemCard({item}) {
             <Card body className={`${BSafesStyle.safeItem}`} >
                 <Row className="">
                     <Col xs={9}>
-                        {item.itemPack.type === 'P'?
+                        {item.itemPack.type === 'P' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i><span></span>
+                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
                                 </span>
                                 <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
                             </div>
-                            :""
                         }
-                        {item.itemPack.type === 'N'?
+                        {item.itemPack.type === 'N' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-book fa-lg me-3" aria-hidden="true"></i><span></span>
+                                <span><i className="fa fa-book fa-lg me-3" aria-hidden="true"></i>
                                 </span>
                                 <div dangerouslySetInnerHTML={{__html: item.title}} />
                             </div>
-                            :""
+                        }
+                        {item.itemPack.type === 'D' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                            </div>
                         }
                                 
                     </Col>
