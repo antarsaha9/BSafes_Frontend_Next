@@ -15,6 +15,7 @@ const initialState = {
     activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
     activeRequest: null,
     error: null,
+    navigationMode: false,
     itemCopy: null,
     id: null,
     space: null,
@@ -159,6 +160,13 @@ function decryptPageItemFunc(state, workspaceKey) {
     }
 }
 
+const containerDataFetchedFunc =  (state, action) => {
+    state.id = action.payload.itemId;
+    state.space = action.payload.container.space;
+    state.container = action.payload.container.id;
+    state.title = "<h2></h2>";
+}
+
 const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
@@ -180,6 +188,9 @@ const pageSlice = createSlice({
         setActiveRequest: (state, action) => {
             state.activeRequest = action.payload;
         },
+        setNavigationMode: (state, action) => {
+            state.navigationMode = true;
+        },
         setPageNumber: (state, action) => {
             state.pageNumber = action.payload;
         },
@@ -191,10 +202,11 @@ const pageSlice = createSlice({
         containerDataFetched: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            state.id = action.payload.itemId;
-            state.space = action.payload.container.space;
-            state.container = action.payload.container.id;
-            state.title = "<h2></h2>";
+            containerDataFetchedFunc(state, action);
+            
+        },
+        setContainerData: (state, action) => {
+            containerDataFetchedFunc(state, action);
         },
         decryptPageItem: (state, action) => {
             if(state.aborted ) return;
@@ -374,7 +386,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, abort, setActiveRequest, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, abort, setActiveRequest, setNavigationMode, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -465,7 +477,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(dataFetched({item:result.item}));
                         resolve();
                     } else {
-                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                        if(data.navigationInSameContainer) {
+                            debugLog(debugOn, "setNavigationMode ...");
+                            dispatch(setNavigationMode(true));
+                            resolve();
+                            return;
+                        }
+                        if(!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
                             try {
                                 const container = await getContainerData(data.itemId);
                                 state = getState().page;

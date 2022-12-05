@@ -140,7 +140,7 @@ export default function NotebookContents() {
         if(containerCleared) {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container: pageItemId, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
                 setWorkspaceKeyReady(true);
             } else {
             }

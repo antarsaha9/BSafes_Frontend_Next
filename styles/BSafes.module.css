@@ -192,7 +192,6 @@
 /*--***** Page general */
 .pagePanel {
   background-color:rgb(255, 255, 255);
-  min-height:860px;
   margin-top:20px;
   margin-bottom:20px;
   padding-left:15px;

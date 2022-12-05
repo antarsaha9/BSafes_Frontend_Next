@@ -1,81 +1,56 @@
 import { useEffect, useState } from "react";
-import {useRouter} from "next/router";
+import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
+import parse from "date-fns/parse";
+import format from "date-fns/format";
+import isSameDay from "date-fns/isSameDay";
+
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 
-import TopControlPanel from "../../../components/topControlPanel"
+import TopControlPanel from "../../../components/topControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
-import { abort, setNavigationMode, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+import { clearContainer, initContainer } from '../../../reduxStore/containerSlice';
+import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+
 import { debugLog } from "../../../lib/helper";
 
-export default function NotebookPage() {
+export default function DiaryPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null);
-    const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
-    const pageNumber = useSelector( state=> state.page.pageNumber);
-    const [pageStyle, setPageStyle] = useState('');
+    const [pageDate, setPageDate] = useState();
+    const [pageStyle, setPageStyle] = useState(''); 
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
     const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
-
-    debugLog(debugOn, "pageNumber: ", pageNumber);
+    
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
-    
-    const navigationMode = useSelector( state => state.page.navigationMode);
+
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
     const containerInWorkspace = useSelector( state => state.container.container);
-    const workspace = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     function gotoAnotherPage (anotherPageNumber) {
-        if(!(pageItemId && pageNumber)) return;
-
-        let idParts, nextPageId;
-        idParts = pageItemId.split(':');
-        idParts.splice(-1);
-        switch(anotherPageNumber) {
-            case '-1':
-                if(pageNumber > 1) {
-                    idParts.push((pageNumber-1));
-                } else {
-                    if(!containerInWorkspace) return;
-                    router.push(`/notebook/contents/${containerInWorkspace}`);
-                    return;
-                }
-                break;
-            case '+1':
-                idParts.push((pageNumber+1));
-                break;
-            default:
-                idParts.push(anotherPageNumber);
-            
-        }
-
-        nextPageId = idParts.join(':');
-        debugLog(debugOn, "setNavigationInSameContainer ...");
-        setNavigationInSameContainer(true);
-        router.push(`/notebook/p/${nextPageId}`);       
+      
     }
 
     const gotoNextPage = () =>{
@@ -86,41 +61,6 @@ export default function NotebookPage() {
     const gotoPreviousPage = () => {
         debugLog(debugOn, "Previous Page ");
         gotoAnotherPage('-1');
-    }
-
-    const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
-        router.push(newLink);
-    }
-
-    const handleContentsClicked = () => {
-        const contentsPageLink = `/notebook/contents/${container}`;
-        router.push(contentsPageLink);
-    }
-
-    const handlePageNumberChanged = (anotherPageNumber) => {
-        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-        gotoAnotherPage(anotherPageNumber);
-    }
-
-    const handleGoToFirstItem = async () => {
-        try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
-        } catch(error) {
-            alert("Could not get the first item in the container");
-        }
-    }
-
-    const handleGoToLastItem = async () => {
-        try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
-        } catch(error) {
-            alert("Could not get the first item in the container");
-        }
     }
 
     useEffect(() => {
@@ -155,27 +95,9 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:pageItemId, navigationInSameContainer}));
+            dispatch(getPageItemThunk({itemId:pageItemId}));
         }
     }, [pageItemId, pageCleared]);
-
-    useEffect(()=>{
-        if(pageCleared && navigationMode) {
-            debugLog(debugOn, "setContainerData ...");
-            dispatch(setContainerData({itemId:pageItemId, container:{space: workspace, id: containerInWorkspace} }));
-        }
-    }, [navigationMode]);
-
-    useEffect(()=>{
-        if(pageNumber) {
-            debugLog(debugOn, "pageNumber: ", pageNumber);
-            if(pageNumber%2) {
-                setPageStyle(BSafesStyle.leftPagePanel);
-            } else {
-                setPageStyle(BSafesStyle.rightPagePanel);
-            }
-        }
-    }, [pageNumber])
 
     useEffect(()=>{
         if(space && pageCleared) {
@@ -211,17 +133,17 @@ export default function NotebookPage() {
         }
     }, [workspaceKeyReady, itemCopy]);
 
-    
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
                 <Container fluid>
                     <br />
-                    <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
+                    <TopControlPanel ></TopControlPanel>
+                    <br /> 
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel} ${pageStyle}`}>
                                 <ItemTopRows />
                                 <Row className="justify-content-center">
                                     <Col xs="12" sm="10" md="8">
@@ -234,11 +156,9 @@ export default function NotebookPage() {
                     </Row> 
 
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-   
                 </Container>           
             </ContentPageLayout>
             <Scripts />
         </div>
-
-    )
+    );
 }
