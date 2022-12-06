@@ -181,6 +181,10 @@
 /* End of notebook */
 
 /*--****** Diary */
+.diaryControlPanelBody {
+  padding-bottom: 10px;
+}
+
 .diaryCoverPanel {
   border-left: 30px solid #000;
   background-color:#FEF5E7;

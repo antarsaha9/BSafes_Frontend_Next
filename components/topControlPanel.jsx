@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { useSelector } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
@@ -10,7 +10,7 @@ import Form from 'react-bootstrap/Form'
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from "../lib/helper";
-import { useEffect } from "react";
+
 
 export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null}) {
     const debugOn = true;

@@ -1,7 +1,8 @@
 import SSRProvider from 'react-bootstrap/SSRProvider'
 import store, {reduxWrapper} from '../reduxStore/store'
 import '../styles/bootstrap.min.css'
-import '../styles/react-tagsinput.css'
+import '../styles/react-tagsinput-bsafes.css'
+import "../styles/react-datepicker-bsafes.css";
 
 function MyApp({ Component, pageProps }) {
   return (

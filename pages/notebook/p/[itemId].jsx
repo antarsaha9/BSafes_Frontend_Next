@@ -17,7 +17,7 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
-import { abort, setNavigationMode, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
