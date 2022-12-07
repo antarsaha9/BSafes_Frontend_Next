@@ -180,6 +180,7 @@ const pageSlice = createSlice({
         },
         abort: (state, action) => {
             state.aborted = true;
+            debugLog(debugOn, "abort: ", state.aborted);
         },
         activityChanged: (state, action) => {
             if(state.aborted ) return;
@@ -530,8 +531,14 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(downloadingContentImage({itemId, progress:10}));
 
                         const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                    
+                        debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
+                        
+                        if(itemId !== state.activeRequest) { 
+                            debugLog(debugOn, "Aborted!");
+                            reject("Aborted")
+                            return;
+                        };
+                        
                         let decryptedImageStr
                         if(keyVersion === '3') {
                             const buffer = Buffer.from(response, 'binary');
@@ -563,8 +570,11 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     break;
                 } 
                 const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
-                await downloadAnImage(image); 
-            
+                try {
+                    await downloadAnImage(image); 
+                } catch (error) {
+                    break;
+                }
                 state = getState().page; 
             }
         }
@@ -582,7 +592,13 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(downloadingImage({itemId, progress:10}));
                         const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);                          
                         debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-                    
+                        
+                        if(itemId !== state.activeRequest) { 
+                            debugLog(debugOn, "Aborted!");
+                            reject("Aborted")
+                            return;
+                        };
+
                         let decryptedImageStr
                         if(keyVersion === '3') {
                             const buffer = Buffer.from(response, 'binary');
@@ -622,17 +638,20 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     break;
                 }
                 const image = state.imageDownloadQueue[state.imageDownloadIndex];
-                await downloadAnImage(image); 
-            
-                state = getState().page; 
-                if(itemId !== state.activeRequest){
+                try {
+                    await downloadAnImage(image); 
+                } catch (error) {
                     break;
                 }
+                state = getState().page; 
             }
         };
 
         return new Promise(async (resolve, reject) => {
-            if(itemId !== state.activeRequest) { reject("Aborted")};
+            if(itemId !== state.activeRequest) { 
+                reject("Aborted")
+                return;
+            };
             dispatch(decryptPageItem({itemId, workspaceKey: data.workspaceKey}));
             state = getState().page;    
             if(state.contentImagesDownloadQueue.length) {
@@ -794,6 +813,29 @@ function createANotebookPage(data) {
     });
 }
 
+function createADiaryPage(data) {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/createADiaryPage',
+            body: data
+        }).then( result => {
+            debugLog(debugOn, result);
+
+            if(result.status === 'ok') {    
+                if(result.item) {
+                    resolve(result.item);
+                } else {
+                    debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                    reject("woo... failed to create a diary page!");
+                }
+            } else {
+                debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                reject("woo... failed to create a diary page!");
+            }
+        });
+    });
+}
+
 function createANewPage(dispatch, state, newPageData, updatedState) {
     return new Promise(async (resolve, reject) => {
         let item;
@@ -813,7 +855,17 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
                 reject(error);
             }
         } else if (state.container.substring(0, 1) === 'd') {
-                        
+            try {
+                item = await createADiaryPage(newPageData);
+                dispatch(newItemCreated({
+                    ...updatedState,
+                    itemCopy: item
+                }));
+                resolve();
+            } catch (error) {
+                debugLog(debugOn, "createADiaryPage failed: ", error);
+                reject(error);
+            }       
         }
     });
 }

@@ -6,10 +6,14 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
+import parse from "date-fns/parse";
+import format from "date-fns/format";
+import isSameDay from "date-fns/isSameDay";
+
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
-import TopControlPanel from "../../../components/topControlPanel";
+import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
@@ -18,7 +22,7 @@ import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
-export default function NotebookContents() {
+export default function DiaryContents() {
     const debugOn = true;
     debugLog(debugOn, "Rendering Contents");
     const dispatch = useDispatch();
@@ -45,6 +49,11 @@ export default function NotebookContents() {
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+
+
+    const [startDate, setStartDate] = useState(new Date());
+    const showingMonthDate = startDate;
+    const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
     const items = itemsState.map( (item, index) => 
         <ItemRow key={index} item={item}/>
@@ -102,6 +111,10 @@ export default function NotebookContents() {
         gotoAnotherPage(anotherPageNumber);
     }
 
+    const handleSearch = (value) => {
+        //dispatch(searchContainerContentsThunk(value, workspaceKey));
+    }
+
     useEffect(()=>{
         if(router.query.itemId) {
 
@@ -152,26 +165,34 @@ export default function NotebookContents() {
         if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
             setContainerCleared(false);
+            
             dispatch(listItemsThunk({pageNumber: 1}));
         }
-    }, [workspaceKeyReady, containerInWorkspace]);
+    }, [workspaceKeyReady, containerInWorkspace, startDate]);
+
+    useEffect(()=>{
+        debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
+        if(workspaceKeyReady && containerInWorkspace) {
+            debugLog(debugOn, "startDate changed -> list items");
+        }
+    }, [startDate])
 
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
+                    <DiaryTopControlPanel {...{ startDate, setStartDate, handleSearch }} closeDiary={null} datePickerViewMode="monthYear" showSearchIcon />
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel}`}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel}`}>
                                 <br />
                                 <br />
-                                <p className='fs-1 text-center'>Contents</p>
+                                <p className='fs-1 text-center'>{currentMonthYear}</p>
                                 <Row>
                                     <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                            <p>Page</p> 
+           	                            <p>Day</p> 
                                     </Col> 
                                     <Col xs={8} sm={8} md={9}>
               	                        <p>Title</p> 

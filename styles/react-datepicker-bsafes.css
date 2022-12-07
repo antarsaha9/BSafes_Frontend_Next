@@ -438,7 +438,7 @@
 .react-datepicker__quarter-text--today,
 .react-datepicker__year-text--today {
   font-weight: bold;
-  background-color: yellow; /* BSafes Custom */
+  background-color:#fff68f ; /* BSafes Custom */
 }
 .react-datepicker__day--highlighted,
 .react-datepicker__month-text--highlighted,
@@ -492,10 +492,15 @@
 .react-datepicker__year-text--in-range:hover {
   background-color: #1d5d90;
 }
-.react-datepicker__day--keyboard-selected,
+
 .react-datepicker__month-text--keyboard-selected,
 .react-datepicker__quarter-text--keyboard-selected,
 .react-datepicker__year-text--keyboard-selected {
+  border-radius: 0.3rem;
+  color: #000; /*BSafes custom*/
+}
+
+.react-datepicker__day--keyboard-selected {
   border-radius: 0.3rem;
   background-color: #fff; /*BSafes custom*/
   color: #000; /*BSafes custom*/

@@ -235,7 +235,7 @@ export default function DiaryPage() {
                                     </Col>
                                 </Row>
                                 <Row className="justify-content-center">
-                                    <Col xs="12" sm="10" md="8">
+                                    <Col lg="10">
                                         <hr />
                                     </Col>
                                 </Row>
