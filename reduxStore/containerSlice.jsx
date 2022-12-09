@@ -86,18 +86,32 @@ const newActivity = async (dispatch, type, activity) => {
 export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let state;
+            let state, pageNumber;
             state = getState().container;
-            const pageNumber = data.pageNumber;
+            
             let body;
             if(state.container.startsWith('n')) {
+                pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
                     size: state.itemsPerPage,
                     from: (pageNumber - 1) * state.itemsPerPage,
                 }
             } else if(state.container.startsWith('d')) {
-                
+                let selectedDiaryContentStartPosition, selectedDiaryContentEndPosition;
+                const startDate = data.startDate;
+                pageNumber= 1;
+                selectedDiaryContentStartPosition = parseInt(startDate + '00');
+                selectedDiaryContentEndPosition = parseInt(startDate + '31');
+
+                body = {
+                    container: state.container,
+                    size: 31,
+                    from: 0,
+                    selectedDiaryContentStartPosition,
+                    selectedDiaryContentEndPosition
+                }
+
             } else {
                 body = {
                     container: state.workspace,

@@ -166,9 +166,10 @@ export default function DiaryContents() {
             setPageCleared(false);
             setContainerCleared(false);
             
-            dispatch(listItemsThunk({pageNumber: 1}));
+            debugLog(debugOn, "listItemsThunk ...");
+            dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
         }
-    }, [workspaceKeyReady, containerInWorkspace, startDate]);
+    }, [workspaceKeyReady, containerInWorkspace]);
 
     useEffect(()=>{
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
