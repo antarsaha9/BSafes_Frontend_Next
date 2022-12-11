@@ -470,6 +470,44 @@ export const getContainerContentsThunk = (data, workspaceKey) => async (dispatch
                         reject("woo... failed to get container contents!");
                     }
                 })
+            } else if (data.itemId.startsWith('f:')) {
+                const body = {
+                    itemId: data.itemId,
+                    size: data.size,
+                    from: data.from,
+                }
+                PostCall({
+                    api: '/memberAPI/getContainerContents',
+                    body,
+                }).then(async result => {
+                    debugLog(debugOn, result);
+                    state = getState().page;
+                    if (result.status === 'ok') {
+                        if (result.hits) {
+                            const hits = result.hits.hits;
+                            const modifiedHits = hits.map((hit) => {
+                                try {
+                                    const key = decryptDecode2(hit._source.keyEnvelope, workspaceKey, hit._source.envelopeIV)
+                                    const payload = {
+                                        id: hit._id,
+                                        position: hit._source.position,
+                                        pageNumber: hit._source.pageNumber,
+                                        title: decryptDecode1(hit._source.title, decryptDecode2(hit._source.keyEnvelope, workspaceKey)),
+                                    }
+                                    return payload ;
+
+                                } catch (error) {
+                                    console.log(error);
+                                    return previous;
+                                }
+
+                            })
+                            dispatch(containerContentsFetched(modifiedHits));
+                        }
+                    } else {
+                        reject("woo... failed to get container contents!");
+                    }
+                })
             } else {
                 debugLog(debugOn, "woo... failed to get container contents!", data.error);
                 reject("woo... failed to get container contents!");

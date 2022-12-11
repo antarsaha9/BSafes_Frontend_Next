@@ -129,7 +129,7 @@
   color: white;
 }
 
-.containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel {
+.containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel, .folderPanel {
   position: relative;
   min-height: 860px;
   padding-bottom:48px;
@@ -276,3 +276,21 @@
 	margin-bottom:0px;
 }
 /* End of diary */
+
+/*--**** Folder */
+.folderCoverPanel {
+  background-color:#FCF3CF;
+  border-radius:0 0 20px 0;
+}
+.folderCoverPanel::before {
+  background-color:#e0d5a7;
+  width: 25px;
+  min-height: 200px;
+  position: absolute;
+  top: 0px;
+  right:-25px;
+  border-radius: 0px 10px 30px 0;
+  display: block;
+  content: '';
+}
+/* End of folder */
