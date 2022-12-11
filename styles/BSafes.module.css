@@ -131,7 +131,7 @@
 
 .containerCoverPanel, .containerContentsPanel, .notebookPanel, .diaryPanel, .boxPanel, .folderPanel {
   position: relative;
-  min-height: 860px;
+  min-height: 925px;
   padding-bottom:48px;
 }
 
@@ -182,12 +182,22 @@
 }
 /* End of notebook */
 
+/*--****** Diary */
+.diaryControlPanelBody {
+  padding-bottom: 10px;
+}
+
+.diaryCoverPanel {
+  border-left: 30px solid #000;
+  background-color:#FEF5E7;
+  border-radius:0 20px 20px 0;
+}
+/* End of diary */
 
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
   background-color:rgb(255, 255, 255);
-  min-height:860px;
   margin-top:20px;
   margin-bottom:20px;
   padding-left:15px;

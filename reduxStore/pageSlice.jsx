@@ -17,6 +17,7 @@ const initialState = {
     activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
     activeRequest: null,
     error: null,
+    navigationMode: false,
     itemCopy: null,
     id: null,
     space: null,
@@ -162,6 +163,13 @@ function decryptPageItemFunc(state, workspaceKey) {
     }
 }
 
+const containerDataFetchedFunc =  (state, action) => {
+    state.id = action.payload.itemId;
+    state.space = action.payload.container.space;
+    state.container = action.payload.container.id;
+    state.title = "<h2></h2>";
+}
+
 const pageSlice = createSlice({
     name: "page",
     initialState: initialState,
@@ -175,6 +183,7 @@ const pageSlice = createSlice({
         },
         abort: (state, action) => {
             state.aborted = true;
+            debugLog(debugOn, "abort: ", state.aborted);
         },
         activityChanged: (state, action) => {
             if(state.aborted ) return;
@@ -182,6 +191,9 @@ const pageSlice = createSlice({
         },
         setActiveRequest: (state, action) => {
             state.activeRequest = action.payload;
+        },
+        setNavigationMode: (state, action) => {
+            state.navigationMode = true;
         },
         setPageNumber: (state, action) => {
             state.pageNumber = action.payload;
@@ -194,10 +206,11 @@ const pageSlice = createSlice({
         containerDataFetched: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            state.id = action.payload.itemId;
-            state.space = action.payload.container.space;
-            state.container = action.payload.container.id;
-            state.title = "<h2></h2>";
+            containerDataFetchedFunc(state, action);
+            
+        },
+        setContainerData: (state, action) => {
+            containerDataFetchedFunc(state, action);
         },
         decryptPageItem: (state, action) => {
             if(state.aborted ) return;
@@ -380,7 +393,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, abort, setActiveRequest, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, containerContentsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated } = pageSlice.actions;
+export const { clearPage, activityChanged, abort, setActiveRequest, setNavigationMode, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -631,7 +644,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(dataFetched({item:result.item}));
                         resolve();
                     } else {
-                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                        if(data.navigationInSameContainer) {
+                            debugLog(debugOn, "setNavigationMode ...");
+                            dispatch(setNavigationMode(true));
+                            resolve();
+                            return;
+                        }
+                        if(!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
                             try {
                                 const container = await getContainerData(data.itemId);
                                 state = getState().page;
@@ -677,9 +696,15 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         const signedURL = await preS3Download(state.id, s3Key);
                         dispatch(downloadingContentImage({itemId, progress:10}));
 
-                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-
+                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
+                        debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
+                        
+                        if(itemId !== state.activeRequest) { 
+                            debugLog(debugOn, "Aborted!");
+                            reject("Aborted")
+                            return;
+                        };
+                        
                         let decryptedImageStr
                         if(keyVersion === '3') {
                             const buffer = Buffer.from(response, 'binary');
@@ -711,9 +736,12 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     break;
                 } 
                 const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
-                await downloadAnImage(image);
-
-                state = getState().page;
+                try {
+                    await downloadAnImage(image); 
+                } catch (error) {
+                    break;
+                }
+                state = getState().page; 
             }
         }
 
@@ -730,6 +758,12 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(downloadingImage({itemId, progress:10}));
                         const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);
                         debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                        
+                        if(itemId !== state.activeRequest) { 
+                            debugLog(debugOn, "Aborted!");
+                            reject("Aborted")
+                            return;
+                        };
 
                         let decryptedImageStr
                         if(keyVersion === '3') {
@@ -770,17 +804,20 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     break;
                 }
                 const image = state.imageDownloadQueue[state.imageDownloadIndex];
-                await downloadAnImage(image);
-
-                state = getState().page;
-                if(itemId !== state.activeRequest){
+                try {
+                    await downloadAnImage(image); 
+                } catch (error) {
                     break;
                 }
+                state = getState().page; 
             }
         };
 
         return new Promise(async (resolve, reject) => {
-            if(itemId !== state.activeRequest) { reject("Aborted")};
+            if(itemId !== state.activeRequest) { 
+                reject("Aborted")
+                return;
+            };
             dispatch(decryptPageItem({itemId, workspaceKey: data.workspaceKey}));
             state = getState().page;
             if(state.contentImagesDownloadQueue.length) {
@@ -965,6 +1002,29 @@ function createADiaryPage(data) {
     });
 }
 
+function createADiaryPage(data) {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/createADiaryPage',
+            body: data
+        }).then( result => {
+            debugLog(debugOn, result);
+
+            if(result.status === 'ok') {    
+                if(result.item) {
+                    resolve(result.item);
+                } else {
+                    debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                    reject("woo... failed to create a diary page!");
+                }
+            } else {
+                debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                reject("woo... failed to create a diary page!");
+            }
+        });
+    });
+}
+
 function createANewPage(dispatch, state, newPageData, updatedState) {
     return new Promise(async (resolve, reject) => {
         let item;
@@ -994,8 +1054,7 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
             } catch (error) {
                 debugLog(debugOn, "createADiaryPage failed: ", error);
                 reject(error);
-            }
-
+            }       
         }
     });
 }

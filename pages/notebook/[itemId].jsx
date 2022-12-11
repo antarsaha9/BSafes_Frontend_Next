@@ -32,7 +32,6 @@ export default function Notebook() {
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
     const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -67,7 +66,7 @@ export default function Notebook() {
         
         if(editingEditorId === "title") {
             if(content !== titleEditorContent) {
-                dispatch(saveTitleThunk(content, workspaceSearchKey, workspaceSearchIV));
+                dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -182,7 +181,7 @@ export default function Notebook() {
         if(containerCleared) {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
                 setWorkspaceKeyReady(true);
             } else {
             }
@@ -208,8 +207,8 @@ export default function Notebook() {
                         <br />  
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
-                            { !isOpen &&
-                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
+                            { 
+                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
                                     <ItemTopRows />
                                     <br />
                                     <br />
@@ -227,22 +226,6 @@ export default function Notebook() {
                                     <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
                                 </div> 
                             }
-                            { isOpen &&
-                                <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${BSafesStyle.containerContentsPanel}`}>
-                                    <br />
-                                    <br />
-				                    <h2 className="text-center">Contents</h2>
-
-                                    <Row>
-                                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                                Page 
-                                        </Col> 
-                                        <Col xs={{span:8, offset:0}} sm={{span:8, offset:0}} md={{span:9, offset:0}}>
-              	                            Title 
-                                        </Col>
-                                    </Row>
-                                </div>
-                            }  
                             </Col>
                         </Row>
                     </Container> 

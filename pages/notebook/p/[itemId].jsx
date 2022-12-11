@@ -17,7 +17,7 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
-import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
@@ -27,6 +27,7 @@ export default function NotebookPage() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null);
+    const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
@@ -38,11 +39,13 @@ export default function NotebookPage() {
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
     
+    const navigationMode = useSelector( state => state.page.navigationMode);
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
     const containerInWorkspace = useSelector( state => state.container.container);
+    const workspace = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     function gotoAnotherPage (anotherPageNumber) {
@@ -70,6 +73,8 @@ export default function NotebookPage() {
         }
 
         nextPageId = idParts.join(':');
+        debugLog(debugOn, "setNavigationInSameContainer ...");
+        setNavigationInSameContainer(true);
         router.push(`/notebook/p/${nextPageId}`);       
     }
 
@@ -150,9 +155,16 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:pageItemId}));
+            dispatch(getPageItemThunk({itemId:pageItemId, navigationInSameContainer}));
         }
     }, [pageItemId, pageCleared]);
+
+    useEffect(()=>{
+        if(pageCleared && navigationMode) {
+            debugLog(debugOn, "setContainerData ...");
+            dispatch(setContainerData({itemId:pageItemId, container:{space: workspace, id: containerInWorkspace} }));
+        }
+    }, [navigationMode]);
 
     useEffect(()=>{
         if(pageNumber) {
@@ -181,7 +193,7 @@ export default function NotebookPage() {
         if(containerCleared) {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container, space, workspaceKey: expandedKey, searchKey, searchIV }));
+                dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
                 setWorkspaceKeyReady(true);
             } else {
             }
@@ -205,7 +217,7 @@ export default function NotebookPage() {
             <ContentPageLayout>            
                 <Container fluid>
                     <br />
-                        <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
+                    <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
