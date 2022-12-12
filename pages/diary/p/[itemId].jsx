@@ -214,13 +214,13 @@ export default function DiaryPage() {
                                 showListIcon
                                 startDate={pageDate}
                                 setStartDate={handleDateChanged}
-                                closeDiary={() => {
+                                onCoverClicked={() => {
                                     const parts = pageItemId.split(':');
                                     router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}?initialDisplay=cover`)
                                 }}
-                                handleIndexClick={() => {
+                                onContentsClicked={() => {
                                     const parts = pageItemId.split(':');
-                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}`)
+                                    router.push(`/diary/contents/d:${parts[1]}:${parts[2]}:${parts[3]}`)
                                 }}
                             />
                     <br />  
@@ -235,7 +235,7 @@ export default function DiaryPage() {
                                     </Col>
                                 </Row>
                                 <Row className="justify-content-center">
-                                    <Col lg="10">
+                                    <Col md="10">
                                         <hr />
                                     </Col>
                                 </Row>

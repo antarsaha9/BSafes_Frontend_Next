@@ -177,6 +177,11 @@ export default function NotebookContents() {
               	                        <p>Title</p> 
                                     </Col>
                                 </Row>
+                                <Row>
+                                    <Col xs={{span:10, offset:1}}>
+                                        <hr className="mt-0 mb-0"/>
+                                    </Col>
+                                </Row>
                                 {items}
                             </div>
                         </Col>

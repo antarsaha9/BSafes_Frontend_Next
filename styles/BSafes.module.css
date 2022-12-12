@@ -147,12 +147,17 @@
   right: -18px;
 }
 
+.contentsItemRow {
+  z-index:100;
+}
+
 .turningPageRow {
   position:fixed;
   left: 0px;
   right:0px;
   top:60%;
   width:100%;
+  z-index: 10;
 }
 
 .pageBtn {
@@ -189,6 +194,14 @@
   border-left: 30px solid #000;
   background-color:#FEF5E7;
   border-radius:0 20px 20px 0;
+}
+
+.diaryWeekendItem {
+  background-color: rgb(242, 243, 244);
+}
+
+.diaryTodayItem {
+  background-color: rgb(235, 245, 251);
 }
 /* End of diary */
 
