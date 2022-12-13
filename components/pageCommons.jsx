@@ -492,8 +492,8 @@ export default function PageCommons() {
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col xs="12" lg="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                <Col xs="12" md="10" >
+                    <Editor className={BSafesStyle.contentEditorRow} editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <br />
