@@ -96,10 +96,10 @@ export default function ItemRow({item}) {
             {item.id.startsWith('dp') &&                
                 <div>                  
                     <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked}>
-                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
                         </Col> 
-                        <Col xs={7} sm={8} md={9}>
+                        <Col xs={7} sm={8} xl={9}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col>             
                     </Row>

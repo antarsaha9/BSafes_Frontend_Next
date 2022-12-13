@@ -161,6 +161,16 @@
 }
 
 .pageBtn {
+  position: relative;
+  background-color:transparent;
+  display: inline-block;
+  z-index:1000;
+  color: black;
+}
+
+.pageBtnFixed {
+  position: fixed;
+  top:60%;
   background-color:transparent;
   display: inline-block;
   z-index:1000;
