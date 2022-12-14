@@ -73,6 +73,10 @@ const scripts = [
      src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/line_breaker.min.js",
      loaded: false
     },
+    {id: "line_height.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.9.8/js/plugins/line_height.min.js",
+     loaded: false
+    },
     {id: "link.min.js",
      src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/link.min.js",
      loaded: false
