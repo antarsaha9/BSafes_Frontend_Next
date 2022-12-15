@@ -63,12 +63,19 @@ export default function ItemCard({item}) {
         <>
             <Card body className={`${BSafesStyle.safeItem}`} >
                 <Row className="">
-                    <Col xs={9}>
-                        {item.itemPack.type === 'P' &&
+                    <Col xs={9}>   
+                        {item.itemPack.type === 'D' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
+                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
                                 </span>
-                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                            </div>
+                        }
+                        {item.itemPack.type === 'F' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-folder-o fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
                             </div>
                         }
                         {item.itemPack.type === 'N' &&
@@ -78,14 +85,13 @@ export default function ItemCard({item}) {
                                 <div dangerouslySetInnerHTML={{__html: item.title}} />
                             </div>
                         }
-                        {item.itemPack.type === 'D' &&
+                         {item.itemPack.type === 'P' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
                                 </span>
-                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
                             </div>
-                        }
-                                
+                        }       
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
