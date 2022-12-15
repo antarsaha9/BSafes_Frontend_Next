@@ -11,7 +11,7 @@ import ReactDatePicker from 'react-datepicker'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, closeDiary, handleIndexClick }) {
+export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, onCoverClicked, onContentsClicked }) {
     const [showSearchBox, setShowSearchBox] = useState(false);
 
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
@@ -33,8 +33,8 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
                         <Card.Body className={BSafesStyle.diaryControlPanelBody}>
                             <Row>
                                 <Col xs={4}>
-                                    <Button variant='link' size='sm' className='text-white' onClick={closeDiary}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>
-                                    {showListIcon && <Button variant='link' size='sm' className='text-white' onClick={handleIndexClick}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
+                                    <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>
+                                    {showListIcon && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                                 </Col>
                                 <Col xs={4}>
                                 </Col>

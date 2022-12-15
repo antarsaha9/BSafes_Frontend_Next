@@ -6,9 +6,7 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
-import parse from "date-fns/parse";
 import format from "date-fns/format";
-import isSameDay from "date-fns/isSameDay";
 
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
@@ -52,63 +50,28 @@ export default function DiaryContents() {
 
 
     const [startDate, setStartDate] = useState(new Date());
+    const [allItemsInCurrentMonth, setAllItemsInCurrentMonth] = useState([]);
     const showingMonthDate = startDate;
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
-    const items = itemsState.map( (item, index) => 
+    const items = allItemsInCurrentMonth.map( (item, index) => 
         <ItemRow key={index} item={item}/>
     );
 
-
-    function gotoAnotherPage (anotherPageNumber) {
-        if(!(pageItemId)) return;
-
-        let idParts, nextPageId, newLink;
-        idParts = pageItemId.split(':');
-        idParts.splice(0, 1);
-        switch(anotherPageNumber) {
-            case '-1':
-                if(pageNumber > 1) {
-
-                } else {
-                    newLink = `/notebook/${containerInWorkspace}`;  
-                }
-                break;
-            case '+1':
-                if(pageNumber === totalNumberOfPages) {
-                    nextPageId = 'np:'+ idParts.join(':') + ':1';
-                    newLink = `/notebook/p/${nextPageId}`; 
-                } else {
-
-                }
-                break;
-            default:
-                idParts.push(anotherPageNumber);
-                nextPageId = 'np:'+ idParts.join(':');
-                newLink = `/notebook/p/${nextPageId}`;         
-        }      
-
-        router.push(newLink);
-    }
-
     const gotoNextPage = () =>{
         debugLog(debugOn, "Next Page ");
-        gotoAnotherPage('+1');
+        let currentYear = startDate.getFullYear();
+        let currentMonth = startDate.getMonth();
+        let newDate = new Date(currentYear, currentMonth+1, 1);
+        setStartDate(newDate);
     }
 
     const gotoPreviousPage = () => {
         debugLog(debugOn, "Previous Page ");
-        gotoAnotherPage('-1');
-    }
-
-    const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
-        router.push(newLink);
-    }
-
-    const handlePageNumberChanged = (anotherPageNumber) => {
-        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-        gotoAnotherPage(anotherPageNumber);
+        let currentYear = startDate.getFullYear();
+        let currentMonth = startDate.getMonth();
+        let newDate = new Date(currentYear, currentMonth-1, 1);
+        setStartDate(newDate);
     }
 
     const handleSearch = (value) => {
@@ -173,18 +136,61 @@ export default function DiaryContents() {
 
     useEffect(()=>{
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
+        setAllItemsInCurrentMonth([]);
         if(workspaceKeyReady && containerInWorkspace) {
             debugLog(debugOn, "startDate changed -> list items");
+            dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
         }
     }, [startDate])
+
+    useEffect(()=> {
+        if(!space || !workspaceKeyReady ) return;
+        debugLog(debugOn, "itemsState changed:", )
+        let currentYear = startDate.getFullYear();
+        let currentMonth = startDate.getMonth();
+        let numberOfDays = new Date(currentYear, currentMonth+1, 0).getDate();
+        
+        let allItems = [];
+        let searchStart = 0;
+        for(let i=0; i<numberOfDays; i++) {
+            let thisPageNumber;
+            thisPageNumber = parseInt(format(new Date(currentYear, currentMonth, i+1), 'yyyyLLdd'));
+            let j;
+            for(j=searchStart; j<itemsState.length; j++) {
+                if(itemsState[j].itemPack.pageNumber === thisPageNumber) {
+                    allItems.push(itemsState[j]);
+                    searchStart = j+1;
+                    break;
+                } 
+            }
+            if(j === itemsState.length) {
+                let emptyItem = {
+                    id: pageItemId.replace('d:', 'dp:') + ':' + format(new Date(currentYear, currentMonth, i+1), 'yyyy-LL-dd'),
+                    title: "",
+                    itemPack: {
+                        pageNumber: thisPageNumber
+                    }
+                }
+                allItems.push(emptyItem);
+            }
+        }
+
+        setAllItemsInCurrentMonth(allItems);
+    
+    }, [itemsState]);
 
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                    <DiaryTopControlPanel {...{ startDate, setStartDate, handleSearch }} closeDiary={null} datePickerViewMode="monthYear" showSearchIcon />
+                    <DiaryTopControlPanel {...{ startDate, setStartDate, handleSearch }} 
+                        onCoverClicked={() => {
+                            router.push(`/diary/${pageItemId}`);
+                        }} 
+                        datePickerViewMode="monthYear" showSearchIcon />
                     <br />  
+                    
                     <Row>
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel}`}>
@@ -192,11 +198,16 @@ export default function DiaryContents() {
                                 <br />
                                 <p className='fs-1 text-center'>{currentMonthYear}</p>
                                 <Row>
-                                    <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+                                    <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
            	                            <p>Day</p> 
                                     </Col> 
-                                    <Col xs={8} sm={8} md={9}>
+                                    <Col xs={8} sm={8} xl={9}>
               	                        <p>Title</p> 
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col xs={{span:10, offset:1}}>
+                                        <hr className="mt-0 mb-0"/>
                                     </Col>
                                 </Row>
                                 {items}

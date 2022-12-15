@@ -49,10 +49,6 @@ const scripts = [
      src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/entities.min.js",
      loaded: false,
     },
-    {id: "file.min.js",
-     src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/file.min.js",
-     loaded: false,
-    },
     {id: "font_family.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/font_family.min.js",
      loaded: false,
@@ -67,6 +63,54 @@ const scripts = [
     },
     {id: "froalaEncryptVideo.js",
      src:"/js/froalaEditorJS/froalaEncryptVideo.js",
+     loaded: false
+    },
+    {id: "inline_style.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/inline_style.min.js",
+     loaded: false
+    },
+    {id: "line_breaker.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/line_breaker.min.js",
+     loaded: false
+    },
+    {id: "line_height.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.9.8/js/plugins/line_height.min.js",
+     loaded: false
+    },
+    {id: "link.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/link.min.js",
+     loaded: false
+    },
+    {id: "lists.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/lists.min.js",
+     loaded: false
+    },
+    {id: "paragraph_format.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/paragraph_format.min.js",
+     loaded: false
+    },
+    {id: "paragraph_style.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/paragraph_style.min.js",
+     loaded: false
+    },
+    {id: "quick_insert.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/quick_insert.min.js",
+     loaded: false
+    },
+    {id: "quote.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/quote.min.js",
+     loaded: false
+    },
+    {id: "save.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/save.min.js",
+     loaded: false
+    },
+    {id: "table.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/table.min.js",
+     loaded: false
+    },
+    {id: "url.min.js",
+     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/js/plugins/url.min.js",
      loaded: false
     },
     {id: "photoswipe.min.js",

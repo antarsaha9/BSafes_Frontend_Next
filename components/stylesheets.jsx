@@ -9,6 +9,14 @@ export default function Stylesheets() {
     
     return (
         <div>
+				<link rel="preconnect" href="https://fonts.googleapis.com" />
+				<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+				<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet" />
+				<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=La+Belle+Aurore&display=swap" rel="stylesheet" />
+				<link href='https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,700,700italic&subset=latin,vietnamese,latin-ext,cyrillic,cyrillic-ext,greek-ext,greek' rel='stylesheet' type='text/css' />
+				<link href='https://fonts.googleapis.com/css?family=Oswald:400,300,700&subset=latin,latin-ext' rel='stylesheet' type='text/css' />
+				<link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css' />
+				<link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,300italic,700&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,cyrillic,latin-ext' rel='stylesheet' type='text/css' />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/froala_editor.min.css?v0.OB1.20211130" integrity="sha384-jvHCuNtfPGLMsiP4SDWWcKNJvBI59kcFwyLJhBVj7viDth7i3WwHaZbn2bfeyuSZ" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/froala_style.min.css?v0.OB1.20211130" integrity="sha384-PWPEGQLOmmckdheKfP2+eOpLg5UTWQOqVJYUmOxAFnjkcpQfgIDkU1Ir4yNEJbD4" crossOrigin="anonymous" />

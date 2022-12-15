@@ -113,6 +113,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                 }
 
             } else {
+                pageNumber = data.pageNumber;
                 body = {
                     container: state.workspace,
                     size: state.itemsPerPage,
