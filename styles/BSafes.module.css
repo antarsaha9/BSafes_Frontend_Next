@@ -128,7 +128,7 @@
   color: white;
 }
 
-.containerCoverPanel, .containerContentsPanel, .folderPanel .notebookPanel, .diaryPanel, .boxPanel {
+.containerCoverPanel, .containerContentsPanel, .folderPanel, .notebookPanel, .diaryPanel, .boxPanel {
   position: relative;
   min-height: 925px;
   padding-bottom:48px;

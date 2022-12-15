@@ -110,10 +110,8 @@ export default function Folder() {
             if(item) {
                 debugLog(debugLog, item);
             } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/folder/p/fp:${idParts[1]}:${idParts[2]}:${idParts[3]}`;
-                router.push(firstPage);
+                const link = `/folder/contents/${pageItemId}`;
+                router.push(link);
             }
         } catch (error) {
             debugLog(debugOn, error)
