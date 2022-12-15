@@ -90,7 +90,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             state = getState().container;
             
             let body;
-            if(state.container.startsWith('n')) {
+            if(state.container.startsWith('n') || state.container.startsWith('f')) {
                 pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
@@ -116,7 +116,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                 body = {
                     container: state.workspace,
                     size: state.itemsPerPage,
-                    from: (pageNumber - 1) * state.itemsPerPage,
+                    from: (pageNumber - 1) * state.itemsPerPage || 0,
                 }
             }
 

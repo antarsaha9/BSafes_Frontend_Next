@@ -982,29 +982,6 @@ function createANotebookPage(data) {
 function createADiaryPage(data) {
     return new Promise(async (resolve, reject) => {
         PostCall({
-            api: '/memberAPI/createADiaryPage',
-            body: data
-        }).then( result => {
-            debugLog(debugOn, result);
-
-            if(result.status === 'ok') {    
-                if(result.item) {
-                    resolve(result.item);
-                } else {
-                    debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                    reject("woo... failed to create a notebook page!");
-                }
-            } else {
-                debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                reject("woo... failed to create a notebook page!");
-            }
-        });
-    });
-}
-
-function createADiaryPage(data) {
-    return new Promise(async (resolve, reject) => {
-        PostCall({
             api:'/memberAPI/createADiaryPage',
             body: data
         }).then( result => {

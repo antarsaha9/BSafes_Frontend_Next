@@ -10,16 +10,16 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
-import TopControlPanel from "../../../components/diaryTopControlPanel";
+import TopControlPanel from "../../../components/folderTopControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
 import Editor from "../../../components/editor";
 import ContainerOpenButton from "../../../components/containerOpenButton";
 import PageCommonControls from "../../../components/pageCommonControls";
 
-import { clearContainer, initWorkspace } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, initWorkspace } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getPageCommentsThunk, abort } from "../../../reduxStore/pageSlice";
 
-import { debugLog } from "../../../lib/helper";
+import { debugLog, PostCall } from "../../../lib/helper";
 import { getLastAccessedItem } from "../../../lib/bSafesCommonUI";
 import parse from "date-fns/parse";
 import format from "date-fns/format";
@@ -35,18 +35,127 @@ export default function Diary() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null);
+    const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
     const pageNumber = useSelector(state => state.page.pageNumber);
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false);
-    const [pageDate, setPageDate] = useState();
+    const [containerCleared, setContainerCleared] = useState(false);
+    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
+    debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector(state => state.auth.searchKey);
     const searchIV = useSelector(state => state.auth.searchIV);
     const expandedKey = useSelector(state => state.auth.expandedKey);
 
+    const navigationMode = useSelector(state => state.page.navigationMode);
     const space = useSelector(state => state.page.space);
+    const container = useSelector(state => state.page.container);
     const itemCopy = useSelector(state => state.page.itemCopy);
+
+    const containerInWorkspace = useSelector(state => state.container.container);
+    const workspace = useSelector(state => state.container.workspace);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
+
+    async function gotoAnotherPage(anotherPageNumber) {
+        // if(!(pageItemId && pageNumber)) return;
+
+        let idParts, nextPageId;
+        idParts = pageItemId.split(':');
+        idParts.splice(-1);
+        switch (anotherPageNumber) {
+            case '-1':
+                var ress = await PostCall({
+                    api: '/memberAPI/getPreviousFolderPage',
+                    body: {
+                        folderId: pageItemId,
+                        itemPosition: pageItemId.split(':').pop()
+                    }
+
+                });
+                console.log(ress);
+                if (ress.itemId === 'EndOfFolder') {
+                    // dispatch()
+                }
+                else {
+                    nextPageId = ress.itemId;
+                }
+                break;
+            case '+1':
+                // idParts.push((pageNumber+1));
+                var ress = await PostCall({
+                    api: '/memberAPI/getNextFolderPage',
+                    body: {
+                        folderId: pageItemId,
+                        itemPosition: pageItemId.split(':').pop()
+                    }
+
+                });
+                console.log(ress);
+                if (ress.itemId === 'EndOfFolder') {
+                    // dispatch()
+                }
+                else {
+                    nextPageId = ress.itemId;
+                }
+                break;
+            default:
+                idParts.push(anotherPageNumber);
+
+        }
+
+        // nextPageId = idParts.join(':');
+        debugLog(debugOn, "setNavigationInSameContainer ...");
+        setNavigationInSameContainer(true);
+        if (nextPageId) {
+
+            router.push(`/folder/p/${nextPageId}`);
+        }
+    }
+
+    const gotoNextPage = () => {
+        debugLog(debugOn, "Next Page ");
+        gotoAnotherPage('+1');
+    }
+
+    const gotoPreviousPage = () => {
+        debugLog(debugOn, "Previous Page ");
+        gotoAnotherPage('-1');
+    }
+
+    const handleCoverClicked = () => {
+        let newLink = `/notebook/${containerInWorkspace}`;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        const contentsPageLink = `/notebook/contents/${container}`;
+        router.push(contentsPageLink);
+    }
+
+    const handlePageNumberChanged = (anotherPageNumber) => {
+        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
+        gotoAnotherPage(anotherPageNumber);
+    }
+
+    const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch (error) {
+            alert("Could not get the first item in the container");
+        }
+    }
+
+    const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch (error) {
+            alert("Could not get the first item in the container");
+        }
+    }
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -69,20 +178,26 @@ export default function Diary() {
     useEffect(() => {
         if (router.query.itemId) {
             dispatch(clearPage());
-            dispatch(clearContainer());
+            setWorkspaceKeyReady(false);
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
-            setPageDate(parse(router.query.itemId.split(':').pop(), 'yyyyLLdd', new Date()));
         }
     }, [router.query.itemId]);
 
     useEffect(() => {
         if (pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({ itemId: pageItemId }));
+            dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
         }
     }, [pageItemId, pageCleared]);
+
+    useEffect(() => {
+        if (pageCleared && navigationMode) {
+            debugLog(debugOn, "setContainerData ...");
+            dispatch(setContainerData({ itemId: pageItemId, container: { space: workspace, id: containerInWorkspace } }));
+        }
+    }, [navigationMode]);
 
     useEffect(() => {
         if (pageNumber) {
@@ -97,67 +212,37 @@ export default function Diary() {
 
     useEffect(() => {
         if (space && pageCleared) {
-
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initWorkspace({ space, workspaceKey: expandedKey, searchKey, searchIV }));
-            } else {
+            if (container === containerInWorkspace) {
+                setWorkspaceKeyReady(true);
+                return;
             }
+
+            dispatch(clearContainer());
+            setContainerCleared(true);
         }
     }, [space]);
 
     useEffect(() => {
-        debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if (workspaceKey && itemCopy && pageCleared) {
+        if (containerCleared) {
+            if (space.substring(0, 1) === 'u') {
+                debugLog(debugOn, "Dispatch initWorkspace ...");
+                dispatch(initContainer({ container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
+                setWorkspaceKeyReady(true);
+            } else {
+            }
+        }
+    }, [containerCleared]);
+
+    useEffect(() => {
+        debugLog(debugOn, "useEffect [workspaceKeyReady] ...");
+        if (workspaceKeyReady && workspaceKey && itemCopy && pageCleared) {
             setPageCleared(false);
+            setContainerCleared(false);
             debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
             dispatch(decryptPageItemThunk({ itemId: pageItemId, workspaceKey }));
             dispatch(getPageCommentsThunk({ itemId: pageItemId }));
         }
-    }, [workspaceKey]);
-    const [today] = useState(new Date());
-    var distance = Math.ceil((today - pageDate) / (1000 * 60 * 60 * 24));
-    if (isSameDay(pageDate, today))
-        distance = 'Today';
-    else if (distance === 1)
-        distance = '1 day ago'
-    else if (distance === 2)
-        distance = '2 days ago'
-    else distance = null;
-
-    const gotoAnotherPage = (anotherPageNumber) => {
-        if (!(pageItemId && pageDate)) return;
-
-        let idParts, nextPageId;
-        idParts = pageItemId.split(':');
-        idParts.splice(-1);
-        const newDate = new Date(pageDate.valueOf());
-        switch (anotherPageNumber) {
-            case '-1':
-                newDate.setDate(newDate.getDate() - 1);
-                idParts.push(format(newDate, 'yyyyLLdd'));
-                break;
-            case '+1':
-                newDate.setDate(newDate.getDate() + 1);
-                idParts.push(format(newDate, 'yyyyLLdd'));
-                break;
-            default:
-                idParts.push(anotherPageNumber);
-
-        }
-
-        nextPageId = idParts.join(':');
-        router.push(`/diary/p/${nextPageId}`);
-    }
-    const gotoNextPage = () => {
-        debugLog(debugOn, "Next Page ");
-        gotoAnotherPage('+1');
-    }
-
-    const gotoPreviousPage = () => {
-        debugLog(debugOn, "Previous Page ");
-        gotoAnotherPage('-1');
-    }
+    }, [workspaceKeyReady, itemCopy]);
 
     return (
         <div>
@@ -180,12 +265,12 @@ export default function Diary() {
                             <br />
                             <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.pagePanel} ${BSafesStyle.rightPagePanel} ${BSafesStyle.containerPanel}`}>
                                 <ItemTopRows />
-                                <Row style={{ marginTop: '20px' }} className=" mx-0">
+                                {/* <Row style={{ marginTop: '20px' }} className=" mx-0">
                                     <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
                                         {distance && <h2>{distance}</h2>}
                                         <h4>{pageDate && format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
                                     </Col>
-                                </Row>
+                                </Row> */}
                                 <Row className="justify-content-center">
                                     <Col sm="10" md="8">
                                         <hr />

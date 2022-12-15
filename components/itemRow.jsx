@@ -12,8 +12,9 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 import { itemVersionsFetched } from '../reduxStore/pageSlice';
+import Link from 'next/link';
 
-export default function ItemRow({item}) {
+export default function ItemRow({ item, addBefore, addAfter }) {
 
     let temp = document.createElement('span');
     temp.innerHTML = item.title;
@@ -80,6 +81,43 @@ export default function ItemRow({item}) {
                     
                 </div>
 
+            }
+            {(item.container.startsWith('f')) &&
+                <div>
+                    <Row className="mt-1" >
+                        <Col xs={{ span: 7, offset: 1 }}>
+                            <Link href={getItemLink(item)}>
+                                <a className="text-decoration-none text-black">
+                                    <div class="">
+                                        <p class="containerContentsPageTitle my-0" >
+                                            <i class="fa fa-file-text-o me-2" aria-hidden="true"></i>
+                                            <span className='fs-5' dangerouslySetInnerHTML={{ __html: itemText }} />
+                                        </p>
+                                    </div>
+                                </a>
+                            </Link>
+                        </Col>
+                        <Col xs={3}>
+                            <Dropdown className="pull-right px-2">
+                                <Dropdown.Toggle variant="link" bsPrefix="p-0 text-decoration-none text-black" id="dropdown-basic">
+                                    +
+                                </Dropdown.Toggle>
+
+                                <Dropdown.Menu>
+                                    <Dropdown.Item href="#/action-1">Add before</Dropdown.Item>
+                                    <Dropdown.Item href="#/action-2">Add After</Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
+
+                            <div class="checkbox pull-right my-0 ">
+                                <input type="checkbox" class="form-check-input" />
+                            </div>
+                        </Col>
+                        <Col xs={{ span: 10, offset: 1 }}>
+                            <hr class="my-0" />
+                        </Col>
+                    </Row>
+                </div>
             }
         </>
     )

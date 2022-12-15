@@ -78,7 +78,7 @@ export default function ItemCard({item}) {
                                 <div dangerouslySetInnerHTML={{__html: item.title}} />
                             </div>
                         }
-                        {item.itemPack.type === 'D' &&
+                        {item.itemPack.type === 'F' &&
                             <div onClick={cardClicked}>
                                 <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
                                 </span>
@@ -86,6 +86,13 @@ export default function ItemCard({item}) {
                             </div>
                         }
                         {item.itemPack.type === 'D' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span className="h5" dangerouslySetInnerHTML={{ __html: itemText }} />
+                            </div>
+                        }
+                        {item.itemPack.type === 'B' &&
                             <div onClick={cardClicked}>
                                 <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
                                 </span>
