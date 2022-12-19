@@ -34,8 +34,12 @@ export default function Workspace() {
     const [targetItem, setTargetItem] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
+    const handleAdd = (type, action, target) => {
+        debugLog(debugOn, `${type} ${action} ${target}`)
+    }
+
     const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} item={item}/>
+        <ItemCard key={index} item={item} onAdd={handleAdd}/>
     );
 
     const addAnItem = (itemType, addAction, targetItem = null) => {
