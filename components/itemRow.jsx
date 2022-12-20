@@ -17,7 +17,6 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 import { itemVersionsFetched } from '../reduxStore/pageSlice';
-import Link from 'next/link';
 
 import { debugLog } from '../lib/helper';
 export default function ItemRow({ item, addBefore, addAfter }) {
