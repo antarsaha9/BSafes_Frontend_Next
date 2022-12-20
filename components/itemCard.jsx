@@ -73,7 +73,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
 
     const optionSelected = (itemType) => {       
         setShow(false);
-        onAdd(itemType, addAction, itemId );
+        onAdd(itemType, addAction, itemId, item.position );
     }
 
     return (

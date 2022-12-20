@@ -160,7 +160,7 @@ export default function FolderPage() {
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.folderPanel}`}>
+                            <div className={`${BSafesStyle.folderPanel}`}>
                                 <ItemTopRows />
                                 <Row className="justify-content-center">
                                     <Col xs="12" sm="10" md="8">

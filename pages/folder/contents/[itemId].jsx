@@ -35,6 +35,7 @@ export default function FolderContents() {
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -90,7 +91,7 @@ export default function FolderContents() {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, workspaceKey, searchKey, searchIV );
+        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
         const link = getItemLink(item);
 
         router.push(link);
