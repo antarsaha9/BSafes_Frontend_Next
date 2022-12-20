@@ -151,6 +151,7 @@
 
 .contentsItemRow {
   z-index:100;
+  cursor: pointer;
 }
 
 .turningPageRow {
@@ -345,5 +346,12 @@
   border-radius: 0px 10px 30px 0;
   display: block;
   content: '';
+}
+/* End of folder */
+
+/*--**** Folder */
+.boxCoverPanel {
+  background-color:#EBF5FB;
+  border-radius:10px 10px 10px 10px;
 }
 /* End of folder */

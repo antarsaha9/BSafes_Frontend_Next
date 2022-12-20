@@ -112,11 +112,15 @@ export default function ItemRow({ item, addBefore, addAfter }) {
                     </Row> 
                 </div>
             }
-            {item.id.startsWith('p') &&                
+            {(item.id.startsWith('p') || item.id.startsWith('b') || item.id.startsWith('f') || item.id.startsWith('d')) &&                
                 <div>                  
                     <Row className={BSafesStyle.contentsItemRow}>
                         <Col xs={{ span: 7, offset: 1 }} onClick={rowClicked}>
-                            <i className={`fa fa-file-text-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"></i><span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
+                            {item.id.startsWith('p') && <i className={`fa fa-file-text-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"/>}
+                            {item.id.startsWith('b') && <i className={`fa fa-archive fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"/>}
+                            {item.id.startsWith('d') && <i className={`fa fa-calendar-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"/>}
+                            {item.id.startsWith('f') && <i className={`fa fa-folder-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"/>}
+                            <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col> 
                         <Col xs={3} className="p-1">
                             <ButtonGroup className="pull-right">

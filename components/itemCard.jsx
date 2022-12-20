@@ -109,7 +109,13 @@ export default function ItemCard({item, onAdd, onSelect}) {
                                 <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
                             </div>
                         }      
-                         
+                        {item.itemPack.type === 'B' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-archive fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span className="h5" dangerouslySetInnerHTML={{ __html: itemText }} />
+                            </div>
+                        }
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">

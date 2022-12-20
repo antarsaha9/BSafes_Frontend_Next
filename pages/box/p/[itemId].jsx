@@ -12,21 +12,13 @@ import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/folderTopControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
-import Editor from "../../../components/editor";
-import ContainerOpenButton from "../../../components/containerOpenButton";
-import PageCommonControls from "../../../components/pageCommonControls";
 
-import { clearContainer, initContainer, initWorkspace } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getPageCommentsThunk, abort } from "../../../reduxStore/pageSlice";
 
 import { debugLog, PostCall } from "../../../lib/helper";
-import { getLastAccessedItem } from "../../../lib/bSafesCommonUI";
-import parse from "date-fns/parse";
-import format from "date-fns/format";
-import isSameDay from "date-fns/isSameDay";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 import PageCommons from "../../../components/pageCommons";
-import TurningPageControls from "../../../components/turningPageControls";
 
 export default function Diary() {
     const debugOn = true;
@@ -110,31 +102,6 @@ export default function Diary() {
 
             router.push(`/folder/p/${nextPageId}`);
         }
-    }
-
-    const gotoNextPage = () => {
-        debugLog(debugOn, "Next Page ");
-        gotoAnotherPage('+1');
-    }
-
-    const gotoPreviousPage = () => {
-        debugLog(debugOn, "Previous Page ");
-        gotoAnotherPage('-1');
-    }
-
-    const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
-        router.push(newLink);
-    }
-
-    const handleContentsClicked = () => {
-        const contentsPageLink = `/notebook/contents/${container}`;
-        router.push(contentsPageLink);
-    }
-
-    const handlePageNumberChanged = (anotherPageNumber) => {
-        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-        gotoAnotherPage(anotherPageNumber);
     }
 
     const handleGoToFirstItem = async () => {
@@ -265,12 +232,6 @@ export default function Diary() {
                             <br />
                             <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.pagePanel} ${BSafesStyle.rightPagePanel} ${BSafesStyle.containerPanel}`}>
                                 <ItemTopRows />
-                                {/* <Row style={{ marginTop: '20px' }} className=" mx-0">
-                                    <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                        {distance && <h2>{distance}</h2>}
-                                        <h4>{pageDate && format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
-                                    </Col>
-                                </Row> */}
                                 <Row className="justify-content-center">
                                     <Col sm="10" md="8">
                                         <hr />
@@ -278,8 +239,6 @@ export default function Diary() {
                                 </Row>
                                 <PageCommons />
                             </div>
-                            <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-
                         </Container> :
                         <LoadingSpinner />}
                 </ContentPageLayout>
