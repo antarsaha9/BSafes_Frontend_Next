@@ -5,34 +5,23 @@ import { useSelector, useDispatch } from 'react-redux'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
-import Dropdown from 'react-bootstrap/Dropdown'
-import Tab from 'react-bootstrap/Tab'
-import Tabs from 'react-bootstrap/Tabs'
-import Pagination from 'react-bootstrap/Pagination'
 
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
-import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
-import TopControlPanel from "../../../components/folderTopControlPanel";
-import ItemTopRows from "../../../components/itemTopRows";
-import Editor from "../../../components/editor";
-import ContainerOpenButton from "../../../components/containerOpenButton";
-import PageCommonControls from "../../../components/pageCommonControls";
-
-import { clearContainer, initContainer, initWorkspace, listItemsThunk } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getContainerContentsThunk, searchContainerContentsThunk } from "../../../reduxStore/pageSlice";
-
-import { debugLog } from "../../../lib/helper";
-import { createANewItem, getItemLink, getLastAccessedItem } from "../../../lib/bSafesCommonUI";
-import format from "date-fns/format";
-import getDaysInMonth from "date-fns/getDaysInMonth";
-import Link from "next/link";
+import TopControlPanel from "../../../components/topControlPanel";
+import ItemRow from "../../../components/itemRow";
+import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
-import ItemRow from "../../../components/itemRow";
 
-export default function Folder() {
+import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+
+import { debugLog } from "../../../lib/helper";
+import { createANewItem, getItemLink} from "../../../lib/bSafesCommonUI";
+
+export default function FolderContents() {
     const debugOn = true;
     debugLog(debugOn, "Rendering Contents");
     const dispatch = useDispatch();
@@ -42,78 +31,37 @@ export default function Folder() {
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
     const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
+
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
-    const searchKey = useSelector(state => state.auth.searchKey);
-    const searchIV = useSelector(state => state.auth.searchIV);
-    const expandedKey = useSelector(state => state.auth.expandedKey);
-    const workspaceId = useSelector(state => state.container.workspace);
+    const searchKey = useSelector( state => state.auth.searchKey);
+    const searchIV = useSelector( state => state.auth.searchIV);
+    const expandedKey = useSelector( state => state.auth.expandedKey );
 
+    const space = useSelector( state => state.page.space);
+    const itemCopy = useSelector( state => state.page.itemCopy);
 
-    const space = useSelector(state => state.page.space);
-    const itemCopy = useSelector(state => state.page.itemCopy);
-
-
-    const workspace = useSelector(state => state.container.workspace);
-    const containerInWorkspace = useSelector(state => state.container.container);
-    const pageNumber = useSelector(state => state.container.pageNumber);
-    const totalNumberOfPages = useSelector(state => state.container.totalNumberOfPages);
-    const itemsState = useSelector(state => state.container.items);
-    const workspaceKey = useSelector(state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector(state => state.container.searchKey);
-    const workspaceSearchIV = useSelector(state => state.container.searchIV);
+    const workspace = useSelector( state => state.container.workspace);
+    const containerInWorkspace = useSelector( state => state.container.container);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
+    const itemsState = useSelector( state => state.container.items);
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const items = itemsState.map((item, index) =>
         <ItemRow key={index} item={item} />
     );
 
-    console.log(items);
-
     function gotoAnotherPage(anotherPageNumber) {
-        if (!(pageItemId)) return;
-
-        let idParts, nextPageId, newLink;
-        idParts = pageItemId.split(':');
-        idParts.splice(0, 1);
-        switch (anotherPageNumber) {
-            case '-1':
-                if (pageNumber > 1) {
-
-                } else {
-                    newLink = `/notebook/${containerInWorkspace}`;
-                }
-                break;
-            case '+1':
-                if (pageNumber === totalNumberOfPages) {
-                    nextPageId = 'np:' + idParts.join(':') + ':1';
-                    newLink = `/notebook/p/${nextPageId}`;
-                } else {
-
-                }
-                break;
-            default:
-                idParts.push(anotherPageNumber);
-                nextPageId = 'np:' + idParts.join(':');
-                newLink = `/notebook/p/${nextPageId}`;
-        }
-
-        router.push(newLink);
     }
 
-
-    const addAnItem = (itemType, addAction, targetItem = null) => {
-
-        setSelectedItemType(itemType);
-        setAddAction(addAction);
-        setTargetItem(targetItem);
-        setShowNewItemModal(true);
-
-    }
-
-    const gotoNextPage = () => {
+    const gotoNextPage = () =>{
         debugLog(debugOn, "Next Page ");
         gotoAnotherPage('+1');
     }
@@ -123,124 +71,116 @@ export default function Folder() {
         gotoAnotherPage('-1');
     }
 
+    const addAnItem = (itemType, addAction, targetItem = null) => {
+    
+        setSelectedItemType(itemType);
+        setAddAction(addAction);
+        setTargetItem(targetItem);
+        setShowNewItemModal(true);
+        
+    }
+
     const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
+        let newLink = `/folder/${containerInWorkspace}`;
         router.push(newLink);
     }
 
-    const handlePageNumberChanged = (anotherPageNumber) => {
-        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-        gotoAnotherPage(anotherPageNumber);
+    const handleClose = () => setShowNewItemModal(false);
+
+    const handleCreateANewItem = async (title) => {
+        debugLog(debugOn, "createANewItem", title);
+        setShowNewItemModal(false);
+
+        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
+        const link = getItemLink(item);
+
+        router.push(link);
     }
 
-    useEffect(() => {
-        if (router.query.itemId) {
+    useEffect(()=>{
+        if(router.query.itemId) {
 
             dispatch(clearPage());
-
+            
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
         }
     }, [router.query.itemId]);
 
-
-    useEffect(() => {
-        if (pageItemId && pageCleared) {
+    useEffect(()=>{
+        if(pageItemId && pageCleared) {
             debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({ itemId: pageItemId }));
+            dispatch(getPageItemThunk({itemId:pageItemId}));
         }
     }, [pageCleared, pageItemId]);
 
-    useEffect(() => {
-        if (space && pageCleared) {
-            if (space === workspace) {
-                if (pageItemId !== containerInWorkspace) {
-                    dispatch(changeContainerOnly({ container: pageItemId }));
+    useEffect(()=>{
+        if(space && pageCleared) {
+            if(space === workspace) {
+                if(pageItemId !== containerInWorkspace) {
+                    dispatch(changeContainerOnly({container:pageItemId}));
                 }
                 setWorkspaceKeyReady(true);
                 return;
             }
 
             dispatch(clearContainer());
-            setContainerCleared(true);
+            setContainerCleared(true); 
 
         }
     }, [space]);
 
-    useEffect(() => {
-        if (containerCleared) {
+    useEffect(()=>{
+        if(containerCleared) {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({ container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
+                dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
                 setWorkspaceKeyReady(true);
             } else {
             }
-        }
+        }        
     }, [containerCleared]);
 
-    useEffect(() => {
+
+    useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if (containerInWorkspace && workspaceKeyReady && pageCleared) {
+        if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
             setContainerCleared(false);
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(listItemsThunk({pageNumber: 1}));
         }
     }, [workspaceKeyReady, containerInWorkspace]);
 
-    const handleCreateANewItem = async (title) => {
-        debugLog(debugOn, "createANewItem", title);
-        setShowNewItemModal(false);
-
-
-        const item = await createAFol(title, pageItemId, selectedItemType, addAction, targetItem, workspaceKey, searchKey, searchIV);
-        const link = getItemLink(item);
-
-        router.push(link);
-    }
-
     return (
-        <div>
-            <div className={BSafesStyle.pageBackground}>
-                <ContentPageLayout>
-                    <Container>
-                        <br />
-                        <TopControlPanel showSearchIcon />
-                        <br />
-                        <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel} ${BSafesStyle.containerContentsPanel}`}>
-                            <br />
-                            <br />
-                            <h2 className="text-center">Contents</h2>
-                            <div className="d-flex justify-content-center">
-                                <AddAnItemButton pageOnly addAnItem={addAnItem} />
+        <div className={BSafesStyle.pageBackground}>
+            <ContentPageLayout> 
+                <Container fluid>
+                    <br />
+                        <TopControlPanel onCoverClicked={handleCoverClicked}></TopControlPanel>
+                    <br />  
+                    <Row>
+                        <Col lg={{span:10, offset:1}}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.folderPanel}`}>
+                                <br />
+                                <br />
+                                <p className='fs-1 text-center'>Contents</p>
+                                <Row className="justify-content-center">     
+                                    <AddAnItemButton pageOnly={true} addAnItem={addAnItem}/>
+                                </Row>
+                                <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
+                                <br />
+                                <br />
+                                
+                                {items}
+
                             </div>
-                            <NewItemModal show={showNewItemModal} handleClose={() => setShowNewItemModal(false)} handleCreateANewItem={handleCreateANewItem} />
-                            <Tabs
-                                defaultActiveKey="all"
-                                className="mb-3 mx-4"
-                            >
-                                <Tab eventKey="all" title="All" >
-                                    <div className="searchResult">
-                                        <div className="resultItems">
-                                            {items}
-                                        </div>
-                                    </div>
-                                    <div className="d-flex justify-content-center mt-4">
-                                        <Pagination size="sm">{[1].map(page => (
-                                            <Pagination.Item key={page} active={page === page}>
-                                                {page}
-                                            </Pagination.Item>
-                                        ))}</Pagination>
-
-                                    </div>
-
-                                </Tab>
-                            </Tabs>
-                        </div>
-                    </Container>
-                </ContentPageLayout>
-                <Scripts />
-            </div>
+                        </Col>
+                    </Row>
+                </Container>
+            </ContentPageLayout>
         </div>
     )
+
 }
+

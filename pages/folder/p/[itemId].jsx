@@ -10,25 +10,18 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
-import TopControlPanel from "../../../components/folderTopControlPanel";
+
+import TopControlPanel from "../../../components/topControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
-import Editor from "../../../components/editor";
-import ContainerOpenButton from "../../../components/containerOpenButton";
-import PageCommonControls from "../../../components/pageCommonControls";
-
-import { clearContainer, initContainer, initWorkspace } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getPageCommentsThunk, abort } from "../../../reduxStore/pageSlice";
-
-import { debugLog, PostCall } from "../../../lib/helper";
-import { getLastAccessedItem } from "../../../lib/bSafesCommonUI";
-import parse from "date-fns/parse";
-import format from "date-fns/format";
-import isSameDay from "date-fns/isSameDay";
-import LoadingSpinner from "../../../components/LoadingSpinner";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-export default function Diary() {
+import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
+import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+
+import { debugLog } from "../../../lib/helper";
+
+export default function FolderPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
@@ -36,13 +29,10 @@ export default function Diary() {
 
     const [pageItemId, setPageItemId] = useState(null);
     const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
-    const pageNumber = useSelector(state => state.page.pageNumber);
-    const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
     const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
-    debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector(state => state.auth.searchKey);
     const searchIV = useSelector(state => state.auth.searchIV);
     const expandedKey = useSelector(state => state.auth.expandedKey);
@@ -57,59 +47,6 @@ export default function Diary() {
     const workspaceKey = useSelector(state => state.container.workspaceKey);
 
     async function gotoAnotherPage(anotherPageNumber) {
-        // if(!(pageItemId && pageNumber)) return;
-
-        let idParts, nextPageId;
-        idParts = pageItemId.split(':');
-        idParts.splice(-1);
-        switch (anotherPageNumber) {
-            case '-1':
-                var ress = await PostCall({
-                    api: '/memberAPI/getPreviousFolderPage',
-                    body: {
-                        folderId: pageItemId,
-                        itemPosition: pageItemId.split(':').pop()
-                    }
-
-                });
-                console.log(ress);
-                if (ress.itemId === 'EndOfFolder') {
-                    // dispatch()
-                }
-                else {
-                    nextPageId = ress.itemId;
-                }
-                break;
-            case '+1':
-                // idParts.push((pageNumber+1));
-                var ress = await PostCall({
-                    api: '/memberAPI/getNextFolderPage',
-                    body: {
-                        folderId: pageItemId,
-                        itemPosition: pageItemId.split(':').pop()
-                    }
-
-                });
-                console.log(ress);
-                if (ress.itemId === 'EndOfFolder') {
-                    // dispatch()
-                }
-                else {
-                    nextPageId = ress.itemId;
-                }
-                break;
-            default:
-                idParts.push(anotherPageNumber);
-
-        }
-
-        // nextPageId = idParts.join(':');
-        debugLog(debugOn, "setNavigationInSameContainer ...");
-        setNavigationInSameContainer(true);
-        if (nextPageId) {
-
-            router.push(`/folder/p/${nextPageId}`);
-        }
     }
 
     const gotoNextPage = () => {
@@ -123,38 +60,19 @@ export default function Diary() {
     }
 
     const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
+        let newLink = `/folder/${containerInWorkspace}`;
         router.push(newLink);
     }
 
     const handleContentsClicked = () => {
-        const contentsPageLink = `/notebook/contents/${container}`;
+        const contentsPageLink = `/folder/contents/${container}`;
         router.push(contentsPageLink);
     }
 
-    const handlePageNumberChanged = (anotherPageNumber) => {
-        debugLog(debugOn, "handlePageNumberChanged: ", anotherPageNumber);
-        gotoAnotherPage(anotherPageNumber);
-    }
-
     const handleGoToFirstItem = async () => {
-        try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
-        } catch (error) {
-            alert("Could not get the first item in the container");
-        }
     }
 
     const handleGoToLastItem = async () => {
-        try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
-        } catch (error) {
-            alert("Could not get the first item in the container");
-        }
     }
 
     useEffect(() => {
@@ -200,17 +118,6 @@ export default function Diary() {
     }, [navigationMode]);
 
     useEffect(() => {
-        if (pageNumber) {
-            debugLog(debugOn, "pageNumber: ", pageNumber);
-            if (pageNumber % 2) {
-                setPageStyle(BSafesStyle.leftPagePanel);
-            } else {
-                setPageStyle(BSafesStyle.rightPagePanel);
-            }
-        }
-    }, [pageNumber])
-
-    useEffect(() => {
         if (space && pageCleared) {
             if (container === containerInWorkspace) {
                 setWorkspaceKeyReady(true);
@@ -245,46 +152,31 @@ export default function Diary() {
     }, [workspaceKeyReady, itemCopy]);
 
     return (
-        <div>
-            <div className={BSafesStyle.pageBackground}>
-                <ContentPageLayout>
-                    {pageItemId ?
-                        <Container>
-                            <br />
-                            <TopControlPanel
-                                showListIcon
-                                closeDiary={() => {
-                                    const parts = pageItemId.split(':');
-                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}?initialDisplay=cover`)
-                                }}
-                                handleIndexClick={() => {
-                                    const parts = pageItemId.split(':');
-                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}`)
-                                }}
-                            />
-                            <br />
-                            <div className={`${BSafesStyle.diaryPanel} ${BSafesStyle.pagePanel} ${BSafesStyle.rightPagePanel} ${BSafesStyle.containerPanel}`}>
+        <div className={BSafesStyle.pageBackground}>
+            <ContentPageLayout>            
+                <Container fluid>
+                    <br />
+                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
+                    <br />  
+                    <Row>
+                        <Col lg={{span:10, offset:1}}>
+                            <div className={`${BSafesStyle.folderPanel}`}>
                                 <ItemTopRows />
-                                {/* <Row style={{ marginTop: '20px' }} className=" mx-0">
-                                    <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                        {distance && <h2>{distance}</h2>}
-                                        <h4>{pageDate && format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
-                                    </Col>
-                                </Row> */}
                                 <Row className="justify-content-center">
-                                    <Col sm="10" md="8">
+                                    <Col xs="12" sm="10" md="8">
                                         <hr />
                                     </Col>
                                 </Row>
                                 <PageCommons />
                             </div>
-                            <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
+                        </Col>
+                    </Row> 
 
-                        </Container> :
-                        <LoadingSpinner />}
-                </ContentPageLayout>
-                <Scripts />
-            </div>
+                    <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
+   
+                </Container>  
+            </ContentPageLayout>
+            <Scripts />
         </div>
     )
 }

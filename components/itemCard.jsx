@@ -1,5 +1,4 @@
-import React from 'react'
-import { useRouter } from 'next/router';
+import { useState, forwardRef } from 'react'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -8,12 +7,20 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup'
 import Dropdown from 'react-bootstrap/Dropdown'
 import Form from 'react-bootstrap/Form'
 
+import ItemTypeModal from './itemTypeModal'
+
 import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function ItemCard({item}) {
+export default function ItemCard({item, onAdd, onSelect}) {
 
+    const [show, setShow] = useState(false);
+    const [addAction, setAddAction] = useState(null);
+
+    const handleClose = () => setShow(false);
+
+    const itemId = item.id;
     let temp = document.createElement('span');
     temp.innerHTML = item.title;
     const itemText = temp.textContent || temp.innerText;
@@ -34,7 +41,7 @@ export default function ItemCard({item}) {
             </a>
         )
     }
-    const plusToggle = React.forwardRef(plusButton);
+    const plusToggle = forwardRef(plusButton);
 
     function sortButton({ children, onClick }, ref) {
         return (
@@ -52,23 +59,40 @@ export default function ItemCard({item}) {
             </a>
         )
     }
-    const sortToggle = React.forwardRef(sortButton);
+    const sortToggle = forwardRef(sortButton);
 
     const cardClicked = () => {
         const link = getItemLink(item);
         window.location = link;
     }
 
+    const handleAddClicked = (action) => {
+        setAddAction(action);
+        setShow(true);
+    }
+
+    const optionSelected = (itemType) => {       
+        setShow(false);
+        onAdd(itemType, addAction, itemId, item.position );
+    }
+
     return (
         <>
             <Card body className={`${BSafesStyle.safeItem}`} >
                 <Row className="">
-                    <Col xs={9}>
-                        {item.itemPack.type === 'P' &&
+                    <Col xs={9}>   
+                        {item.itemPack.type === 'D' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
+                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
                                 </span>
-                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                            </div>
+                        }
+                        {item.itemPack.type === 'F' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-folder-o fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
                             </div>
                         }
                         {item.itemPack.type === 'N' &&
@@ -78,28 +102,14 @@ export default function ItemCard({item}) {
                                 <div dangerouslySetInnerHTML={{__html: item.title}} />
                             </div>
                         }
-                        {item.itemPack.type === 'F' &&
+                         {item.itemPack.type === 'P' &&
                             <div onClick={cardClicked}>
-                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
                                 </span>
-                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
                             </div>
-                        }
-                        {item.itemPack.type === 'D' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span className="h5" dangerouslySetInnerHTML={{ __html: itemText }} />
-                            </div>
-                        }
-                        {item.itemPack.type === 'B' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span className="h5" dangerouslySetInnerHTML={{ __html: itemText }} />
-                            </div>
-                        }
-
+                        }      
+                         
                     </Col>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
@@ -107,31 +117,37 @@ export default function ItemCard({item}) {
                                 <Form.Check className="" type="checkbox"/>
                             </Form.Group>
 
-                            <Dropdown align="end" className="justify-content-end">
-                                <Dropdown.Toggle as={plusToggle}  variant="link">
+                            {true &&
+                                <Dropdown align="end" className="justify-content-end">
+                                    <Dropdown.Toggle as={plusToggle}  variant="link">
+                                    
+                                    </Dropdown.Toggle>
 
-                                </Dropdown.Toggle>
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item onClick={()=> handleAddClicked("addAnItemBefore")}>Add before</Dropdown.Item>
+                                        <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            }
+                            {false &&
+                                <Dropdown align="end" className="justify-content-end">
+                                    <Dropdown.Toggle as={sortToggle}  variant="link">
+                                    
+                                    </Dropdown.Toggle>
 
-                                <Dropdown.Menu>
-                                    <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
-                            <Dropdown align="end" className="justify-content-end">
-                                <Dropdown.Toggle as={sortToggle}  variant="link">
-
-                                </Dropdown.Toggle>
-
-                                <Dropdown.Menu>
-                                    <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                                    <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
+                                        <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
+                                        <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>          
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            }
                         </ButtonGroup>
                     </Col>
                 </Row>
 
             </Card>
+            <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />
         </>
     )
 }

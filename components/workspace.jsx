@@ -32,17 +32,24 @@ export default function Workspace() {
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
+    const handleAdd = (type, action, target, position) => {
+        debugLog(debugOn, `${type} ${action} ${target} ${position}`);
+        addAnItem(type, action, target, position );
+    }
+
     const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} item={item}/>
+        <ItemCard key={index} item={item} onAdd={handleAdd}/>
     );
 
-    const addAnItem = (itemType, addAction, targetItem = null) => {
+    const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
     
         setSelectedItemType(itemType);
         setAddAction(addAction);
         setTargetItem(targetItem);
+        setTargetPosition(targetPosition);
         setShowNewItemModal(true);
         
     }
@@ -54,7 +61,7 @@ export default function Workspace() {
         setShowNewItemModal(false);
 
 
-        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, workspaceKey, searchKey, searchIV );
+        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
         const link = getItemLink(item);
 
         router.push(link);

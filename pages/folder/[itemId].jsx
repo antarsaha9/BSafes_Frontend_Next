@@ -14,22 +14,17 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import Scripts from "../../components/scripts";
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
-import TopControlPanel from "../../components/folderTopControlPanel";
+import TopControlPanel from "../../components/topControlPanel";
 import ItemTopRows from "../../components/itemTopRows";
 import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import { clearContainer, initContainer, initWorkspace } from "../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk, getContainerContentsThunk, searchContainerContentsThunk, abort } from "../../reduxStore/pageSlice";
+import { clearContainer, initContainer} from "../../reduxStore/containerSlice";
+import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
-import format from "date-fns/format";
-import getDaysInMonth from "date-fns/getDaysInMonth";
-import Link from "next/link";
-import AddAnItemButton from "../../components/addAnItemButton";
-import NewItemModal from "../../components/newItemModal";
 
 export default function Folder() {
     const debugOn = false;
@@ -48,7 +43,6 @@ export default function Folder() {
 
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
-    
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
@@ -61,7 +55,6 @@ export default function Folder() {
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
 
-
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         if(editorId === 'title') {
@@ -69,7 +62,6 @@ export default function Folder() {
             setEditingEditorId("title");
         } 
     }
-    
     const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
         
@@ -116,10 +108,8 @@ export default function Folder() {
             if(item) {
                 debugLog(debugLog, item);
             } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/folder/p/fp:${idParts[1]}:${idParts[2]}:${idParts[3]}`;
-                router.push(firstPage);
+                const link = `/folder/contents/${pageItemId}`;
+                router.push(link);
             }
         } catch (error) {
             debugLog(debugOn, error)
@@ -209,27 +199,36 @@ export default function Folder() {
         <div>
             <div className={BSafesStyle.pageBackground}>
                 <ContentPageLayout>
-                    <Container>
+                    <Container fluid> 
                         <br />
-                        <div className={`${BSafesStyle.folderPanel} ${BSafesStyle.folderCoverPanel} ${BSafesStyle.containerCoverPanel} ${BSafesStyle.containerPanel}`}>
-                            <ItemTopRows />
-                            <br />
-                            <br />
-                            <Row className="justify-content-center">
-                                <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
-                                </Col>
-                            </Row>
-                            <br />
-                            <Row>
-                                <Col>
-                                    <ContainerOpenButton handleOpen={handleOpen} />
-                                </Col>
-                            </Row>
-                            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
-                        </div>
-
-                    </Container>
+                        <TopControlPanel></TopControlPanel>
+                        <br />
+                        <Row>
+                            <Col lg={{span:10, offset:1}}>                       
+                            { 
+                                <div className={`${BSafesStyle.folderPanel} ${BSafesStyle.folderCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
+                                    <div className={BSafesStyle.folderTab}>
+				                    </div>
+                                    <ItemTopRows />
+                                    <br />
+                                    <br />
+                                    <Row className="justify-content-center">
+                                        <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                        </Col>
+                                    </Row>
+                                    <br />
+                                    <Row>
+                                        <Col>
+                                            <ContainerOpenButton handleOpen={handleOpen} />
+                                        </Col>
+                                    </Row>
+                                    <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
+                                </div>
+                            }
+                            </Col>
+                        </Row>
+                    </Container> 
                 </ContentPageLayout>
                 <Scripts />
             </div>

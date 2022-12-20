@@ -112,41 +112,48 @@ export default function ItemRow({ item, addBefore, addAfter }) {
                     </Row> 
                 </div>
             }
-            {(item.container.startsWith('f')) &&
-                <div>
-                    <Row className="mt-1" >
-                        <Col xs={{ span: 7, offset: 1 }}>
-                            <Link href={getItemLink(item)}>
-                                <a className="text-decoration-none text-black">
-                                    <div class="">
-                                        <p class="containerContentsPageTitle my-0" >
-                                            <i class="fa fa-file-text-o me-2" aria-hidden="true"></i>
-                                            <span className='fs-5' dangerouslySetInnerHTML={{ __html: itemText }} />
-                                        </p>
-                                    </div>
-                                </a>
-                            </Link>
-                        </Col>
-                        <Col xs={3}>
-                            <Dropdown className="pull-right px-2">
-                                <Dropdown.Toggle variant="link" bsPrefix="p-0 text-decoration-none text-black" id="dropdown-basic">
-                                    +
-                                </Dropdown.Toggle>
+            {item.id.startsWith('p') &&                
+                <div>                  
+                    <Row className={BSafesStyle.contentsItemRow}>
+                        <Col xs={{ span: 7, offset: 1 }} onClick={rowClicked}>
+                            <i className={`fa fa-file-text-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"></i><span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
+                        </Col> 
+                        <Col xs={3} className="p-1">
+                            <ButtonGroup className="pull-right">
+                                <Form.Group className="me-2" controlId="formBasicCheckbox">
+                                    <Form.Check className="" type="checkbox"/>
+                                </Form.Group>
 
-                                <Dropdown.Menu>
-                                    <Dropdown.Item href="#/action-1">Add before</Dropdown.Item>
-                                    <Dropdown.Item href="#/action-2">Add After</Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                <Dropdown align="end" className="justify-content-end">
+                                    <Dropdown.Toggle as={plusToggle}  variant="link">
+                                    
+                                    </Dropdown.Toggle>
 
-                            <div class="checkbox pull-right my-0 ">
-                                <input type="checkbox" class="form-check-input" />
-                            </div>
-                        </Col>
-                        <Col xs={{ span: 10, offset: 1 }}>
-                            <hr class="my-0" />
-                        </Col>
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item href="#/action-1">Add before</Dropdown.Item>
+                                        <Dropdown.Item href="#/action-2">Add after</Dropdown.Item>                           
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                                <Dropdown align="end" className="justify-content-end">
+                                    <Dropdown.Toggle as={sortToggle}  variant="link">
+                                    
+                                    </Dropdown.Toggle>
+
+                                    <Dropdown.Menu>
+                                        <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
+                                        <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
+                                        <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>                          
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </ButtonGroup>
+                        </Col>             
                     </Row>
+
+                    <Row>
+                        <Col xs={{span:10, offset:1}}>
+                            <hr className="mt-0 mb-0"/>
+                        </Col>
+                    </Row> 
                 </div>
             }
         </>

@@ -111,7 +111,13 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     selectedDiaryContentStartPosition,
                     selectedDiaryContentEndPosition
                 }
-
+            } else if(state.container.startsWith('f')) {
+                pageNumber = data.pageNumber;
+                body = {
+                    container: state.container,
+                    size: state.itemsPerPage,
+                    from: (pageNumber - 1) * state.itemsPerPage,
+                }
             } else {
                 pageNumber = data.pageNumber;
                 body = {
