@@ -1,6 +1,5 @@
-import React from 'react'
+import { useState, forwardRef } from 'react'
 import { useRouter } from 'next/router';
-import Link from 'next/link'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -13,15 +12,24 @@ import parse from "date-fns/parse";
 import format from "date-fns/format";
 import isSameDay from "date-fns/isSameDay";
 
+import ItemTypeModal from './itemTypeModal'
+
 import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { itemVersionsFetched } from '../reduxStore/pageSlice';
+
 import { debugLog } from '../lib/helper';
 
-export default function ItemRow({item}) {
+export default function ItemRow({item , onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
+
+    const [show, setShow] = useState(false);
+    const [addAction, setAddAction] = useState(null);
+
+    const handleClose = () => setShow(false);
+
+    const itemId = item.id;
 
     let temp = document.createElement('span');
     temp.innerHTML = item.title;
@@ -46,7 +54,7 @@ export default function ItemRow({item}) {
             </a>
         )
     }
-    const plusToggle = React.forwardRef(plusButton);
+    const plusToggle = forwardRef(plusButton);
 
     function sortButton({ children, onClick }, ref) {
         return (
@@ -64,7 +72,7 @@ export default function ItemRow({item}) {
             </a>
         )
     }
-    const sortToggle = React.forwardRef(sortButton);
+    const sortToggle = forwardRef(sortButton);
 
     const rowClicked = () => {
         debugLog(debugOn, "rowClicked ...");
@@ -73,6 +81,15 @@ export default function ItemRow({item}) {
         
     }
 
+    const handleAddClicked = (action) => {
+        setAddAction(action);
+        setShow(true);
+    }
+
+    const optionSelected = (itemType) => {       
+        setShow(false);
+        onAdd(itemType, addAction, itemId, item.position );
+    }
     return (
         <>
             {item.id.startsWith('np') && 
@@ -129,21 +146,23 @@ export default function ItemRow({item}) {
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="#/action-1">Add before</Dropdown.Item>
-                                        <Dropdown.Item href="#/action-2">Add after</Dropdown.Item>                           
+                                        <Dropdown.Item onClick={()=> handleAddClicked("addAnItemBefore")}>Add before</Dropdown.Item>
+                                        <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
                                     </Dropdown.Menu>
                                 </Dropdown>
-                                <Dropdown align="end" className="justify-content-end">
-                                    <Dropdown.Toggle as={sortToggle}  variant="link">
+                                { false && 
+                                    <Dropdown align="end" className="justify-content-end">
+                                        <Dropdown.Toggle as={sortToggle}  variant="link">
                                     
-                                    </Dropdown.Toggle>
+                                        </Dropdown.Toggle>
 
-                                    <Dropdown.Menu>
-                                        <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
-                                        <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
-                                        <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>                          
-                                    </Dropdown.Menu>
-                                </Dropdown>
+                                        <Dropdown.Menu>
+                                            <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
+                                            <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
+                                            <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>                          
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                }
                             </ButtonGroup>
                         </Col>             
                     </Row>
@@ -153,8 +172,10 @@ export default function ItemRow({item}) {
                             <hr className="mt-0 mb-0"/>
                         </Col>
                     </Row> 
-                </div>
+                    <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />
+                </div>           
             }
+
         </>
     )
 }

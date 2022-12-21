@@ -41,7 +41,7 @@ export default function Workspace() {
     }
 
     const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} item={item} onAdd={handleAdd}/>
+        <ItemCard key={index} item={item} />
     );
 
     const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {

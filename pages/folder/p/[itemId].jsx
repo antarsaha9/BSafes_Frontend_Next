@@ -16,10 +16,11 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer} from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
+import { gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
 
 export default function FolderPage() {
     const debugOn = true;
@@ -28,6 +29,7 @@ export default function FolderPage() {
     const router = useRouter();
 
     const [pageItemId, setPageItemId] = useState(null);
+    const [changingPage, setChangingPage] = useState(false);
     const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
@@ -40,6 +42,7 @@ export default function FolderPage() {
     const navigationMode = useSelector(state => state.page.navigationMode);
     const space = useSelector(state => state.page.space);
     const container = useSelector(state => state.page.container);
+    const position = useSelector(state => state.page.position);
     const itemCopy = useSelector(state => state.page.itemCopy);
 
     const containerInWorkspace = useSelector(state => state.container.container);
@@ -47,6 +50,45 @@ export default function FolderPage() {
     const workspaceKey = useSelector(state => state.container.workspaceKey);
 
     async function gotoAnotherPage(anotherPageNumber) {
+        debugLog(debugOn, `gotoAnotherPage ${changingPage} ${pageItemId} ${container} ${position}`);
+        if(changingPage || !(pageItemId || !container || !position)) return;
+        setChangingPage(true);
+        let result, nextPageId = null;
+        switch (anotherPageNumber) {
+            case '-1':
+                try{
+                    result = await gotoAnotherFolderPage('getPreviousFolderPage', container, position);
+                    if (result === 'EndOfFolder') {
+                        nextPageId = `/folder/contents/${container}`; 
+                    } else {
+                        nextPageId = `/folder/p/${result}`; 
+                    }
+                } catch(error) {
+
+                }
+                break;
+            case '+1':
+                try{
+                    result = await gotoAnotherFolderPage('getNextFolderPage', container, position);
+                    if (result === 'EndOfFolder') {
+                        alert('End of folder');
+                    } else {
+                        nextPageId = `/folder/p/${result}`; 
+                    }
+                } catch(error) {
+
+                }
+                break;
+            default:
+        }
+        debugLog(debugOn, "setNavigationInSameContainer ...");
+
+        setNavigationInSameContainer(true);
+        if (nextPageId) {
+            router.push(nextPageId);
+        } else {
+            setChangingPage(false);
+        }
     }
 
     const gotoNextPage = () => {
@@ -70,9 +112,27 @@ export default function FolderPage() {
     }
 
     const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/folder/p/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
     }
 
     const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/folder/p/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
     }
 
     useEffect(() => {
@@ -96,6 +156,7 @@ export default function FolderPage() {
     useEffect(() => {
         if (router.query.itemId) {
             dispatch(clearPage());
+            setChangingPage(false);
             setWorkspaceKeyReady(false);
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -160,13 +221,8 @@ export default function FolderPage() {
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.folderPanel}`}>
+                            <div className={`${BSafesStyle.pagePanel}`}>
                                 <ItemTopRows />
-                                <Row className="justify-content-center">
-                                    <Col xs="12" sm="10" md="8">
-                                        <hr />
-                                    </Col>
-                                </Row>
                                 <PageCommons />
                             </div>
                         </Col>

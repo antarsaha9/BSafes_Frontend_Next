@@ -482,6 +482,11 @@ export default function PageCommons() {
     return (
         <>
             <Row className="justify-content-center">
+                <Col md="10">
+                    <hr />
+                </Col>
+            </Row>
+            <Row className="justify-content-center">
                 <Col md="10" >
                     <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 

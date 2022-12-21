@@ -15,7 +15,7 @@ import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
-import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, listItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -54,8 +54,13 @@ export default function FolderContents() {
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
+    const handleAdd = (type, action, target, position) => {
+        debugLog(debugOn, `${type} ${action} ${target} ${position}`);
+        addAnItem(type, action, target, position );
+    }
+
     const items = itemsState.map((item, index) =>
-        <ItemRow key={index} item={item} />
+        <ItemRow key={index} item={item} onAdd={handleAdd}/>
     );
 
     function gotoAnotherPage(anotherPageNumber) {
@@ -71,18 +76,41 @@ export default function FolderContents() {
         gotoAnotherPage('-1');
     }
 
-    const addAnItem = (itemType, addAction, targetItem = null) => {
-    
+    const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {    
         setSelectedItemType(itemType);
         setAddAction(addAction);
         setTargetItem(targetItem);
-        setShowNewItemModal(true);
-        
+        setTargetPosition(targetPosition);
+        setShowNewItemModal(true);        
     }
 
     const handleCoverClicked = () => {
         let newLink = `/folder/${containerInWorkspace}`;
         router.push(newLink);
+    }
+
+    const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/folder/p/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
+    }
+
+    const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/folder/p/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
     }
 
     const handleClose = () => setShowNewItemModal(false);
@@ -157,7 +185,7 @@ export default function FolderContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked}></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
