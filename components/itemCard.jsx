@@ -1,4 +1,5 @@
 import { useState, forwardRef } from 'react'
+import { useRouter } from 'next/router';
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -14,7 +15,8 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function ItemCard({item, onAdd, onSelect}) {
-
+    const router = useRouter();
+    
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
 
@@ -63,7 +65,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
 
     const cardClicked = () => {
         const link = getItemLink(item);
-        window.location = link;
+        router.push(link);
     }
 
     const handleAddClicked = (action) => {

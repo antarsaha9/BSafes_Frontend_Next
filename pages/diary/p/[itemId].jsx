@@ -234,11 +234,6 @@ export default function DiaryPage() {
                                         <h4>{pageDate && format(pageDate, 'EEEE, LLL. dd, yyyy')}</h4>
                                     </Col>
                                 </Row>
-                                <Row className="justify-content-center">
-                                    <Col md="10">
-                                        <hr />
-                                    </Col>
-                                </Row>
                                 <PageCommons />
                             </div>  
                         </Col>
