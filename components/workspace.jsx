@@ -24,8 +24,8 @@ export default function Workspace() {
     
     const workspaceId = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const searchKey = useSelector( state => state.container.searchKey);
-    const searchIV = useSelector( state => state.container.searchIV);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const itemsState = useSelector( state => state.container.items);
 
@@ -41,7 +41,7 @@ export default function Workspace() {
     }
 
     const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} item={item} />
+        <ItemCard key={index} item={item} onAdd={handleAdd}/>
     );
 
     const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
@@ -61,7 +61,7 @@ export default function Workspace() {
         setShowNewItemModal(false);
 
 
-        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
+        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
         const link = getItemLink(item);
 
         router.push(link);
@@ -92,6 +92,8 @@ export default function Workspace() {
             <br />
             <br />
             {items}
+            <br />
+            <br />
         </Container>
     )
 

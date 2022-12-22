@@ -119,7 +119,7 @@ export default function FolderContents() {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
+        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
         const link = getItemLink(item);
 
         router.push(link);

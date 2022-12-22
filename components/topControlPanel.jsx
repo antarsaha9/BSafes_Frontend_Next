@@ -14,12 +14,14 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from "../lib/helper";
 
 
-export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null}) {
+export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onAdd=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const pageNumberInputRef = useRef(null);
     
     const pageItemId = useSelector( state => state.page.id);
+    const position = useSelector( state => state.page.position);
+
     const container = useSelector( state => state.container.container);
 
     function plusButton({ children, onClick }, ref) {
@@ -45,6 +47,10 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
 
             onPageNumberChanged(pageNumberInputRef.current.value);
         }
+    }
+
+    const handleAddClicked = (action) => {       
+        onAdd('Page', action, pageItemId, position);
     }
 
     useEffect(()=>{
