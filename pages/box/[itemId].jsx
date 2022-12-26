@@ -23,7 +23,7 @@ import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThun
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
 
-export default function Folder() {
+export default function Box() {
     const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
@@ -107,7 +107,7 @@ export default function Folder() {
             if(item) {
                 debugLog(debugLog, item);
             } else {
-                const link = `/folder/contents/${pageItemId}`;
+                const link = `/box/contents/${pageItemId}`;
                 router.push(link);
             }
         } catch (error) {
@@ -205,10 +205,7 @@ export default function Folder() {
                         <br />
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
-                            { 
-                                <div className={`${BSafesStyle.folderPanel} ${BSafesStyle.folderCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
-                                    <div className={BSafesStyle.folderTab}>
-				                    </div>
+                                <div className={`${BSafesStyle.boxPanel} ${BSafesStyle.boxCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
                                     <ItemTopRows />
                                     <br />
                                     <br />
@@ -225,13 +222,12 @@ export default function Folder() {
                                     </Row>
                                     <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} />
                                 </div>
-                            }
                             </Col>
                         </Row>
                     </Container> 
                 </ContentPageLayout>
                 <Scripts />
             </div>
-        </div>
+         </div>
     )
 }

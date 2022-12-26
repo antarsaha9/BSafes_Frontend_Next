@@ -10,7 +10,7 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/topControlPanel";
-import ItemRow from "../../../components/itemRow";
+import ItemCard from '../../../components/itemCard'
 import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
@@ -21,7 +21,7 @@ import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 import { createANewItem, getItemLink} from "../../../lib/bSafesCommonUI";
 
-export default function FolderContents() {
+export default function BoxContents() {
     const debugOn = true;
     debugLog(debugOn, "Rendering Contents");
     const dispatch = useDispatch();
@@ -59,7 +59,7 @@ export default function FolderContents() {
     }
 
     const items = itemsState.map((item, index) =>
-        <ItemRow key={index} item={item} onAdd={handleAdd}/>
+        <ItemCard key={index} item={item} onAdd={handleAdd}/>
     );
 
     function gotoAnotherPage(anotherPageNumber) {
@@ -84,7 +84,7 @@ export default function FolderContents() {
     }
 
     const handleCoverClicked = () => {
-        let newLink = `/folder/${containerInWorkspace}`;
+        let newLink = `/box/${containerInWorkspace}`;
         router.push(newLink);
     }
 
@@ -92,7 +92,7 @@ export default function FolderContents() {
         try {
             const itemId = await getFirstItemInContainer(containerInWorkspace);
             if(itemId) {
-                const newLink = `/folder/p/${itemId}`;
+                const newLink = `/${itemId}`;
                 router.push(newLink);
             }
         } catch(error) {
@@ -104,7 +104,7 @@ export default function FolderContents() {
         try {
             const itemId = await getLastItemInContainer(containerInWorkspace);
             if(itemId) {
-                const newLink = `/folder/p/${itemId}`;
+                const newLink = `/${itemId}`;
                 router.push(newLink);
             }
         } catch(error) {
@@ -169,7 +169,6 @@ export default function FolderContents() {
         }        
     }, [containerCleared]);
 
-
     useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
         if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
@@ -188,12 +187,12 @@ export default function FolderContents() {
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.folderPanel}`}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.boxPanel}`}>
                                 <br />
                                 <br />
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row className="justify-content-center">     
-                                    <AddAnItemButton pageOnly={true} addAnItem={addAnItem}/>
+                                    <AddAnItemButton addAnItem={addAnItem}/>
                                 </Row>
                                 <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
                                 <br />
@@ -208,6 +207,4 @@ export default function FolderContents() {
             </ContentPageLayout>
         </div>
     )
-
 }
-

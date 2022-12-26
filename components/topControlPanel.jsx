@@ -1,4 +1,5 @@
 import { useRef, useEffect, forwardRef } from "react";
+import { useRouter } from "next/router";
 import { useSelector } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
@@ -18,6 +19,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const pageNumberInputRef = useRef(null);
+    const router = useRouter();
     
     const pageItemId = useSelector( state => state.page.id);
     const position = useSelector( state => state.page.position);
@@ -67,8 +69,12 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                             <Col xs={4}>
                                 {!pageNumber && !container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
                                 {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && (container.startsWith('n') || container.startsWith('f')))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && (container.startsWith('n') || (container.startsWith('f') && pageItemId && pageItemId.startsWith('p'))))) && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
+                                {( pageNumber || (container && (container.startsWith('n') || container.startsWith('f') || container.startsWith('b')))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                {( pageNumber || 
+                                  (container && (container.startsWith('n') || 
+                                  (container.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
+                                  (container.startsWith('b') && !router.asPath.includes('\/contents\/')) 
+                                  ))) && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                             <Col xs={8}>
                                 { ( pageNumber || (container && container.startsWith('n'))) && 
