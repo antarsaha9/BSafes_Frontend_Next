@@ -21,7 +21,7 @@ import { clearContainer, initContainer} from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
+import { getLastAccessedItem, getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
 
 export default function Box() {
     const debugOn = false;
@@ -115,6 +115,18 @@ export default function Box() {
         }
     }
 
+    const handleCoverClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).converLink;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).contentsLink;
+        router.push(newLink);
+    }
+
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
           console.log(
@@ -201,7 +213,7 @@ export default function Box() {
                 <ContentPageLayout>
                     <Container fluid> 
                         <br />
-                        <TopControlPanel></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                         <br />
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       

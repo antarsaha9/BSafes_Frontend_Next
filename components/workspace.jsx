@@ -70,7 +70,7 @@ export default function Workspace() {
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(listItemsThunk({pageNumber: 1}));
-    }, [workspaceId]);
+    }, []);
 
     return (
         <Container>

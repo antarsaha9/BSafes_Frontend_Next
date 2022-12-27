@@ -20,6 +20,7 @@ import { clearContainer, initContainer } from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
+import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
 
 export default function Diary() {
     const debugOn = false;
@@ -116,6 +117,18 @@ export default function Diary() {
         }
     }
 
+    const handleCoverClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).converLink;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).contentsLink;
+        router.push(newLink);
+    }
+
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
           console.log(
@@ -202,7 +215,7 @@ export default function Diary() {
                 <ContentPageLayout>
                     <Container fluid>
                         <br />
-                        <TopControlPanel></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                         <br />  
                         <Row>
                             <Col lg={{span:10, offset:1}}>

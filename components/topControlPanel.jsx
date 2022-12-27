@@ -67,9 +67,11 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                     <Card.Body className=''>
                         <Row>
                             <Col xs={4}>
-                                {!pageNumber && !container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
-                                {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && (container.startsWith('n') || container.startsWith('f') || container.startsWith('b')))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                {!container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
+                                {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
+                                {( pageNumber || (container && (container.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                {( container && container.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
+                                {( container && container.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
                                 {( pageNumber || 
                                   (container && (container.startsWith('n') || 
                                   (container.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
@@ -85,7 +87,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
 										<Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn" onClick={onGotoLastItem}><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>
                                     </Form.Group>
                                 }
-                                { ( pageNumber || (container && container.startsWith('f'))) && 
+                                { ( (container && container.startsWith('f'))) && 
                                     <ButtonGroup className='pull-right'>                
 										<Button variant='link' size='sm' className='text-white' id="gotoFirstItemBtn" onClick={onGotoFirstItem}><i className="fa fa-step-backward fa-lg" aria-hidden="true"></i></Button>
 										<Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn" onClick={onGotoLastItem}><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>

@@ -68,10 +68,17 @@ const containerSlice = createSlice({
                 state.items.push(resultItem);
             }
         },
+        clearItems: (state, action) => {
+            state.total = 0;
+            state.totalNumberOfPages = 0;
+            state.pageNumber = 1;
+            state.hits = [];
+            state.items = [];
+        },
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded, clearItems} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
