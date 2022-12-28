@@ -10,6 +10,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
+import PagePath from '../PagePath'
 
 const ContentPageLayout = ({children}) => {
     const debugOn = false;
@@ -54,6 +55,7 @@ const ContentPageLayout = ({children}) => {
                 </Container>
                 
             </Navbar>
+            <PagePath/>
        
             {children}
         </div>

@@ -20,6 +20,10 @@ const initialState = {
     totalNumberOfPages:0,
     hits:[],
     items:[],
+    itemPath:{
+        for:null,
+        data:[{id:'u:'}]
+    }
 };
 
 const containerSlice = createSlice({
@@ -52,6 +56,12 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        pathLoaded: (state, action) => {
+            state.itemPath = action.payload;
+        },
+        resetPath: (state, action) => {
+            state.itemPath = initialState.itemPath;
+        },
         pageLoaded: (state, action) => {
             state.total = action.payload.total;
             state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
@@ -71,7 +81,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded, pathLoaded, resetPath} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -90,7 +100,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             state = getState().container;
             
             let body;
-            if(state.container.startsWith('n') || state.container.startsWith('f')) {
+            if(state.container.startsWith('n') || state.container.startsWith('b')) {
                 pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
@@ -198,6 +208,45 @@ export const getLastItemInContainer = async (container) => {
             debugLog(debugOn, "getFirstItemInContainer failed: ", error)
             reject("getFirstItemInContainer failed!");
         })
+    });
+}
+
+export const getItemPathThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "LoadingItemPath", () => {
+        return new Promise(async (resolve, reject) => {
+            console.log(data);
+            const {itemId, workspaceKey} = data;
+            PostCall({
+                api: '/memberAPI/getItemPath',
+                body: {
+                    itemId
+                },
+            }).then(result => {
+                debugLog(debugOn, result);
+                if (result.status === 'ok') {
+                    console.log(result);
+
+                    const newPath = result.itemPath.map(path=>{
+                        if(path._source){
+                            const decryptedData = newResultItem(path, workspaceKey);
+                            decryptedData.title = decryptedData.title.replace(/<\/?[^>]+(>|$)/g, "");
+                            console.log(decryptedData);
+                            return decryptedData;
+                        }
+                        return {id:path._id};
+                    })
+                    dispatch(pathLoaded({for:itemId,data:newPath}));
+                    resolve();
+
+                } else {
+                    debugLog(debugOn, "woo... failed to get a item version history!", data.error);
+                    reject("woo... failed to get a item version history!");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... failed to get a item version history.", error)
+                reject("woo... failed to get a item version history!");
+            })
+        });
     });
 }
 
