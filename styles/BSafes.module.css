@@ -194,7 +194,30 @@
 
 
 /* End of container general */
+/*--***** Box */
+.boxCoverPanel {
+	margin-bottom:10px;
+  background-color:#EBF5FB;
+  border-radius:10px 10px 10px 10px;
+}
 
+.boxItemCard {
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-width: 0px;
+  box-shadow: 0 0 0
+}
+
+.boxItemCardBody {
+  padding-top: 0px;
+  padding-bottom: 0px;
+  border-width: 0px;
+  box-shadow: 0 0 0
+}
+
+
+
+/* End of Box*/
 /*--**** Folder */
 .folderCoverPanel {
   background-color:#FCF3CF;

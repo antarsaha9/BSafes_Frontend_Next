@@ -18,6 +18,7 @@ import PageCommons from "../../components/pageCommons";
 import { clearContainer, initContainer} from '../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
+import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI"
 
 export default function Page() {
     const debugOn = true;
@@ -40,6 +41,18 @@ export default function Page() {
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
+
+    const handleCoverClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).converLink;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).contentsLink;
+        router.push(newLink);
+    }
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -115,7 +128,7 @@ export default function Page() {
             <ContentPageLayout>            
                 <Container> 
                     <br />
-                        <TopControlPanel></TopControlPanel>
+                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                     <br />  
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />

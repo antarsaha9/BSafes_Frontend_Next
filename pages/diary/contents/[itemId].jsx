@@ -15,7 +15,7 @@ import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -82,6 +82,7 @@ export default function DiaryContents() {
         if(router.query.itemId) {
 
             dispatch(clearPage());
+            dispatch(clearItems());
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);

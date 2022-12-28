@@ -15,7 +15,7 @@ import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
-import { clearContainer, initContainer, changeContainerOnly, listItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -43,7 +43,6 @@ export default function FolderContents() {
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const space = useSelector( state => state.page.space);
-    const itemCopy = useSelector( state => state.page.itemCopy);
 
     const workspace = useSelector( state => state.container.workspace);
     const containerInWorkspace = useSelector( state => state.container.container);
@@ -129,6 +128,7 @@ export default function FolderContents() {
         if(router.query.itemId) {
 
             dispatch(clearPage());
+            dispatch(clearItems());
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -176,6 +176,7 @@ export default function FolderContents() {
         if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
             setContainerCleared(false);
+            debugLog(debugOn, "listItemsThunk ...");
             dispatch(listItemsThunk({pageNumber: 1}));
         }
     }, [workspaceKeyReady, containerInWorkspace]);

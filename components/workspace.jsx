@@ -13,7 +13,7 @@ import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
 
 import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
-import { listItemsThunk } from '../reduxStore/containerSlice';
+import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace() {
@@ -26,6 +26,8 @@ export default function Workspace() {
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+
+    const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
 
@@ -67,6 +69,16 @@ export default function Workspace() {
         router.push(link);
     }
 
+    const onSearchValueChanged = (e) => {
+        debugLog(debugOn, "search value:", e.target.value);
+        setSearchValue(e.target.value);
+    }
+
+    const onSubmit = (e) => {
+        e.preventDefault();
+        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    }
+
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(listItemsThunk({pageNumber: 1}));
@@ -75,14 +87,17 @@ export default function Workspace() {
     return (
         <Container>
             <Row>
+            <Form onSubmit={onSubmit}>
                 <InputGroup className="mb-3">
-                    <Form.Control
-                        size="lg" type="text"
+                    <Form.Control size="lg" type="text"
+                        value={searchValue} 
+                        onChange={onSearchValueChanged}
                     />
                     <Button variant="link">
-                        <i id="1" className="fa fa-search fa-lg text-dark" aria-hidden="true"></i>
+                        <i id="1" className="fa fa-search fa-lg text-dark" aria-hidden="true" onClick={onSubmit}></i>
                     </Button>
                 </InputGroup>
+            </Form>
             </Row>
             <Row className="justify-content-center">     
                 <AddAnItemButton addAnItem={addAnItem}/>

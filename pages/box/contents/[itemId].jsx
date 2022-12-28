@@ -10,11 +10,12 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import TopControlPanel from "../../../components/topControlPanel";
-import ItemRow from "../../../components/itemRow";
+import ItemCard from '../../../components/itemCard'
+import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
-import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -45,24 +46,70 @@ export default function BoxContents() {
 
     const workspace = useSelector( state => state.container.workspace);
     const containerInWorkspace = useSelector( state => state.container.container);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+
+    const handleAdd = (type, action, target, position) => {
+        debugLog(debugOn, `${type} ${action} ${target} ${position}`);
+        addAnItem(type, action, target, position );
+    }
 
     const items = itemsState.map((item, index) =>
-        <ItemRow key={index} item={item} />
+        <ItemCard key={index} item={item} onAdd={handleAdd}/>
     );
 
-    const addAnItem = (itemType, addAction, targetItem = null) => {
-    
+    function gotoAnotherPage(anotherPageNumber) {
+    }
+
+    const gotoNextPage = () =>{
+        debugLog(debugOn, "Next Page ");
+        gotoAnotherPage('+1');
+    }
+
+    const gotoPreviousPage = () => {
+        debugLog(debugOn, "Previous Page ");
+        gotoAnotherPage('-1');
+    }
+
+    const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {    
         setSelectedItemType(itemType);
         setAddAction(addAction);
         setTargetItem(targetItem);
-        setShowNewItemModal(true);
+        setTargetPosition(targetPosition);
+        setShowNewItemModal(true);        
     }
 
     const handleCoverClicked = () => {
         let newLink = `/box/${containerInWorkspace}`;
         router.push(newLink);
+    }
+
+    const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
+    }
+
+    const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            if(itemId) {
+                const newLink = `/${itemId}`;
+                router.push(newLink);
+            }
+        } catch(error) {
+            alert("Could not get the first item in the container");
+        }
     }
 
     const handleClose = () => setShowNewItemModal(false);
@@ -71,7 +118,7 @@ export default function BoxContents() {
         debugLog(debugOn, "createANewItem", title);
         setShowNewItemModal(false);
 
-        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV );
+        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
         const link = getItemLink(item);
 
         router.push(link);
@@ -81,6 +128,7 @@ export default function BoxContents() {
         if(router.query.itemId) {
 
             dispatch(clearPage());
+            dispatch(clearItems());
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -122,7 +170,6 @@ export default function BoxContents() {
         }        
     }, [containerCleared]);
 
-
     useEffect(()=>{ 
         debugLog(debugOn, "useEffect [workspaceKey] ...");
         if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
@@ -137,16 +184,16 @@ export default function BoxContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked}></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.folderPanel}`}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.boxPanel}`}>
                                 <br />
                                 <br />
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row className="justify-content-center">     
-                                    <AddAnItemButton pageOnly={false} addAnItem={addAnItem}/>
+                                    <AddAnItemButton addAnItem={addAnItem}/>
                                 </Row>
                                 <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
                                 <br />
@@ -161,6 +208,4 @@ export default function BoxContents() {
             </ContentPageLayout>
         </div>
     )
-
 }
-

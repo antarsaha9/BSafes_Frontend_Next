@@ -2,6 +2,7 @@ import { createSlice} from '@reduxjs/toolkit';
 
 import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
+import { stringToEncryptedTokensCBC } from '../lib/crypto';
 
 const debugOn = false;
 
@@ -61,6 +62,14 @@ const containerSlice = createSlice({
         },
         resetPath: (state, action) => {
             state.itemPath = initialState.itemPath;
+        },  
+        setMode: (state, action) => {
+            state.mode = action.payload;
+            state.total = 0;
+            state.totalNumberOfPages = 0;
+            state.pageNumber = 1;
+            state.hits = [];
+            state.items = [];
         },
         pageLoaded: (state, action) => {
             state.total = action.payload.total;
@@ -78,10 +87,17 @@ const containerSlice = createSlice({
                 state.items.push(resultItem);
             }
         },
+        clearItems: (state, action) => {
+            state.total = 0;
+            state.totalNumberOfPages = 0;
+            state.pageNumber = 1;
+            state.hits = [];
+            state.items = [];
+        },
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pageLoaded, pathLoaded, resetPath} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pathLoaded, resetPath, setMode, pageLoaded, clearItems} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -121,7 +137,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     selectedDiaryContentStartPosition,
                     selectedDiaryContentEndPosition
                 }
-            } else if(state.container.startsWith('f')) {
+            } else if(state.container.startsWith('f') || state.container.startsWith('b')) {
                 pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
@@ -139,6 +155,42 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
 
             PostCall({
                 api:'/memberAPI/listItems',
+                body
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    const total = data.hits.total;
+                    const hits = data.hits.hits;
+                    dispatch(pageLoaded({pageNumber, total, hits}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "listItems failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "listItems failed: ", error)
+                reject("listItems failed!");
+            })
+        });
+    });
+}
+
+export const searchItemsThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Searching", () => {
+        return new Promise(async (resolve, reject) => {
+            let state, body, searchTokens, searchTokensStr;
+            dispatch(setMode("search"));
+            state = getState().container;
+            searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
+            searchTokensStr = JSON.stringify(searchTokens);
+            body = {
+                container: state.container==='root'?state.workspace:state.container,
+                searchTokens: searchTokensStr,
+                size: state.itemsPerPage,
+                from: (data.pageNumber - 1) * state.itemsPerPage,
+            }
+            PostCall({
+                api:'/memberAPI/search',
                 body
             }).then( data => {
                 debugLog(debugOn, data);

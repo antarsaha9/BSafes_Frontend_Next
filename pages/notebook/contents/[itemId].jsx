@@ -13,7 +13,7 @@ import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -66,7 +66,7 @@ export default function NotebookContents() {
                 }
                 break;
             case '+1':
-                if(pageNumber === totalNumberOfPages) {
+                if(!totalNumberOfPages || (pageNumber === totalNumberOfPages) ) {
                     nextPageId = 'np:'+ idParts.join(':') + ':1';
                     newLink = `/notebook/p/${nextPageId}`; 
                 } else {
@@ -106,6 +106,7 @@ export default function NotebookContents() {
         if(router.query.itemId) {
 
             dispatch(clearPage());
+            dispatch(clearItems());
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -152,6 +153,7 @@ export default function NotebookContents() {
         if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
             setPageCleared(false);
             setContainerCleared(false);
+            debugLog(debugOn, "listItemsThunk ...");
             dispatch(listItemsThunk({pageNumber: 1}));
         }
     }, [workspaceKeyReady, containerInWorkspace]);

@@ -27,7 +27,7 @@ export default function AddAnItemButton({addAnItem, pageOnly=false}) {
                 <i id="1" className="fa fa-plus fa-lg" aria-hidden="true"></i>
             </Button>
 
-            <ItemTypeModal show={show} pageOnly={pageOnly} handleClose={handleClose} optionSelected={optionSelected} />
+            <ItemTypeModal pageOnly={pageOnly} show={show} handleClose={handleClose} optionSelected={optionSelected} />
         </> 
     )
 }

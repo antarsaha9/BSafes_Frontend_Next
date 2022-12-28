@@ -5,9 +5,6 @@ import { useSelector, useDispatch } from 'react-redux'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
-import Dropdown from 'react-bootstrap/Dropdown'
-import Tab from 'react-bootstrap/Tab'
-import Tabs from 'react-bootstrap/Tabs'
 import Pagination from 'react-bootstrap/Pagination'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
@@ -24,7 +21,7 @@ import { clearContainer, initContainer} from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
+import { getLastAccessedItem, getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
 
 export default function Folder() {
     const debugOn = false;
@@ -116,6 +113,18 @@ export default function Folder() {
         }
     }
 
+    const handleCoverClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).converLink;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).contentsLink;
+        router.push(newLink);
+    }
+    
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
           console.log(
@@ -201,7 +210,7 @@ export default function Folder() {
                 <ContentPageLayout>
                     <Container fluid> 
                         <br />
-                        <TopControlPanel></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                         <br />
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       

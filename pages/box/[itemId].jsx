@@ -5,6 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
+import Pagination from 'react-bootstrap/Pagination'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -20,7 +21,7 @@ import { clearContainer, initContainer} from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem } from "../../lib/bSafesCommonUI";
+import { getLastAccessedItem, getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
 
 export default function Box() {
     const debugOn = false;
@@ -52,7 +53,6 @@ export default function Box() {
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
 
- 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         if(editorId === 'title') {
@@ -60,7 +60,6 @@ export default function Box() {
             setEditingEditorId("title");
         } 
     }
-    
     const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
         
@@ -113,6 +112,18 @@ export default function Box() {
         } catch (error) {
             debugLog(debugOn, error)
         }
+    }
+
+    const handleCoverClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).converLink;
+        router.push(newLink);
+    }
+
+    const handleContentsClicked = () => {
+        if(!container) return;
+        let newLink = getCoverAndContentsLink(container).contentsLink;
+        router.push(newLink);
     }
 
     useEffect(() => {
@@ -200,7 +211,7 @@ export default function Box() {
                 <ContentPageLayout>
                     <Container fluid> 
                         <br />
-                        <TopControlPanel></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                         <br />
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
@@ -227,6 +238,6 @@ export default function Box() {
                 </ContentPageLayout>
                 <Scripts />
             </div>
-        </div>
+         </div>
     )
 }

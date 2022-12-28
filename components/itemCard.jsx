@@ -16,7 +16,10 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function ItemCard({item, onAdd, onSelect}) {
     const router = useRouter();
-    
+    const cardStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCard:BSafesStyle.safeItem
+    const cardBodyStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCardBody:''
+    const cardRowStyle = router.asPath.includes('\/box\/contents\/')?'mx-3':''
+
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
 
@@ -79,9 +82,9 @@ export default function ItemCard({item, onAdd, onSelect}) {
     }
 
     return (
-        <>
-            <Card body className={`${BSafesStyle.safeItem}`} >
-                <Row className="">
+        <Card className={cardStyle}>
+            <Card.Body className={cardBodyStyle}>
+                <Row className={cardRowStyle}>
                     <Col xs={9}>   
                         {item.itemPack.type === 'D' &&
                             <div onClick={cardClicked}>
@@ -93,6 +96,13 @@ export default function ItemCard({item, onAdd, onSelect}) {
                         {item.itemPack.type === 'F' &&
                             <div onClick={cardClicked}>
                                 <span><i className="fa fa-folder-o fa-lg me-3" aria-hidden="true"></i>
+                                </span>
+                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                            </div>
+                        }
+                        {item.itemPack.type === 'B' &&
+                            <div onClick={cardClicked}>
+                                <span><i className="fa fa-archive fa-lg me-3" aria-hidden="true"></i>
                                 </span>
                                 <span dangerouslySetInnerHTML={{ __html: item.title}} />
                             </div>
@@ -153,9 +163,11 @@ export default function ItemCard({item, onAdd, onSelect}) {
                         </ButtonGroup>
                     </Col>
                 </Row>
-
-            </Card>
+                {   router.asPath.includes('\/box\/contents\/') && 
+                    <hr className="mt-1 mb-1 mx-3"/>
+                }
+            </Card.Body>
             <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />
-        </>
+        </Card>
     )
 }
