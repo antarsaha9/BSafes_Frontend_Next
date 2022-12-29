@@ -1,4 +1,8 @@
 /*--*****   General  */
+.container {
+  padding: 0px;
+}
+
 .displayNone {
 	display: none;
 }
@@ -13,6 +17,10 @@
 
 .mt3px {
   margin-top: 3px;
+}
+
+.externalLink {
+  margin-top:1px;
 }
 /* End of general */
 
@@ -114,6 +122,7 @@
 
 .containerControlPanel {
   background-color:black;
+  min-height: 61px;
 }
 
 .pageNavigationPart {
@@ -189,6 +198,14 @@
   right:-10px;
 }
 
+.searchBar {
+  margin-left: 48px;
+}
+
+.searchBarInput {
+  margin-bottom:1px;
+  font-size: 1.25rem;;
+}
 
 /* End of container general */
 /*--***** Box */
@@ -206,8 +223,7 @@
 }
 
 .boxItemCardBody {
-  padding-top: 0px;
-  padding-bottom: 0px;
+  padding: 0px;
   border-width: 0px;
   box-shadow: 0 0 0
 }

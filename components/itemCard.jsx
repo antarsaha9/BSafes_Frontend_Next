@@ -1,5 +1,6 @@
 import { useState, forwardRef } from 'react'
 import { useRouter } from 'next/router';
+import Link from 'next/link'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -13,12 +14,13 @@ import ItemTypeModal from './itemTypeModal'
 import { getItemLink } from '../lib/bSafesCommonUI';
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import { Button } from 'react-bootstrap';
 
 export default function ItemCard({item, onAdd, onSelect}) {
     const router = useRouter();
     const cardStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCard:BSafesStyle.safeItem
     const cardBodyStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCardBody:''
-    const cardRowStyle = router.asPath.includes('\/box\/contents\/')?'mx-3':''
+    const cardRowStyle = router.asPath.includes('\/box\/contents\/')?'mx-1':''
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
@@ -85,45 +87,50 @@ export default function ItemCard({item, onAdd, onSelect}) {
         <Card className={cardStyle}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Col xs={9}>   
-                        {item.itemPack.type === 'D' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
-                            </div>
-                        }
-                        {item.itemPack.type === 'F' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-folder-o fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
-                            </div>
-                        }
-                        {item.itemPack.type === 'B' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-archive fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span dangerouslySetInnerHTML={{ __html: item.title}} />
-                            </div>
-                        }
-                        {item.itemPack.type === 'N' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-book fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <div dangerouslySetInnerHTML={{__html: item.title}} />
-                            </div>
-                        }
-                         {item.itemPack.type === 'P' &&
-                            <div onClick={cardClicked}>
-                                <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
-                                </span>
-                                <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
-                            </div>
-                        }       
-                    </Col>
+                    <Link href={getItemLink(item)}> 
+                        <Col xs={9}>   
+                            {item.itemPack.type === 'D' &&
+                                <div >
+                                    <span><i className="fa fa-calendar fa-lg me-3" aria-hidden="true"></i>
+                                    </span>
+                                    <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                                </div>
+                            }
+                            {item.itemPack.type === 'F' &&
+                                <div >
+                                    <span><i className="fa fa-folder-o fa-lg me-3" aria-hidden="true"></i>
+                                    </span>
+                                    <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                                </div>
+                            }
+                            {item.itemPack.type === 'B' &&
+                                <div >
+                                    <span><i className="fa fa-archive fa-lg me-3" aria-hidden="true"></i>
+                                    </span>
+                                    <span dangerouslySetInnerHTML={{ __html: item.title}} />
+                                </div>
+                            }
+                            {item.itemPack.type === 'N' &&
+                                <div >
+                                    <span><i className="fa fa-book fa-lg me-3" aria-hidden="true"></i>
+                                    </span>
+                                    <div dangerouslySetInnerHTML={{__html: item.title}} />
+                                </div>
+                            }
+                            {(item.itemPack.type === 'P' || item.itemPack.type === 'NP' || item.itemPack.type === 'DP') &&
+                                <div >
+                                    <span><i className="fa fa-file-text-o fa-lg me-3" aria-hidden="true"></i>
+                                    </span>
+                                    <span className="h5" dangerouslySetInnerHTML={{__html: itemText}} />
+                                </div>
+                            }       
+                        </Col>
+                    </Link>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                            </a>
                             <Form.Group className="me-2" controlId="formBasicCheckbox">
                                 <Form.Check className="" type="checkbox"/>
                             </Form.Group>

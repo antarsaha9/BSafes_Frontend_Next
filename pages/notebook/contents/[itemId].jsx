@@ -13,7 +13,7 @@ import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -102,6 +102,14 @@ export default function NotebookContents() {
         gotoAnotherPage(anotherPageNumber);
     }
 
+    const handleSubmitSearch = (searchValue) => {
+        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    }
+
+    const handleCancelSearch = () => {
+        dispatch(listItemsThunk({pageNumber: 1}));
+    }
+
     useEffect(()=>{
         if(router.query.itemId) {
 
@@ -163,7 +171,7 @@ export default function NotebookContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>

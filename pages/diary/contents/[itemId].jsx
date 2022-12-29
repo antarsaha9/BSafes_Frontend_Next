@@ -15,7 +15,7 @@ import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
 import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -74,9 +74,14 @@ export default function DiaryContents() {
         setStartDate(newDate);
     }
 
-    const handleSearch = (value) => {
-        //dispatch(searchContainerContentsThunk(value, workspaceKey));
+    const handleSubmitSearch = (searchValue) => {
+        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
     }
+
+    const handleCancelSearch = () => {
+        dispatch(listItemsThunk({pageNumber: 1}));
+    }
+
 
     useEffect(()=>{
         if(router.query.itemId) {
@@ -185,10 +190,11 @@ export default function DiaryContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                    <DiaryTopControlPanel {...{ startDate, setStartDate, handleSearch }} 
+                    <DiaryTopControlPanel {...{ startDate, setStartDate }} 
                         onCoverClicked={() => {
                             router.push(`/diary/${pageItemId}`);
                         }} 
+                        onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}
                         datePickerViewMode="monthYear" showSearchIcon />
                     <br />  
                     

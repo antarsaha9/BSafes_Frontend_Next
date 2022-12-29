@@ -136,6 +136,9 @@ export default function ItemRow({item , onAdd, onSelect}) {
                         </Col> 
                         <Col xs={3} className="p-1">
                             <ButtonGroup className="pull-right">
+                                <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                    <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                                </a>
                                 <Form.Group className="me-2" controlId="formBasicCheckbox">
                                     <Form.Check className="" type="checkbox"/>
                                 </Form.Group>

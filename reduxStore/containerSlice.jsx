@@ -103,6 +103,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
             let state, pageNumber;
+            dispatch(setMode("listAll"));
             state = getState().container;
             
             let body;
@@ -169,6 +170,7 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Searching", () => {
         return new Promise(async (resolve, reject) => {
             let state, body, searchTokens, searchTokensStr;
+            const pageNumber = data.pageNumber;
             dispatch(setMode("search"));
             state = getState().container;
             searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
@@ -177,7 +179,7 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                 container: state.container==='root'?state.workspace:state.container,
                 searchTokens: searchTokensStr,
                 size: state.itemsPerPage,
-                from: (data.pageNumber - 1) * state.itemsPerPage,
+                from: (pageNumber - 1) * state.itemsPerPage,
             }
             PostCall({
                 api:'/memberAPI/search',
@@ -190,11 +192,11 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                     dispatch(pageLoaded({pageNumber, total, hits}));
                     resolve();
                 } else {
-                    debugLog(debugOn, "listItems failed: ", data.error);
+                    debugLog(debugOn, "search failed: ", data.error);
                     reject(data.error);
                 }
             }).catch( error => {
-                debugLog(debugOn, "listItems failed: ", error)
+                debugLog(debugOn, "search failed: ", error)
                 reject("listItems failed!");
             })
         });

@@ -1,10 +1,11 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef, useRef, useState } from 'react'
+import { useRouter } from "next/router";
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Card from 'react-bootstrap/Card'
-import Collapse from 'react-bootstrap/Collapse';
+
 import InputGroup from 'react-bootstrap/InputGroup';
 import Form from 'react-bootstrap/Form';
 
@@ -12,8 +13,12 @@ import ReactDatePicker from 'react-datepicker'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, onCoverClicked, onContentsClicked }) {
-    const [showSearchBox, setShowSearchBox] = useState(false);
+export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, onCoverClicked, onContentsClicked, onSubmitSearch=null, onCancelSearch=null }) {
+    const router = useRouter();
+
+    const searchInputRef = useRef(null);
+    const [showSearchBar, setShowSearchBar] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
 
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
         <Button variant='link' size='sm' className='text-white pull-right' onClick={onClick} ref={ref}><i className="fa fa-calendar fa-lg" aria-hidden="true"></i></Button>
@@ -24,8 +29,25 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
         showFullMonthYearPicker: true
     } : {}
 
-    const closeSearhBox = () => setShowSearchBox(false);
-    const openSearchBox = () => setShowSearchBox(true);
+    const onShowSearchBarClicked = (e) => {
+        setShowSearchBar(true);
+    }
+
+    const onSearchValueChanged = (e) => {
+        setSearchValue(e.target.value);
+    }
+
+    const onSearchEntered = (e) => {
+        e.preventDefault();
+        onSubmitSearch(searchValue);
+    }
+
+    const onCancelSearchClicked = (e) => {
+        e.preventDefault();
+        setSearchValue('');
+        setShowSearchBar(false);
+        onCancelSearch();
+    }
 
     return (
         <>
@@ -41,7 +63,9 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
                                 <Col xs={4}>
                                 </Col>
                                 <Col xs={4}>
-                                    {showSearchIcon && !showSearchBox && <Button variant='link' onClick={openSearchBox} size='sm' className='text-white pull-right'><i className="fa fa-search fa-lg" aria-hidden="true"></i></Button>}
+                                    { router.asPath.includes('\/contents\/') && !showSearchBar &&                            
+                                            <Button variant='link' size='sm' className='text-white pull-right' onClick={onShowSearchBarClicked}><i className="fa fa-search fa-lg" aria-hidden="true"></i></Button>
+                                    }
                                     <div className='pull-right'>
                                         <ReactDatePicker
                                             selected={startDate}                                         
@@ -57,6 +81,32 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
                     </Card>
                 </Col>
             </Row>
+            { showSearchBar &&
+            <>
+                <br/>
+                <Row>
+                    <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
+                        <Card className={`${BSafesStyle.containerControlPanel}`}>
+                        
+                            <Form onSubmit={onSearchEntered} className={BSafesStyle.searchBar}>
+                                <InputGroup>
+                                    <Form.Control ref={searchInputRef} type="text" className={`${BSafesStyle.searchBarInput} text-white display-1`}
+                                        value={searchValue} 
+                                        onChange={onSearchValueChanged}
+                                    />
+                                    <Button variant="link">
+                                        <i id="1" className="fa fa-search fa-lg text-white" aria-hidden="true" onClick={onSearchEntered}></i>
+                                    </Button>
+                                    <Button variant="link">
+                                        <i id="1" className="fa fa-times fa-lg text-white" aria-hidden="true" onClick={onCancelSearchClicked}></i>
+                                    </Button>
+                                </InputGroup>
+                            </Form>
+                        </Card>
+                    </Col> 
+                </Row>
+            </>
+        }
         </>
     )
 }

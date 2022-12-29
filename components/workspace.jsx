@@ -4,9 +4,12 @@ import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
+
+import BSafesStyle from '../styles/BSafes.module.css'
 
 import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
@@ -26,6 +29,7 @@ export default function Workspace() {
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const mode = useSelector( state => state.container.mode);
 
     const [searchValue, setSearchValue] = useState("");
 
@@ -79,13 +83,19 @@ export default function Workspace() {
         dispatch(searchItemsThunk({searchValue, pageNumber:1}));
     }
 
+    const onCancelSearch = (e) => {
+        e.preventDefault();
+        setSearchValue('');
+        dispatch(listItemsThunk({pageNumber: 1}));
+    }
+
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(listItemsThunk({pageNumber: 1}));
     }, [workspaceId]);
 
     return (
-        <Container>
+        <Container className={BSafesStyle.container}>
             <Row>
             <Form onSubmit={onSubmit}>
                 <InputGroup className="mb-3">
@@ -106,6 +116,18 @@ export default function Workspace() {
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <br />
             <br />
+            { mode ==='search' &&
+            <>
+                <Row>
+                    <Col>
+                        <Button variant="default" className={`${BSafesStyle.btnCircle} pull-right`} onClick={onCancelSearch}>
+                            <i id="1" className="fa fa-times fa-lg" aria-hidden="true"></i>
+                        </Button>
+                    </Col>
+                </Row>
+                <br />
+            </>
+            }
             {items}
             <br />
             <br />
