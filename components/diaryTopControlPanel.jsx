@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useState } from 'react'
+import { forwardRef, useRef, useEffect, useState } from 'react'
 import { useRouter } from "next/router";
 
 import Row from 'react-bootstrap/Row'
@@ -48,6 +48,12 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
         setShowSearchBar(false);
         onCancelSearch();
     }
+
+    useEffect(()=>{
+        if(showSearchBar) {
+            searchInputRef.current.focus();
+        }
+    }, [showSearchBar])
 
     return (
         <>

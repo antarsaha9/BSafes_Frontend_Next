@@ -40,6 +40,7 @@ export default function DiaryContents() {
 
 
     const workspace = useSelector( state => state.container.workspace);
+    const mode = useSelector( state => state.container.mode);
     const containerInWorkspace = useSelector( state => state.container.container);
     const pageNumber = useSelector( state => state.container.pageNumber);
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
@@ -50,12 +51,12 @@ export default function DiaryContents() {
 
 
     const [startDate, setStartDate] = useState(new Date());
-    const [allItemsInCurrentMonth, setAllItemsInCurrentMonth] = useState([]);
+    const [allItemsInCurrentPage, setAllItemsInCurrentPage] = useState([]);
     const showingMonthDate = startDate;
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
-    const items = allItemsInCurrentMonth.map( (item, index) => 
-        <ItemRow key={index} item={item}/>
+    const items = allItemsInCurrentPage.map( (item, index) => 
+        <ItemRow key={index} item={item} mode={mode}/>
     );
 
     const gotoNextPage = () =>{
@@ -79,7 +80,7 @@ export default function DiaryContents() {
     }
 
     const handleCancelSearch = () => {
-        dispatch(listItemsThunk({pageNumber: 1}));
+        dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
     }
 
 
@@ -142,7 +143,7 @@ export default function DiaryContents() {
 
     useEffect(()=>{
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
-        setAllItemsInCurrentMonth([]);
+        setAllItemsInCurrentPage([]);
         if(workspaceKeyReady && containerInWorkspace) {
             debugLog(debugOn, "startDate changed -> list items");
             dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
@@ -152,6 +153,10 @@ export default function DiaryContents() {
     useEffect(()=> {
         if(!space || !workspaceKeyReady ) return;
         debugLog(debugOn, "itemsState changed:", )
+        if(mode ==='search') {
+            setAllItemsInCurrentPage(itemsState);
+            return;
+        } 
         let currentYear = startDate.getFullYear();
         let currentMonth = startDate.getMonth();
         let numberOfDays = new Date(currentYear, currentMonth+1, 0).getDate();
@@ -181,7 +186,7 @@ export default function DiaryContents() {
             }
         }
 
-        setAllItemsInCurrentMonth(allItems);
+        setAllItemsInCurrentPage(allItems);
     
     }, [itemsState]);
 

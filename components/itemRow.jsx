@@ -20,7 +20,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper';
 
-export default function ItemRow({item , onAdd, onSelect}) {
+export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
 
@@ -114,8 +114,12 @@ export default function ItemRow({item , onAdd, onSelect}) {
                 <div>                  
                     <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked}>
                         <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
-                            <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
-                        </Col> 
+                            { mode==='listAll'?
+                                <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
+                                :
+                                <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'yyyy-LL-dd')}} />
+                            }   
+                            </Col> 
                         <Col xs={7} sm={8} xl={9}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col>             
