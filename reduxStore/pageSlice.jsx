@@ -17,6 +17,7 @@ const initialState = {
     error: null,
     navigationMode: false,
     itemCopy: null,
+    itemPath:null,
     id: null,
     space: null,
     container: null,
@@ -199,6 +200,9 @@ const pageSlice = createSlice({
             if(state.aborted ) return;
             if(action.payload.item.id !== state.activeRequest) return;
             dataFetchedFunc(state, action);
+        },
+        itemPathLoaded: (state, action) => {
+            state.itemPath = action.payload;
         },
         containerDataFetched: (state, action) => {
             if(state.aborted ) return;
@@ -387,7 +391,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, abort, setActiveRequest, setNavigationMode, setPageNumber, dataFetched, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, abort, setActiveRequest, setNavigationMode, setPageNumber, dataFetched, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -502,13 +506,35 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         }
                     }
                 } else {
-                    debugLog(debugOn, "woo... failed to get a page item!", data.error);
+                    debugLog(debugOn, "woo... failed to get a page item!", result.error);
                     reject("woo... failed to get a page item!");
                 }
             }).catch( error => {
                 debugLog(debugOn, "woo... failed to get a page item.")
                 reject("woo... failed to get a page item!");
             })
+
+            function getItemPath() {
+                PostCall({
+                    api:'/memberAPI/getItemPath',
+                    body: {itemId: data.itemId},
+                }).then( async result => {
+                    debugLog(debugOn, result);
+                    if(result.status === 'ok') {    
+                        if(data.itemId !== state.activeRequest) {
+                            debugLog(debugOn, "Aborted");
+                            return;
+                        }                            
+                        dispatch(itemPathLoaded(result.itemPath));
+                    } else {
+                        debugLog(debugOn, "woo... failed to get the item path.!", result.error);
+                    }
+                }).catch( error => {
+                    debugLog(debugOn, "woo... failed to get the item path.")
+                    
+                })
+            }
+            getItemPath();
         });
     });
 }

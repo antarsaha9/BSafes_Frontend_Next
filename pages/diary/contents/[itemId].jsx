@@ -45,11 +45,11 @@ export default function DiaryContents() {
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceKeyReady = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
-
+    const [pageFirstLoaded, setPageFirstLoaded] = useState(true);
     const [startDate, setStartDate] = useState(new Date());
     const [allItemsInCurrentPage, setAllItemsInCurrentPage] = useState([]);
     const showingMonthDate = startDate;
@@ -139,10 +139,12 @@ export default function DiaryContents() {
             
             debugLog(debugOn, "listItemsThunk ...");
             dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
+            setPageFirstLoaded(false);
         }
     }, [workspaceKeyReady, containerInWorkspace]);
 
     useEffect(()=>{
+        if(pageFirstLoaded) return;
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
         setAllItemsInCurrentPage([]);
         if(workspaceKeyReady && containerInWorkspace) {
@@ -152,7 +154,7 @@ export default function DiaryContents() {
     }, [startDate])
 
     useEffect(()=> {
-        if(!space || !workspaceKeyReady ) return;
+        if(!pageItemId || !space || !workspaceKeyReady ) return;
         debugLog(debugOn, "itemsState changed:", )
         if(mode ==='search') {
             setAllItemsInCurrentPage(itemsState);
