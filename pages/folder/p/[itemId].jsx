@@ -17,7 +17,7 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 import NewItemModal from '../../../components/newItemModal'
 
-import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer} from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, setWorkspaceKeyReady, getFirstItemInContainer, getLastItemInContainer} from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -34,7 +34,6 @@ export default function FolderPage() {
     const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
@@ -55,6 +54,7 @@ export default function FolderPage() {
     const containerInWorkspace = useSelector(state => state.container.container);
     const workspace = useSelector(state => state.container.workspace);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -195,7 +195,7 @@ export default function FolderPage() {
         if (router.query.itemId) {
             dispatch(clearPage());
             setChangingPage(false);
-            setWorkspaceKeyReady(false);
+            dispatch(setWorkspaceKeyReady(false));
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -219,7 +219,7 @@ export default function FolderPage() {
     useEffect(() => {
         if (space && pageCleared) {
             if (container === containerInWorkspace) {
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
 
@@ -233,7 +233,7 @@ export default function FolderPage() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({ container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }

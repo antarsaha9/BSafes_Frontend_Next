@@ -12,6 +12,7 @@ const initialState = {
     container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
     workspace: null,
     workspaceKey: null,
+    workspaceKeyReady: false,
     searchKey: null,
     searchIV: null,
     mode:"listAll", // listAll, search
@@ -53,6 +54,9 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        setWorkspaceKeyReady : (state, action) => {
+            state.workspaceKeyReady = action.payload;
+        },
         setMode: (state, action) => {
             state.mode = action.payload;
             state.total = 0;
@@ -87,7 +91,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setMode, pageLoaded, clearItems} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

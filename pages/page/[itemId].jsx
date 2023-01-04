@@ -15,7 +15,7 @@ import TopControlPanel from "../../components/topControlPanel"
 import ItemTopRows from "../../components/itemTopRows";
 import PageCommons from "../../components/pageCommons";
 
-import { clearContainer, initContainer} from '../../reduxStore/containerSlice';
+import { clearContainer, initContainer, setWorkspaceKeyReady} from '../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI"
@@ -29,7 +29,6 @@ export default function Page() {
     const [pageItemId, setPageItemId] = useState(null); 
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -37,6 +36,7 @@ export default function Page() {
     
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
 
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
@@ -76,7 +76,7 @@ export default function Page() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            setWorkspaceKeyReady(false);
+            dispatch(setWorkspaceKeyReady(false));
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -93,7 +93,7 @@ export default function Page() {
     useEffect(()=>{
         if(space && pageCleared) {             
             if(container === containerInWorkspace ) {
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
             dispatch(clearContainer());
@@ -106,7 +106,7 @@ export default function Page() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container, workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }

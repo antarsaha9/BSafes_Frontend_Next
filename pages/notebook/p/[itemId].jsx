@@ -16,7 +16,7 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, setWorkspaceKeyReady, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
@@ -32,7 +32,6 @@ export default function NotebookPage() {
     const [pageStyle, setPageStyle] = useState('');
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     debugLog(debugOn, "pageNumber: ", pageNumber);
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -47,6 +46,7 @@ export default function NotebookPage() {
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspace = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
 
     function gotoAnotherPage (anotherPageNumber) {
         if(!(pageItemId && pageNumber)) return;
@@ -145,7 +145,7 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            setWorkspaceKeyReady(false);
+            dispatch(setWorkspaceKeyReady(false));
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -180,7 +180,7 @@ export default function NotebookPage() {
     useEffect(()=>{
         if(space && pageCleared) {
             if(container === containerInWorkspace ) {
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
         
@@ -194,7 +194,7 @@ export default function NotebookPage() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }        
