@@ -518,20 +518,20 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 PostCall({
                     api:'/memberAPI/getItemPath',
                     body: {itemId: data.itemId},
-                }).then( async result => {
+                }).then( result => {
                     debugLog(debugOn, result);
                     if(result.status === 'ok') {    
+                        state = getState().page;
                         if(data.itemId !== state.activeRequest) {
                             debugLog(debugOn, "Aborted");
                             return;
                         }                            
                         dispatch(itemPathLoaded(result.itemPath));
                     } else {
-                        debugLog(debugOn, "woo... failed to get the item path.!", result.error);
+                        debugLog(debugOn, "woo... failed to get the item path.!", result.status);
                     }
                 }).catch( error => {
-                    debugLog(debugOn, "woo... failed to get the item path.")
-                    
+                    debugLog(debugOn, "woo... failed to get the item path.", error)
                 })
             }
             getItemPath();

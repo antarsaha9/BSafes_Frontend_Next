@@ -16,7 +16,7 @@ import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
 import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
 import { createANewItem, getItemLink} from "../../../lib/bSafesCommonUI";
@@ -131,6 +131,25 @@ export default function FolderContents() {
     const handleCancelSearch = () => {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
+
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
 
     useEffect(()=>{
         if(router.query.itemId) {

@@ -14,7 +14,7 @@ import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
 import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
@@ -109,6 +109,25 @@ export default function NotebookContents() {
     const handleCancelSearch = () => {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
+
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
 
     useEffect(()=>{
         if(router.query.itemId) {
