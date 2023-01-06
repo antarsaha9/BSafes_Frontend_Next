@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
@@ -6,9 +7,9 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
-
 import Workspace from '../components/workspace'
-import { useEffect } from 'react';
+
+import BSafesStyle from '../styles/BSafes.module.css'
 
 import { initContainer } from '../reduxStore/containerSlice';
 import { abort } from "../reduxStore/pageSlice";
@@ -50,6 +51,7 @@ export default function Safe() {
     }, [memberId])
     
     return (
+      <div className={BSafesStyle.spaceBackground}>
         <ContentPageLayout> 
             <Container fluid>
                 <Row className="justify-content-center">
@@ -59,5 +61,6 @@ export default function Safe() {
                 </Row>
            </Container>
         </ContentPageLayout>
+      </div>
     )
 }

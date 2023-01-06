@@ -6,9 +6,9 @@ import Form from 'react-bootstrap/Form'
 
 import { debugLog } from '../lib/helper'
 
-export default function NewItemModal({show=false, handleClose, handleCreateANewItem}) {
+export default function NewTeamModal({show=false, handleClose, handleCreateANewTeam}) {
     const debugOn = false;
-    debugLog(debugOn, "Rendering NewItemModal: ", `${show}}`);
+    debugLog(debugOn, "Rendering NewTeamModal: ", `${show}}`);
 
     const inputRef = useRef(null);
 
@@ -18,7 +18,7 @@ export default function NewItemModal({show=false, handleClose, handleCreateANewI
 
     const handleCreate = () => {
         const title = inputRef.current.value;
-        handleCreateANewItem(title);
+        handleCreateANewTeam(title);
     }
     
     return (

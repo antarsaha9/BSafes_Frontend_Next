@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
+import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Breadcrumb from 'react-bootstrap/Breadcrumb';
@@ -77,6 +78,7 @@ export default function ItemPath() {
                     itemKey = decryptBinaryString(decoded, workspaceKey);
                     encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey);
                     title = forge.util.decodeUtf8(encodedTitle);
+                    title = DOMPurify.sanitize(title);
                     temp = document.createElement('span');
                     temp.innerHTML = title;
                     itemTitleText = temp.textContent || temp.innerText;
@@ -93,17 +95,19 @@ export default function ItemPath() {
 
     return (
         <>
-            <Row>
-                <Col xs={10} sm={11} className={`${BSafesStyle.itemPath} rounded-end`}>
-                    <Breadcrumb className={`${BSafesStyle.itemPathBreadcrumb}`}>
-                        <Breadcrumb.Item className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Teams </Breadcrumb.Item>
-                        {breadItems}
-                    </Breadcrumb>
-                </Col>
-            </Row>
-            <Col xs={2} sm={1}>
+            <Container fluid>
+                <Row>
+                    <Col xs={10} sm={11} className={`${BSafesStyle.itemPath} rounded-end`}>
+                        <Breadcrumb className={`${BSafesStyle.itemPathBreadcrumb}`}>
+                            <Breadcrumb.Item href="/teams" className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Teams </Breadcrumb.Item>
+                            {breadItems}
+                        </Breadcrumb>
+                    </Col>
+                </Row>
+                <Col xs={2} sm={1}>
 
-            </Col>
+                </Col>
+            </Container>
         </>
     )
 }
