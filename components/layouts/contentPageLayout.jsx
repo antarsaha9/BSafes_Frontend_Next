@@ -11,6 +11,7 @@ import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
 import PagePath from '../PagePath'
+import ItemToolbar from '../ItemsToolbar'
 
 const ContentPageLayout = ({children}) => {
     const debugOn = false;
@@ -58,6 +59,8 @@ const ContentPageLayout = ({children}) => {
             <PagePath/>
        
             {children}
+            <ItemToolbar/>
+
         </div>
     )
 

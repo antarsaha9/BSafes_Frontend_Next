@@ -24,7 +24,9 @@ const initialState = {
     itemPath:{
         for:null,
         data:[{id:'u:'}]
-    }
+    },
+    selectedItems: [],
+    containerList: []
 };
 
 const containerSlice = createSlice({
@@ -50,6 +52,7 @@ const containerSlice = createSlice({
             state.total = 0;
             state.hits = [];
             state.items = [];
+            state.itemPath = {for:null, data:[{id:action.payload.workspaceId}]}
         },
         changeContainerOnly: (state, action) => {
             state.container = action.payload.container;
@@ -94,10 +97,26 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        selectItem: (state, action) => {
+            state.selectedItems = state.selectedItems.concat([action.payload]);
+        },
+        deselectItem: (state, action) => {
+            state.selectedItems = state.selectedItems.filter(i => i !== action.payload);
+        },
+        clearSelected: (state) => {
+            state.selectedItems = [];
+        },
+        containersLoaded: (state, action) => {
+            const containers = action.payload.hits;
+            state.containerList = containers.map(c => {
+                const {title, container, id} = newResultItem(c, state.workspaceKey);
+                return {title: title.replace(/<\/?[^>]+(>|$)/g, ""), container, id};
+            });
+        }
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pathLoaded, resetPath, setMode, pageLoaded, clearItems} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pathLoaded, resetPath, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -175,6 +194,36 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const listContainerThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            
+            PostCall({
+                api:'/memberAPI/listContainers',
+                body:{
+                    container: data.container,
+                    from: 0,
+                    size: 20
+                }
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    const total = data.hits.total;
+                    const hits = data.hits.hits;
+                    dispatch(containersLoaded({total, hits}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "list container failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "list container failed: ", error)
+                reject("list container failed!");
+            })
+        });
+    });
+}
+
 export const searchItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Searching", () => {
         return new Promise(async (resolve, reject) => {
@@ -233,6 +282,26 @@ export const getFirstItemInContainer = async (container) => {
         }).catch( error => {
             debugLog(debugOn, "getFirstItemInContainer failed: ", error)
             reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
+export const dropItemsInside = async (payload) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/dropItemsInside',
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "drop items inside failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "drop items inside failed: ", error)
+            reject("drop items inside failed!");
         })
     });
 }

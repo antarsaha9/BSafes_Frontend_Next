@@ -19,10 +19,14 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper';
+import { useDispatch, useSelector } from 'react-redux';
+import { deselectItem, selectItem } from '../reduxStore/containerSlice';
 
 export default function ItemRow({item , onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
+    const selectedItems = useSelector(state => state.container.selectedItems) || [];
+    const dispatch = useDispatch();
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
@@ -90,6 +94,13 @@ export default function ItemRow({item , onAdd, onSelect}) {
         setShow(false);
         onAdd(itemType, addAction, itemId, item.position );
     }
+
+    const handleCheck = (e) => {
+        if (e.target.checked)
+            dispatch(selectItem(item.id))
+        else
+            dispatch(deselectItem(item.id))
+    }
     return (
         <>
             {item.id.startsWith('np') && 
@@ -141,7 +152,7 @@ export default function ItemRow({item , onAdd, onSelect}) {
                         <Col xs={3} className="p-1">
                             <ButtonGroup className="pull-right">
                                 <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                    <Form.Check className="" type="checkbox"/>
+                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
 
                                 <Dropdown align="end" className="justify-content-end">
