@@ -16,7 +16,7 @@ import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import { clearContainer, initContainer } from "../../reduxStore/containerSlice";
+import { clearContainer, initContainer, setWorkspaceKeyReady } from "../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk, decryptPageItemThunk, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
@@ -31,7 +31,6 @@ export default function Notebook() {
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -42,6 +41,7 @@ export default function Notebook() {
     
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -151,7 +151,7 @@ export default function Notebook() {
     useEffect(()=>{
         if(router.query.itemId) {
             dispatch(clearPage());
-            setWorkspaceKeyReady(false);
+            dispatch(setWorkspaceKeyReady(false));
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -181,7 +181,7 @@ export default function Notebook() {
     useEffect(()=>{
         if(space && pageCleared) {             
             if(container === containerInWorkspace ) {
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
             dispatch(clearContainer());
@@ -194,7 +194,7 @@ export default function Notebook() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }

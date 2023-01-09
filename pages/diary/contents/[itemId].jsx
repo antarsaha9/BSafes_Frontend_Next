@@ -15,8 +15,8 @@ import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
+import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
@@ -29,7 +29,6 @@ export default function DiaryContents() {
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -40,22 +39,24 @@ export default function DiaryContents() {
 
 
     const workspace = useSelector( state => state.container.workspace);
+    const mode = useSelector( state => state.container.mode);
     const containerInWorkspace = useSelector( state => state.container.container);
     const pageNumber = useSelector( state => state.container.pageNumber);
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
-
+    const [pageFirstLoaded, setPageFirstLoaded] = useState(true);
     const [startDate, setStartDate] = useState(new Date());
-    const [allItemsInCurrentMonth, setAllItemsInCurrentMonth] = useState([]);
+    const [allItemsInCurrentPage, setAllItemsInCurrentPage] = useState([]);
     const showingMonthDate = startDate;
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
-    const items = allItemsInCurrentMonth.map( (item, index) => 
-        <ItemRow key={index} item={item}/>
+    const items = allItemsInCurrentPage.map( (item, index) => 
+        <ItemRow key={index} item={item} mode={mode}/>
     );
 
     const gotoNextPage = () =>{
@@ -74,15 +75,39 @@ export default function DiaryContents() {
         setStartDate(newDate);
     }
 
-    const handleSearch = (value) => {
-        //dispatch(searchContainerContentsThunk(value, workspaceKey));
+    const handleSubmitSearch = (searchValue) => {
+        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
     }
+
+    const handleCancelSearch = () => {
+        dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
+    }
+
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
 
     useEffect(()=>{
         if(router.query.itemId) {
 
             dispatch(clearPage());
             dispatch(clearItems());
+            dispatch(setWorkspaceKeyReady(false));
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -103,7 +128,7 @@ export default function DiaryContents() {
                 if(pageItemId !== containerInWorkspace) {
                     dispatch(changeContainerOnly({container:pageItemId}));
                 }
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
 
@@ -118,7 +143,7 @@ export default function DiaryContents() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }        
@@ -132,12 +157,14 @@ export default function DiaryContents() {
             
             debugLog(debugOn, "listItemsThunk ...");
             dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
+            setPageFirstLoaded(false);
         }
     }, [workspaceKeyReady, containerInWorkspace]);
 
     useEffect(()=>{
+        if(pageFirstLoaded) return;
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
-        setAllItemsInCurrentMonth([]);
+        setAllItemsInCurrentPage([]);
         if(workspaceKeyReady && containerInWorkspace) {
             debugLog(debugOn, "startDate changed -> list items");
             dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
@@ -145,8 +172,12 @@ export default function DiaryContents() {
     }, [startDate])
 
     useEffect(()=> {
-        if(!space || !workspaceKeyReady ) return;
+        if(!pageItemId || !space || !workspaceKeyReady ) return;
         debugLog(debugOn, "itemsState changed:", )
+        if(mode ==='search') {
+            setAllItemsInCurrentPage(itemsState);
+            return;
+        } 
         let currentYear = startDate.getFullYear();
         let currentMonth = startDate.getMonth();
         let numberOfDays = new Date(currentYear, currentMonth+1, 0).getDate();
@@ -176,7 +207,7 @@ export default function DiaryContents() {
             }
         }
 
-        setAllItemsInCurrentMonth(allItems);
+        setAllItemsInCurrentPage(allItems);
     
     }, [itemsState]);
 
@@ -185,10 +216,11 @@ export default function DiaryContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                    <DiaryTopControlPanel {...{ startDate, setStartDate, handleSearch }} 
+                    <DiaryTopControlPanel {...{ startDate, setStartDate }} 
                         onCoverClicked={() => {
                             router.push(`/diary/${pageItemId}`);
                         }} 
+                        onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}
                         datePickerViewMode="monthYear" showSearchIcon />
                     <br />  
                     

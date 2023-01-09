@@ -13,8 +13,8 @@ import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk } from "../../../reduxStore/containerSlice";
-import { clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
+import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
@@ -27,7 +27,6 @@ export default function NotebookContents() {
     const [pageItemId, setPageItemId] = useState(null);
     const [pageCleared, setPageCleared] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
 
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -43,6 +42,7 @@ export default function NotebookContents() {
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -102,11 +102,39 @@ export default function NotebookContents() {
         gotoAnotherPage(anotherPageNumber);
     }
 
+    const handleSubmitSearch = (searchValue) => {
+        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    }
+
+    const handleCancelSearch = () => {
+        dispatch(listItemsThunk({pageNumber: 1}));
+    }
+
+    useEffect(() => {
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          dispatch(abort());
+        }
+    
+        router.events.on('routeChangeStart', handleRouteChange)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    }, []);
+
     useEffect(()=>{
         if(router.query.itemId) {
 
             dispatch(clearPage());
             dispatch(clearItems());
+            dispatch(setWorkspaceKeyReady(false));
             
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
@@ -127,7 +155,7 @@ export default function NotebookContents() {
                 if(pageItemId !== containerInWorkspace) {
                     dispatch(changeContainerOnly({container:pageItemId}));
                 }
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
 
@@ -142,7 +170,7 @@ export default function NotebookContents() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }        
@@ -163,7 +191,7 @@ export default function NotebookContents() {
             <ContentPageLayout> 
                 <Container fluid>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged}></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>

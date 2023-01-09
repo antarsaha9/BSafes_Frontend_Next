@@ -20,7 +20,7 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer } from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, setWorkspaceKeyReady } from '../../../reduxStore/containerSlice';
 import { abort, clearPage, setContainerData, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -39,7 +39,6 @@ export default function DiaryPage() {
     const [pageStyle, setPageStyle] = useState(''); 
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
-    const [workspaceKeyReady, setWorkspaceKeyReady] = useState(false);
     
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -53,6 +52,7 @@ export default function DiaryPage() {
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspace = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
 
     const gotoAnotherDate = (anotherDate) => {
         if (!(pageItemId && pageDate)) return;
@@ -122,7 +122,7 @@ export default function DiaryPage() {
         if(router.query.itemId) {
             let dateStr, date, distance, dd;
             dispatch(clearPage());
-            setWorkspaceKeyReady(false);
+            dispatch(setWorkspaceKeyReady(false));
             debugLog(debugOn, "set pageItemId: ", router.query.itemId);
             setPageItemId(router.query.itemId);
             setPageCleared(true);
@@ -174,7 +174,7 @@ export default function DiaryPage() {
     useEffect(()=>{
         if(space && pageCleared) {
             if(container === containerInWorkspace ) {
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
                 return;
             }
         
@@ -188,7 +188,7 @@ export default function DiaryPage() {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                setWorkspaceKeyReady(true);
+                dispatch(setWorkspaceKeyReady(true));
             } else {
             }
         }        

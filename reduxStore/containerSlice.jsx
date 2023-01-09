@@ -12,6 +12,7 @@ const initialState = {
     container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
     workspace: null,
     workspaceKey: null,
+    workspaceKeyReady: false,
     searchKey: null,
     searchIV: null,
     mode:"listAll", // listAll, search
@@ -60,12 +61,9 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
-        pathLoaded: (state, action) => {
-            state.itemPath = action.payload;
+        setWorkspaceKeyReady : (state, action) => {
+            state.workspaceKeyReady = action.payload;
         },
-        resetPath: (state, action) => {
-            state.itemPath = initialState.itemPath;
-        },  
         setMode: (state, action) => {
             state.mode = action.payload;
             state.total = 0;
@@ -132,6 +130,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
             let state, pageNumber;
+            dispatch(setMode("listAll"));
             state = getState().container;
             
             let body;
@@ -228,6 +227,7 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Searching", () => {
         return new Promise(async (resolve, reject) => {
             let state, body, searchTokens, searchTokensStr;
+            const pageNumber = data.pageNumber;
             dispatch(setMode("search"));
             state = getState().container;
             searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
@@ -236,7 +236,7 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                 container: state.container==='root'?state.workspace:state.container,
                 searchTokens: searchTokensStr,
                 size: state.itemsPerPage,
-                from: (data.pageNumber - 1) * state.itemsPerPage,
+                from: (pageNumber - 1) * state.itemsPerPage,
             }
             PostCall({
                 api:'/memberAPI/search',
@@ -249,11 +249,11 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                     dispatch(pageLoaded({pageNumber, total, hits}));
                     resolve();
                 } else {
-                    debugLog(debugOn, "listItems failed: ", data.error);
+                    debugLog(debugOn, "search failed: ", data.error);
                     reject(data.error);
                 }
             }).catch( error => {
-                debugLog(debugOn, "listItems failed: ", error)
+                debugLog(debugOn, "search failed: ", error)
                 reject("listItems failed!");
             })
         });

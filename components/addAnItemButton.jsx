@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
 import Button from 'react-bootstrap/Button'
 import ItemTypeModal from './itemTypeModal'

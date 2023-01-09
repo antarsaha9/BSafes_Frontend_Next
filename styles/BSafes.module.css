@@ -1,4 +1,8 @@
 /*--*****   General  */
+.container {
+  padding: 0px;
+}
+
 .displayNone {
 	display: none;
 }
@@ -13,6 +17,15 @@
 
 .mt3px {
   margin-top: 3px;
+}
+
+.externalLink {
+  margin-top:1px;
+}
+
+.spaceBackground {
+  background-color:#f8f8f8 ;
+  min-height: 980px;
 }
 /* End of general */
 
@@ -102,6 +115,33 @@
   margin-top:10px;
   cursor: pointer;
 }
+
+.itemPath {
+  background-color: #f5f5f5;;
+  height: 44.8px;
+}
+
+.itemPathBreadcrumb {
+  position: relative;
+  margin-top: 11px;
+  margin-left:16px;
+}
+
+.teamsPathItem {
+  position: relative;
+  font-size: 20px;
+  top: -3px;
+	background-color:#D6EAF8;
+}
+
+.teamsPathLink {
+	color:black;
+}
+
+.itemPathBreadcrumb a:link {
+  text-decoration: none;
+}
+
 /* End of Safe */
 
 /*--****** Container *******/
@@ -115,6 +155,7 @@
 
 .containerControlPanel {
   background-color:black;
+  min-height: 61px;
 }
 
 .pageNavigationPart {
@@ -192,6 +233,14 @@
   right:-10px;
 }
 
+.searchBar {
+  margin-left: 48px;
+}
+
+.searchBarInput {
+  margin-bottom:1px;
+  font-size: 1.25rem;;
+}
 
 /* End of container general */
 /*--***** Box */
@@ -209,8 +258,7 @@
 }
 
 .boxItemCardBody {
-  padding-top: 0px;
-  padding-bottom: 0px;
+  padding: 0px;
   border-width: 0px;
   box-shadow: 0 0 0
 }
