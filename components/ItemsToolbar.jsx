@@ -1,10 +1,15 @@
 import { useEffect } from "react";
 import { useState } from "react";
-import { Breadcrumb, Button, Col, Collapse, ListGroup, Modal, Row } from "react-bootstrap";
 import { useDispatch, useSelector } from "react-redux";
+import ListGroup from "react-bootstrap/ListGroup";
+import Breadcrumb from "react-bootstrap/Breadcrumb";
+import Button from "react-bootstrap/Button";
+import Col from "react-bootstrap/Col";
+import Collapse from "react-bootstrap/Collapse";
+import Modal from "react-bootstrap/Modal";
+import Row from "react-bootstrap/Row";
 import { clearSelected, dropItemsInside, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import BSafesStyle from '../styles/BSafes.module.css'
-
 
 export default function ItemToolbar(props) {
   const selectedItems = useSelector(state => state.container.selectedItems);
@@ -13,10 +18,11 @@ export default function ItemToolbar(props) {
   const containerList = useSelector(state => state.container.containerList);
   const curentItemPath = useSelector(state => state.container.itemPath).data;
   const [showMoveModal, setShowMoveModal] = useState(false);
-  const [containerPath, setContainerPath] = useState([{
+  const defaultPath = [{
     title: 'Top',
     id: containerId
-  }]);
+  }];
+  const [containerPath, setContainerPath] = useState(defaultPath);
   const open = selectedItems && selectedItems.length > 0;
   const dispatch = useDispatch();
 
@@ -40,10 +46,15 @@ export default function ItemToolbar(props) {
   };
 
   const onContainerClick = (container) => {
-    setContainerPath([...containerPath, {
-      title: container.title,
-      id: container.id
-    }])
+    const containerElementindexInPath = containerPath.findIndex(e => e.id === container.id)
+    console.log(containerElementindexInPath);
+    if (containerElementindexInPath >= 0)
+      setContainerPath(containerPath.slice(0, containerElementindexInPath + 1))
+    else
+      setContainerPath([...containerPath, {
+        title: container.title,
+        id: container.id
+      }])
     dispatch(listContainerThunk({ container: container.id }))
   }
 
@@ -63,6 +74,11 @@ export default function ItemToolbar(props) {
       handleClearSelected()
       dispatch(listItemsThunk({ pageNumber: 1 }));
     })
+  }
+
+  const handleCloseTrigger = () => {
+    setShowMoveModal(false);
+    setContainerPath(defaultPath);
   }
 
   return (
@@ -99,14 +115,14 @@ export default function ItemToolbar(props) {
           </Col >
         </Row >
       </Collapse>
-      <Modal show={showMoveModal} onHide={() => setShowMoveModal(false)}>
+      <Modal show={showMoveModal} onHide={handleCloseTrigger}>
         <Modal.Header closeButton>
           <Modal.Title>Move items to</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Breadcrumb>
             {containerPath.map((cp, index) => {
-              return (<Breadcrumb.Item key={cp.title + index}>{cp.title}</Breadcrumb.Item>)
+              return (<Breadcrumb.Item key={cp.title + index} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
             })}
           </Breadcrumb>
           <ListGroup>

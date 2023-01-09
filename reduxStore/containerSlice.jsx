@@ -114,7 +114,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pathLoaded, resetPath, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, pathLoaded, resetPath, setMode, pageLoaded, clearItems, setWorkspaceKeyReady, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
