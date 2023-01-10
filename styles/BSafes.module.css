@@ -104,6 +104,27 @@
 
 /* End of custom buttons */
 
+/*--****** Items Toolbar ***/
+.itemsToolbar {
+	background-color:#666666;
+	position:fixed;
+	bottom:0px;
+	width:100%;
+	height:54px;
+	margin:0px;
+  z-index: 100;
+}
+
+.toolbarButton {
+  box-shadow: none;
+}
+
+.toolbarButton:not(:hover) {
+  background: transparent;
+}
+
+/* End of items toolbar */
+
 /*--****** Safe *******/
 	/* Safe general */
 

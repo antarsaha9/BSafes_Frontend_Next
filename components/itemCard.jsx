@@ -1,4 +1,5 @@
 import { useState, forwardRef } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import Link from 'next/link'
 
@@ -11,19 +12,23 @@ import Form from 'react-bootstrap/Form'
 
 import ItemTypeModal from './itemTypeModal'
 
-import { getItemLink } from '../lib/bSafesCommonUI';
-
 import BSafesStyle from '../styles/BSafes.module.css'
-import { Button } from 'react-bootstrap';
+
+import { getItemLink } from '../lib/bSafesCommonUI';
+import { deselectItem, selectItem } from '../reduxStore/containerSlice';
 
 export default function ItemCard({item, onAdd, onSelect}) {
     const router = useRouter();
+    const dispatch = useDispatch();
+
     const cardStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCard:BSafesStyle.safeItem
     const cardBodyStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCardBody:''
     const cardRowStyle = router.asPath.includes('\/box\/contents\/')?'mx-1':''
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
+
+    const selectedItems = useSelector(state => state.container.selectedItems);
 
     const handleClose = () => setShow(false);
 
@@ -68,11 +73,6 @@ export default function ItemCard({item, onAdd, onSelect}) {
     }
     const sortToggle = forwardRef(sortButton);
 
-    const cardClicked = () => {
-        const link = getItemLink(item);
-        router.push(link);
-    }
-
     const handleAddClicked = (action) => {
         setAddAction(action);
         setShow(true);
@@ -81,6 +81,13 @@ export default function ItemCard({item, onAdd, onSelect}) {
     const optionSelected = (itemType) => {       
         setShow(false);
         onAdd(itemType, addAction, itemId, item.position );
+    }
+
+    const handleCheck = (e) => {
+        if (e.target.checked)
+            dispatch(selectItem(item.id))
+        else
+            dispatch(deselectItem(item.id))
     }
 
     return (
@@ -132,7 +139,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                             </a>
                             <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                <Form.Check className="" type="checkbox"/>
+                                <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                             </Form.Group>
 
                             {true &&

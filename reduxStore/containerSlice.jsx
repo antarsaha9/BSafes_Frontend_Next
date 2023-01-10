@@ -22,6 +22,8 @@ const initialState = {
     totalNumberOfPages:0,
     hits:[],
     items:[],
+    selectedItems: [],
+    containerList: []
 };
 
 const containerSlice = createSlice({
@@ -88,10 +90,26 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        selectItem: (state, action) => {
+            state.selectedItems = state.selectedItems.concat([action.payload]);
+        },
+        deselectItem: (state, action) => {
+            state.selectedItems = state.selectedItems.filter(i => i !== action.payload);
+        },
+        clearSelected: (state) => {
+            state.selectedItems = [];
+        },
+        containersLoaded: (state, action) => {
+            const containers = action.payload.hits;
+            state.containerList = containers.map(c => {
+                const {title, container, id} = newResultItem(c, state.workspaceKey);
+                return {title: title.replace(/<\/?[^>]+(>|$)/g, ""), container, id};
+            });
+        }
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

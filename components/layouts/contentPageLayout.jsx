@@ -6,6 +6,7 @@ import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 
 import ItemPath from '../itemPath'
+import ItemsToolbar from '../itemsToolbar'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -58,6 +59,7 @@ const ContentPageLayout = ({children}) => {
             </Navbar>
             <ItemPath />
             {children}
+            <ItemsToolbar />
         </div>
     )
 

@@ -1,4 +1,5 @@
 import { useState, forwardRef } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 
 import Row from 'react-bootstrap/Row'
@@ -14,18 +15,22 @@ import isSameDay from "date-fns/isSameDay";
 
 import ItemTypeModal from './itemTypeModal'
 
-import { getItemLink } from '../lib/bSafesCommonUI';
-
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper';
+import { getItemLink } from '../lib/bSafesCommonUI';
+
+import { deselectItem, selectItem } from '../reduxStore/containerSlice';
 
 export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
+
+    const selectedItems = useSelector(state => state.container.selectedItems);
 
     const handleClose = () => setShow(false);
 
@@ -90,6 +95,14 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
         setShow(false);
         onAdd(itemType, addAction, itemId, item.position );
     }
+
+    const handleCheck = (e) => {
+        if (e.target.checked)
+            dispatch(selectItem(item.id))
+        else
+            dispatch(deselectItem(item.id))
+    }
+
     return (
         <>
             {item.id.startsWith('np') && 
@@ -144,7 +157,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
                                 <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                    <Form.Check className="" type="checkbox"/>
+                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
 
                                 <Dropdown align="end" className="justify-content-end">
