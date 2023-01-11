@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
-import {useRouter} from "next/router";
+import { useRouter } from "next/router";
 
 import Link from 'next/link'
 
@@ -16,11 +16,12 @@ import NewTeamModal from '../components/newTeamModal';
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper'
+import { listTeamsThunk } from '../reduxStore/teamSlice';
 
 export default function Teams() {
     const debugOn = true;
     const [showNewTeamModal, setShowNewTeamModal] = useState(false);
-
+    const dispatch = useDispatch()
     const addATeam = (e) => {
         setShowNewTeamModal(true);
     }
@@ -31,31 +32,35 @@ export default function Teams() {
         setShowNewTeamModal(false);
     }
 
+    useEffect(() => {
+        dispatch(listTeamsThunk());
+    }, [])
+
     return (
         <div className={BSafesStyle.spaceBackground}>
-            <ContentPageLayout> 
+            <ContentPageLayout>
                 <Container fluid>
                     <Row className="personalSpace">
-				        <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
-					        <Card>
+                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                            <Card>
                                 <Link href='/safe'>
-                                    <Card.Body>
+                                    <Card.Body style={{ cursor: 'pointer' }}>
                                         <i className="fa fa-heart text-danger"></i>
                                         <h2>Personal</h2>
                                     </Card.Body>
                                 </Link>
-					        </Card>
-                            <br/>
-					        <p className="text-muted">Only you can access items in your personal workspace.</p>
-				        </Col>
-			        </Row>  
+                            </Card>
+                            <br />
+                            <p className="text-muted">Only you can access items in your personal workspace.</p>
+                        </Col>
+                    </Row>
                     <Row className="justify-content-center">
                         <Col lg={8}>
-                            <Row className="justify-content-center">     
-                                <AddATeamButton addATeam={addATeam}/>
+                            <Row className="justify-content-center">
+                                <AddATeamButton addATeam={addATeam} />
                             </Row>
-                            <NewTeamModal show={showNewTeamModal} handleClose={handleClose} handleCreateANewTeam={handleCreateANewTeam}/>
-                        </Col> 
+                            <NewTeamModal show={showNewTeamModal} handleClose={handleClose} handleCreateANewTeam={handleCreateANewTeam} />
+                        </Col>
                     </Row>
                 </Container>
             </ContentPageLayout>
