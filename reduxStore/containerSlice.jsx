@@ -23,6 +23,8 @@ const initialState = {
     hits:[],
     items:[],
     selectedItems: [],
+    containersPerPage: 20,
+    containersPageNumber: 1,
     containerList: []
 };
 
@@ -109,7 +111,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, containersLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -183,6 +185,36 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             }).catch( error => {
                 debugLog(debugOn, "listItems failed: ", error)
                 reject("listItems failed!");
+            })
+        });
+    });
+}
+
+export const listContainerThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        const state = getState().container;
+        return new Promise(async (resolve, reject) => {        
+            PostCall({
+                api:'/memberAPI/listContainers',
+                body:{
+                    container: data.container,
+                    from: (state.containersPageNumber - 1) * state.containersPerPage,
+                    size: state.containersPerPage
+                }
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    const total = data.hits.total;
+                    const hits = data.hits.hits;
+                    dispatch(containersLoaded({total, hits}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "list container failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "list container failed: ", error)
+                reject("list container failed!");
             })
         });
     });

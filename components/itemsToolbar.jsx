@@ -15,11 +15,16 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { clearSelected, dropItemsInside, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 
 export default function ItemsToolbar(props) {
-    const selectedItems = useSelector(state => state.container.selectedItems);
-    const open = selectedItems && selectedItems.length > 0;
+    const dispatch = useDispatch();
 
-    const handleMove = () => {
-    }
+    const [showMoveModal, setShowMoveModal] = useState(false);
+    const [containerPath, setContainerPath] = useState(null);
+
+    const selectedItems = useSelector(state => state.container.selectedItems);
+    const containerId = useSelector(state => state.container.workspace);
+    const containerList = useSelector(state => state.container.containerList);
+
+    const open = selectedItems && selectedItems.length > 0;
 
     const handleTrashSelected = () => {
     }
@@ -27,9 +32,42 @@ export default function ItemsToolbar(props) {
     const handleClearSelected = () => {
     }
     
+    const handleMove = () => {
+        setShowMoveModal(true);
+        dispatch(listContainerThunk({ container: containerId }));
+    }
+
+    const onContainerClick = (container) => {
+        const containerElementindexInPath = containerPath.findIndex(e => e.id === container.id)
+        console.log(containerElementindexInPath);
+        if (containerElementindexInPath >= 0)
+            setContainerPath(containerPath.slice(0, containerElementindexInPath + 1))
+        else
+            setContainerPath([...containerPath, {
+                title: container.title,
+                id: container.id
+            }])
+        dispatch(listContainerThunk({ container: container.id }))
+    }
+    
+    const handleDrop = () => {
+ 
+    }
+
+    const handleCloseTrigger = () => {
+        setShowMoveModal(false);
+    }
+    
+    useEffect(() => {
+        setContainerPath([{
+          title: 'Top',
+          id: containerId
+        }])
+      }, [containerId])
+    
     return (
         <>
-             <Collapse in={open}>
+            <Collapse in={open}>
                 <Row className={BSafesStyle.itemsToolbar}>
                     <Col xs={12} sm={{ span: 8, offset: 2 }}>
                         <Row >
@@ -60,7 +98,44 @@ export default function ItemsToolbar(props) {
                         </Row>
                     </Col>
                 </Row>
-             </Collapse>
+            </Collapse>
+            <Modal show={showMoveModal} onHide={handleCloseTrigger}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Move items to</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Breadcrumb>
+                        {containerPath && containerPath.map((cp, index) => {
+                            return (<Breadcrumb.Item key={cp.title + index} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
+                        })}
+                    </Breadcrumb>
+                    <ListGroup>
+                        { true &&
+                            containerList.flatMap(container => {
+                                let icon = '';
+                                if (selectedItems.find(i => i === container.id))
+                                    return [];
+                                if (container.id.startsWith('f'))
+                                    icon = 'fa fa-folder';
+                                else if (container.id.startsWith('b'))
+                                    icon = 'fa fa-archive';
+
+                                return (
+                                    <ListGroup.Item action onClick={() => onContainerClick(container)} className="pt-3 pb-3">
+                                        <i className={icon + " me-2 fs-5 fw-light"} aria-hidden="true" />
+                                        <em className="fs-5 fw-light">{container.title}</em>
+                                    </ListGroup.Item>
+                                )
+                            })
+                        }
+                    </ListGroup>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="primary" size="sm" onClick={handleDrop}>
+                        Drop
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     )
 }
