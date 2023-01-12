@@ -111,7 +111,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, containersLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -305,6 +305,26 @@ export const getLastItemInContainer = async (container) => {
         }).catch( error => {
             debugLog(debugOn, "getFirstItemInContainer failed: ", error)
             reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
+export const dropItemsInside = async (payload) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/dropItemsInside',
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "drop items inside failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "drop items inside failed: ", error)
+            reject("drop items inside failed!");
         })
     });
 }

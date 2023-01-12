@@ -13,28 +13,34 @@ import Modal from "react-bootstrap/Modal";
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { clearSelected, dropItemsInside, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar(props) {
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [containerPath, setContainerPath] = useState(null);
 
     const selectedItems = useSelector(state => state.container.selectedItems);
-    const containerId = useSelector(state => state.container.workspace);
+    const workspaceId = useSelector(state => state.container.workspace);
+    const containerItems = useSelector(state => state.container.items);
     const containerList = useSelector(state => state.container.containerList);
 
+    const currentItemPath = useSelector(state => state.page.itemPath);
+    
     const open = selectedItems && selectedItems.length > 0;
 
     const handleTrashSelected = () => {
     }
 
     const handleClearSelected = () => {
+        dispatch(clearSelected());
     }
     
     const handleMove = () => {
         setShowMoveModal(true);
-        dispatch(listContainerThunk({ container: containerId }));
+        dispatch(listContainerThunk({ container: workspaceId }));
     }
 
     const onContainerClick = (container) => {
@@ -50,8 +56,25 @@ export default function ItemsToolbar(props) {
         dispatch(listContainerThunk({ container: container.id }))
     }
     
-    const handleDrop = () => {
- 
+    const handleDrop = async () => {
+        const items = containerItems.filter(ci => selectedItems.includes(ci.id))
+        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const payload = {
+            space: workspaceId,
+            items: JSON.stringify(items),
+            targetItem: containerPath[containerPath.length - 1].id,
+            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci.id)),
+            targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id)),
+            totalUsage: JSON.stringify(totalUsage),
+        }
+        try {
+            await dropItemsInside(payload);
+            setShowMoveModal(false);
+            handleClearSelected()
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch (error) {
+            debugLog(debugOn, "Moving items failed.")
+        }
     }
 
     const handleCloseTrigger = () => {
@@ -61,9 +84,9 @@ export default function ItemsToolbar(props) {
     useEffect(() => {
         setContainerPath([{
           title: 'Top',
-          id: containerId
+          id: workspaceId
         }])
-      }, [containerId])
+      }, [workspaceId])
     
     return (
         <>
