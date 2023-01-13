@@ -58,6 +58,9 @@ export default function ItemsToolbar(props) {
     
     const handleDrop = async () => {
         const items = containerItems.filter(ci => selectedItems.includes(ci.id))
+        for(let i=0; i<items.length; i++) {
+            items[i].itemCopy = null;
+        }
         const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
         const payload = {
             space: workspaceId,

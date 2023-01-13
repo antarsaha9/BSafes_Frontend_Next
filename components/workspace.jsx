@@ -17,6 +17,7 @@ import ItemCard from './itemCard'
 
 import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
 import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace() {
@@ -91,6 +92,9 @@ export default function Workspace() {
 
     useEffect(() => {
         if(!workspaceId) return;
+        dispatch(clearPage());
+        const itemPath = [{id: workspaceId}];
+        dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
     }, [workspaceId]);
 
