@@ -15,7 +15,7 @@ import ItemTypeModal from './itemTypeModal'
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getItemLink } from '../lib/bSafesCommonUI';
-import { deselectItem, selectItem } from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk } from '../reduxStore/containerSlice';
 
 export default function ItemCard({item, onAdd, onSelect}) {
     const router = useRouter();
@@ -28,7 +28,11 @@ export default function ItemCard({item, onAdd, onSelect}) {
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
 
+    const workspaceId = useSelector(state => state.container.workspace);
+    const containerItems = useSelector(state => state.container.items);
     const selectedItems = useSelector(state => state.container.selectedItems);
+
+    const currentItemPath = useSelector(state => state.page.itemPath);
 
     const handleClose = () => setShow(false);
 
@@ -90,6 +94,52 @@ export default function ItemCard({item, onAdd, onSelect}) {
             dispatch(deselectItem(item.id))
     }
 
+    const handleClearSelected = () => {
+        dispatch(clearSelected());
+    }
+
+    const handleDrop = async (action) => {
+        const itemsCopy = [];
+        let i;
+
+        for(i=0; i<selectedItems.length; i++) {
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
+            itemsCopy.push(thisItem);
+        }
+
+        const sourceContainersPath = currentItemPath.map(ci => ci.id);
+        const targetContainersPath = sourceContainersPath.push(item.id);
+        const payload = {
+            space: workspaceId,
+            targetContainer: item.container,
+            items: JSON.stringify(itemsCopy),
+            targetItem: item.id,
+            targetPosition: item.position,
+        }
+
+        switch(action) {
+            case 'dropItemsBefore':
+                break;
+            case 'dropItemsAfter':
+                break;
+            case 'dropItemsInside':
+                const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+                payload.sourceContainersPath = JSON.stringify(sourceContainersPath);
+                payload.targetContainersPath = JSON.stringify(targetContainersPath);
+                payload.totalUsage = JSON.stringify(totalUsage);
+                break;
+            default:
+        }
+        try {
+            await dropItems({action, payload});
+            handleClearSelected()
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch (error) {
+            debugLog(debugOn, "Moving items failed.")
+        }
+    }
+
     return (
         <Card className={cardStyle}>
             <Card.Body className={cardBodyStyle}>
@@ -142,7 +192,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
                                 <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                             </Form.Group>
 
-                            {true &&
+                            {!selectedItems.length &&
                                 <Dropdown align="end" className="justify-content-end">
                                     <Dropdown.Toggle as={plusToggle}  variant="link">
                                     
@@ -154,16 +204,16 @@ export default function ItemCard({item, onAdd, onSelect}) {
                                     </Dropdown.Menu>
                                 </Dropdown>
                             }
-                            {false &&
+                            {!!selectedItems.length &&
                                 <Dropdown align="end" className="justify-content-end">
                                     <Dropdown.Toggle as={sortToggle}  variant="link">
                                     
                                     </Dropdown.Toggle>
 
                                     <Dropdown.Menu>
-                                        <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
-                                        <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
-                                        <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>          
+                                        <Dropdown.Item onClick={()=>handleDrop('dropItemsBefore')}>Drop before</Dropdown.Item>
+                                        {(item.id.startsWith('b:') || item.id.startsWith('f:')) && <Dropdown.Item onClick={()=>handleDrop('dropItemsInside')}>Drop inside</Dropdown.Item>}
+                                        <Dropdown.Item onClick={()=>handleDrop('dropItemsAfter')}>Drop after</Dropdown.Item>          
                                     </Dropdown.Menu>
                                 </Dropdown>
                             }

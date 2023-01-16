@@ -12,7 +12,7 @@ import Modal from "react-bootstrap/Modal";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItemsInside, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar(props) {
@@ -57,10 +57,10 @@ export default function ItemsToolbar(props) {
     }
     
     const handleDrop = async () => {
-        const items = containerItems.filter(ci => selectedItems.includes(ci.id))
         const itemsCopy = [];
-        for(let i=0; i<items.length; i++) {
-            let thisItem = {id:items[i].id, container: items[i].container, position: items[i].position};
+        for(let i=0; i<selectedItems.length; i++) {
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
             itemsCopy.push(thisItem);
         }
         const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
@@ -73,7 +73,7 @@ export default function ItemsToolbar(props) {
             totalUsage: JSON.stringify(totalUsage),
         }
         try {
-            await dropItemsInside(payload);
+            await dropItems({action:'dropItemsInside', payload});
             setShowMoveModal(false);
             handleClearSelected()
             dispatch(listItemsThunk({ pageNumber: 1 }));
@@ -149,7 +149,7 @@ export default function ItemsToolbar(props) {
                                     icon = 'fa fa-archive';
 
                                 return (
-                                    <ListGroup.Item action onClick={() => onContainerClick(container)} className="pt-3 pb-3">
+                                    <ListGroup.Item key={container.id} action onClick={() => onContainerClick(container)} className="pt-3 pb-3">
                                         <i className={icon + " me-2 fs-5 fw-light"} aria-hidden="true" />
                                         <em className="fs-5 fw-light">{container.title}</em>
                                     </ListGroup.Item>

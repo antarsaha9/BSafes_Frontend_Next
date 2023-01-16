@@ -309,10 +309,12 @@ export const getLastItemInContainer = async (container) => {
     });
 }
 
-export const dropItemsInside = async (payload) => {
+export const dropItems = async (data) => {
+    const api = '/memberAPI/' + data.action;
+    const payload = data.payload;
     return new Promise(async (resolve, reject) => {
         PostCall({
-            api:'/memberAPI/dropItemsInside',
+            api,
             body: payload
         }).then( data => {
             debugLog(debugOn, data);
