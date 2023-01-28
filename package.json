@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build && next export",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "windowsDebug": "set PORT=8444 && node server.js"
   },
   "dependencies": {
     "@reduxjs/toolkit": "^1.8.2",

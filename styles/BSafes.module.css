@@ -365,3 +365,14 @@
   min-height:60px;
 }
 /* End of Page */
+
+.teamCardBody {
+  padding: 0px;
+  border-width: 0px;
+  box-shadow: 0 0 0;
+}
+
+.teamItem h2 {
+  margin-top:27px;
+  font-size: 36px;
+}

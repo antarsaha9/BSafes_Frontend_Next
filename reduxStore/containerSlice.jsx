@@ -4,7 +4,7 @@ import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
 import { stringToEncryptedTokensCBC } from '../lib/crypto';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching
@@ -22,6 +22,7 @@ const initialState = {
     totalNumberOfPages:0,
     hits:[],
     items:[],
+    teamName:'Personal'
 };
 
 const containerSlice = createSlice({
@@ -65,6 +66,9 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        setTeamName:(state, action)=>{
+            state.teamName = action.payload.teamName;
+        },
         pageLoaded: (state, action) => {
             state.total = action.payload.total;
             state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
@@ -91,7 +95,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems} = containerSlice.actions;
+export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setTeamName} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -248,6 +252,32 @@ export const getLastItemInContainer = async (container) => {
                     itemId = data.hits.hits[0]._id;
                 }
                 resolve(itemId);
+            } else {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+            reject("getFirstItemInContainer failed!");
+        })
+    });
+}
+
+export const getTeamDataThunk = async (container) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/getTeamData',
+            body: {
+                container
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {                                  
+                let itemId = null;
+                if (data.hits.hits.length) {
+                    itemId = data.hits.hits[0]._id;
+                }
+                resolve();
             } else {
                 debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
                 reject(data.error);

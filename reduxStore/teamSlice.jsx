@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
 import { stringToEncryptedTokensCBC } from '../lib/crypto';
+const forge = require('node-forge');
 
 const debugOn = false;
 
@@ -21,7 +22,7 @@ const initialState = {
     total: 0,
     totalNumberOfPages: 0,
     hits: [],
-    items: [],
+    teams: [],
 };
 
 const TeamSlice = createSlice({
@@ -65,21 +66,8 @@ const TeamSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
-        pageLoaded: (state, action) => {
-            state.total = action.payload.total;
-            state.totalNumberOfPages = Math.ceil(action.payload.total / state.itemsPerPage);
-            state.pageNumber = action.payload.pageNumber;
-            state.hits = action.payload.hits;
-
-            state.items = [];
-            for (let i = 0; i < state.hits.length; i++) {
-                let resultItem;
-                let item = state.hits[i];
-                if (item._source && item._source.type === 'T') continue;
-
-                resultItem = newResultItem(item, state.workspaceKey);
-                state.items.push(resultItem);
-            }
+        teamLoaded: (state, action) => {
+            state.teams = action.payload.hits;
         },
         clearItems: (state, action) => {
             state.total = 0;
@@ -91,7 +79,7 @@ const TeamSlice = createSlice({
     }
 })
 
-export const { activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems } = TeamSlice.actions;
+export const { activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, teamLoaded, clearItems } = TeamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -109,6 +97,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
             let state, pageNumber;
             dispatch(setMode("listAll"));
             state = getState().team;
+            const auth = getState().auth;
             PostCall({
                 api: '/memberAPI/listTeams',
                 body: {
@@ -120,8 +109,21 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                 if (data.status === 'ok') {
                     console.log(data);
                     // const total = data.hits.total;
-                    // const hits = data.hits.hits;
-                    // dispatch(pageLoaded({ pageNumber, total, hits }));
+                    const privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
+                    const hits = data.hits.map(team => {
+                        const encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
+                        const teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
+                        console.log('teamN', teamName);
+                        return {
+                            title: teamName,
+                            id: team._source.teamId,
+                            position: team._source.position
+                        }
+                    })
+                    console.log(hits);
+
+
+                    dispatch(teamLoaded({ pageNumber:1, total:0, hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);

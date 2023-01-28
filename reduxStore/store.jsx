@@ -6,6 +6,7 @@ import stylesheetsSlice, { stylesheetsReducer } from './stylesheetsSlice';
 import authSlice, {authReducer} from './auth';
 import containerSlice, {containerReducer} from './containerSlice';
 import pageSlice, {pageReducer} from './pageSlice';
+import TeamSlice, { teamReducer } from './teamSlice';
 
 const reduxStore = configureStore({
     reducer: {
@@ -14,6 +15,7 @@ const reduxStore = configureStore({
         [authSlice.name]: authReducer,
         [containerSlice.name]: containerReducer,
         [pageSlice.name]: pageReducer,
+        [TeamSlice.name]: teamReducer,
     },
     devTools: true,
     middleware: (getDefaultMiddleware) =>

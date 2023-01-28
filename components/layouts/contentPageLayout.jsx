@@ -12,11 +12,16 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
+import { getTeamDataThunk, setTeamName } from '../../reduxStore/containerSlice'
 
-const ContentPageLayout = ({children}) => {
+const ContentPageLayout = ({ children }) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const dispatch = useDispatch();
+
+    const [currentSpace, setCurrentSpace] = useState(null);
+
+    const workspace = useSelector(state => state.container.workspace);
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
@@ -29,10 +34,21 @@ const ContentPageLayout = ({children}) => {
     }
 
     useEffect(() => {
-        debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
+        debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
         dispatch(preflightAsyncThunk());
     }, []);
-    
+
+    useEffect(() => {
+        if (workspace && workspace !== currentSpace) {
+            setCurrentSpace(workspace);
+            if (workspace.startsWith('u')) {
+                dispatch(setTeamName('Personal'));
+            } else if(workspace.startsWith('t')) {
+                dispatch(getTeamDataThunk(workspace));
+            }
+        }
+    }, [workspace])
+
     return (
         <div>
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
@@ -46,7 +62,7 @@ const ContentPageLayout = ({children}) => {
                         <Dropdown.Menu>
                             <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
                             <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-                            {isLoggedIn? 
+                            {isLoggedIn ?
                                 <Dropdown.Item onClick={logOut} href="#/action-3">Log out</Dropdown.Item>
                                 :
                                 <Dropdown.Item onClick={logIn} href="#/action-3">Log In</Dropdown.Item>
@@ -54,7 +70,7 @@ const ContentPageLayout = ({children}) => {
                         </Dropdown.Menu>
                     </Dropdown>
                 </Container>
-                
+
             </Navbar>
             <ItemPath />
             {children}
