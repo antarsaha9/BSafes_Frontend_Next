@@ -14,7 +14,7 @@ import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
 
-import { getTeamDataThunk, setTeamName } from '../../reduxStore/teamSlice'
+import { getTeamDataThunk } from '../../reduxStore/teamSlice'
 
 
 const ContentPageLayout = ({ children }) => {
@@ -44,9 +44,7 @@ const ContentPageLayout = ({ children }) => {
     useEffect(() => {
         if (workspace && workspace !== currentSpace) {
             setCurrentSpace(workspace);
-            if (workspace.startsWith('u')) {
-                dispatch(setTeamName('Personal'));
-            } else if (workspace.startsWith('t')) {
+            if (workspace.startsWith('t')) {
                 dispatch(getTeamDataThunk(workspace.toString()));
             }
         }

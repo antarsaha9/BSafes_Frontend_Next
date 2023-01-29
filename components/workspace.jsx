@@ -16,7 +16,7 @@ import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
 
 import { createANewItem, getItemLink, getTeamName } from '../lib/bSafesCommonUI'
-import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { listItemsThunk, searchItemsThunk, setWorkspaceKeyReady } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 import Link from 'next/link';
@@ -96,9 +96,10 @@ export default function Workspace() {
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(clearPage());
-        const itemPath = [{id: workspaceId}];
+        const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
+        dispatch(setWorkspaceKeyReady(true));
     }, [workspaceId]);
 
     return (

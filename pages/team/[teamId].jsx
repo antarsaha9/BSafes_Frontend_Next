@@ -4,8 +4,7 @@ import { Col, Container, Row } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux';
 import ContentPageLayout from '../../components/layouts/contentPageLayout'
 import Workspace from '../../components/workspace'
-import { initContainer, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
-import { abort, itemPathLoaded } from '../../reduxStore/pageSlice';
+import { initContainer } from '../../reduxStore/containerSlice';
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 export default function Team(props) {
@@ -19,8 +18,6 @@ export default function Team(props) {
         if(memberId && router.query.teamId) {
             const workspaceId = router.query.teamId;
             dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
-            dispatch(itemPathLoaded([{_id:router.query.teamId}]));
-            dispatch(setWorkspaceKeyReady(true));
         }
     }, [router.query.teamId, memberId]);
 
