@@ -12,7 +12,9 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
-import { getTeamDataThunk, setTeamName } from '../../reduxStore/containerSlice'
+
+import { getTeamDataThunk, setTeamName } from '../../reduxStore/teamSlice'
+
 
 const ContentPageLayout = ({ children }) => {
     const debugOn = false;
@@ -43,11 +45,12 @@ const ContentPageLayout = ({ children }) => {
             setCurrentSpace(workspace);
             if (workspace.startsWith('u')) {
                 dispatch(setTeamName('Personal'));
-            } else if(workspace.startsWith('t')) {
-                dispatch(getTeamDataThunk(workspace));
+            } else if (workspace.startsWith('t')) {
+                dispatch(getTeamDataThunk(workspace.toString()));
             }
         }
-    }, [workspace])
+    }, [workspace]);
+
 
     return (
         <div>

@@ -18,6 +18,7 @@ import { debugLog } from '../lib/helper'
 import { listTeamsThunk } from '../reduxStore/teamSlice';
 import { createANewTeam } from '../lib/bSafesCommonUI';
 import TeamCard from '../components/teamCard';
+import { useRouter } from 'next/router';
 
 export default function Teams() {
     const debugOn = true;
@@ -29,7 +30,7 @@ export default function Teams() {
     const [targetTeamPosition, setTargetTeamPosition] = useState(null);
     const [showNewTeamModal, setShowNewTeamModal] = useState(false);
     const dispatch = useDispatch()
-    const addATeam = (addAction='createANewTeam', targetTeam, targetTeamPosition) => {
+    const addATeam = (addAction = 'addATeamOnTop', targetTeam, targetTeamPosition) => {
         setAddAction(addAction);
         setTargetTeam(targetTeam);
         setTargetTeamPosition(targetTeamPosition)
@@ -39,17 +40,21 @@ export default function Teams() {
 
     const handleCreateANewTeam = async (title) => {
         setShowNewTeamModal(false);
-        console.log(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
-        createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
+        createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem).then(loadTeam);
+    }
+
+    const loadTeam = () => {
+        dispatch(listTeamsThunk());
     }
 
     useEffect(() => {
-        loggedIn && dispatch(listTeamsThunk());
+        loggedIn && loadTeam();
     }, [loggedIn]);
+    const router = useRouter();
 
     return (
         <div className={BSafesStyle.spaceBackground}>
-            <ContentPageLayout>
+            <ContentPageLayout key={router.pathname}>
                 <Container fluid>
                     <Row className="personalSpace">
                         <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>

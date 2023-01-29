@@ -2,7 +2,6 @@ import { createSlice } from '@reduxjs/toolkit';
 
 import { debugLog, PostCall } from '../lib/helper'
 import { newResultItem } from '../lib/bSafesCommonUI';
-import { stringToEncryptedTokensCBC } from '../lib/crypto';
 const forge = require('node-forge');
 
 const debugOn = false;
@@ -10,19 +9,9 @@ const debugOn = false;
 const initialState = {
     activity: "Done", // Done, Loading, Searching
     error: null,
-    container: null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
-    workspace: null,
-    workspaceKey: null,
-    workspaceKeyReady: false,
-    searchKey: null,
-    searchIV: null,
-    mode: "listAll", // listAll, search
-    itemsPerPage: 20,
-    pageNumber: 1,
-    total: 0,
-    totalNumberOfPages: 0,
-    hits: [],
     teams: [],
+    teamName: 'Personal',
+    teamData: null
 };
 
 const TeamSlice = createSlice({
@@ -32,54 +21,19 @@ const TeamSlice = createSlice({
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
-        clearContainer: (state, action) => {
-            const stateKeys = Object.keys(initialState);
-            for (let i = 0; i < stateKeys.length; i++) {
-                let key = stateKeys[i];
-                state[key] = initialState[key];
-            }
-        },
-        initContainer: (state, action) => {
-            state.container = action.payload.container;
-            state.workspace = action.payload.workspaceId;
-            state.workspaceKey = action.payload.workspaceKey;
-            state.searchKey = action.payload.searchKey;
-            state.searchIV = action.payload.searchIV;
-            state.total = 0;
-            state.hits = [];
-            state.items = [];
-        },
-        changeContainerOnly: (state, action) => {
-            state.container = action.payload.container;
-            state.total = 0;
-            state.hits = [];
-            state.items = [];
-        },
-        setWorkspaceKeyReady: (state, action) => {
-            state.workspaceKeyReady = action.payload;
-        },
-        setMode: (state, action) => {
-            state.mode = action.payload;
-            state.total = 0;
-            state.totalNumberOfPages = 0;
-            state.pageNumber = 1;
-            state.hits = [];
-            state.items = [];
-        },
         teamLoaded: (state, action) => {
             state.teams = action.payload.hits;
         },
-        clearItems: (state, action) => {
-            state.total = 0;
-            state.totalNumberOfPages = 0;
-            state.pageNumber = 1;
-            state.hits = [];
-            state.items = [];
+        setTeamName: (state, action) => {
+            state.teamName = action.payload.teamName;
+        },
+        setTeamData: (state, action) => {
+            state.teamData = action.payload.teamData;
         },
     }
 })
 
-export const { activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, teamLoaded, clearItems } = TeamSlice.actions;
+export const { activityChanged, teamLoaded, clearItems, setTeamName, setTeamData } = TeamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -95,7 +49,6 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
             let state, pageNumber;
-            dispatch(setMode("listAll"));
             state = getState().team;
             const auth = getState().auth;
             PostCall({
@@ -107,23 +60,17 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    console.log(data);
-                    // const total = data.hits.total;
                     const privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
                     const hits = data.hits.map(team => {
                         const encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
                         const teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
-                        console.log('teamN', teamName);
                         return {
                             title: teamName,
                             id: team._source.teamId,
                             position: team._source.position
                         }
                     })
-                    console.log(hits);
-
-
-                    dispatch(teamLoaded({ pageNumber:1, total:0, hits }));
+                    dispatch(teamLoaded({ pageNumber: 1, total: 0, hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);
@@ -137,6 +84,27 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const getTeamDataThunk = (teamId) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api: '/memberAPI/getTeamData',
+            body: { teamId }
+        }).then(data => {
+            debugLog(debugOn, data);
+            if (data.status === 'ok') {
+                const team = data.team;
+                dispatch(setTeamData({ teamData: team }));
+                resolve();
+            } else {
+                debugLog(debugOn, "getTeamDataThunk failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch(error => {
+            debugLog(debugOn, "getTeamDataThunk failed: ", error)
+            reject("getTeamDataThunk failed!");
+        })
+    });
+}
 
 export const teamReducer = TeamSlice.reducer;
 

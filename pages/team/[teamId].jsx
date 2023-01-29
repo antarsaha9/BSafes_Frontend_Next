@@ -4,8 +4,8 @@ import { Col, Container, Row } from 'react-bootstrap'
 import { useDispatch, useSelector } from 'react-redux';
 import ContentPageLayout from '../../components/layouts/contentPageLayout'
 import Workspace from '../../components/workspace'
-import { initContainer } from '../../reduxStore/containerSlice';
-import { abort } from '../../reduxStore/pageSlice';
+import { initContainer, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
+import { abort, itemPathLoaded } from '../../reduxStore/pageSlice';
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 export default function Team(props) {
@@ -19,31 +19,15 @@ export default function Team(props) {
         if(memberId && router.query.teamId) {
             const workspaceId = router.query.teamId;
             dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
+            dispatch(itemPathLoaded([{_id:router.query.teamId}]));
+            dispatch(setWorkspaceKeyReady(true));
         }
     }, [router.query.teamId, memberId]);
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          dispatch(abort());
-        }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, []);
 
     return (
         <div className={BSafesStyle.spaceBackground}>
-          <ContentPageLayout> 
+          <ContentPageLayout key={router.pathname}> 
               <Container fluid>
                   <Row className="justify-content-center">
                       <Col lg={8}>

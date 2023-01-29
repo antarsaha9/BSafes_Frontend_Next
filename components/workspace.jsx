@@ -15,9 +15,10 @@ import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
 
-import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
+import { createANewItem, getItemLink, getTeamName } from '../lib/bSafesCommonUI'
 import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { debugLog } from '../lib/helper'
+import Link from 'next/link';
 
 export default function Workspace() {
     const debugOn = false;
@@ -34,6 +35,8 @@ export default function Workspace() {
     const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
+    const teamData = useSelector( state => state.team.teamData);
+    const privateKey = useSelector( state => state.auth.privateKey);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
@@ -96,6 +99,23 @@ export default function Workspace() {
 
     return (
         <Container className={BSafesStyle.container}>
+            {workspaceId && <>
+                <Row>
+                    <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className="text-center">
+                        <h2>{workspaceId.startsWith('t') ? teamData && privateKey && getTeamName(teamData, privateKey) : 'Personal'}</h2>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className="text-center">
+                        {workspaceId.startsWith('t') && <>
+                            <Link href={'/teammembers/'+workspaceId}>Members</Link>
+                            <span className='px-2'>|</span>
+                        </>}
+                        <Link href={'/activities/'+workspaceId}>Activities</Link>
+                    </Col>
+                </Row>
+            </>
+            }
             <Row>
             <Form onSubmit={onSubmit}>
                 <InputGroup className="mb-3">

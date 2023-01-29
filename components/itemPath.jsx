@@ -13,6 +13,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper'
 import { decryptBinaryString } from '../lib/crypto'; 
+import { getTeamName } from '../lib/bSafesCommonUI';
 
 export default function ItemPath() {
     const debugOn = true;
@@ -21,13 +22,14 @@ export default function ItemPath() {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const aborted = useSelector( state => state.page.aborted);
     const itemPath = useSelector( state => state.page.itemPath);
+    const teamData = useSelector( state => state.team.teamData);
+    const privateKey = useSelector( state => state.auth.privateKey);
     
     const [pathItems, setPathItems] = useState([]);
 
     const breadItems = pathItems.map((item, index) => 
         <Breadcrumb.Item key={index} active={index===(pathItems.length-1)} href={item.link}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
     );
-
     useEffect(()=>{
         if(!aborted && itemPath && workspaceKeyReady) {
             debugLog(debugOn, "itemPath && workspaceKeyReady");
@@ -70,9 +72,17 @@ export default function ItemPath() {
                     default:
                         break;
                 }
-
+                    
                 if(pathItemType === 'u') {
-                } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
+                }
+                else if(pathItemType.startsWith('t')){
+                    if (teamData){
+                        pathItemIcon = null;
+                        itemTitleText = getTeamName(teamData, privateKey);
+                        pathItemLink = '/team/' + item._id;
+                    }
+                } 
+                else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
                     decoded = forge.util.decode64(item._source.keyEnvelope);
                     itemKey = decryptBinaryString(decoded, workspaceKey);
@@ -91,7 +101,7 @@ export default function ItemPath() {
             })
             setPathItems(decryptedItems);
         }
-    }, [aborted, itemPath, workspaceKeyReady])
+    }, [aborted, itemPath, workspaceKeyReady, teamData])
 
     return (
         <>

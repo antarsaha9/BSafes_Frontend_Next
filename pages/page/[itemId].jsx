@@ -103,12 +103,12 @@ export default function Page() {
 
     useEffect(()=>{
         if(containerCleared) {
-            if (space.substring(0, 1) === 'u') {
+            // if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
                 dispatch(initContainer({container, workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
                 dispatch(setWorkspaceKeyReady(true));
-            } else {
-            }
+            // } else {
+            // }
         }
     }, [containerCleared]);
 
