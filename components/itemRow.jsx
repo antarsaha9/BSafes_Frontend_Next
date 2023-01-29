@@ -1,4 +1,5 @@
 import { useState, forwardRef } from 'react'
+import { useDispatch, useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 
 import Row from 'react-bootstrap/Row'
@@ -14,18 +15,26 @@ import isSameDay from "date-fns/isSameDay";
 
 import ItemTypeModal from './itemTypeModal'
 
-import { getItemLink } from '../lib/bSafesCommonUI';
-
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper';
+import { getItemLink } from '../lib/bSafesCommonUI';
+
+import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk} from '../reduxStore/containerSlice';
 
 export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
+    const dispatch = useDispatch();
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
+
+    const workspaceId = useSelector(state => state.container.workspace);
+    const containerItems = useSelector(state => state.container.items);
+    const selectedItems = useSelector(state => state.container.selectedItems);
+
+    const currentItemPath = useSelector(state => state.page.itemPath);
 
     const handleClose = () => setShow(false);
 
@@ -90,6 +99,52 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
         setShow(false);
         onAdd(itemType, addAction, itemId, item.position );
     }
+
+    const handleCheck = (e) => {
+        if (e.target.checked)
+            dispatch(selectItem(item.id))
+        else
+            dispatch(deselectItem(item.id))
+    }
+    
+    const handleClearSelected = () => {
+        dispatch(clearSelected());
+    }
+
+    const handleDrop = async (action) => {
+        const itemsCopy = [];
+        let i;
+
+        for(i=0; i<selectedItems.length; i++) {
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
+            itemsCopy.push(thisItem);
+        }
+
+        const payload = {
+            space: workspaceId,
+            targetContainer: item.container,
+            items: JSON.stringify(itemsCopy),
+            targetItem: item.id,
+            targetPosition: item.position,
+        }
+
+        switch(action) {
+            case 'dropItemsBefore':
+                break;
+            case 'dropItemsAfter':
+                break;
+            default:
+        }
+        try {
+            await dropItems({action, payload});
+            handleClearSelected()
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch (error) {
+            debugLog(debugOn, "Moving items failed.")
+        }
+    }
+    
     return (
         <>
             {item.id.startsWith('np') && 
@@ -144,9 +199,9 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
                                 <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                    <Form.Check className="" type="checkbox"/>
+                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
-
+                                { !(selectedItems.length) &&
                                 <Dropdown align="end" className="justify-content-end">
                                     <Dropdown.Toggle as={plusToggle}  variant="link">
                                     
@@ -157,16 +212,16 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                                         <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
                                     </Dropdown.Menu>
                                 </Dropdown>
-                                { false && 
+                                }
+                                { !!(selectedItems.length) && 
                                     <Dropdown align="end" className="justify-content-end">
                                         <Dropdown.Toggle as={sortToggle}  variant="link">
                                     
                                         </Dropdown.Toggle>
 
                                         <Dropdown.Menu>
-                                            <Dropdown.Item href="#/action-1">Drop before</Dropdown.Item>
-                                            <Dropdown.Item href="#/action-2">Drop inside</Dropdown.Item>
-                                            <Dropdown.Item href="#/action-3">Drop after</Dropdown.Item>                          
+                                            <Dropdown.Item onClick={()=>handleDrop('dropItemsBefore')}>Drop before</Dropdown.Item>
+                                            <Dropdown.Item onClick={()=>handleDrop('dropItemsAfter')}>Drop after</Dropdown.Item>                          
                                         </Dropdown.Menu>
                                     </Dropdown>
                                 }
