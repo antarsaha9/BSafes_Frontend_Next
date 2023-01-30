@@ -19,6 +19,7 @@ import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
 import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
+import Link from 'next/link';
 
 export default function Workspace() {
     const debugOn = false;
@@ -135,6 +136,15 @@ export default function Workspace() {
             {items}
             <br />
             <br />
+            <Row>
+                <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                    <Link href={"/trashBox/" + workspaceId}>
+                        <Button variant="light" className='pull-right border-0 shadow-none'>
+                            <i class="fa fa-5x fa-trash" aria-hidden="true" />
+                        </Button>
+                    </Link>
+                </Col>
+            </Row>
         </Container>
     )
 
