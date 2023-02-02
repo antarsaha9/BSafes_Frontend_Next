@@ -15,11 +15,11 @@ import TurningPageControls from "../../../components/turningPageControls";
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
-import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, createANewItem, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
-import { createANewItem, getItemLink} from "../../../lib/bSafesCommonUI";
+import { getItemLink} from "../../../lib/bSafesCommonUI";
 
 export default function BoxContents() {
     const debugOn = true;

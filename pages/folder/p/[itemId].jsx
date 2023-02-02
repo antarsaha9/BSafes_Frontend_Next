@@ -17,11 +17,11 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 import NewItemModal from '../../../components/newItemModal'
 
-import { clearContainer, initContainer, setWorkspaceKeyReady, getFirstItemInContainer, getLastItemInContainer} from '../../../reduxStore/containerSlice';
+import { clearContainer, initContainer, setWorkspaceKeyReady, getFirstItemInContainer, getLastItemInContainer, createANewItem} from '../../../reduxStore/containerSlice';
 import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
-import { createANewItem, getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
+import { getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
 
 export default function FolderPage() {
     const debugOn = true;

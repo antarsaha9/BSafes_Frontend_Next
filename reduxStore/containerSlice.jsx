@@ -1,8 +1,10 @@
 import { createSlice} from '@reduxjs/toolkit';
 
+const forge = require('node-forge');
+
 import { debugLog, PostCall } from '../lib/helper'
-import { newResultItem } from '../lib/bSafesCommonUI';
-import { stringToEncryptedTokensCBC } from '../lib/crypto';
+import {  stringToEncryptedTokens, newResultItem } from '../lib/bSafesCommonUI';
+import { encryptBinaryString, stringToEncryptedTokensCBC } from '../lib/crypto';
 
 const debugOn = false;
 
@@ -122,6 +124,64 @@ const newActivity = async (dispatch, type, activity) => {
         dispatch(activityChanged("Error"));
     }
 }
+
+export function setupNewItemKey() {
+    const salt = forge.random.getBytesSync(16);
+    const randomKey = forge.random.getBytesSync(32);
+    const itemKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
+    return itemKey;
+}
+  
+export async function createANewItem(titleStr, currentContainer, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV) {
+    return new Promise( (resolve, reject) => {
+        const title = '<h2>' + titleStr + '</h2>';
+        const encodedTitle = forge.util.encodeUtf8(title);
+      
+        const itemKey = setupNewItemKey();
+        const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+        const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
+      
+        const titleTokens = stringToEncryptedTokens(titleStr, searchKey, searchIV);
+      
+        let addActionOptions;
+        if (addAction === "addAnItemOnTop") {
+          addActionOptions = {
+            "targetContainer": currentContainer,
+            "type": selectedItemType,
+            "keyEnvelope": forge.util.encode64(keyEnvelope),
+            "title": forge.util.encode64(encryptedTitle),
+            "titleTokens": JSON.stringify(titleTokens)
+          };
+        } else {
+          addActionOptions = {
+            "targetContainer": currentContainer,
+            "targetItem": targetItem,
+            "targetPosition": targetPosition,
+            "type": selectedItemType,
+            "keyEnvelope": forge.util.encode64(keyEnvelope),
+            "title": forge.util.encode64(encryptedTitle),
+            "titleTokens": JSON.stringify(titleTokens)
+          };
+        }
+        
+        PostCall({
+            api:'/memberAPI/' + addAction,
+            body: addActionOptions
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                debugLog(debugOn, `${addAction} succeeded`);
+                resolve(data.item)
+            } else {
+                debugLog(debugOn, `${addAction} failed: `, data.error)
+                reject(data.error);
+            } 
+        }).catch( error => {
+            debugLog(debugOn,  `${addAction} failed.`)
+            reject(error);
+        })
+     });
+};
 
 export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {

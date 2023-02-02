@@ -15,8 +15,8 @@ import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
 
-import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
-import { listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { getItemLink } from '../lib/bSafesCommonUI'
+import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
@@ -93,7 +93,7 @@ export default function Workspace() {
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(clearPage());
-        const itemPath = [{id: workspaceId}];
+        const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
     }, [workspaceId]);
