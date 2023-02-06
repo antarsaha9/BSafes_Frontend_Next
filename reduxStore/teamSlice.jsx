@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
 
+import { encryptBinaryString } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
 
 const debugOn = false;

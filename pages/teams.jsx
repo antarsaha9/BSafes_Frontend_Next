@@ -15,13 +15,24 @@ import NewTeamModal from '../components/newTeamModal';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
+import { createANewTeam, listTeamsThunk } from '../reduxStore/teamSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Teams() {
     const debugOn = true;
+    const dispatch = useDispatch();
+    
+    const publicKeyPem = useSelector(state => state.auth.publicKey);
+
+    const [addAction, setAddAction] = useState(null);
+    const [targetTeam, setTargetTeam] = useState(null);
+    const [targetTeamPosition, setTargetTeamPosition] = useState(null);
     const [showNewTeamModal, setShowNewTeamModal] = useState(false);
 
-    const addATeam = (e) => {
+    const addATeam = (addAction = 'addATeamOnTop', targetTeam, targetTeamPosition) => {
+        setAddAction(addAction);
+        setTargetTeam(targetTeam);
+        setTargetTeamPosition(targetTeamPosition);
         setShowNewTeamModal(true);
     }
     const handleClose = () => setShowNewTeamModal(false);
@@ -29,6 +40,13 @@ export default function Teams() {
     const handleCreateANewTeam = async (title) => {
         debugLog(debugOn, "createANewTeam", title);
         setShowNewTeamModal(false);
+        try {
+            await createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
+            debugLog(debugOn, "Team created");
+            dispatch(listTeamsThunk());
+        } catch (error) {
+            alert("Could not create a new team!");
+        }
     }
 
     return (
