@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
 
-import { encryptBinaryString } from '../lib/crypto';
+import { encryptBinaryString, encryptBinaryStringCBC } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
 
 const debugOn = false;
@@ -12,7 +12,10 @@ const initialState = {
     error: null,
     teams: [],
     teamName: 'Personal',
-    teamData: null
+    teamData: null,
+    pageNumber: 1,
+    itemsPerPage: 20,
+    total:0
 };
 
 const teamSlice = createSlice({
@@ -47,31 +50,80 @@ const newActivity = async (dispatch, type, activity) => {
 }
 
 export const listTeamsThunk = (data) => async (dispatch, getState) => {
+    function cacheTeamNameForTeamMember(teamId, cachedTeamName) {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/cacheTeamNameForTeamMember',
+                body: {
+                    teamId,
+                    cachedTeamName: forge.util.encode64(cachedTeamName),
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    resolve();
+                } else {
+                    debugLog(debugOn, "cacheTeamNameForTeamMember failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "cacheTeamNameForTeamMember failed: ", error)
+                reject("cacheTeamNameForTeamMember failed!");
+            })
+
+        });
+    }
+    
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let state, pageNumber;
+            let state;
             state = getState().team;
             const auth = getState().auth;
             PostCall({
                 api: '/memberAPI/listTeams',
                 body: {
-                    from: 0,
-                    size: 20
+                    from: (state.pageNumber -1 ) * state.itemsPerPage,
+                    size: state.itemsPerPage
                 }
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
                     const privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
-                    const hits = data.hits.map(team => {
-                        const encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
-                        const teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
-                        return {
-                            title: teamName,
-                            id: team._source.teamId,
-                            position: team._source.position
+                    const hits = data.hits.hits.map(async team => {
+                        let decryptedTeam;
+                        if (team._source.encryptedTeamName) {
+                            if (team._source.cachedTeamName) {
+                                if(team._source.searchIVEnvelope){
+
+                                } else {
+
+                                }
+                            } else {
+                                const encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
+                                const teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
+                                try {
+                                    const cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
+                                    await cacheTeamNameForTeamMember(team._source.teamId, cachedTeamName);
+                                } catch(error) {
+                                    debugLog("cacheTeamName error");
+                                }
+                                decryptedTeam = {
+                                    title: teamName,
+                                    id: team._source.teamId,
+                                    position: team._source.position
+                                }
+                            }
+                        } else {
+                            decryptedTeam = {
+                                title: 'Error',
+                                id: team._source.teamId,
+                                position: team._source.position
+                            }
                         }
+                        
+                        return decryptedTeam;
                     })
-                    dispatch(teamLoaded({ pageNumber: 1, total: 0, hits }));
+                    dispatch(teamLoaded({ pageNumber: 1, total: data.hits.total, hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);
