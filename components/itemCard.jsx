@@ -141,7 +141,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
     }
 
     return (
-        <Card className={cardStyle}>
+        <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
                     <Link href={getItemLink(item)}> 

@@ -12,6 +12,7 @@ import Card from 'react-bootstrap/Card';
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import AddATeamButton from '../components/addATeamButton';
 import NewTeamModal from '../components/newTeamModal';
+import TeamCard from '../components/teamCard';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -25,6 +26,7 @@ export default function Teams() {
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const publicKeyPem = useSelector(state => state.auth.publicKey);
 
+    const teams = useSelector(state => state.team.teams);
 
     const [addAction, setAddAction] = useState(null);
     const [targetTeam, setTargetTeam] = useState(null);
@@ -63,7 +65,7 @@ export default function Teams() {
         <div className={BSafesStyle.spaceBackground}>
             <ContentPageLayout> 
                 <Container fluid>
-                    <Row className="personalSpace">
+                    <Row>
 				        <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
 					        <Card>
                                 <Link href='/safe'>
@@ -84,6 +86,15 @@ export default function Teams() {
                             </Row>
                             <NewTeamModal show={showNewTeamModal} handleClose={handleClose} handleCreateANewTeam={handleCreateANewTeam}/>
                         </Col> 
+                    </Row>
+                    <br />
+                    <br />
+                    <Row>
+                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                            {teams.map((team, index) => {
+                                return <TeamCard key={index} team={team} onAdd={addATeam} />
+                            })}
+                        </Col>
                     </Row>
                 </Container>
             </ContentPageLayout>
