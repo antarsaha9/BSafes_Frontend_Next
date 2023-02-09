@@ -1,10 +1,13 @@
 import { createSlice} from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
+const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall } from '../lib/helper'
 import {  stringToEncryptedTokens, newResultItem } from '../lib/bSafesCommonUI';
-import { encryptBinaryString, stringToEncryptedTokensCBC } from '../lib/crypto';
+import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, decryptBinaryStringCBC } from '../lib/crypto';
+
+import { getTeamData } from './teamSlice';
 
 const debugOn = false;
 
@@ -181,6 +184,55 @@ export async function createANewItem(titleStr, currentContainer, selectedItemTyp
             reject(error);
         })
      });
+};
+
+export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
+            auth = getState().auth;
+            try {
+                team = await getTeamData(data.teamId);
+                teamKeyEnvelope = team.teamKeyEnvelope;
+                privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
+                encodedTeamKey = privateKeyFromPem.decrypt(forge.util.decode64(teamKeyEnvelope));
+                teamKey = forge.util.decodeUtf8(encodedTeamKey);
+                encryptedTeamName = team.team._source.name;
+                if(team.team._source.IV) {
+                    teamIV = team.team._source.IV;
+                    encodedTeamName = decryptBinaryStringCBC(forge.util.decode64(encryptedTeamName), teamKey, forge.util.decode64(teamIV));
+                } else {
+                    encodedTeamName = decryptBinaryString(forge.util.decode64(encryptedTeamName), teamKey);
+                }
+                
+                teamName = forge.util.decodeUtf8(encodedTeamName);
+                teamName = DOMPurify.sanitize(teamName);
+                length = teamName.length;
+                if (teamName.length > 20) {
+                    displayTeamName = teamName.substr(0, 20);
+                } else {
+                    displayTeamName = teamName;
+                }
+        
+                teamSearchKeyEnvelope = team.team._source.searchKeyEnvelope;
+                if(team.team._source.searchKeyIV) {
+                    teamSearchKeyIV = team.team._source.searchKeyIV;
+                    teamSearchKey = decryptBinaryStringCBC(forge.util.decode64(teamSearchKeyEnvelope), teamKey, forge.util.decode64(teamSearchKeyIV));
+                } else {
+                    teamSearchKey = decryptBinaryString(forge.util.decode64(teamSearchKeyEnvelope), teamKey);
+                }
+                if(team.team._source.searchIVEnvelope) {
+                    teamSearchIVEnvelope = team.team._source.searchIVEnvelope;
+                    teamSearchIV = decryptBinaryString(forge.util.decode64(teamSearchIVEnvelope), teamKey);
+                }
+                
+
+            
+        } catch(error) {
+
+        }
+        });
+    });
 };
 
 export const listItemsThunk = (data) => async (dispatch, getState) => {

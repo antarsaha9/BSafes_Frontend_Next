@@ -151,7 +151,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const getTeamDataThunk = (teamId) => async (dispatch, getState) => {
+export const getTeamData = (teamId) => {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api: '/memberAPI/getTeamData',
@@ -160,15 +160,14 @@ export const getTeamDataThunk = (teamId) => async (dispatch, getState) => {
             debugLog(debugOn, data);
             if (data.status === 'ok') {
                 const team = data.team;
-                dispatch(setTeamData({ teamData: team }));
-                resolve();
+                resolve(team);
             } else {
-                debugLog(debugOn, "getTeamDataThunk failed: ", data.error);
+                debugLog(debugOn, "getTeamData failed: ", data.error);
                 reject(data.error);
             }
         }).catch(error => {
-            debugLog(debugOn, "getTeamDataThunk failed: ", error)
-            reject("getTeamDataThunk failed!");
+            debugLog(debugOn, "getTeamData failed: ", error)
+            reject("getTeamData failed!");
         })
     });
 }
