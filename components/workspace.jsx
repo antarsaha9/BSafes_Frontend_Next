@@ -27,6 +27,7 @@ export default function Workspace() {
     const dispatch = useDispatch();
     
     const workspaceId = useSelector( state => state.container.workspace);
+    const workspaceName = useSelector( state => state.container.workspaceName);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);

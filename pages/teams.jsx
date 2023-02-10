@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
-import {useRouter} from "next/router";
 
 import Link from 'next/link'
 

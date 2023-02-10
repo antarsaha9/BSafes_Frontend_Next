@@ -40,6 +40,7 @@ export default function Box() {
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
 
+
     const containerInWorkspace = useSelector( state => state.container.container);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
@@ -191,7 +192,7 @@ export default function Box() {
         if(containerCleared) {
             if (space.substring(0, 1) === 'u') {
                 debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
+                dispatch(initContainer({container, workspaceId: space, workspaceName: 'Personal', workspaceKey: expandedKey, searchKey, searchIV }));
                 dispatch(setWorkspaceKeyReady(true));
             } else {
             }

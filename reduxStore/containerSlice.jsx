@@ -16,6 +16,7 @@ const initialState = {
     error: null,
     container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
     workspace: null,
+    workspaceName: null,
     workspaceKey: null,
     workspaceKeyReady: false,
     searchKey: null,
@@ -50,6 +51,7 @@ const containerSlice = createSlice({
         initContainer: (state, action) => {
             state.container = action.payload.container;
             state.workspace = action.payload.workspaceId;
+            state.workspaceName = action.payload.workspaceName || 'Personal';
             state.workspaceKey = action.payload.workspaceKey;
             state.searchKey = action.payload.searchKey;
             state.searchIV = action.payload.searchIV;
@@ -226,11 +228,13 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                     teamSearchIV = decryptBinaryString(forge.util.decode64(teamSearchIVEnvelope), teamKey);
                 }
                 
-
-            
-        } catch(error) {
-
-        }
+                dispatch(initContainer({container: 'root', workspaceId:data.teamId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
+                dispatch(setWorkspaceKeyReady(true));
+                resolve();
+            } catch(error) {
+                debugLog(debugOn, "initWorkspaceThunk faile: ", error);
+                reject(error);
+            }
         });
     });
 };

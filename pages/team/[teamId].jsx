@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/router';
+import Link from 'next/link'
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
@@ -24,10 +25,9 @@ export default function Team(props) {
     const dispatch = useDispatch();
 
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
-    const workspaceKey = useSelector( state => state.auth.expandedKey );
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-    const memberId = useSelector( state => state.auth.memberId );
+    const workspaceId = useSelector( state => state.container.workspace );
+    const workspaceName = useSelector( state => state.container.workspaceName );
+    
     
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -59,6 +59,20 @@ export default function Team(props) {
         <div className={BSafesStyle.spaceBackground}>
           <ContentPageLayout key={router.pathname}> 
               <Container fluid>
+                  <br />
+                  <br />
+                  <br />
+                  <Row>
+                    <Col>
+                      <h2 className="text-center">{workspaceName}</h2>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col className="text-center">
+                      <Link href={`/teamMembers/${workspaceId}`}>Members</Link> |
+					            <Link href="/activities/">Activities</Link>
+                    </Col>
+                  </Row>
                   <Row className="justify-content-center">
                       <Col lg={8}>
                           <Workspace />
