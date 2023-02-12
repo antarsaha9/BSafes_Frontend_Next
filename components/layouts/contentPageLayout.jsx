@@ -14,7 +14,7 @@ import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
 
-const ContentPageLayout = ({children}) => {
+const ContentPageLayout = ({children, displayItemToolbar=true}) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const dispatch = useDispatch();
@@ -59,7 +59,7 @@ const ContentPageLayout = ({children}) => {
             </Navbar>
             <ItemPath />
             {children}
-            <ItemsToolbar />
+            {displayItemToolbar && <ItemsToolbar />}
         </div>
     )
 

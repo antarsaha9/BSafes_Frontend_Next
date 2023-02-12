@@ -9,18 +9,22 @@ import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
 import Modal from "react-bootstrap/Modal";
+import Form from "react-bootstrap/Form";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItems, listContainerThunk, listItemsThunk, trashItems } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
+import { InputGroup } from "react-bootstrap";
 
 export default function ItemsToolbar(props) {
     const debugOn = true;
     const dispatch = useDispatch();
 
     const [showMoveModal, setShowMoveModal] = useState(false);
+    const [showTrashModal, setShowTrashModal] = useState(false);
     const [containerPath, setContainerPath] = useState(null);
+    const [trashConfirmation, setTrashConfirmation] = useState('');
 
     const selectedItems = useSelector(state => state.container.selectedItems);
     const workspaceId = useSelector(state => state.container.workspace);
@@ -32,6 +36,7 @@ export default function ItemsToolbar(props) {
     const open = selectedItems && selectedItems.length > 0;
 
     const handleTrashSelected = () => {
+        setShowTrashModal(true);
     }
 
     const handleClearSelected = () => {
@@ -41,6 +46,33 @@ export default function ItemsToolbar(props) {
     const handleMove = () => {
         setShowMoveModal(true);
         dispatch(listContainerThunk({ container: workspaceId }));
+    }
+    
+    const handleTrash = async () => {
+        const itemsCopy = [];
+        for(let i=0; i<selectedItems.length; i++) {
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
+            itemsCopy.push(thisItem);
+        }
+        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const payload = {
+            space: workspaceId,
+            items: JSON.stringify(itemsCopy),
+            targetSpace: workspaceId,
+            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci.id)),
+            originalContainer: workspaceId,
+            totalUsage: JSON.stringify(totalUsage),
+        }
+        try {
+            await trashItems({payload});
+            setShowTrashModal(false);
+            setTrashConfirmation('');
+            handleClearSelected()
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch (error) {
+            debugLog(debugOn, "Moving items failed.")
+        }
     }
 
     const onContainerClick = (container) => {
@@ -84,6 +116,10 @@ export default function ItemsToolbar(props) {
 
     const handleCloseTrigger = () => {
         setShowMoveModal(false);
+    }
+    const handleCloseTrashTrigger = () => {
+        setTrashConfirmation('');
+        setShowTrashModal(false);
     }
     
     useEffect(() => {
@@ -161,6 +197,30 @@ export default function ItemsToolbar(props) {
                 <Modal.Footer>
                     <Button variant="primary" size="sm" onClick={handleDrop}>
                         Drop
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Modal show={showTrashModal} onHide={handleCloseTrashTrigger}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Are you Sure?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form >
+                        <InputGroup className="mb-3">
+                            <Form.Control size="lg" type="text"
+                                value={trashConfirmation}
+                                onChange={e=>setTrashConfirmation(e.target.value)}
+                                placeholder="Yes"
+                            />
+                        </InputGroup>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="light" size="md" onClick={handleCloseTrashTrigger}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" size="md" onClick={handleTrash} disabled={trashConfirmation!=='Yes'}>
+                        Trash
                     </Button>
                 </Modal.Footer>
             </Modal>
