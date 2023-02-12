@@ -15,8 +15,8 @@ import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
 
-import { createANewItem, getItemLink } from '../lib/bSafesCommonUI'
-import { listItemsThunk, searchItemsThunk, getTrashBoxThunk } from '../reduxStore/containerSlice';
+import { getItemLink } from '../lib/bSafesCommonUI'
+import { createANewItem, listItemsThunk, searchItemsThunk, getTrashBoxThunk } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 import Link from 'next/link';
@@ -28,6 +28,7 @@ export default function Workspace() {
     const dispatch = useDispatch();
     
     const workspaceId = useSelector( state => state.container.workspace);
+    const workspaceName = useSelector( state => state.container.workspaceName);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
@@ -95,7 +96,7 @@ export default function Workspace() {
     useEffect(() => {
         if(!workspaceId) return;
         dispatch(clearPage());
-        const itemPath = [{id: workspaceId}];
+        const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
         dispatch(getTrashBoxThunk());

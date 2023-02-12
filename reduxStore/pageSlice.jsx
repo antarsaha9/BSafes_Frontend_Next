@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { setupNewItemKey, createNewItemVersion, preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
+import { setupNewItemKey, preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -796,6 +796,34 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         resolve();
     });
 }
+
+async function createNewItemVersion(itemCopy) {
+    return new Promise( (resolve, reject) => {
+        itemCopy.version = itemCopy.version + 1;
+        debugLog(debugOn, "item copy version: ", itemCopy.version);
+    
+        PostCall({
+            api:'/memberAPI/createNewItemVersion',
+            body: {
+                itemId: itemCopy.id,
+                itemVersion: JSON.stringify(itemCopy)
+            }
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                debugLog(debugOn, `createNewItemVersion succeeded`);
+                resolve(data)
+            } else {
+                debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+                reject(data.error);
+            } 
+        }).catch( error => {
+            debugLog(debugOn,  `createNewItemVersion failed.`)
+            reject(error);
+        })
+    });
+};
+
 
 function createNewItemVersionForPage(itemCopy) {
     return new Promise(async (resolve, reject) => {

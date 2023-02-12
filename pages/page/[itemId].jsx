@@ -20,7 +20,7 @@ import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, getPageCommen
 import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI"
 
-export default function Page() {
+export default function Team() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();

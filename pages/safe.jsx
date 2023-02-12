@@ -11,7 +11,7 @@ import Workspace from '../components/workspace'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { initContainer } from '../reduxStore/containerSlice';
+import { setWorkspaceKeyReady, initContainer } from '../reduxStore/containerSlice';
 import { abort } from "../reduxStore/pageSlice";
 
 export default function Safe() {
@@ -47,6 +47,7 @@ export default function Safe() {
             const currentKeyVersion = 3;
             const workspaceId = 'u:' + memberId + ':' + currentKeyVersion + ':' + '0'; ;
             dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
+            dispatch(setWorkspaceKeyReady(true));
         }
     }, [memberId])
     

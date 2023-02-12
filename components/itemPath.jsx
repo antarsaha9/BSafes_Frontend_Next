@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { useRouter } from 'next/router';
 
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
@@ -16,7 +17,10 @@ import { decryptBinaryString } from '../lib/crypto';
 
 export default function ItemPath() {
     const debugOn = true;
+
+    const router = useRouter();
     
+    const workspaceName = useSelector( state => state.container.workspaceName);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const aborted = useSelector( state => state.page.aborted);
@@ -25,7 +29,10 @@ export default function ItemPath() {
     const [pathItems, setPathItems] = useState([]);
 
     const breadItems = pathItems.map((item, index) => 
-        <Breadcrumb.Item key={index} active={index===(pathItems.length-1)} href={item.link}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
+        (index!==(pathItems.length-1))?
+        <Breadcrumb.Item key={index} onClick={()=>{router.push(item.link)}} active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
+        : 
+        <Breadcrumb.Item key={index} active={true}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
     );
 
     useEffect(()=>{
@@ -37,8 +44,13 @@ export default function ItemPath() {
                 switch(pathItemType) {
                     case 'u':
                         pathItemIcon = null;
-                        itemTitleText = 'Personal';
+                        itemTitleText = workspaceName;
                         pathItemLink = '/safe';
+                        break;
+                    case 't1':
+                        pathItemIcon = null;
+                        itemTitleText = workspaceName;
+                        pathItemLink = '/team/' + item._id;
                         break;
                     case 'b':
                         pathItemIcon = "fa fa-archive";
@@ -71,7 +83,7 @@ export default function ItemPath() {
                         break;
                 }
 
-                if(pathItemType === 'u') {
+                if(pathItemType === 'u' || pathItemType === 't1') {
                 } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
                     decoded = forge.util.decode64(item._source.keyEnvelope);
@@ -99,7 +111,7 @@ export default function ItemPath() {
                 <Row>
                     <Col xs={10} sm={11} className={`${BSafesStyle.itemPath} rounded-end`}>
                         <Breadcrumb className={`${BSafesStyle.itemPathBreadcrumb}`}>
-                            <Breadcrumb.Item href="/teams" className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Teams </Breadcrumb.Item>
+                            <Breadcrumb.Item onClick={()=>router.push('/teams')} active={false} className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Teams </Breadcrumb.Item>
                             {breadItems}
                         </Breadcrumb>
                     </Col>
