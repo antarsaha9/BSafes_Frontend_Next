@@ -9,6 +9,8 @@ import Col from 'react-bootstrap/Col'
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
+import PageItemWrapper from "../../../components/pageItemWrapper";
+
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";

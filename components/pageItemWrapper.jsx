@@ -6,7 +6,7 @@ import Container from 'react-bootstrap/Container'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearContainer, initContainer, setNavigationInSameContainer, setWorkspaceKeyReady} from '../reduxStore/containerSlice';
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady} from '../reduxStore/containerSlice';
 import { abort, clearPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
@@ -67,6 +67,11 @@ const PageItemWrapper = ({ itemId, children}) => {
         dispatch(setWorkspaceKeyReady(false));
         debugLog(debugOn, "set pageItemId: ", router.query.itemId);
         dispatch(setPageItemId(router.query.itemId)); 
+        let path = router.asPath;
+        path = path.split('/')[2];
+        if(path === 'contents') {
+          dispatch(clearItems());
+        }
       }
     }, [itemId]);
 
@@ -96,13 +101,25 @@ const PageItemWrapper = ({ itemId, children}) => {
     }, [pageNumber])
 
     useEffect(()=>{
-      if(space && pageCleared) {             
-          if(container === containerInWorkspace ) {
-              dispatch(setWorkspaceKeyReady(true));
-              return;
+      if(space && pageCleared) {  
+        let path = router.asPath;
+        path = path.split('/')[2];      
+        
+        if(path !== 'contents' && container === containerInWorkspace ) {
+          dispatch(setWorkspaceKeyReady(true));
+          return;
+        } 
+
+        if(path === 'contents' && space === workspace) {
+          if(pageItemId !== containerInWorkspace) {
+            dispatch(changeContainerOnly({container:pageItemId}));
           }
-          dispatch(clearContainer());
-          setContainerCleared(true);
+          dispatch(setWorkspaceKeyReady(true));
+          return;
+        }
+        
+        dispatch(clearContainer());
+        setContainerCleared(true);
       }
     }, [space]);
 
@@ -119,14 +136,33 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{
       debugLog(debugOn, "useEffect [workspaceKey] ...");
-      if((workspaceKeyReady && workspaceKey && itemCopy && pageCleared)) {
+      let path = router.asPath;
+      path = path.split('/')[2]; 
+      if(( path !== 'contents' && workspaceKeyReady && workspaceKey && itemCopy && pageCleared)) {
+          let pageType = pageItemId.split(':')[0];
           debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
           dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
-          dispatch(getPageCommentsThunk({itemId:pageItemId}));
+          
+          if(!(pageType === 'f' || pageType === 'b' || pageType === 'n'  ||pageType === 'd')) {
+            dispatch(getPageCommentsThunk({itemId:pageItemId}));
+          }
+          
           setPageCleared(false);
           setContainerCleared(false);
         }
     }, [workspaceKeyReady, itemCopy]);
+
+    useEffect(()=>{ 
+      debugLog(debugOn, "useEffect [workspaceKey] ...");
+      let path = router.asPath;
+      path = path.split('/')[2]; 
+      if( path === 'contents' && containerInWorkspace &&  workspaceKeyReady && pageCleared) {
+          setPageCleared(false);
+          setContainerCleared(false);
+          debugLog(debugOn, "listItemsThunk ...");
+          dispatch(listItemsThunk({pageNumber: 1}));
+      }
+  }, [workspaceKeyReady, containerInWorkspace]);
 
     return (
         <Container fluid>
