@@ -3,9 +3,11 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
 
+import { setupNewItemKey } from './containerSlice';
+
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { setupNewItemKey, preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
+import { preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -13,12 +15,14 @@ const debugOn = true;
 const initialState = {
     aborted: false,
     activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
+    changingPage: false,
     activeRequest: null,
     error: null,
     navigationMode: false,
     itemCopy: null,
     itemPath:null,
     id: null,
+    style: null,
     space: null,
     container: null,
     pageNumber: null,
@@ -179,6 +183,9 @@ const pageSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        setChangingPage: (state, action) => {
+            state.changingPage = action.payload;
+        },
         abort: (state, action) => {
             state.aborted = true;
             debugLog(debugOn, "abort: ", state.aborted);
@@ -192,6 +199,12 @@ const pageSlice = createSlice({
         },
         setNavigationMode: (state, action) => {
             state.navigationMode = true;
+        },
+        setPageItemId: (state, action) => {
+            state.id = action.payload;
+        },
+        setPageStyle: (state, action) => {
+            state.style = action.payload;
         },
         setPageNumber: (state, action) => {
             state.pageNumber = action.payload;
@@ -391,7 +404,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, abort, setActiveRequest, setNavigationMode, setPageNumber, dataFetched, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

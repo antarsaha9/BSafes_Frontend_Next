@@ -15,6 +15,7 @@ const initialState = {
     activity: "Done", // Done, Loading, Searching
     error: null,
     container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
+    navigationInSameContainer: false,
     workspace: null,
     workspaceName: null,
     workspaceKey: null,
@@ -58,6 +59,9 @@ const containerSlice = createSlice({
             state.total = 0;
             state.hits = [];
             state.items = [];
+        },
+        setNavigationInSameContainer: (state, action) => {
+            state.navigationInSameContainer = action.payload;
         },
         changeContainerOnly: (state, action) => {
             state.container = action.payload.container;
@@ -118,7 +122,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

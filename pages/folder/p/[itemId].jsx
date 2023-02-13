@@ -10,6 +10,7 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import Scripts from "../../../components/scripts";
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
+import PageItemWrapper from "../../../components/pageItemWrapper";
 
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
@@ -17,8 +18,8 @@ import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 import NewItemModal from '../../../components/newItemModal'
 
-import { clearContainer, initContainer, setWorkspaceKeyReady, getFirstItemInContainer, getLastItemInContainer, createANewItem} from '../../../reduxStore/containerSlice';
-import { abort, clearPage, decryptPageItemThunk, getPageItemThunk, setContainerData, getPageCommentsThunk } from "../../../reduxStore/pageSlice";
+import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer, createANewItem} from '../../../reduxStore/containerSlice';
+import { setChangingPage } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
 import { getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
@@ -26,35 +27,22 @@ import { getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI"
 export default function FolderPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
-    const dispatch = useDispatch();
+
     const router = useRouter();
-
-    const [pageItemId, setPageItemId] = useState(null);
-    const [changingPage, setChangingPage] = useState(false);
-    const [navigationInSameContainer, setNavigationInSameContainer] = useState(false);
-    const [pageCleared, setPageCleared] = useState(false);
-    const [containerCleared, setContainerCleared] = useState(false);
-
+    
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
     const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
-    const searchKey = useSelector(state => state.auth.searchKey);
-    const searchIV = useSelector(state => state.auth.searchIV);
-    const expandedKey = useSelector(state => state.auth.expandedKey);
-
-    const navigationMode = useSelector(state => state.page.navigationMode);
-    const space = useSelector(state => state.page.space);
+    const changingPage = useSelector(state => state.page.changingPage);
+    const pageItemId = useSelector(state => state.page.id);
     const container = useSelector(state => state.page.container);
     const position = useSelector(state => state.page.position);
-    const itemCopy = useSelector(state => state.page.itemCopy);
 
     const containerInWorkspace = useSelector(state => state.container.container);
-    const workspace = useSelector(state => state.container.workspace);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
-    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -173,87 +161,10 @@ export default function FolderPage() {
         router.push(link);
     }
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-            console.log(
-                `App is changing to ${url} ${shallow ? 'with' : 'without'
-                } shallow routing`
-            )
-            dispatch(abort());
-        }
-
-        router.events.on('routeChangeStart', handleRouteChange)
-
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-            router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, []);
-
-    useEffect(() => {
-        if (router.query.itemId) {
-            dispatch(clearPage());
-            setChangingPage(false);
-            dispatch(setWorkspaceKeyReady(false));
-            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
-            setPageItemId(router.query.itemId);
-            setPageCleared(true);
-        }
-    }, [router.query.itemId]);
-
-    useEffect(() => {
-        if (pageItemId && pageCleared) {
-            debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
-        }
-    }, [pageItemId, pageCleared]);
-
-    useEffect(() => {
-        if (pageCleared && navigationMode) {
-            debugLog(debugOn, "setContainerData ...");
-            dispatch(setContainerData({ itemId: pageItemId, container: { space: workspace, id: containerInWorkspace } }));
-        }
-    }, [navigationMode]);
-
-    useEffect(() => {
-        if (space && pageCleared) {
-            if (container === containerInWorkspace) {
-                dispatch(setWorkspaceKeyReady(true));
-                return;
-            }
-
-            dispatch(clearContainer());
-            setContainerCleared(true);
-        }
-    }, [space]);
-
-    useEffect(() => {
-        if (containerCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({ container, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                dispatch(setWorkspaceKeyReady(true));
-            } else {
-            }
-        }
-    }, [containerCleared]);
-
-    useEffect(() => {
-        debugLog(debugOn, "useEffect [workspaceKeyReady] ...");
-        if (workspaceKeyReady && workspaceKey && itemCopy && pageCleared) {
-            setPageCleared(false);
-            setContainerCleared(false);
-            debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
-            dispatch(decryptPageItemThunk({ itemId: pageItemId, workspaceKey }));
-            dispatch(getPageCommentsThunk({ itemId: pageItemId }));
-        }
-    }, [workspaceKeyReady, itemCopy]);
-
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
-                <Container fluid>
+                <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                     <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem} onAdd={handleAdd}></TopControlPanel>
                     <br />  
@@ -268,7 +179,7 @@ export default function FolderPage() {
                     <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
 
-                </Container>  
+                </PageItemWrapper>  
             </ContentPageLayout>
             <Scripts />
         </div>
