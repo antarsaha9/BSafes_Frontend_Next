@@ -11,12 +11,14 @@ import format from "date-fns/format";
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
+import PageItemWrapper from "../../../components/pageItemWrapper";
+
 import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
-import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { setStartDateValue, setDiaryContentsPageFirstLoaded, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
+import { } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
@@ -26,31 +28,17 @@ export default function DiaryContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageItemId, setPageItemId] = useState(null);
-    const [pageCleared, setPageCleared] = useState(false);
-    const [containerCleared, setContainerCleared] = useState(false);
-
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-    const expandedKey = useSelector( state => state.auth.expandedKey );
-
     const space = useSelector( state => state.page.space);
-    const itemCopy = useSelector( state => state.page.itemCopy);
 
-
-    const workspace = useSelector( state => state.container.workspace);
     const mode = useSelector( state => state.container.mode);
     const containerInWorkspace = useSelector( state => state.container.container);
-    const pageNumber = useSelector( state => state.container.pageNumber);
-    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
+    const startDateValue = useSelector( state => state.container.startDateValue);
+    const [startDate, setStartDate] = useState(new Date(startDateValue));
+    const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
     const itemsState = useSelector( state => state.container.items);
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
-    const [pageFirstLoaded, setPageFirstLoaded] = useState(true);
-    const [startDate, setStartDate] = useState(new Date());
+    const pageItemId = useSelector( state => state.page.id);
     const [allItemsInCurrentPage, setAllItemsInCurrentPage] = useState([]);
     const showingMonthDate = startDate;
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
@@ -83,86 +71,8 @@ export default function DiaryContents() {
         dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
     }
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          dispatch(abort());
-        }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, []);
-
     useEffect(()=>{
-        if(router.query.itemId) {
-
-            dispatch(clearPage());
-            dispatch(clearItems());
-            dispatch(setWorkspaceKeyReady(false));
-            
-            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
-            setPageItemId(router.query.itemId);
-            setPageCleared(true);
-        }
-    }, [router.query.itemId]);
-
-    useEffect(()=>{
-        if(pageItemId && pageCleared) {
-            debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:pageItemId}));
-        }
-    }, [pageCleared, pageItemId]);
-
-    useEffect(()=>{
-        if(space && pageCleared) {
-            if(space === workspace) {
-                if(pageItemId !== containerInWorkspace) {
-                    dispatch(changeContainerOnly({container:pageItemId}));
-                }
-                dispatch(setWorkspaceKeyReady(true));
-                return;
-            }
-
-            dispatch(clearContainer());
-            setContainerCleared(true); 
-
-        }
-    }, [space]);
-
-    useEffect(()=>{
-        if(containerCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                dispatch(setWorkspaceKeyReady(true));
-            } else {
-            }
-        }        
-    }, [containerCleared]);
-
-    useEffect(()=>{ 
-        debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
-            setPageCleared(false);
-            setContainerCleared(false);
-            
-            debugLog(debugOn, "listItemsThunk ...");
-            dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
-            setPageFirstLoaded(false);
-        }
-    }, [workspaceKeyReady, containerInWorkspace]);
-
-    useEffect(()=>{
-        if(pageFirstLoaded) return;
+        if(diaryContentsPageFirstLoaded) return;
         debugLog(debugOn, "startDate changed:", format(startDate, 'yyyyLL'))
         setAllItemsInCurrentPage([]);
         if(workspaceKeyReady && containerInWorkspace) {
@@ -214,7 +124,7 @@ export default function DiaryContents() {
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
-                <Container fluid>
+                <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                     <DiaryTopControlPanel {...{ startDate, setStartDate }} 
                         onCoverClicked={() => {
@@ -248,7 +158,7 @@ export default function DiaryContents() {
                         </Col>
                     </Row>
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-                </Container>
+                </PageItemWrapper>
             </ContentPageLayout>
         </div>
     )

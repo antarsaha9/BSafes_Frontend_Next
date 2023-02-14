@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
 import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
+import PageItemWrapper from "../../../components/pageItemWrapper";
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 
-import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
-import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import {  } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 
@@ -24,27 +24,14 @@ export default function NotebookContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageItemId, setPageItemId] = useState(null);
-    const [pageCleared, setPageCleared] = useState(false);
-    const [containerCleared, setContainerCleared] = useState(false);
-
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-    const expandedKey = useSelector( state => state.auth.expandedKey );
-
-    const space = useSelector( state => state.page.space);
-    const itemCopy = useSelector( state => state.page.itemCopy);
 
 
-    const workspace = useSelector( state => state.container.workspace);
     const containerInWorkspace = useSelector( state => state.container.container);
     const pageNumber = useSelector( state => state.container.pageNumber);
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    
+    const pageItemId = useSelector( state => state.page.id);
 
     const items = itemsState.map( (item, index) => 
         <ItemRow key={index} item={item}/>
@@ -110,88 +97,32 @@ export default function NotebookContents() {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          dispatch(abort());
+    const handleGoToFirstItem = async () => {
+        try {
+            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch(error) {
+            alert("Could not get the first item in the container");
         }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
+    }
+
+    const handleGoToLastItem = async () => {
+        try {
+            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const newLink = `/notebook/p/${itemId}`;
+            router.push(newLink);
+        } catch(error) {
+            alert("Could not get the first item in the container");
         }
-    }, []);
-
-    useEffect(()=>{
-        if(router.query.itemId) {
-
-            dispatch(clearPage());
-            dispatch(clearItems());
-            dispatch(setWorkspaceKeyReady(false));
-            
-            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
-            setPageItemId(router.query.itemId);
-            setPageCleared(true);
-        }
-    }, [router.query.itemId]);
-
-    useEffect(()=>{
-        if(pageItemId && pageCleared) {
-            debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:pageItemId}));
-        }
-    }, [pageCleared, pageItemId]);
-
-    useEffect(()=>{
-        if(space && pageCleared) {
-            if(space === workspace) {
-                if(pageItemId !== containerInWorkspace) {
-                    dispatch(changeContainerOnly({container:pageItemId}));
-                }
-                dispatch(setWorkspaceKeyReady(true));
-                return;
-            }
-
-            dispatch(clearContainer());
-            setContainerCleared(true); 
-
-        }
-    }, [space]);
-
-    useEffect(()=>{
-        if(containerCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                dispatch(setWorkspaceKeyReady(true));
-            } else {
-            }
-        }        
-    }, [containerCleared]);
-
-    useEffect(()=>{ 
-        debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
-            setPageCleared(false);
-            setContainerCleared(false);
-            debugLog(debugOn, "listItemsThunk ...");
-            dispatch(listItemsThunk({pageNumber: 1}));
-        }
-    }, [workspaceKeyReady, containerInWorkspace]);
+    }
 
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
-                <Container fluid>
+                <PageItemWrapper itemId={router.query.itemId}>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}></TopControlPanel>
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
@@ -217,7 +148,7 @@ export default function NotebookContents() {
                         </Col>
                     </Row>
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-                </Container>
+                </PageItemWrapper>
             </ContentPageLayout>
         </div>
     )

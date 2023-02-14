@@ -32,7 +32,9 @@ const initialState = {
     selectedItems: [],
     containersPerPage: 20,
     containersPageNumber: 1,
-    containerList: []
+    containerList: [],
+    startDateValue: (new Date()).getTime(),
+    diaryContentsPageFirstLoaded: true
 };
 
 const containerSlice = createSlice({
@@ -118,11 +120,17 @@ const containerSlice = createSlice({
                 const {title, container, id} = newResultItem(c, state.workspaceKey);
                 return {title: title.replace(/<\/?[^>]+(>|$)/g, ""), container, id};
             });
-        }
+        },
+        setStartDateValue:  (state, action) => {
+            state.startDateValue = action.payload;
+        },
+        setDiaryContentsPageFirstLoaded: (state, action) => {
+            state.diaryContentsPageFirstLoaded = action.payload;
+        },   
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

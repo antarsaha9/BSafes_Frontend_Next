@@ -4,9 +4,11 @@ import { useSelector, useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 
+import format from "date-fns/format";
+
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady} from '../reduxStore/containerSlice';
+import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
 import { abort, clearPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
@@ -30,6 +32,9 @@ const PageItemWrapper = ({ itemId, children}) => {
     const workspace = useSelector(state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
+    const startDateValue = useSelector( state => state.container.startDateValue);
+    const [startDate, setStartDate] = useState(new Date(startDateValue));
+    const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
 
     const pageItemId = useSelector(state => state.page.id);
     const pageNumber = useSelector( state=> state.page.pageNumber);
@@ -67,10 +72,16 @@ const PageItemWrapper = ({ itemId, children}) => {
         dispatch(setWorkspaceKeyReady(false));
         debugLog(debugOn, "set pageItemId: ", router.query.itemId);
         dispatch(setPageItemId(router.query.itemId)); 
+
         let path = router.asPath;
         path = path.split('/')[2];
         if(path === 'contents') {
           dispatch(clearItems());
+          let pageType = itemId.split(':')[0];
+          if(pageType === 'd') {
+            dispatch(setStartDateValue((new Date()).getTime()));
+            dispatch(setDiaryContentsPageFirstLoaded(false));
+          }
         }
       }
     }, [itemId]);
@@ -125,9 +136,15 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{
       if(containerCleared) {
+          let path = router.asPath;
+          path = path.split('/')[2]; 
           if (space.substring(0, 1) === 'u') {
               debugLog(debugOn, "Dispatch initWorkspace ...");
-              dispatch(initContainer({container, workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
+              if(path !== 'contents'){
+                dispatch(initContainer({container, workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
+              } else {
+                dispatch(initContainer({container: pageItemId, workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
+              }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
           }
@@ -154,15 +171,26 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{ 
       debugLog(debugOn, "useEffect [workspaceKey] ...");
-      let path = router.asPath;
-      path = path.split('/')[2]; 
-      if( path === 'contents' && containerInWorkspace &&  workspaceKeyReady && pageCleared) {
-          setPageCleared(false);
-          setContainerCleared(false);
-          debugLog(debugOn, "listItemsThunk ...");
-          dispatch(listItemsThunk({pageNumber: 1}));
+      
+      if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
+          let pageType = pageItemId.split(':')[0];
+          let path = router.asPath;
+          path = path.split('/')[2]; 
+          if(path === 'contents'){
+            setPageCleared(false);
+            setContainerCleared(false);
+            debugLog(debugOn, "listItemsThunk ...");
+            if( pageType !== 'd' ) {
+              dispatch(listItemsThunk({pageNumber: 1}));
+            } else {
+              dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
+              dispatch(setDiaryContentsPageFirstLoaded(false));
+            }    
+          }
       }
-  }, [workspaceKeyReady, containerInWorkspace]);
+    }, [workspaceKeyReady, containerInWorkspace]);
+
+    
 
     return (
         <Container fluid>

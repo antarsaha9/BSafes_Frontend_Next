@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
@@ -13,12 +12,12 @@ import PageItemWrapper from "../../../components/pageItemWrapper";
 
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
-import TurningPageControls from "../../../components/turningPageControls";
+
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
 
-import { clearContainer, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearItems, createANewItem, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
-import { abort, clearPage, getPageItemThunk } from "../../../reduxStore/pageSlice";
+import { createANewItem, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import {  } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
 import { getItemLink} from "../../../lib/bSafesCommonUI";
@@ -29,29 +28,16 @@ export default function FolderContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageItemId, setPageItemId] = useState(null);
-    const [pageCleared, setPageCleared] = useState(false);
-    const [containerCleared, setContainerCleared] = useState(false);
-
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
     const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
 
-    const searchKey = useSelector( state => state.auth.searchKey);
-    const searchIV = useSelector( state => state.auth.searchIV);
-    const expandedKey = useSelector( state => state.auth.expandedKey );
 
-    const space = useSelector( state => state.page.space);
-
-    const workspace = useSelector( state => state.container.workspace);
     const containerInWorkspace = useSelector( state => state.container.container);
-    const pageNumber = useSelector( state => state.container.pageNumber);
-    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
@@ -134,87 +120,10 @@ export default function FolderContents() {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          dispatch(abort());
-        }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, []);
-
-    useEffect(()=>{
-        if(router.query.itemId) {
-
-            dispatch(clearPage());
-            dispatch(clearItems());
-            dispatch(setWorkspaceKeyReady(false));
-            
-            debugLog(debugOn, "set pageItemId: ", router.query.itemId);
-            setPageItemId(router.query.itemId);
-            setPageCleared(true);
-        }
-    }, [router.query.itemId]);
-
-    useEffect(()=>{
-        if(pageItemId && pageCleared) {
-            debugLog(debugOn, "Dispatch getPageItemThunk ...");
-            dispatch(getPageItemThunk({itemId:pageItemId}));
-        }
-    }, [pageCleared, pageItemId]);
-
-    useEffect(()=>{
-        if(space && pageCleared) {
-            if(space === workspace) {
-                if(pageItemId !== containerInWorkspace) {
-                    dispatch(changeContainerOnly({container:pageItemId}));
-                }
-                dispatch(setWorkspaceKeyReady(true));
-                return;
-            }
-
-            dispatch(clearContainer());
-            setContainerCleared(true); 
-
-        }
-    }, [space]);
-
-    useEffect(()=>{
-        if(containerCleared) {
-            if (space.substring(0, 1) === 'u') {
-                debugLog(debugOn, "Dispatch initWorkspace ...");
-                dispatch(initContainer({container: pageItemId, workspaceId: space, workspaceKey: expandedKey, searchKey, searchIV }));
-                dispatch(setWorkspaceKeyReady(true));
-            } else {
-            }
-        }        
-    }, [containerCleared]);
-
-
-    useEffect(()=>{ 
-        debugLog(debugOn, "useEffect [workspaceKey] ...");
-        if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
-            setPageCleared(false);
-            setContainerCleared(false);
-            debugLog(debugOn, "listItemsThunk ...");
-            dispatch(listItemsThunk({pageNumber: 1}));
-        }
-    }, [workspaceKeyReady, containerInWorkspace]);
-
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
-                <Container fluid>
+                <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                         <TopControlPanel onCoverClicked={handleCoverClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}></TopControlPanel>
                     <br />  
@@ -236,7 +145,7 @@ export default function FolderContents() {
                             </div>
                         </Col>
                     </Row>
-                </Container>
+                </PageItemWrapper>
             </ContentPageLayout>
         </div>
     )

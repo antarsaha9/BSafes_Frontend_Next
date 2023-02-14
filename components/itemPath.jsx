@@ -54,19 +54,19 @@ export default function ItemPath() {
                         break;
                     case 'b':
                         pathItemIcon = "fa fa-archive";
-                        pathItemLink = '/box/' + item._id;
+                        pathItemLink = '/box/contents/' + item._id;
                         break;
                     case 'f':
                         pathItemIcon = "fa fa-folder-o";
-                        pathItemLink = '/folder/' + item._id;
+                        pathItemLink = '/folder/contents/' + item._id;
                         break;
                     case 'n':
                         pathItemIcon = "fa fa-book";
-                        pathItemLink = '/notebook/' + item._id;
+                        pathItemLink = '/notebook/contents/' + item._id;
                         break;
                     case 'd':
                         pathItemIcon = "fa fa-calendar";
-                        pathItemLink = '/diary/' + item._id;
+                        pathItemLink = '/diary/contents/' + item._id;
                         break;
                     case 'p':
                         pathItemIcon = "fa fa-file-text-o";
@@ -115,10 +115,10 @@ export default function ItemPath() {
                             {breadItems}
                         </Breadcrumb>
                     </Col>
-                </Row>
-                <Col xs={2} sm={1}>
+                    <Col xs={2} sm={1}>
 
-                </Col>
+                    </Col>
+                </Row>     
             </Container>
         </>
     )
