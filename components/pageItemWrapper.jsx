@@ -8,7 +8,7 @@ import format from "date-fns/format";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearContainer, initContainer, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
+import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
 import { abort, clearPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
@@ -147,6 +147,11 @@ const PageItemWrapper = ({ itemId, children}) => {
               }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
+              if(path !== 'contents'){
+                dispatch(initWorkspaceThunk({teamId:space, container}));
+              } else {
+                dispatch(initWorkspaceThunk({teamId:space, container:pageItemId}));
+              }            
           }
       }
     }, [containerCleared]);

@@ -27,10 +27,11 @@ export default function Workspace() {
     const dispatch = useDispatch();
     
     const workspaceId = useSelector( state => state.container.workspace);
-    const workspaceName = useSelector( state => state.container.workspaceName);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const container = useSelector( state => state.container.container);
     const mode = useSelector( state => state.container.mode);
 
     const [searchValue, setSearchValue] = useState("");
@@ -92,12 +93,12 @@ export default function Workspace() {
     }
 
     useEffect(() => {
-        if(!workspaceId) return;
+        if(!workspaceId || !workspaceKeyReady || container !== 'root') return;
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
-    }, [workspaceId]);
+    }, [container, workspaceId, workspaceKeyReady ]);
 
     return (
         <Container className={BSafesStyle.container}>

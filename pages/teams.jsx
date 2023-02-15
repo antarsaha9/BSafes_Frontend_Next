@@ -15,6 +15,8 @@ import TeamCard from '../components/teamCard';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
+import { clearContainer } from '../reduxStore/containerSlice';
+import { clearItems } from '../reduxStore/teamSlice';
 import { createANewTeam, listTeamsThunk } from '../reduxStore/teamSlice';
 import { debugLog } from '../lib/helper'
 
@@ -57,6 +59,7 @@ export default function Teams() {
     }
 
     useEffect(() => {
+        dispatch(clearContainer());
         loggedIn && loadTeam();
     }, [loggedIn]);
 

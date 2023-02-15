@@ -13,7 +13,7 @@ import Workspace from '../../components/workspace'
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { getTeamData } from '../../reduxStore/teamSlice';
-import { initWorkspaceThunk } from '../../reduxStore/containerSlice';
+import { changeContainerOnly, clearItems, initWorkspaceThunk, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
 import { abort } from '../../reduxStore/pageSlice';
 
 import { debugLog } from '../../lib/helper';
@@ -51,7 +51,14 @@ export default function Team(props) {
     useEffect(()=>{
         if(loggedIn && router.query.teamId) {
             const teamId = router.query.teamId;
-            dispatch(initWorkspaceThunk({teamId}));
+            
+            dispatch(clearItems());
+            if(router.query.teamId === workspaceId) {
+              dispatch(changeContainerOnly({container: 'root'}))
+              dispatch(setWorkspaceKeyReady(true));
+            } else {
+              dispatch(initWorkspaceThunk({teamId, container:'root'}));
+            }        
         }
     }, [loggedIn, router.query.teamId]);
 

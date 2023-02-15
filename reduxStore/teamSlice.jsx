@@ -37,7 +37,7 @@ const teamSlice = createSlice({
     }
 })
 
-export const { activityChanged, teamLoaded, clearItems, setTeamName, setTeamData } = teamSlice.actions;
+export const { activityChanged, teamLoaded, setTeamName, setTeamData } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

@@ -206,6 +206,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
             let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
             auth = getState().auth;
             try {
+                dispatch(clearContainer());
                 team = await getTeamData(data.teamId);
                 teamKeyEnvelope = team.teamKeyEnvelope;
                 privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
@@ -240,7 +241,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                     teamSearchIV = decryptBinaryString(forge.util.decode64(teamSearchIVEnvelope), teamKey);
                 }
                 
-                dispatch(initContainer({container: 'root', workspaceId:data.teamId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
+                dispatch(initContainer({container: data.container, workspaceId:data.teamId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
                 dispatch(setWorkspaceKeyReady(true));
                 resolve();
             } catch(error) {
