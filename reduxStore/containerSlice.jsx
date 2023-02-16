@@ -460,6 +460,28 @@ export const dropItems = async (data) => {
     });
 }
 
+export const trashItems = async (data) => {
+    const api = '/memberAPI/trashItems' ;
+    const payload = data.payload;
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "trashItems failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "trashItems failed: ", error)
+            reject("trashItems failed!");
+        })
+    });
+}
+
 export const containerReducer = containerSlice.reducer;
 
 export default containerSlice;
