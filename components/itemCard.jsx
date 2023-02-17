@@ -17,7 +17,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { getItemLink } from '../lib/bSafesCommonUI';
 import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk } from '../reduxStore/containerSlice';
 
-export default function ItemCard({item, onAdd, onSelect}) {
+export default function ItemCard({item, onAdd, isOpenable=true}) {
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -144,7 +144,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
         <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Link href={getItemLink(item)}> 
+                    <Link href={isOpenable?getItemLink(item):'#'}> 
                         <Col xs={9}>   
                             {item.itemPack.type === 'D' &&
                                 <div >
@@ -185,14 +185,14 @@ export default function ItemCard({item, onAdd, onSelect}) {
                     </Link>
                     <Col xs={3}>
                         <ButtonGroup className="pull-right">
-                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                            {isOpenable && <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
-                            </a>
+                            </a>}
                             <Form.Group className="me-2" controlId="formBasicCheckbox">
                                 <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                             </Form.Group>
 
-                            {!selectedItems.length &&
+                            {isOpenable && !selectedItems.length &&
                                 <Dropdown align="end" className="justify-content-end">
                                     <Dropdown.Toggle as={plusToggle}  variant="link">
                                     
@@ -204,7 +204,7 @@ export default function ItemCard({item, onAdd, onSelect}) {
                                     </Dropdown.Menu>
                                 </Dropdown>
                             }
-                            {!!selectedItems.length &&
+                            {isOpenable && !!selectedItems.length &&
                                 <Dropdown align="end" className="justify-content-end">
                                     <Dropdown.Toggle as={sortToggle}  variant="link">
                                     

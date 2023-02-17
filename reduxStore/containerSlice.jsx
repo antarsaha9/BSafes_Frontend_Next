@@ -34,7 +34,8 @@ const initialState = {
     containersPageNumber: 1,
     containerList: [],
     startDateValue: (new Date()).getTime(),
-    diaryContentsPageFirstLoaded: true
+    diaryContentsPageFirstLoaded: true,
+    trashBoxId:null
 };
 
 const containerSlice = createSlice({
@@ -126,11 +127,14 @@ const containerSlice = createSlice({
         },
         setDiaryContentsPageFirstLoaded: (state, action) => {
             state.diaryContentsPageFirstLoaded = action.payload;
-        },   
+        },
+        trashBoxIdLoaded: (state, action) => {
+            state.trashBoxId = action.payload.trashBoxId;;
+        } 
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -281,7 +285,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     selectedDiaryContentStartPosition,
                     selectedDiaryContentEndPosition
                 }
-            } else if(state.container.startsWith('f') || state.container.startsWith('b')) {
+            } else if(state.container.startsWith('f') || state.container.startsWith('b') || state.container.startsWith('t')) {
                 pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
@@ -479,6 +483,36 @@ export const trashItems = async (data) => {
             debugLog(debugOn, "trashItems failed: ", error)
             reject("trashItems failed!");
         })
+    });
+}
+
+export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            const state = getState().container;
+            
+            PostCall({
+                api:'/memberAPI/getTrashBox',
+                body:{
+                    teamSpace:state.workspace
+                }
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    const {trashBoxId} = data;
+                    if(trashBoxId) {
+                        dispatch(trashBoxIdLoaded({trashBoxId}));
+                    }
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getTrashBox failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "getTrashBox failed: ", error)
+                reject("getTrashBox failed!");
+            })
+        });
     });
 }
 

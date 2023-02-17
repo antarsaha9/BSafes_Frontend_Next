@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/router';
 
+import Link from 'next/link';
+
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -137,6 +139,15 @@ export default function Workspace() {
             {items}
             <br />
             <br />
+            {workspaceId && <Row>
+                <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                    <Link href={"/trashBox/" + workspaceId}>
+                        <Button variant="light" className='pull-right border-0 shadow-none'>
+                            <i class="fa fa-5x fa-trash" aria-hidden="true" />
+                        </Button>
+                    </Link>
+                </Col>
+            </Row>}
         </Container>
     )
 
