@@ -140,10 +140,10 @@ export default function Workspace() {
             <br />
             <br />
             {workspaceId && <Row>
-                <Col xs={12} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                <Col xs={12}>
                     <Link href={"/trashBox/" + workspaceId}>
                         <Button variant="light" className='pull-right border-0 shadow-none'>
-                            <i class="fa fa-5x fa-trash" aria-hidden="true" />
+                            <i className="fa fa-5x fa-trash" aria-hidden="true" />
                         </Button>
                     </Link>
                 </Col>

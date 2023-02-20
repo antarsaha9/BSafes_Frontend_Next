@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef} from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from 'next/router';
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -19,6 +20,7 @@ import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar(props) {
     const debugOn = true;
+    const router = useRouter();
     const dispatch = useDispatch();
 
     const [showMoveModal, setShowMoveModal] = useState(false);
@@ -34,7 +36,7 @@ export default function ItemsToolbar(props) {
 
     const currentItemPath = useSelector(state => state.page.itemPath);
     
-    const open = selectedItems && selectedItems.length > 0;
+    const open = !router.asPath.includes('\/trashBox\/') && selectedItems && selectedItems.length > 0;
 
     const confirmInputRef = useRef(null);
 
@@ -95,18 +97,19 @@ export default function ItemsToolbar(props) {
     }
 
     const handleTrash = async () => {
-        
+        let itemContainer = container;
         const itemsCopy = [];
         for(let i=0; i<selectedItems.length; i++) {
             let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
             thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
             itemsCopy.push(thisItem);
         }
+        if(itemContainer === 'root') itemContainer = workspaceId; 
         const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
         const payload = {
             items: JSON.stringify(itemsCopy),
             targetSpace: workspaceId,
-            originalContainer: container,
+            originalContainer: itemContainer,
             sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
             totalUsage: JSON.stringify(totalUsage),
         }

@@ -262,7 +262,10 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             let state, pageNumber;
             dispatch(setMode("listAll"));
             state = getState().container;
-            
+            if(!state.container){
+                reject('container is null!');
+                return;
+            }
             let body;
             if(state.container.startsWith('n')) {
                 pageNumber = data.pageNumber;
@@ -513,6 +516,36 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
                 reject("getTrashBox failed!");
             })
         });
+    });
+}
+
+export const restoreItemsFromTrash = async (data) => {
+    const api = '/memberAPI/restoreItemsFromTrash' ;
+    const payload = data.payload;
+    payload.selectedItems = payload.selectedItems.map(item=>({
+        id:item.id,
+        container:item.container,
+        position:item.position,
+        originalContainer:item.itemPack.originalContainer,
+        originalPosition:item.itemPack.originalPosition,
+    }))
+    payload.selectedItems = JSON.stringify(payload.selectedItems);
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "restoreItemsFromTrash failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
+            reject("restoreItemsFromTrash failed!");
+        })
     });
 }
 

@@ -46,6 +46,20 @@ export default function TrashBox() {
         </Row>
     );
     
+    const handleRestore = async (items) => {
+        const payload = {
+            teamSpace: workspaceId,
+            trashBoxId: trashBoxId,
+            selectedItems: items,
+        }
+        try {
+            await restoreItemsFromTrash({ payload });
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch(error) {
+            debugLog(debugOn, 'handleRestore failed: ', error)
+        }
+    }
+
     const handleEmptyAll = () => {
         //handleEmpty(itemsState)
     }
@@ -54,7 +68,7 @@ export default function TrashBox() {
         //handleEmpty(items);
     }
     const handleRestoreAll = () => {
-        //handleRestore(itemsState)
+        handleRestore(itemsState)
     }
     const handleRestoreSelected = () => {
         const items = itemsState.filter(i => selectedItems.find(si => si === i.id)).map(i => ({ ...i.itemPack, id: i.id }))

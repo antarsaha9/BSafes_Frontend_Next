@@ -21,9 +21,9 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const cardStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCard:BSafesStyle.safeItem
-    const cardBodyStyle = router.asPath.includes('\/box\/contents\/')?BSafesStyle.boxItemCardBody:''
-    const cardRowStyle = router.asPath.includes('\/box\/contents\/')?'mx-1':''
+    const cardStyle = (router.asPath.includes('\/box\/contents\/') || router.asPath.includes('\/trashBox\/'))?BSafesStyle.boxItemCard:BSafesStyle.safeItem
+    const cardBodyStyle = (router.asPath.includes('\/box\/contents\/') || router.asPath.includes('\/trashBox\/'))?BSafesStyle.boxItemCardBody:''
+    const cardRowStyle = (router.asPath.includes('\/box\/contents\/') || router.asPath.includes('\/trashBox\/'))?'mx-1':''
 
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
@@ -220,7 +220,7 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
                         </ButtonGroup>
                     </Col>
                 </Row>
-                {   router.asPath.includes('\/box\/contents\/') && 
+                {   (router.asPath.includes('\/box\/contents\/') || router.asPath.includes('\/trashBox\/')) && 
                     <hr className="mt-1 mb-1 mx-3"/>
                 }
             </Card.Body>
