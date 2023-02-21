@@ -12,7 +12,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemCard from "../../components/itemCard";
 
-import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItems, initContainer, listItemsThunk, restoreItemsFromTrash, setWorkspaceKeyReady, getTrashBoxThunk } from '../../reduxStore/containerSlice';
+import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItems, initContainer, listItemsThunk, restoreItemsFromTrash, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
 import { abort, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
@@ -54,25 +54,41 @@ export default function TrashBox() {
         }
         try {
             await restoreItemsFromTrash({ payload });
+            dispatch(clearSelected());
             dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch(error) {
             debugLog(debugOn, 'handleRestore failed: ', error)
         }
     }
 
-    const handleEmptyAll = () => {
-        //handleEmpty(itemsState)
+    const handleEmpty = async (items) => {
+        const payload = {
+            teamSpace: workspaceId,
+            trashBoxId: trashBoxId,
+            selectedItems: items,
+        }
+        try {
+            await emptyTrashBoxItems({ payload });
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch(error) {
+            debugLog(debugOn, 'handleEmpty failed: ', error)
+        }
     }
+
+    const handleEmptyAll = () => {
+        handleEmpty(itemsState)
+    }
+
     const handleEmptySelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id)).map(i => ({ ...i.itemPack, id: i.id }))
-        //handleEmpty(items);
+        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
+        handleEmpty(items);
     }
     const handleRestoreAll = () => {
         handleRestore(itemsState)
     }
     const handleRestoreSelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id)).map(i => ({ ...i.itemPack, id: i.id }))
-        //handleRestore(items)
+        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
+        handleRestore(items)
     }
 
     useEffect(() => {
