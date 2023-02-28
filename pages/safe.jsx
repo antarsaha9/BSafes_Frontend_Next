@@ -13,6 +13,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { setWorkspaceKeyReady, initContainer } from '../reduxStore/containerSlice';
 import { abort } from "../reduxStore/pageSlice";
+import Link from 'next/link';
 
 export default function Safe() {
     const router = useRouter();
@@ -22,6 +23,7 @@ export default function Safe() {
     const workspaceKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
+    const workspaceId = useSelector( state => state.container.workspace );
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -55,6 +57,11 @@ export default function Safe() {
       <div className={BSafesStyle.spaceBackground}>
         <ContentPageLayout> 
             <Container fluid>
+                <Row>
+                  <Col className="text-center">
+                    <Link href={`/activities/${workspaceId}`}>Activities</Link>
+                  </Col>
+                </Row>
                 <Row className="justify-content-center">
                     <Col lg={8}>
                         <Workspace />

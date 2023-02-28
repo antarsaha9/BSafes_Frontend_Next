@@ -15,7 +15,11 @@ const initialState = {
     teamData: null,
     pageNumber: 1,
     itemsPerPage: 20,
-    total:0
+    total: 0,
+    teamMembers: [{
+        email: 'bsafestest1@gmailcom',
+        name: 'bsafes_test'
+    }]
 };
 
 const teamSlice = createSlice({
@@ -26,7 +30,10 @@ const teamSlice = createSlice({
             state.activity = action.payload;
         },
         teamLoaded: (state, action) => {
-            state.teams = action.payload.hits;
+            state.teamMembers = action.payload.members;
+        },
+        teamMembersLoaded: (state, action) => {
+            // state.teams = action.payload.hits;
         },
         setTeamName: (state, action) => {
             state.teamName = action.payload.teamName;
@@ -73,28 +80,28 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
 
         });
     }
-    
+
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let i, state, auth, hits=[], decryptedTeam, team, privateKeyFromPem, encodedTeamName, teamName, cachedTeamName;
+            let i, state, auth, hits = [], decryptedTeam, team, privateKeyFromPem, encodedTeamName, teamName, cachedTeamName;
             state = getState().team;
             auth = getState().auth;
             hits = [];
             PostCall({
                 api: '/memberAPI/listTeams',
                 body: {
-                    from: (state.pageNumber -1 ) * state.itemsPerPage,
+                    from: (state.pageNumber - 1) * state.itemsPerPage,
                     size: state.itemsPerPage
                 }
             }).then(async data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
                     privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
-                    for( i=0; i<data.hits.hits.length; i++) {
-                         team = data.hits.hits[i];
+                    for (i = 0; i < data.hits.hits.length; i++) {
+                        team = data.hits.hits[i];
                         if (team._source.encryptedTeamName) {
                             if (team._source.cachedTeamName) {
-                                if(team._source.keyVersion === 3){
+                                if (team._source.keyVersion === 3) {
                                     encodedTeamName = decryptBinaryStringCBC(forge.util.decode64(team._source.cachedTeamName), auth.searchKey, auth.searchIV);
                                     teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
                                     decryptedTeam = {
@@ -109,7 +116,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                                         title: teamName,
                                         id: team._source.teamId,
                                         position: team._source.position
-                                    }     
+                                    }
                                 }
                             } else {
                                 encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
@@ -117,7 +124,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                                 try {
                                     cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
                                     await cacheTeamNameForTeamMember(team._source.teamId, cachedTeamName);
-                                } catch(error) {
+                                } catch (error) {
                                     debugLog("cacheTeamName error");
                                 }
                                 decryptedTeam = {
@@ -133,10 +140,10 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                                 position: team._source.position
                             }
                         }
-                        
+
                         hits.push(decryptedTeam);
                     }
-                   
+
                     dispatch(teamLoaded({ total: data.hits.total, hits }));
                     resolve();
                 } else {
@@ -179,23 +186,23 @@ function generateTeamKey() {
 
     return teamKey;
 }
-  
+
 export function createANewTeam(teamName, addAction, targetTeam, targetPosition, publicKeyPem) {
     return new Promise(async (resolve, reject) => {
         const teamKey = generateTeamKey();
         const encodedTeamName = forge.util.encodeUtf8(teamName);
         const encryptedTeamName = encryptBinaryString(encodedTeamName, teamKey);
-  
+
         const publicKeyFromPem = forge.pki.publicKeyFromPem(publicKeyPem);
         const encodedTeamKey = forge.util.encodeUtf8(teamKey);
         const encryptedTeamKey = publicKeyFromPem.encrypt(encodedTeamKey);
         const encryptedTeamNameByMemberPublic = publicKeyFromPem.encrypt(encodedTeamName);
-  
+
         const salt = forge.random.getBytesSync(16);
         const randomKey = forge.random.getBytesSync(32);
         const searchKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
         const searchKeyEnvelope = encryptBinaryString(searchKey, teamKey);
-  
+
         const searchIV = forge.random.getBytesSync(16);
         const searchIVEnvelope = encryptBinaryString(searchIV, teamKey);
 
@@ -207,7 +214,7 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
             encryptedTeamNameByMemberPublic: forge.util.encode64(encryptedTeamNameByMemberPublic),
             addAction: addAction,
         };
-  
+
         if (addAction !== "addATeamOnTop") {
             addActionOptions.targetTeam = targetTeam;
             addActionOptions.targetPosition = targetPosition;
@@ -220,7 +227,7 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
             body: addActionOptions
         }).then(result => {
             debugLog(debugOn, result);
-  
+
             if (result.status === 'ok') {
                 if (result.team) {
                     resolve(result.team);
@@ -232,10 +239,66 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
                 debugLog(debugOn, "woo... failed to create a team!", result.error);
                 reject("woo... failed to create a team!");
             }
-      });
+        });
     });
-  }
+}
 
+export function findMemberByEmail(emailId) {
+    return new Promise(async (resolve, reject) => {
+        // debugLog(debugOn, addActionOptions);
+
+        PostCall({
+            api: '/memberAPI/findMemberByEmail',
+            body: {
+                email:emailId
+            }
+        }).then(result => {
+            debugLog(debugOn, result);
+
+            if (result.status === 'ok') {
+                if (result.data) {
+                    resolve(result.data);
+                } else {
+                    debugLog(debugOn, "woo... failed to findMemberByEmail!", result.error);
+                    reject("woo... failed to findMemberByEmail!");
+                }
+            } else {
+                debugLog(debugOn, "woo... failed to findMemberByEmail!", result.error);
+                reject("woo... failed to findMemberByEmail!");
+            }
+        });
+    });
+}
+
+export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            const state = getState().container;
+            const pageNumber = data.pageNumber;
+
+            PostCall({
+                api: '/memberAPI/listTeamMembersThunk',
+                body: {
+                    teamId: data.teamId,
+                    size: state.itemsPerPage,
+                    from: (pageNumber - 1) * state.itemsPerPage,
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(teamMembersLoaded({ members: data.hits }));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "listTeamMembersThunk failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "listTeamMembersThunk failed: ", error)
+                reject("listTeamMembersThunk failed!");
+            })
+        });
+    });
+}
 export const teamReducer = teamSlice.reducer;
 
 export default teamSlice;
