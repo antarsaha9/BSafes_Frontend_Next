@@ -9,7 +9,7 @@ import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, d
 
 import { getTeamData } from './teamSlice';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching
