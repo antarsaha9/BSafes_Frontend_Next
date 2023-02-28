@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef} from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from 'next/router';
 
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
@@ -9,30 +10,35 @@ import Breadcrumb from "react-bootstrap/Breadcrumb";
 import Button from "react-bootstrap/Button";
 import Collapse from "react-bootstrap/Collapse";
 import Modal from "react-bootstrap/Modal";
+import Form from "react-bootstrap/Form";
+import InputGroup from "react-bootstrap/InputGroup";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItems, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar(props) {
     const debugOn = true;
+    const router = useRouter();
     const dispatch = useDispatch();
 
     const [showMoveModal, setShowMoveModal] = useState(false);
+    const [showTrashModal, setShowTrashModal] = useState(false);
+    const [trashConfirmation, setTrashConfirmation] = useState('');
     const [containerPath, setContainerPath] = useState(null);
 
     const selectedItems = useSelector(state => state.container.selectedItems);
     const workspaceId = useSelector(state => state.container.workspace);
+    const container = useSelector( state => state.container.container );
     const containerItems = useSelector(state => state.container.items);
     const containerList = useSelector(state => state.container.containerList);
 
     const currentItemPath = useSelector(state => state.page.itemPath);
     
-    const open = selectedItems && selectedItems.length > 0;
+    const open = !router.asPath.includes('\/trashBox\/') && selectedItems && selectedItems.length > 0;
 
-    const handleTrashSelected = () => {
-    }
+    const confirmInputRef = useRef(null);
 
     const handleClearSelected = () => {
         dispatch(clearSelected());
@@ -68,7 +74,7 @@ export default function ItemsToolbar(props) {
             space: workspaceId,
             items: JSON.stringify(itemsCopy),
             targetItem: containerPath[containerPath.length - 1].id,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci.id)),
+            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
             targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id)),
             totalUsage: JSON.stringify(totalUsage),
         }
@@ -84,6 +90,47 @@ export default function ItemsToolbar(props) {
 
     const handleCloseTrigger = () => {
         setShowMoveModal(false);
+    }
+
+    const handleTrashSelected = () => {
+        setShowTrashModal(true);
+    }
+
+    const handleTrash = async () => {
+        let itemContainer = container;
+        const itemsCopy = [];
+        for(let i=0; i<selectedItems.length; i++) {
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
+            itemsCopy.push(thisItem);
+        }
+        if(itemContainer === 'root') itemContainer = workspaceId; 
+        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const payload = {
+            items: JSON.stringify(itemsCopy),
+            targetSpace: workspaceId,
+            originalContainer: itemContainer,
+            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
+            totalUsage: JSON.stringify(totalUsage),
+        }
+        try {
+            await trashItems({payload});
+            setShowTrashModal(false);
+            setTrashConfirmation('');
+            handleClearSelected()
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        } catch (error) {
+            debugLog(debugOn, "Trashing items failed.")
+        }
+    }
+
+    const handleTrashModalOnEntered = () => {
+        confirmInputRef.current.focus();
+    }
+
+    const handleCloseTrashTrigger = () => {
+        setTrashConfirmation('');
+        setShowTrashModal(false);
     }
     
     useEffect(() => {
@@ -163,6 +210,26 @@ export default function ItemsToolbar(props) {
                         Drop
                     </Button>
                 </Modal.Footer>
+            </Modal>
+            <Modal show={showTrashModal} onEntered={handleTrashModalOnEntered} onHide={handleCloseTrashTrigger}>
+                <Modal.Body>
+                    <h3>Are you Sure?</h3>
+                    <Form >
+                        <InputGroup className="mb-3">
+                            <Form.Control ref={confirmInputRef} size="lg" type="text"
+                                value={trashConfirmation}
+                                onChange={e=>setTrashConfirmation(e.target.value)}
+                                placeholder="Yes"
+                            />
+                        </InputGroup>
+                    </Form>
+                    <Button variant="primary" className="pull-right" size="md" onClick={handleTrash} disabled={trashConfirmation!=='Yes'}>
+                        Trash
+                    </Button>
+                    <Button variant="light" className="pull-right" size="md" onClick={handleCloseTrashTrigger}>
+                        Cancel
+                    </Button>
+                </Modal.Body>          
             </Modal>
         </>
     )

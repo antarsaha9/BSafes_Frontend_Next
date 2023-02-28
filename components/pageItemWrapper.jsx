@@ -23,6 +23,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
@@ -64,7 +65,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     }, []);
 
     useEffect(()=> {
-      if(itemId) {
+      if(isLoggedIn && itemId) {
         debugLog(debugOn, "page wrapper useEffect itemId: ", itemId);
         dispatch(clearPage());
         dispatch(setChangingPage(false));
@@ -84,7 +85,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           }
         }
       }
-    }, [itemId]);
+    }, [isLoggedIn, itemId]);
 
     useEffect(()=>{
       if(pageItemId && pageCleared) {

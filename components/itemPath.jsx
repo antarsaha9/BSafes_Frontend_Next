@@ -79,11 +79,14 @@ export default function ItemPath() {
                     case 'dp':
                         pathItemIcon = "fa fa-file-text-o";
                         pathItemLink = '/diary/p/' + item._id;
+                    case 't':
+                        pathItemIcon = "fa fa-trash";
+                        pathItemLink = '/trashBox/' + item._id;
                     default:
                         break;
                 }
 
-                if(pathItemType === 'u' || pathItemType === 't1') {
+                if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't') {
                 } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
                     decoded = forge.util.decode64(item._source.keyEnvelope);

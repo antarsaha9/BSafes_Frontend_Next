@@ -149,7 +149,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
         <>
             {item.id.startsWith('np') && 
                 <div>
-                    <Row onClick={rowClicked}>
+                    <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
                         <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: item.itemPack.pageNumber}} />
                         </Col> 
@@ -167,7 +167,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
             }
             {item.id.startsWith('dp') &&                
                 <div>                  
-                    <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked}>
+                    <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                         <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
                             { mode==='listAll'?
                                 <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
@@ -190,7 +190,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
             {item.id.startsWith('p') &&                
                 <div>                  
                     <Row className={BSafesStyle.contentsItemRow}>
-                        <Col xs={{ span: 7, offset: 1 }} onClick={rowClicked}>
+                        <Col xs={{ span: 7, offset: 1 }} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <i className={`fa fa-file-text-o fa-lg ${BSafesStyle.safeItemTypeIcon}`} aria-hidden="true"></i><span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col> 
                         <Col xs={3} className="p-1">

@@ -34,7 +34,8 @@ const initialState = {
     containersPageNumber: 1,
     containerList: [],
     startDateValue: (new Date()).getTime(),
-    diaryContentsPageFirstLoaded: true
+    diaryContentsPageFirstLoaded: true,
+    trashBoxId:null
 };
 
 const containerSlice = createSlice({
@@ -126,11 +127,14 @@ const containerSlice = createSlice({
         },
         setDiaryContentsPageFirstLoaded: (state, action) => {
             state.diaryContentsPageFirstLoaded = action.payload;
-        },   
+        },
+        trashBoxIdLoaded: (state, action) => {
+            state.trashBoxId = action.payload.trashBoxId;;
+        } 
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -258,7 +262,10 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             let state, pageNumber;
             dispatch(setMode("listAll"));
             state = getState().container;
-            
+            if(!state.container){
+                reject('container is null!');
+                return;
+            }
             let body;
             if(state.container.startsWith('n')) {
                 pageNumber = data.pageNumber;
@@ -281,7 +288,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     selectedDiaryContentStartPosition,
                     selectedDiaryContentEndPosition
                 }
-            } else if(state.container.startsWith('f') || state.container.startsWith('b')) {
+            } else if(state.container.startsWith('f') || state.container.startsWith('b') || state.container.startsWith('t')) {
                 pageNumber = data.pageNumber;
                 body = {
                     container: state.container,
@@ -456,6 +463,117 @@ export const dropItems = async (data) => {
         }).catch( error => {
             debugLog(debugOn, "drop items inside failed: ", error)
             reject("drop items inside failed!");
+        })
+    });
+}
+
+export const trashItems = async (data) => {
+    const api = '/memberAPI/trashItems' ;
+    const payload = data.payload;
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "trashItems failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "trashItems failed: ", error)
+            reject("trashItems failed!");
+        })
+    });
+}
+
+export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "Loading", () => {
+        return new Promise(async (resolve, reject) => {
+            const state = getState().container;
+            
+            PostCall({
+                api:'/memberAPI/getTrashBox',
+                body:{
+                    teamSpace:state.workspace
+                }
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {                                  
+                    const {trashBoxId} = data;
+                    if(trashBoxId) {
+                        dispatch(trashBoxIdLoaded({trashBoxId}));
+                    }
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getTrashBox failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch( error => {
+                debugLog(debugOn, "getTrashBox failed: ", error)
+                reject("getTrashBox failed!");
+            })
+        });
+    });
+}
+
+export const emptyTrashBoxItems = async (data) => {
+    const api = '/memberAPI/emptyTrashBoxItems' ;
+    const payload = data.payload;
+    payload.selectedItems = payload.selectedItems.map(item=>({
+        id:item.id,
+        container:item.container,
+        position:item.position
+    }));
+    payload.selectedItems = JSON.stringify(payload.selectedItems);
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "emptyTrashBoxItems failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "emptyTrashBoxItems failed: ", error)
+            reject("emptyTrashBoxItems failed!");
+        })
+    });
+}
+
+
+export const restoreItemsFromTrash = async (data) => {
+    const api = '/memberAPI/restoreItemsFromTrash' ;
+    const payload = data.payload;
+    payload.selectedItems = payload.selectedItems.map(item=>({
+        id:item.id,
+        container:item.container,
+        position:item.position,
+        originalContainer:item.itemPack.originalContainer,
+        originalPosition:item.itemPack.originalPosition,
+    }));
+    payload.selectedItems = JSON.stringify(payload.selectedItems);
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "restoreItemsFromTrash failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
+            reject("restoreItemsFromTrash failed!");
         })
     });
 }
