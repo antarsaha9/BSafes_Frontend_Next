@@ -114,7 +114,7 @@ function decryptPageItemFunc(state, workspaceKey) {
         state.titleText = "";
     }
 
-    if (item.content) {
+    if (item.content && !item.content.startsWith('s3Object/')) {
         try {
             const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
             let content = forge.util.decodeUtf8(encodedContent);
@@ -213,6 +213,11 @@ const pageSlice = createSlice({
             if(state.aborted ) return;
             if(action.payload.item.id !== state.activeRequest) return;
             dataFetchedFunc(state, action);
+        },
+        contentDecrypted: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.item.id !== state.activeRequest) return;
+            state.content = action.payload.item.content;
         },
         itemPathLoaded: (state, action) => {
             state.itemPath = action.payload;
@@ -404,7 +409,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -428,7 +433,9 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction) => {
             if (evt.lengthComputable) {
                 let percentComplete = evt.loaded / evt.total * 90 + 10;
                 debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
-                dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                if(downloadingFunction) {
+                    dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                }
             }
         }, false);
 
@@ -493,7 +500,49 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     }                            
                     if(result.item) {
                         dispatch(dataFetched({item:result.item}));
-                        resolve();
+                        if(result.item.content.startsWith('s3Object/')){
+                            const signedContentUrl = result.item.signedContentUrl;
+                            const response = await XHRDownload(null, dispatch, signedContentUrl, null);                         
+                            
+                            const buffer = Buffer.from(response, 'binary');
+                            const downloadedBinaryString = buffer.toString('binary');
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                            
+                            function itemKeyReady(){
+                                return new Promise((resolve, reject)=>{
+                                    let trials = 0;
+                                    state = getState().page;
+                                    if(state.itemKey) {
+                                        resolve();
+                                        return;
+                                    }
+                                    const timer = setInterval(()=>{
+                                        state = getState().page;
+                                        debugLog(debugOn, "Waiting for itemKey ...");
+                                        if(state.itemKey) {
+                                            resolve();
+                                            clearInterval(timer);
+                                            return;
+                                        } else {
+                                            trials++;
+                                            if(trials > 100){
+                                                reject('itemKey error!');
+                                                clearInterval(timer);
+                                            }
+                                        }
+                                    }, 100)
+
+                                })
+                            }
+                            await itemKeyReady();
+                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                            const decodedContent =  DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                            dispatch(contentDecrypted({item:{id: data.itemId, content:decodedContent}}));
+                            
+                        } else {
+                            resolve();
+                        }
                     } else {
                         if(data.navigationInSameContainer) {
                             debugLog(debugOn, "setNavigationMode ...");
@@ -1132,12 +1181,57 @@ function preProcessEditorContentBeforeSaving(content) {
 export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState;
+            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;;
             state = getState().page;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
 	        const s3ObjectsSize = result.s3ObjectsSize;
             
+            function uploadContentToS3(data){
+                const preContentS3Upload = () => {
+                    return new Promise( async (resolve, reject) => {
+                        PostCall({
+                            api:'/memberAPI/preS3Upload',
+                            body:{
+                                type: 'content'
+                            }
+                        }).then( data => {
+                            debugLog(debugOn, data);
+                            if(data.status === 'ok') {  
+                                s3Key = data.s3Key;
+                                signedURL = data.signedURL;                                 
+                                resolve();
+                            } else {
+                                debugLog(debugOn, "preS3Upload failed: ", data.error);
+                                reject(data.error);
+                            }
+                        }).catch( error => {
+                            debugLog(debugOn, "preS3Upload failed: ", error)
+                            reject("preS3Upload failed:!");
+                        })
+                    });
+                };
+                return new Promise( async (resolve, reject) => {
+                    try {
+                        await preContentS3Upload();
+                        const config = {
+                            onUploadProgress: async (progressEvent) => {
+                                let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
+                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                            },
+                            headers: {
+                                'Content-Type': 'binary/octet-stream'
+                            }
+                        }
+                        await axios.put(signedURL, Buffer.from(data, 'binary'), config); 
+                        resolve(); 
+                    } catch (error) {
+                        debugLog(debugOn, "uploadContentToS3 failed: ", error);
+                        reject(error);
+                    }
+                }); 
+            }
+
             try {
                 encodedContent = forge.util.encodeUtf8(result.content);
             
@@ -1147,11 +1241,12 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
 
                         encryptedContent = encryptBinaryString(encodedContent, itemKey);
+                        await uploadContentToS3(encryptedContent);
 
                         newPageData = {
                             "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
-                            "content":  forge.util.encode64(encryptedContent),
+                            "content": 's3Object/' + forge.util.encode64(s3Key),
                             "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
                             "s3ObjectsSizeInContent": s3ObjectsSize
                         };
@@ -1168,11 +1263,12 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                     }   
                 } else {
                     encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
+                    await uploadContentToS3(encryptedContent);
                     let itemCopy = {
                         ...state.itemCopy
                     }
         
-                    itemCopy.content = forge.util.encode64(encryptedContent);
+                    itemCopy.content = 's3Object/' + forge.util.encode64(s3Key);
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
 	                itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
@@ -1185,6 +1281,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                     resolve();
                 }
             } catch (error) {
+                alert('error');
                 reject();
             }
 
