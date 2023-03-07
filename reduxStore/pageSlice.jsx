@@ -33,6 +33,7 @@ const initialState = {
     title: null,
     titleText: null,
     content:null,
+    contentSize: 0,
     contentImagesDownloadQueue: [],
     contentImagedDownloadIndex: 0,
     contentImagesDisplayIndex:0,
@@ -44,6 +45,9 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
+    attachmentPanels:[],
+    attachmentsUploadQueue:[],
+    attachmentsUploadIndex:0,
     itemVersions:[],
     newCommentEditorMode: 'ReadOnly',
     comments:[]
@@ -385,6 +389,41 @@ const pageSlice = createSlice({
             let panel = state.imagePanels[action.payload];
             panel.editorMode = "Saving";
         },
+        addUploadAttachments: (state, action) => {
+            if(state.aborted ) return;
+            const files = action.payload.files;
+            let newPanels = [];
+            for(let i=0; i < files.length; i++) {
+                const queueId = 'u' + state.attachmentsUploadQueue.length;
+                const newUpload = {file: files[i]};
+                state.attachmentsUploadQueue.push(newUpload);
+                const newPanel = {
+                    queueId: queueId,
+                    status: "WaitingForUpload",
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
+
+            state.attachmentPanels = state.attachmentPanels.concat(newPanels);
+        
+        },
+        uploadingAttachment: (state, action) => {
+            if(state.aborted ) return;
+            let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
+            panel.status = "Uploading";
+            panel.progress = action.payload;
+        },
+        attachmentUploaded: (state, action) => {
+            if(state.aborted ) return;
+            let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
+            if(!panel) return;
+            panel.status = "Uploaded";
+            panel.progress = 100;
+            panel.s3Key = action.payload.s3Key;
+            panel.size = action.payload.size;
+            state.attachmentsUploadIndex += 1;
+        },
         setCommentEditorMode: (state, action) => {
             if(action.payload.index === 'comment_New') {
                 state.newCommentEditorMode = action.payload.mode;
@@ -409,7 +448,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, uploadingAttachment, attachmentUploaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1247,6 +1286,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                             "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
                             "content": 's3Object/' + forge.util.encode64(s3Key),
+                            "contentSize": encryptedContent.length,
                             "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
                             "s3ObjectsSizeInContent": s3ObjectsSize
                         };
@@ -1269,6 +1309,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                     }
         
                     itemCopy.content = 's3Object/' + forge.util.encode64(s3Key);
+                    itemCopy.contentSize = encryptedContent.length;
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
 	                itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
@@ -1549,6 +1590,81 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 itemCopy
             }));
 
+        }
+    });
+}
+
+const uploadAnAttachment = async (dispatch, state, file) => {
+    const chunkSize = 10 * 1024 * 1024;
+    function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
+        return new Promise((resolve, reject) => {
+            let reader, fileSize, offset;
+            fileSize = file.size;
+            offset = (chunkIndex) * chunkSize;
+            reader = new FileReader();
+            const blob = file.slice(offset, offset + chunkSize);
+            
+            reader.onloadend = function(e) {
+                var data = reader.result;
+      
+                encryptArrayBufferAsync(data, itemKey, itemIV, function(encryptedData) {
+                  s3UploadingPromise.done(function() {
+                    //encrypted_buffer = encryptedData;
+                    encrypted_buffer = Utf8ArrayToStr(encryptedData, 1000);
+                    uploadAChunk(chunkIndex, encryptedData);
+                    chunkIndex += 1;
+      
+                    if (offset < file.size) {
+                      sliceEncryptAndUpload($attachment, file);
+                    }
+      
+                  }).fail(function() {
+      
+                  });
+                });
+              };
+            reader.readAsArrayBuffer(blob);
+        });
+    }
+    return new Promise(async (resolve, reject) => {
+        
+        let i, numberOfChunks, chunkIndex, , s3KeyPrefix;
+        
+        numberOfChunks = Math.floor(file.size / chunkSize) + 1;
+        for(i=0; i<numberOfChunks; i++){
+            await sliceEncryptAndUpload(file, i);
+        }
+    });
+}
+
+export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
+    let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
+    state = getState().page;
+    workspaceKey = data.workspaceKey;
+    
+    if(state.activity === "UploadingAttachments") {
+        dispatch(addUploadAttachments({files:data.files}));
+        return;
+    } 
+    newActivity(dispatch, "UploadingAttachments",  async () => {
+        dispatch(addUploadAttachments({files:data.files, where:data.where}));
+        state = getState().page;
+        if(!state.itemCopy) {
+            itemKey = setupNewItemKey();
+            dispatch(newItemKey({itemKey}));
+        }
+        state = getState().page;
+        while(state.attachmentsUploadQueue.length > state.attachmentsUploadIndex){
+            if(state.aborted) 
+            {
+                debugLog(debugOn, "abort: ", state.aborted);
+                break;
+            }
+            console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attacchmentsUploadIndex].file.name}`)
+            const file = state.attachmentsUploadQueue[state.attachmentsUploadIndex].file;
+            const uploadResult = await uploadAnAttachment(dispatch, state, file);
+            dispatch(attachmentUploaded(uploadResult));
+            state = getState().page;
         }
     });
 }
