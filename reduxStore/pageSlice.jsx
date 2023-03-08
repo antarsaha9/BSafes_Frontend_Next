@@ -6,7 +6,7 @@ const axios = require('axios');
 import { setupNewItemKey } from './containerSlice';
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptLargeBinaryString, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptBinaryStringToUinit8ArrayAsync, decryptLargeBinaryString, encryptArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
@@ -1596,18 +1596,23 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
 
 const uploadAnAttachment = async (dispatch, state, file) => {
     const chunkSize = 10 * 1024 * 1024;
+    let i, numberOfChunks;
     function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
         return new Promise((resolve, reject) => {
-            let reader, fileSize, offset;
+            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, s3KeyPrefix;
             fileSize = file.size;
             offset = (chunkIndex) * chunkSize;
             reader = new FileReader();
             const blob = file.slice(offset, offset + chunkSize);
             
-            reader.onloadend = function(e) {
-                var data = reader.result;
-      
-                encryptArrayBufferAsync(data, itemKey, itemIV, function(encryptedData) {
+            reader.onloadend = async function(e) {
+                data = reader.result;
+                encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
+                decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
+                isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
+                debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
+                resolve();
+                /*encryptArrayBufferAsync(data, itemKey, itemIV, function(encryptedData) {
                   s3UploadingPromise.done(function() {
                     //encrypted_buffer = encryptedData;
                     encrypted_buffer = Utf8ArrayToStr(encryptedData, 1000);
@@ -1621,15 +1626,12 @@ const uploadAnAttachment = async (dispatch, state, file) => {
                   }).fail(function() {
       
                   });
-                });
+                });*/
               };
             reader.readAsArrayBuffer(blob);
         });
     }
-    return new Promise(async (resolve, reject) => {
-        
-        let i, numberOfChunks, chunkIndex, , s3KeyPrefix;
-        
+    return new Promise(async (resolve, reject) => {     
         numberOfChunks = Math.floor(file.size / chunkSize) + 1;
         for(i=0; i<numberOfChunks; i++){
             await sliceEncryptAndUpload(file, i);
@@ -1638,7 +1640,7 @@ const uploadAnAttachment = async (dispatch, state, file) => {
 }
 
 export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
-    let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
+    let state, workspaceKey, itemKey, file, uploadResult, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
     
@@ -1660,9 +1662,9 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "abort: ", state.aborted);
                 break;
             }
-            console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attacchmentsUploadIndex].file.name}`)
-            const file = state.attachmentsUploadQueue[state.attachmentsUploadIndex].file;
-            const uploadResult = await uploadAnAttachment(dispatch, state, file);
+            console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
+            file = state.attachmentsUploadQueue[state.attachmentsUploadIndex].file;
+            uploadResult = await uploadAnAttachment(dispatch, state, file);
             dispatch(attachmentUploaded(uploadResult));
             state = getState().page;
         }

@@ -26,7 +26,7 @@ const reduxStore = configureStore({
         // Ignore these field paths in all actions
         ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer'],
         // Ignore these paths in the state
-        ignoredPaths: ['page.imageUploadQueue', 'page.imagePanels'],
+        ignoredPaths: ['page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels'],
       },
     }),
 })
