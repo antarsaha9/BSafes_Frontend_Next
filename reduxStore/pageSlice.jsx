@@ -7,7 +7,7 @@ import { setupNewItemKey } from './containerSlice';
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptBinaryStringToUinit8ArrayAsync, decryptLargeBinaryString, encryptArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { preS3Download, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
+import { preS3Download, preS3ChunkUpload, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -1599,34 +1599,60 @@ const uploadAnAttachment = async (dispatch, state, file) => {
     let i, numberOfChunks;
     function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
         return new Promise((resolve, reject) => {
-            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, s3KeyPrefix;
+            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, s3KeyPrefix = 'null';
             fileSize = file.size;
             offset = (chunkIndex) * chunkSize;
             reader = new FileReader();
             const blob = file.slice(offset, offset + chunkSize);
             
-            reader.onloadend = async function(e) {
-                data = reader.result;
-                encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
-                decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
-                isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
-                debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
-                resolve();
-                /*encryptArrayBufferAsync(data, itemKey, itemIV, function(encryptedData) {
-                  s3UploadingPromise.done(function() {
-                    //encrypted_buffer = encryptedData;
-                    encrypted_buffer = Utf8ArrayToStr(encryptedData, 1000);
-                    uploadAChunk(chunkIndex, encryptedData);
-                    chunkIndex += 1;
-      
-                    if (offset < file.size) {
-                      sliceEncryptAndUpload($attachment, file);
+            function uploadChunk(index, data) {
+                let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp;
+                
+                s3KeyPrefixParts = s3KeyPrefix.split(':');
+	            timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1]
+                
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        result = await preS3ChunkUpload(state.id, index, timeStamp);
+                        s3Key = result.s3Key;
+                        s3KeyPrefix = result.s3KeyPrefix;
+                        signedURL = result.signedURL;
+                        debugLog(debugOn, 'chunk signed url', signedURL );
+
+                        const config = {
+                            onUploadProgress: async (progressEvent) => {
+                                let percentCompleted = Math.ceil(progressEvent.loaded/progressEvent.total);
+                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                            },
+                            headers: {
+                                'Content-Type': 'binary/octet-stream'
+                            }
+                        }
+                        await axios.put(signedURL,
+                            Buffer.from(data, 'binary'), config);              
+                        resolve();
+                    } catch(error) {
+                        debugLog(debugOn, 'uploadChunk failed: ', error);
+                        reject(error);
                     }
-      
-                  }).fail(function() {
-      
-                  });
-                });*/
+                });
+            }
+
+            reader.onloadend = async function(e) {
+                try {
+                    data = reader.result;
+                    encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
+                    if(0/*Validation*/) {
+                        decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
+                        isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
+                        debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
+                    }
+                    await uploadChunk(chunkIndex, encryptedData);
+                    resolve();
+                } catch(error) {
+                    debugLog(debugOn, 'sliceEncryptAndUpload failed: ', error);
+                    reject(error);
+                }
               };
             reader.readAsArrayBuffer(blob);
         });
@@ -1634,8 +1660,10 @@ const uploadAnAttachment = async (dispatch, state, file) => {
     return new Promise(async (resolve, reject) => {     
         numberOfChunks = Math.floor(file.size / chunkSize) + 1;
         for(i=0; i<numberOfChunks; i++){
+            debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
             await sliceEncryptAndUpload(file, i);
         }
+        debugLog(debugOn, 'uploadAnAttachment done, total chunks: ', numberOfChunks);
     });
 }
 
