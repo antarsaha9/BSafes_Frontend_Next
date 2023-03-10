@@ -399,6 +399,7 @@ const pageSlice = createSlice({
                 state.attachmentsUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
+                    fileName: files[i].name,
                     status: "WaitingForUpload",
                     progress: 0
                 }
@@ -1596,10 +1597,10 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
 
 const uploadAnAttachment = async (dispatch, state, file) => {
     const chunkSize = 10 * 1024 * 1024;
-    let i, numberOfChunks;
+    let i, numberOfChunks, encryptedFileSize = 0, s3KeyPrefix = 'null';
     function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
         return new Promise((resolve, reject) => {
-            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, s3KeyPrefix = 'null';
+            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
             fileSize = file.size;
             offset = (chunkIndex) * chunkSize;
             reader = new FileReader();
@@ -1614,6 +1615,9 @@ const uploadAnAttachment = async (dispatch, state, file) => {
                 return new Promise(async (resolve, reject) => {
                     try {
                         result = await preS3ChunkUpload(state.id, index, timeStamp);
+                        fileUploadProgress = index*(100/numberOfChunks) + 15/numberOfChunks;
+                        debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                        dispatch(uploadingAttachment(fileUploadProgress));
                         s3Key = result.s3Key;
                         s3KeyPrefix = result.s3KeyPrefix;
                         signedURL = result.signedURL;
@@ -1621,15 +1625,17 @@ const uploadAnAttachment = async (dispatch, state, file) => {
 
                         const config = {
                             onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = Math.ceil(progressEvent.loaded/progressEvent.total);
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                let percentCompleted = 15 + Math.ceil(progressEvent.loaded*85/progressEvent.total);
+                                fileUploadProgress = index*(100/numberOfChunks) + percentCompleted/numberOfChunks;
+                                debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                                dispatch(uploadingAttachment(fileUploadProgress));
                             },
                             headers: {
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
-                        await axios.put(signedURL,
-                            Buffer.from(data, 'binary'), config);              
+                        await axios.put(signedURL, Buffer.from(data, 'binary'), config);              
                         resolve();
                     } catch(error) {
                         debugLog(debugOn, 'uploadChunk failed: ', error);
@@ -1641,7 +1647,14 @@ const uploadAnAttachment = async (dispatch, state, file) => {
             reader.onloadend = async function(e) {
                 try {
                     data = reader.result;
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                    dispatch(uploadingAttachment(fileUploadProgress));
                     encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                    dispatch(uploadingAttachment(fileUploadProgress));
+                    encryptedFileSize += encryptedData.length;
                     if(0/*Validation*/) {
                         decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
                         isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
@@ -1659,11 +1672,17 @@ const uploadAnAttachment = async (dispatch, state, file) => {
     }
     return new Promise(async (resolve, reject) => {     
         numberOfChunks = Math.floor(file.size / chunkSize) + 1;
-        for(i=0; i<numberOfChunks; i++){
-            debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
-            await sliceEncryptAndUpload(file, i);
+        try {
+            for(i=0; i<numberOfChunks; i++){
+                debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
+                await sliceEncryptAndUpload(file, i);
+            }
+            debugLog(debugOn, `uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
+            resolve({s3Key:s3KeyPrefix, size:encryptedFileSize});
+        } catch(error) {
+            debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
+            reject(error);
         }
-        debugLog(debugOn, 'uploadAnAttachment done, total chunks: ', numberOfChunks);
     });
 }
 

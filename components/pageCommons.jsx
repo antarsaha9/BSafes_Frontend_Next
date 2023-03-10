@@ -8,6 +8,7 @@ import Button from 'react-bootstrap/Button'
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
+import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
@@ -37,6 +38,7 @@ export default function PageCommons() {
     const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
+    const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
 
     const pswpRef = useRef(null);
@@ -204,6 +206,10 @@ export default function PageCommons() {
             uploadImages(files, 'top');
         }
     }
+
+    const attachmentPanels = attachmentPanelsState.map((item, index) =>
+        <AttachmentPanel key={item.queueId} panelIndex={"attachment_" + index} panel={item} />
+    )
 
     const handleAttachmentButton = (e) => {
         debugLog(debugOn, "handleAttachmentBtn");
@@ -542,8 +548,14 @@ export default function PageCommons() {
                             <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
                         </Button>
                     </Col>
-                </Row>	
+                </Row>    	
             </div>
+            <Row className="justify-content-center">
+                <Col xs="12" md="8" >
+                    { attachmentPanels }
+                </Col>
+            </Row>
+            <br />
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>

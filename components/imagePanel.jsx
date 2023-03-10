@@ -1,4 +1,4 @@
-import {useEffect, useRef} from 'react'
+import {useRef} from 'react'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -50,7 +50,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                         </div>
                         :""
                     }
-                    {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar className="marginTop20Px marginBottom0Px"  now={panel.progress} />:""}  
+                    {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar now={panel.progress} />:""}  
                 </Col>
             </Row>
             {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
