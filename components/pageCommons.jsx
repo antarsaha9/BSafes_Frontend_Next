@@ -8,10 +8,11 @@ import Button from 'react-bootstrap/Button'
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
+import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -37,6 +38,7 @@ export default function PageCommons() {
     const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
+    const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
 
     const pswpRef = useRef(null);
@@ -205,9 +207,28 @@ export default function PageCommons() {
         }
     }
 
+    const attachmentPanels = attachmentPanelsState.map((item, index) =>
+        <AttachmentPanel key={item.queueId} panelIndex={"attachment_" + index} panel={item} />
+    )
+
+    const handleAttachmentButton = (e) => {
+        debugLog(debugOn, "handleAttachmentBtn");
+        e.preventDefault();
+        attachmentsInputRef.current.value = null;
+        attachmentsInputRef.current?.click();
+    };
+
+    const uploadAttachments = (files) => {
+        dispatch(uploadAttachmentsThunk({files, workspaceKey}));
+    };
+
     const handleAttachments = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleAttachments: ", e.target.id);
+        const files = e.target.files;
+	    if (files.length) {
+            uploadAttachments(files);
+        }
     }
 
     const setDragActive = (e, active) => {
@@ -523,12 +544,18 @@ export default function PageCommons() {
                 <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                 <Row>
                     <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
-                        <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                        <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
                             <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
                         </Button>
                     </Col>
-                </Row>	
+                </Row>    	
             </div>
+            <Row className="justify-content-center">
+                <Col xs="12" md="8" >
+                    { attachmentPanels }
+                </Col>
+            </Row>
+            <br />
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
