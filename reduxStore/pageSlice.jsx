@@ -45,7 +45,13 @@ const initialState = {
     imageUploadIndex:0,
     imageDownloadQueue:[],
     imageDownloadIndex:0,
-    attachmentPanels:[],
+    chunkSize: 10 * 1024 * 1024,
+    attachmentPanels:[]/*[{
+        queueId: 'u_1',
+        fileName: 'sample',
+        status: "WaitingForUpload",
+        progress: 0
+    }]*/,
     attachmentsUploadQueue:[],
     attachmentsUploadIndex:0,
     itemVersions:[],
@@ -395,7 +401,7 @@ const pageSlice = createSlice({
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.attachmentsUploadQueue.length;
-                const newUpload = {file: files[i]};
+                const newUpload = {file: files[i], numberOfChunks:Math.floor(files[i].size/state.chunkSize) + 1};
                 state.attachmentsUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
@@ -425,6 +431,13 @@ const pageSlice = createSlice({
             panel.size = action.payload.size;
             state.attachmentsUploadIndex += 1;
         },
+        uploadAChunkFailed: (state, action) => {
+            let attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
+            attachment.failedChunk = action.payload.chunkIndex;
+            let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
+            if(!panel) return;
+            panel.status = "UploadFailed";
+        },
         setCommentEditorMode: (state, action) => {
             if(action.payload.index === 'comment_New') {
                 state.newCommentEditorMode = action.payload.mode;
@@ -449,7 +462,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, uploadingAttachment, attachmentUploaded, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, uploadingAttachment, attachmentUploaded, uploadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1595,9 +1608,11 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const uploadAnAttachment = async (dispatch, state, file) => {
-    const chunkSize = 10 * 1024 * 1024;
-    let i, numberOfChunks, encryptedFileSize = 0, s3KeyPrefix = 'null';
+const uploadAnAttachment = async (dispatch, state, attachment) => {
+    const chunkSize = state.chunkSize;
+    const numberOfChunks = attachment.numberOfChunks;
+    const file = attachment.file;
+    let i, encryptedFileSize = 0, s3KeyPrefix = 'null';
     function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
         return new Promise((resolve, reject) => {
             let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
@@ -1606,7 +1621,7 @@ const uploadAnAttachment = async (dispatch, state, file) => {
             reader = new FileReader();
             const blob = file.slice(offset, offset + chunkSize);
             
-            function uploadChunk(index, data) {
+            function uploadAChunk(index, data) {
                 let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp;
                 
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
@@ -1638,32 +1653,33 @@ const uploadAnAttachment = async (dispatch, state, file) => {
                         await axios.put(signedURL, Buffer.from(data, 'binary'), config);              
                         resolve();
                     } catch(error) {
-                        debugLog(debugOn, 'uploadChunk failed: ', error);
+                        debugLog(debugOn, 'uploadAChunk failed: ', error);
                         reject(error);
                     }
                 });
             }
 
             reader.onloadend = async function(e) {
-                try {
-                    data = reader.result;
-                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
-                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                    dispatch(uploadingAttachment(fileUploadProgress));
-                    encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
-                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
-                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                    dispatch(uploadingAttachment(fileUploadProgress));
-                    encryptedFileSize += encryptedData.length;
-                    if(0/*Validation*/) {
-                        decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
-                        isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
-                        debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
-                    }
-                    await uploadChunk(chunkIndex, encryptedData);
+                data = reader.result;
+                fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                dispatch(uploadingAttachment(fileUploadProgress));
+                encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
+                fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                dispatch(uploadingAttachment(fileUploadProgress));
+                encryptedFileSize += encryptedData.length;
+                if(0/*Validation*/) {
+                    decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
+                    isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
+                    debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
+                }
+                try {   
+                    await uploadAChunk(chunkIndex, encryptedData);
                     resolve();
                 } catch(error) {
                     debugLog(debugOn, 'sliceEncryptAndUpload failed: ', error);
+                    dispatch(uploadAChunkFailed({chunkIndex}));
                     reject(error);
                 }
               };
@@ -1671,23 +1687,25 @@ const uploadAnAttachment = async (dispatch, state, file) => {
         });
     }
     return new Promise(async (resolve, reject) => {     
-        numberOfChunks = Math.floor(file.size / chunkSize) + 1;
-        try {
-            for(i=0; i<numberOfChunks; i++){
+        for(i=0; i<numberOfChunks; i++){
+            try {
                 debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
-                await sliceEncryptAndUpload(file, i);
+                await sliceEncryptAndUpload(file, i);   
+            } catch(error) {
+                debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
+                reject(error);
+                break;
             }
+        }
+        if(i === numberOfChunks){
             debugLog(debugOn, `uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
             resolve({s3Key:s3KeyPrefix, size:encryptedFileSize});
-        } catch(error) {
-            debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
-            reject(error);
-        }
+        }       
     });
 }
 
 export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
-    let state, workspaceKey, itemKey, file, uploadResult, keyEnvelope, newPageData, updatedState;;
+    let state, workspaceKey, itemKey, attachment, uploadResult, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
     
@@ -1710,10 +1728,15 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                 break;
             }
             console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
-            file = state.attachmentsUploadQueue[state.attachmentsUploadIndex].file;
-            uploadResult = await uploadAnAttachment(dispatch, state, file);
-            dispatch(attachmentUploaded(uploadResult));
-            state = getState().page;
+            attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
+            try {
+                uploadResult = await uploadAnAttachment(dispatch, state, attachment);
+                dispatch(attachmentUploaded(uploadResult));
+                state = getState().page;
+            } catch(error) {
+                debugLog(debugOn, 'uploadAttachmentsThunk failed: ', error);
+                break;
+            }
         }
     });
 }
