@@ -1,4 +1,4 @@
-import {useRef} from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card'
@@ -11,7 +11,12 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
+import { stopUploadingAttachment, uploadAttachmentsThunk } from '../reduxStore/pageSlice';
+
 export default function AttachmentPanel ({panelIndex, panel}) {
+    const dispatch = useDispatch();
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
+    
     return (
         <Card>
             <Card.Body>
@@ -36,7 +41,7 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                                     Resume
                                 </Tooltip>
                             }>
-                            <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-play-circle-o fa-lg" aria-hidden="true"></i></Button>
+                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=>dispatch(uploadAttachmentsThunk({files:[], workspaceKey}))}><i className="text-dark fa fa-play-circle-o fa-lg" aria-hidden="true"></i></Button>
                         </OverlayTrigger>}
                         {(panel.status==="WaitingForUpload") && <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-hand-paper-o fa-lg" aria-hidden="true"></i></Button>}
                         {(panel.status==="Uploading") && <OverlayTrigger
@@ -46,14 +51,14 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                                     Stop
                                 </Tooltip>
                             }> 
-                            <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-pause fa-lg" aria-hidden="true"></i></Button>
+                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=>dispatch(stopUploadingAttachment())}><i className="text-dark fa fa-pause fa-lg" aria-hidden="true"></i></Button>
                         </OverlayTrigger>}
                     </div>  
                     </Col>
                 </Row>
                 <Row>
                     <Col>
-                        {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar now={panel.progress} />:""}  
+                        {(panel.status === "Uploading" || panel.status === "UploadFailed" || panel.status === "Downloading" )?<ProgressBar now={panel.progress} />:""}  
                     </Col>
                 </Row>
             </Card.Body>

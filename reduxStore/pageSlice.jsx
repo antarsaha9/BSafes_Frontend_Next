@@ -54,6 +54,7 @@ const initialState = {
     }]*/,
     attachmentsUploadQueue:[],
     attachmentsUploadIndex:0,
+    abortController: null,
     itemVersions:[],
     newCommentEditorMode: 'ReadOnly',
     comments:[]
@@ -398,6 +399,7 @@ const pageSlice = createSlice({
         addUploadAttachments: (state, action) => {
             if(state.aborted ) return;
             const files = action.payload.files;
+            if(!files.length) return;
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.attachmentsUploadQueue.length;
@@ -415,11 +417,19 @@ const pageSlice = createSlice({
             state.attachmentPanels = state.attachmentPanels.concat(newPanels);
         
         },
+        setAbortController: (state, action) => {
+            state.abortController = action.payload;
+        },
         uploadingAttachment: (state, action) => {
             if(state.aborted ) return;
             let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
             panel.status = "Uploading";
             panel.progress = action.payload;
+        },
+        stopUploadingAttachment: (state, action) => {
+            if(state.abortController) {
+                state.abortController.abort();
+            }
         },
         attachmentUploaded: (state, action) => {
             if(state.aborted ) return;
@@ -434,6 +444,7 @@ const pageSlice = createSlice({
         uploadAChunkFailed: (state, action) => {
             let attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
             attachment.failedChunk = action.payload.chunkIndex;
+            attachment.s3KeyPrefix = action.payload.s3KeyPrefix;
             let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
             if(!panel) return;
             panel.status = "UploadFailed";
@@ -462,7 +473,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, uploadingAttachment, attachmentUploaded, uploadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1545,66 +1556,70 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         dispatch(addUploadImages({files:data.files, where:data.where}));
         return;
     } 
-    newActivity(dispatch, "UploadingImages",  async () => {
-        dispatch(addUploadImages({files:data.files, where:data.where}));
-        state = getState().page;
-        if(!state.itemCopy) {
-            itemKey = setupNewItemKey();
-            dispatch(newItemKey({itemKey}));
-        }
-        state = getState().page;
-        while(state.imageUploadQueue.length > state.imageUploadIndex){
-            if(state.aborted) 
-            {
-                debugLog(debugOn, "abort: ", state.aborted);
-                break;
-            }
-            console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
-            const file = state.imageUploadQueue[state.imageUploadIndex].file;
-            const uploadResult = await uploadAnImage(dispatch, state, file);
-            dispatch(imageUploaded(uploadResult));
+    newActivity(dispatch, "UploadingImages",  () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(addUploadImages({files:data.files, where:data.where}));
             state = getState().page;
-        }
-        state = getState().page;
-        console.log(state.imagePanels);
-        const images = [];
-        for(let i=0; i<state.imagePanels.length; i++) {
-            let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
-            images.push(image);
-        }
-        if (!state.itemCopy) {
-            try {
-                
-                keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
-
-                newPageData = {
-                    "itemId": state.id,
-                    "keyEnvelope": forge.util.encode64(keyEnvelope),
-                    "images":  JSON.stringify(images),
-                };
-                
-                updatedState = {
-                    itemKey
-                }
-
-                await createANewPage(dispatch, state, newPageData, updatedState);
-                resolve();
-            } catch(error) {
-                reject(error);
-            } 
-        } else {
-            let itemCopy = {
-                ...state.itemCopy
+            if(!state.itemCopy) {
+                itemKey = setupNewItemKey();
+                dispatch(newItemKey({itemKey}));
             }
+            state = getState().page;
+            while(state.imageUploadQueue.length > state.imageUploadIndex){
+                if(state.aborted) 
+                {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                console.log("======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
+                const file = state.imageUploadQueue[state.imageUploadIndex].file;
+                const uploadResult = await uploadAnImage(dispatch, state, file);
+                dispatch(imageUploaded(uploadResult));
+                state = getState().page;
+            }
+            state = getState().page;
+            console.log(state.imagePanels);
+            const images = [];
+            for(let i=0; i<state.imagePanels.length; i++) {
+                let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
+                images.push(image);
+            }
+            if (!state.itemCopy) {
+                try {
+                    keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
 
-            itemCopy.images = images;
-            itemCopy.update = "images";    
-            await createNewItemVersionForPage(itemCopy);
-            dispatch(newVersionCreated({
-                itemCopy
-            }));
+                    newPageData = {
+                        "itemId": state.id,
+                        "keyEnvelope": forge.util.encode64(keyEnvelope),
+                        "images":  JSON.stringify(images),
+                    };
+                
+                    updatedState = {
+                        itemKey
+                    }
 
-        }
+                    await createANewPage(dispatch, state, newPageData, updatedState);
+                    resolve();
+                } catch(error) {
+                    reject(error);
+                } 
+            } else {
+                let itemCopy = {
+                    ...state.itemCopy
+                }
+                try {
+                    itemCopy.images = images;
+                    itemCopy.update = "images";    
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy
+                    }));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        });
     });
 }
 
@@ -1612,21 +1627,28 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
-    let i, encryptedFileSize = 0, s3KeyPrefix = 'null';
-    function sliceEncryptAndUpload(file, chunkIndex, resumingChunkIndex) {
+    const fileSize = file.size;
+    let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+    function sliceEncryptAndUpload(file, chunkIndex) {
         return new Promise((resolve, reject) => {
-            let reader, fileSize, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
-            fileSize = file.size;
+            let reader, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
+           
             offset = (chunkIndex) * chunkSize;
             reader = new FileReader();
             const blob = file.slice(offset, offset + chunkSize);
             
             function uploadAChunk(index, data) {
-                let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp;
+                let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
                 
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
 	            timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1]
                 
+                function setUploadTimeout() {
+                    timer = setTimeout(()=> {
+                        if(controller) controller.abort();
+                    }, 30000);
+                }
+
                 return new Promise(async (resolve, reject) => {
                     try {
                         result = await preS3ChunkUpload(state.id, index, timeStamp);
@@ -1638,8 +1660,15 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
                         signedURL = result.signedURL;
                         debugLog(debugOn, 'chunk signed url', signedURL );
 
+                        controller = new AbortController();
+                        dispatch(setAbortController(controller));
                         const config = {
                             onUploadProgress: async (progressEvent) => {
+                                if(timer) {
+                                    clearTimeout(timer);
+                                    timer = 0;
+                                }
+                                //setUploadTimeout();
                                 let percentCompleted = 15 + Math.ceil(progressEvent.loaded*85/progressEvent.total);
                                 fileUploadProgress = index*(100/numberOfChunks) + percentCompleted/numberOfChunks;
                                 debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
@@ -1648,9 +1677,14 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
                             },
                             headers: {
                                 'Content-Type': 'binary/octet-stream'
-                            }
+                            },
+                            timeout: 0,
+                            signal: controller.signal
                         }
-                        await axios.put(signedURL, Buffer.from(data, 'binary'), config);              
+                        //setUploadTimeout();
+                        await axios.put(signedURL, Buffer.from(data, 'binary'), config );              
+                        if(timer) clearTimeout(timer);
+                        dispatch(setAbortController(null));
                         resolve();
                     } catch(error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
@@ -1679,15 +1713,22 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
                     resolve();
                 } catch(error) {
                     debugLog(debugOn, 'sliceEncryptAndUpload failed: ', error);
-                    dispatch(uploadAChunkFailed({chunkIndex}));
+                    dispatch(uploadAChunkFailed({chunkIndex, s3KeyPrefix}));
                     reject(error);
                 }
               };
             reader.readAsArrayBuffer(blob);
         });
     }
-    return new Promise(async (resolve, reject) => {     
-        for(i=0; i<numberOfChunks; i++){
+    return new Promise(async (resolve, reject) => {
+        
+        if(attachment.failedChunk) {
+            startingChunk = attachment.failedChunk;
+            s3KeyPrefix = attachment.s3KeyPrefix;
+        } else {
+            startingChunk = 0;
+        }  
+        for(i=startingChunk; i<numberOfChunks; i++){
             try {
                 debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
                 await sliceEncryptAndUpload(file, i);   
@@ -1713,32 +1754,42 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
         dispatch(addUploadAttachments({files:data.files}));
         return;
     } 
-    newActivity(dispatch, "UploadingAttachments",  async () => {
-        dispatch(addUploadAttachments({files:data.files, where:data.where}));
-        state = getState().page;
-        if(!state.itemCopy) {
-            itemKey = setupNewItemKey();
-            dispatch(newItemKey({itemKey}));
-        }
-        state = getState().page;
-        while(state.attachmentsUploadQueue.length > state.attachmentsUploadIndex){
-            if(state.aborted) 
-            {
-                debugLog(debugOn, "abort: ", state.aborted);
-                break;
+    newActivity(dispatch, "UploadingAttachments",  () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(addUploadAttachments({files:data.files}));
+            state = getState().page;
+            if(!state.itemCopy) {
+                itemKey = setupNewItemKey();
+                dispatch(newItemKey({itemKey}));
             }
-            console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
-            attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
-            try {
-                uploadResult = await uploadAnAttachment(dispatch, state, attachment);
-                dispatch(attachmentUploaded(uploadResult));
-                state = getState().page;
-            } catch(error) {
-                debugLog(debugOn, 'uploadAttachmentsThunk failed: ', error);
-                break;
+            state = getState().page;
+            while(state.attachmentsUploadQueue.length > state.attachmentsUploadIndex){
+                if(state.aborted) 
+                {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
+                attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
+                try {
+                    uploadResult = await uploadAnAttachment(dispatch, state, attachment);
+                    dispatch(attachmentUploaded(uploadResult));
+                    state = getState().page;
+                } catch(error) {
+                    debugLog(debugOn, 'uploadAttachmentsThunk failed: ', error);
+                    reject(error);
+                    break;
+                }
             }
-        }
+            if(state.attachmentsUploadQueue.length === state.attachmentsUploadIndex) {
+                resolve();
+            }
+        });
     });
+}
+
+export const resumeUploadingAttachmentsThunk = (data) => async (dispatch, getState) => {
+
 }
 
 export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
