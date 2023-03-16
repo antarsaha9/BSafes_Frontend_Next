@@ -7,7 +7,7 @@ import { setupNewItemKey } from './containerSlice';
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptBinaryStringToUinit8ArrayAsync, decryptLargeBinaryString, encryptArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { preS3Download, preS3ChunkUpload, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
+import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -47,14 +47,11 @@ const initialState = {
     imageDownloadQueue:[],
     imageDownloadIndex:0,
     chunkSize: 10 * 1024 * 1024,
-    attachmentPanels:[]/*[{
-        queueId: 'u_1',
-        fileName: 'sample',
-        status: "WaitingForUpload",
-        progress: 0
-    }]*/,
+    attachmentPanels:[],
     attachmentsUploadQueue:[],
     attachmentsUploadIndex:0,
+    attachmentsDownloadQueue:[],
+    attachmentsDownloadIndex:0,
     abortController: null,
     itemVersions:[],
     newCommentEditorMode: 'ReadOnly',
@@ -474,6 +471,19 @@ const pageSlice = createSlice({
             if(!panel) return;
             panel.status = "UploadFailed";
         },
+        addDownloadAttachment: (state, action) => {
+            if(state.aborted ) return;
+            state.attachmentsDownloadQueue.push(action.payload);
+        },
+        downloadingAttachment: (state, action) => {
+            
+        },
+        attachmentDownloaded: (state, action) => {
+        
+        },
+        downloadChunkFailed: (state, action) => {
+        
+        },
         setCommentEditorMode: (state, action) => {
             if(action.payload.index === 'comment_New') {
                 state.newCommentEditorMode = action.payload.mode;
@@ -498,7 +508,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, downloadingAttachment, attachmentDownloaded, downloadChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1648,7 +1658,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const uploadAnAttachment = async (dispatch, state, attachment, workspaceKey) => {
+const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
@@ -1878,8 +1888,86 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const resumeUploadingAttachmentsThunk = (data) => async (dispatch, getState) => {
+const downloadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
+    return new Promise(async (resolve, reject) => {
+        let i, numberOfChunks, numberOfChunksRequired = false, result;
+        
+        function downloadDecryptAndAssemble(chunkIndex) {
+            return new Promise(async (resolve, reject) => {
+                result = await preS3ChunkDownload(state.id, chunkIndex, attachment.s3KeyPrefix, numberOfChunksRequired);
+            
+            });
+        }
 
+        function doneDownloadAnAttachment() {
+            return new Promise(async (resolve, reject) => {
+                
+            });
+        }
+
+        numberOfChunks = attachment.numberOfChunks;
+        if(!numberOfChunks) {
+            numberOfChunks = 1;
+            numberOfChunksRequired = true;
+        }
+        for(i=0; i< numberOfChunks; i++) {
+            try{
+                await downloadDecryptAndAssemble(i);
+            } catch(error) {
+                debugLog(debugOn, "downloadAnAttachment failed: ", error);
+                reject(error);
+                break;
+            }
+        }
+        if(i === numberOfChunks) {
+            debugLog(debugOn, `downloadAnAttachment done, total chunks: {numberOfChunks} decryptedFileSize: {decryptedFileSize}`);
+            try {
+                await doneDownloadAnAttachment();
+                resolve({});
+            } catch(error) {
+                debugLog(debugOn, 'downloadAnAttachment failed: ', error); 
+                reject(error);
+            }
+        }
+    });
+}
+
+export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) => {
+    let state, attachment, downloadResult;
+    const workspaceKey = data.workspaceKey;
+    state = getState().page;
+    if(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
+        dispatch(addDownloadAttachment({... data.panel}));
+        return;
+    } 
+    newActivity(dispatch, "Downloadingttachments",  () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(addDownloadAttachment({... data.panel}));
+        
+            state = getState().page;
+            while(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex){
+                if(state.aborted) 
+                {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                console.log("======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
+                attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
+                try {
+                    downloadResult = await downloadAnAttachment(dispatch, state, attachment, workspaceKey);
+                    dispatch(attachmentDownloaded(downloadResult));
+                    state = getState().page;
+                } catch(error) {
+                    debugLog(debugOn, 'downloadAnAttachmentThunk failed: ', error);
+                    reject(error);
+                    break;
+                }
+            }
+            if(state.attachmentsDownloadQueue.length === state.attachmentsDownloadIndex) {
+                resolve();
+            }
+        });
+    });
 }
 
 export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
