@@ -6,7 +6,7 @@ const axios = require('axios');
 import { setupNewItemKey } from './containerSlice';
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptBinaryStringToUinit8ArrayAsync, decryptLargeBinaryString, encryptArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
@@ -174,7 +174,7 @@ function decryptPageItemFunc(state, workspaceKey) {
         }            
     }
     if(item.attachments.length > 1) {
-        let attachment, encryptedFileName, encodedFileName, fileName;
+        let attachment, encryptedFileName, encodedFileName, fileName, fileType, fileSize;
         let newPanels = [];
         for(let i=1; i< item.attachments.length; i++) {
             let attachment = item.attachments[i];
@@ -184,6 +184,8 @@ function decryptPageItemFunc(state, workspaceKey) {
             const newPanel = {
                 queueId: 'a'+i,
                 fileName,
+                fileType: attachment.fileType,
+                fileSize: attachment.fileSize,
                 status: "Uploaded",
                 numberOfChunks: attachment.numberOfChunks,
                 s3KeyPrefix: attachment.s3KeyPrefix,
@@ -459,6 +461,8 @@ const pageSlice = createSlice({
             if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
+            panel.fileType = action.payload.fileType;
+            panel.fileSize = action.payload.fileSize;
             panel.s3KeyPrefix = action.payload.s3KeyPrefix;
             panel.size = action.payload.size;
             state.attachmentsUploadIndex += 1;
@@ -1663,6 +1667,7 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
     const fileSize = file.size;
+    const fileType = file.type;
     const encodedFileName = forge.util.encodeUtf8(file.name);
 	const encryptedFileName = encryptBinaryString(encodedFileName, state.itemKey);
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
@@ -1736,13 +1741,13 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                 fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
                 debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
                 dispatch(uploadingAttachment(fileUploadProgress));
-                encryptedData = await encryptArrayBufferToBinaryStringAsync(data, state.itemKey);
+                encryptedData = await encryptChunkArrayBufferToBinaryStringAsync(data, state.itemKey);
                 fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
                 debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
                 dispatch(uploadingAttachment(fileUploadProgress));
                 encryptedFileSize += encryptedData.length;
                 if(0/*Validation*/) {
-                    decryptedData = await decryptBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
+                    decryptedData = await decryptChunkBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
                     isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
                     debugLog(debugOn, `decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
                 }
@@ -1771,7 +1776,8 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                         keyEnvelope: forge.util.encode64(keyEnvelope),
                         s3KeyPrefix,
                         fileName: forge.util.encode64(encryptedFileName),
-	                    fileType: file.type,
+	                    fileType,
+                        fileSize,
 	                    size: encryptedFileSize,
 	                    numberOfChunks
                     };
@@ -1793,6 +1799,8 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                 }
                 const thisAttachment = {
                     fileName: forge.util.encode64(encryptedFileName),
+                    fileType,
+                    fileSize,
                     s3KeyPrefix,
                     size: encryptedFileSize,
                     numberOfChunks
@@ -1835,7 +1843,7 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
             debugLog(debugOn, `uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
             try {
                 await doneUploadAnAttachment();
-                resolve({s3KeyPrefix, size:encryptedFileSize});
+                resolve({fileType, fileSize, s3KeyPrefix, size:encryptedFileSize});
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
                 reject(error);
@@ -1888,14 +1896,38 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const downloadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
+const downloadAnAttachment = (dispatch, state, attachment, workspaceKey, itemId) => {
     return new Promise(async (resolve, reject) => {
-        let i, numberOfChunks, numberOfChunksRequired = false, result;
-        
+        let i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedFileString="";
+        const s3KeyPrefix = attachment.s3KeyPrefix;
+        const keyVersion = s3KeyPrefix.split(":")[1];
+
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
-                result = await preS3ChunkDownload(state.id, chunkIndex, attachment.s3KeyPrefix, numberOfChunksRequired);
-            
+                try {
+                    result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired);
+                    const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment);                          
+                    debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
+                    if(state.activeRequest !== itemId) {
+                        reject("Aborted");
+                        return;        
+                    }      
+                   
+                    if(keyVersion === '3') {
+                        buffer = Buffer.from(response, 'binary');
+                        downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
+                        debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
+                        decryptedFileString += decryptedChunkStr;
+                    } else if(keyVersion === '1') {
+
+                    }
+                    resolve();
+                } catch(error) {
+                    debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);
+                    reject(error);
+                }
             });
         }
 
@@ -1920,7 +1952,7 @@ const downloadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
             }
         }
         if(i === numberOfChunks) {
-            debugLog(debugOn, `downloadAnAttachment done, total chunks: {numberOfChunks} decryptedFileSize: {decryptedFileSize}`);
+            debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks} decryptedFileSize: ${decryptedFileString.length}`);
             try {
                 await doneDownloadAnAttachment();
                 resolve({});
@@ -1933,9 +1965,10 @@ const downloadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
 }
 
 export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) => {
-    let state, attachment, downloadResult;
+    let state, attachment, downloadResult, itemId;
     const workspaceKey = data.workspaceKey;
     state = getState().page;
+    itemId = state.id;
     if(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         dispatch(addDownloadAttachment({... data.panel}));
         return;
@@ -1954,7 +1987,7 @@ export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) =>
                 console.log("======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
                 attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
                 try {
-                    downloadResult = await downloadAnAttachment(dispatch, state, attachment, workspaceKey);
+                    downloadResult = await downloadAnAttachment(dispatch, state, attachment, workspaceKey, itemId);
                     dispatch(attachmentDownloaded(downloadResult));
                     state = getState().page;
                 } catch(error) {
