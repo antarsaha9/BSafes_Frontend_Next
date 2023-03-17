@@ -91,12 +91,17 @@ export default function ItemPath() {
                 } else {
                     decoded = forge.util.decode64(item._source.keyEnvelope);
                     itemKey = decryptBinaryString(decoded, workspaceKey);
-                    encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey);
-                    title = forge.util.decodeUtf8(encodedTitle);
-                    title = DOMPurify.sanitize(title);
-                    temp = document.createElement('span');
-                    temp.innerHTML = title;
-                    itemTitleText = temp.textContent || temp.innerText;
+                    if(item._source.title) {
+                        encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey);
+                        title = forge.util.decodeUtf8(encodedTitle);
+                        title = DOMPurify.sanitize(title);
+                        temp = document.createElement('span');
+                        temp.innerHTML = title;
+                        itemTitleText = temp.textContent || temp.innerText;
+                    } else {
+                        itemTitleText = '';
+                    }
+                    
                 }
                 return {
                     title: itemTitleText,

@@ -7,7 +7,7 @@ import { setupNewItemKey } from './containerSlice';
 
 import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptBinaryStringToUinit8ArrayAsync, decryptLargeBinaryString, encryptArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { preS3Download, preS3ChunkUpload, timeToString, formatTimeDisplay, newResultItem } from '../lib/bSafesCommonUI';
+import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -19,6 +19,7 @@ const initialState = {
     activeRequest: null,
     error: null,
     navigationMode: false,
+    decrypttionRequired: true,
     itemCopy: null,
     itemPath:null,
     id: null,
@@ -46,14 +47,11 @@ const initialState = {
     imageDownloadQueue:[],
     imageDownloadIndex:0,
     chunkSize: 10 * 1024 * 1024,
-    attachmentPanels:[]/*[{
-        queueId: 'u_1',
-        fileName: 'sample',
-        status: "WaitingForUpload",
-        progress: 0
-    }]*/,
+    attachmentPanels:[],
     attachmentsUploadQueue:[],
     attachmentsUploadIndex:0,
+    attachmentsDownloadQueue:[],
+    attachmentsDownloadIndex:0,
     abortController: null,
     itemVersions:[],
     newCommentEditorMode: 'ReadOnly',
@@ -78,6 +76,7 @@ const dataFetchedFunc = (state, action) => {
 }
 
 function decryptPageItemFunc(state, workspaceKey) {
+    if(!state.decrypttionRequired) return;
     const item = state.itemCopy;
     if ((item.keyEnvelope === undefined)) {      
         debugLog(debugOn, "Error: undefined item key");
@@ -174,6 +173,26 @@ function decryptPageItemFunc(state, workspaceKey) {
             state.imagePanels.push(newPanel);
         }            
     }
+    if(item.attachments.length > 1) {
+        let attachment, encryptedFileName, encodedFileName, fileName;
+        let newPanels = [];
+        for(let i=1; i< item.attachments.length; i++) {
+            let attachment = item.attachments[i];
+            encryptedFileName = forge.util.decode64(attachment.fileName);
+            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey);
+            fileName = forge.util.decodeUtf8(encodedFileName);
+            const newPanel = {
+                queueId: 'a'+i,
+                fileName,
+                status: "Uploaded",
+                numberOfChunks: attachment.numberOfChunks,
+                s3KeyPrefix: attachment.s3KeyPrefix,
+                progress: 0
+            }
+            newPanels.push(newPanel);
+        }
+        state.attachmentPanels = newPanels;
+    }
 }
 
 const containerDataFetchedFunc =  (state, action) => {
@@ -256,6 +275,7 @@ const pageSlice = createSlice({
                 let key = updatedKeys[i];
                 state[key] = action.payload[key];
             }
+            state.decrypttionRequired = false;
         },
         newVersionCreated: (state, action) => {
             const updatedKeys = Object.keys(action.payload);
@@ -263,6 +283,7 @@ const pageSlice = createSlice({
                 let key = updatedKeys[i];
                 state[key] = action.payload[key];
             }
+            state.decrypttionRequired = false;
         },
         itemVersionsFetched: (state, action) => {
             state.itemVersions.push(...action.payload);
@@ -409,6 +430,7 @@ const pageSlice = createSlice({
                     queueId: queueId,
                     fileName: files[i].name,
                     status: "WaitingForUpload",
+                    numberOfChunks: newUpload.numberOfChunks,
                     progress: 0
                 }
                 newPanels.push(newPanel);
@@ -437,7 +459,7 @@ const pageSlice = createSlice({
             if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
-            panel.s3Key = action.payload.s3Key;
+            panel.s3KeyPrefix = action.payload.s3KeyPrefix;
             panel.size = action.payload.size;
             state.attachmentsUploadIndex += 1;
         },
@@ -448,6 +470,19 @@ const pageSlice = createSlice({
             let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
             if(!panel) return;
             panel.status = "UploadFailed";
+        },
+        addDownloadAttachment: (state, action) => {
+            if(state.aborted ) return;
+            state.attachmentsDownloadQueue.push(action.payload);
+        },
+        downloadingAttachment: (state, action) => {
+            
+        },
+        attachmentDownloaded: (state, action) => {
+        
+        },
+        downloadChunkFailed: (state, action) => {
+        
         },
         setCommentEditorMode: (state, action) => {
             if(action.payload.index === 'comment_New') {
@@ -473,7 +508,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, downloadingAttachment, attachmentDownloaded, downloadChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1623,12 +1658,15 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const uploadAnAttachment = async (dispatch, state, attachment) => {
+const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
     const fileSize = file.size;
+    const encodedFileName = forge.util.encodeUtf8(file.name);
+	const encryptedFileName = encryptBinaryString(encodedFileName, state.itemKey);
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+    
     function sliceEncryptAndUpload(file, chunkIndex) {
         return new Promise((resolve, reject) => {
             let reader, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
@@ -1720,6 +1758,61 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
             reader.readAsArrayBuffer(blob);
         });
     }
+
+    function doneUploadAnAttachment() {
+        let i, newAttachments=[];
+        return new Promise(async (resolve, reject) => {
+            if (!state.itemCopy) {
+                try {
+                    let keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
+
+                    let newPageData = {
+                        itemId: state.id,
+                        keyEnvelope: forge.util.encode64(keyEnvelope),
+                        s3KeyPrefix,
+                        fileName: forge.util.encode64(encryptedFileName),
+	                    fileType: file.type,
+	                    size: encryptedFileSize,
+	                    numberOfChunks
+                    };
+                
+                    let updatedState = {
+                    };
+
+                    await createANewPage(dispatch, state, newPageData, updatedState);
+                    resolve();
+                } catch(error) {
+                    reject(error);
+                } 
+            } else {
+                let itemCopy = {
+                    ...state.itemCopy
+                }
+                for(i=0; i< itemCopy.attachments.length; i++) {
+                    newAttachments.push(itemCopy.attachments[i]);
+                }
+                const thisAttachment = {
+                    fileName: forge.util.encode64(encryptedFileName),
+                    s3KeyPrefix,
+                    size: encryptedFileSize,
+                    numberOfChunks
+                }
+                newAttachments.push(thisAttachment);
+                try {
+                    itemCopy.attachments = newAttachments;
+                    itemCopy.update = "attachments";    
+                    await createNewItemVersionForPage(itemCopy);
+                    dispatch(newVersionCreated({
+                        itemCopy
+                    }));
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            }
+        })
+    }
+
     return new Promise(async (resolve, reject) => {
         
         if(attachment.failedChunk) {
@@ -1740,7 +1833,14 @@ const uploadAnAttachment = async (dispatch, state, attachment) => {
         }
         if(i === numberOfChunks){
             debugLog(debugOn, `uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
-            resolve({s3Key:s3KeyPrefix, size:encryptedFileSize});
+            try {
+                await doneUploadAnAttachment();
+                resolve({s3KeyPrefix, size:encryptedFileSize});
+            } catch(error) {
+                debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
+                reject(error);
+            }
+            
         }       
     });
 }
@@ -1772,7 +1872,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                 console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
                 attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
                 try {
-                    uploadResult = await uploadAnAttachment(dispatch, state, attachment);
+                    uploadResult = await uploadAnAttachment(dispatch, state, attachment, workspaceKey);
                     dispatch(attachmentUploaded(uploadResult));
                     state = getState().page;
                 } catch(error) {
@@ -1788,8 +1888,86 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const resumeUploadingAttachmentsThunk = (data) => async (dispatch, getState) => {
+const downloadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
+    return new Promise(async (resolve, reject) => {
+        let i, numberOfChunks, numberOfChunksRequired = false, result;
+        
+        function downloadDecryptAndAssemble(chunkIndex) {
+            return new Promise(async (resolve, reject) => {
+                result = await preS3ChunkDownload(state.id, chunkIndex, attachment.s3KeyPrefix, numberOfChunksRequired);
+            
+            });
+        }
 
+        function doneDownloadAnAttachment() {
+            return new Promise(async (resolve, reject) => {
+                
+            });
+        }
+
+        numberOfChunks = attachment.numberOfChunks;
+        if(!numberOfChunks) {
+            numberOfChunks = 1;
+            numberOfChunksRequired = true;
+        }
+        for(i=0; i< numberOfChunks; i++) {
+            try{
+                await downloadDecryptAndAssemble(i);
+            } catch(error) {
+                debugLog(debugOn, "downloadAnAttachment failed: ", error);
+                reject(error);
+                break;
+            }
+        }
+        if(i === numberOfChunks) {
+            debugLog(debugOn, `downloadAnAttachment done, total chunks: {numberOfChunks} decryptedFileSize: {decryptedFileSize}`);
+            try {
+                await doneDownloadAnAttachment();
+                resolve({});
+            } catch(error) {
+                debugLog(debugOn, 'downloadAnAttachment failed: ', error); 
+                reject(error);
+            }
+        }
+    });
+}
+
+export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) => {
+    let state, attachment, downloadResult;
+    const workspaceKey = data.workspaceKey;
+    state = getState().page;
+    if(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
+        dispatch(addDownloadAttachment({... data.panel}));
+        return;
+    } 
+    newActivity(dispatch, "Downloadingttachments",  () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(addDownloadAttachment({... data.panel}));
+        
+            state = getState().page;
+            while(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex){
+                if(state.aborted) 
+                {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                console.log("======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
+                attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
+                try {
+                    downloadResult = await downloadAnAttachment(dispatch, state, attachment, workspaceKey);
+                    dispatch(attachmentDownloaded(downloadResult));
+                    state = getState().page;
+                } catch(error) {
+                    debugLog(debugOn, 'downloadAnAttachmentThunk failed: ', error);
+                    reject(error);
+                    break;
+                }
+            }
+            if(state.attachmentsDownloadQueue.length === state.attachmentsDownloadIndex) {
+                resolve();
+            }
+        });
+    });
 }
 
 export const saveImageWordsThunk = (data) => async (dispatch, getState) => {

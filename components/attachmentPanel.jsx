@@ -11,7 +11,7 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { stopUploadingAttachment, uploadAttachmentsThunk } from '../reduxStore/pageSlice';
+import { stopUploadingAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk} from '../reduxStore/pageSlice';
 
 export default function AttachmentPanel ({panelIndex, panel}) {
     const dispatch = useDispatch();
@@ -33,7 +33,7 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                         }  className={`${BSafesStyle.attachmentMoreBtn} pull-right`} id="dropdown-menu-align-end">
                             <Dropdown.Item eventKey="1" className="deleteImageBtn">Delete</Dropdown.Item>
                         </DropdownButton>
-                        {(panel.status==="Uploaded") && <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
+                        {(panel.status==="Uploaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=> dispatch(downloadAnAttachmentThunk({panel, workspaceKey}))}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
                         {(panel.status==="UploadFailed") && <OverlayTrigger
                             placement='top'
                             overlay={
