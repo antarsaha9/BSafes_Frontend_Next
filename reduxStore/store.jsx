@@ -7,6 +7,7 @@ import authSlice, {authReducer} from './auth';
 import containerSlice, {containerReducer} from './containerSlice';
 import pageSlice, {pageReducer} from './pageSlice';
 import teamSlice, {teamReducer} from './teamSlice';
+import accountSlice, {accountReducer} from './accountSlice';
 
 const reduxStore = configureStore({
     reducer: {
@@ -15,6 +16,7 @@ const reduxStore = configureStore({
         [authSlice.name]: authReducer,
         [containerSlice.name]: containerReducer,
         [pageSlice.name]: pageReducer,
+        [accountSlice.name]: accountReducer,
         [teamSlice.name]: teamReducer
     },
     devTools: true,
