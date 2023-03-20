@@ -120,6 +120,18 @@ const scripts = [
     {id: "photoswipe-ui-default.min.js",
      src: "https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js",
      loaded: false
+    },
+    {id: "photoswipe-ui-defaultweb-streams-polyfill",
+     src: "https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/ponyfill.min.js",
+     loaded: false
+    },
+    {id: "Blob.js",
+     src: "https://cdn.jsdelivr.net/gh/eligrey/Blob.js/Blob.js",
+     loaded: false
+    },
+    {id: "StreamSaver.min.js",
+     src: "https://cdn.jsdelivr.net/npm/streamsaver@2.0.3/StreamSaver.min.js",
+     loaded: false
     }
 ];
 

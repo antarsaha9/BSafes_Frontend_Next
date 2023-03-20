@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { setupNewItemKey } from './containerSlice';
 
-import { convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
+import { sleepWithPrint, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
@@ -483,7 +483,12 @@ const pageSlice = createSlice({
             
         },
         attachmentDownloaded: (state, action) => {
-        
+            if(state.aborted ) return;
+            let attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
+            let panel = state.attachmentPanels.find((item) => item.queueId === attachment.queueId);
+            panel.link = action.payload.link;
+            panel.status = "Downloaded";
+            state.attachmentsDownloadIndex += 1;
         },
         downloadChunkFailed: (state, action) => {
         
@@ -1898,10 +1903,28 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 
 const downloadAnAttachment = (dispatch, state, attachment, workspaceKey, itemId) => {
     return new Promise(async (resolve, reject) => {
-        let i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedFileString="";
+        let i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedFileString="", downloadResult, decryptedDataInArrary;
+        const fileType = attachment.fileType;
         const s3KeyPrefix = attachment.s3KeyPrefix;
         const keyVersion = s3KeyPrefix.split(":")[1];
 
+        const fileStream = streamSaver.createWriteStream(attachment.fileName, {
+            size: attachment.fileSize // Makes the percentage visiable in the download
+          })
+      
+        const writer = window.writer = fileStream.getWriter();
+        
+        function writeAChunkToFile(thisArray) {
+            return new Promise(async (resolve, reject)=>{
+                writer.write(thisArray).then(()=> {
+                    console.log("chunk written to file: " );
+                    resolve();
+                }, (reason)=> {
+                    console.log(reason);
+                    reject(reason);
+                })
+            })
+        }
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
                 try {
@@ -1919,7 +1942,12 @@ const downloadAnAttachment = (dispatch, state, attachment, workspaceKey, itemId)
                         debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
                         decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
                         debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
-                        decryptedFileString += decryptedChunkStr;
+                        decryptedDataInArrary = new Uint8Array(decryptedChunkStr.length);
+                        for(let i=0; i< decryptedChunkStr.length; i++) {
+                            decryptedDataInArrary[i]= decryptedChunkStr.charCodeAt(i)
+                        }
+                        await writeAChunkToFile(decryptedDataInArrary);
+                        //decryptedFileString += decryptedChunkStr;
                     } else if(keyVersion === '1') {
 
                     }
@@ -1932,8 +1960,17 @@ const downloadAnAttachment = (dispatch, state, attachment, workspaceKey, itemId)
         }
 
         function doneDownloadAnAttachment() {
+            let blob, link;
             return new Promise(async (resolve, reject) => {
-                
+                let decryptedUint8Array = new Uint8Array(decryptedFileString.length);
+                for(let i=0; i<decryptedFileString.length; i++){
+                    decryptedUint8Array[i] =  decryptedFileString.charCodeAt(i);
+                }
+                blob = new Blob([decryptedUint8Array, {
+                    type: fileType
+                }]);
+                link = window.URL.createObjectURL(blob);
+                resolve({link});
             });
         }
 
@@ -1954,8 +1991,9 @@ const downloadAnAttachment = (dispatch, state, attachment, workspaceKey, itemId)
         if(i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks} decryptedFileSize: ${decryptedFileString.length}`);
             try {
-                await doneDownloadAnAttachment();
-                resolve({});
+                writer.close();
+                //downloadResult = await doneDownloadAnAttachment();
+                //resolve(downloadResult);
             } catch(error) {
                 debugLog(debugOn, 'downloadAnAttachment failed: ', error); 
                 reject(error);

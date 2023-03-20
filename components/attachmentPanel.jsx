@@ -1,3 +1,4 @@
+import { useRef, useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -11,11 +12,22 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { stopUploadingAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk} from '../reduxStore/pageSlice';
+import { stopUploadingAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk } from '../reduxStore/pageSlice';
 
 export default function AttachmentPanel ({panelIndex, panel}) {
     const dispatch = useDispatch();
     const workspaceKey = useSelector( state => state.container.workspaceKey);
+    const saveFileRef = useRef(null);
+
+    const handleDownload= async () => {
+        dispatch(downloadAnAttachmentThunk({panel, workspaceKey}));
+    }
+
+    useEffect(()=> {
+        if(panel.link) {
+            saveFileRef.current?.click();
+        }
+    }, [panel])
     
     return (
         <Card>
@@ -33,7 +45,8 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                         }  className={`${BSafesStyle.attachmentMoreBtn} pull-right`} id="dropdown-menu-align-end">
                             <Dropdown.Item eventKey="1" className="deleteImageBtn">Delete</Dropdown.Item>
                         </DropdownButton>
-                        {(panel.status==="Uploaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=> dispatch(downloadAnAttachmentThunk({panel, workspaceKey}))}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
+                        {(panel.status==="Uploaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleDownload}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
+                        <a ref={saveFileRef} href={panel.link} download={panel.fileName} className="d-none">Save</a>
                         {(panel.status==="UploadFailed") && <OverlayTrigger
                             placement='top'
                             overlay={
