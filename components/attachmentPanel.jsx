@@ -12,15 +12,33 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { stopUploadingAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk } from '../reduxStore/pageSlice';
+import { stopUploadingAnAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk, stopDownloadingAnAttachment } from '../reduxStore/pageSlice';
+import { debugLog } from '../lib/helper'
 
 export default function AttachmentPanel ({panelIndex, panel}) {
+    const debugOn = true;
     const dispatch = useDispatch();
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const saveFileRef = useRef(null);
-
+    
     const handleDownload= async () => {
         dispatch(downloadAnAttachmentThunk({panel, workspaceKey}));
+    }
+
+    const handleStop = () => {
+        if(panel.status === "Uploading") {
+            dispatch(stopUploadingAnAttachment());
+        } else {
+            dispatch(stopDownloadingAnAttachment());
+        }    
+    }
+
+    const handleResume= () => {
+        if(panel.status === "UploadFailed"){
+            ()=>dispatch(uploadAttachmentsThunk({files:[], workspaceKey}))
+        } else {
+            dispatch(downloadAnAttachmentThunk({panel:null, workspaceKey}));
+        }
     }
 
     useEffect(()=> {
@@ -45,33 +63,33 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                         }  className={`${BSafesStyle.attachmentMoreBtn} pull-right`} id="dropdown-menu-align-end">
                             <Dropdown.Item eventKey="1" className="deleteImageBtn">Delete</Dropdown.Item>
                         </DropdownButton>
-                        {(panel.status==="Uploaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleDownload}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
+                        {(panel.status==="Uploaded" || panel.status==="Downloaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleDownload}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
                         <a ref={saveFileRef} href={panel.link} download={panel.fileName} className="d-none">Save</a>
-                        {(panel.status==="UploadFailed") && <OverlayTrigger
+                        {(panel.status==="UploadFailed" || panel.status==="DownloadFailed") && <OverlayTrigger
                             placement='top'
                             overlay={
                                 <Tooltip id='ResumeUploadingFile'>
                                     Resume
                                 </Tooltip>
                             }>
-                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=>dispatch(uploadAttachmentsThunk({files:[], workspaceKey}))}><i className="text-dark fa fa-play-circle-o fa-lg" aria-hidden="true"></i></Button>
+                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleResume}><i className="text-dark fa fa-play-circle-o fa-lg" aria-hidden="true"></i></Button>
                         </OverlayTrigger>}
-                        {(panel.status==="WaitingForUpload") && <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-hand-paper-o fa-lg" aria-hidden="true"></i></Button>}
-                        {(panel.status==="Uploading") && <OverlayTrigger
+                        {(panel.status==="WaitingForUpload" || panel.status==="WaitingForDownload") && <Button variant='link' className='pt-0 px-2 pull-right'><i className="text-dark fa fa-hand-paper-o fa-lg" aria-hidden="true"></i></Button>}
+                        {(panel.status==="Uploading" || panel.status==="Downloading") && <OverlayTrigger
                             placement='top'
                             overlay={
                                 <Tooltip id='StopUploadingFile'>
                                     Stop
                                 </Tooltip>
                             }> 
-                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={()=>dispatch(stopUploadingAttachment())}><i className="text-dark fa fa-pause fa-lg" aria-hidden="true"></i></Button>
+                            <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleStop}><i className="text-dark fa fa-pause fa-lg" aria-hidden="true"></i></Button>
                         </OverlayTrigger>}
                     </div>  
                     </Col>
                 </Row>
                 <Row>
                     <Col>
-                        {(panel.status === "Uploading" || panel.status === "UploadFailed" || panel.status === "Downloading" )?<ProgressBar now={panel.progress} />:""}  
+                        {(panel.status === "Uploading" || panel.status === "UploadFailed" || panel.status === "Downloading" || panel.status === "DownloadFailed")?<ProgressBar now={panel.progress} />:""}  
                     </Col>
                 </Row>
             </Card.Body>
