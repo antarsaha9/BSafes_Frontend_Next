@@ -433,6 +433,8 @@ const pageSlice = createSlice({
                 const newPanel = {
                     queueId: queueId,
                     fileName: files[i].name,
+                    fileSize: files[i].size,
+                    fileType: files[i].type,
                     status: "WaitingForUpload",
                     numberOfChunks: newUpload.numberOfChunks,
                     progress: 0
@@ -1694,6 +1696,36 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "DeletingAnImage",  () => {
+        return new Promise(async (resolve, reject) => {
+            let state, newImages, imagePanels, itemCopy;
+            state = getState().page;
+            itemCopy = { ...state.itemCopy};
+            newImages = itemCopy.images.filter(function(image) {
+                return data.panel.s3Key !== image.s3Key;
+            });
+            try {
+                
+                itemCopy.images = newImages;
+                itemCopy.update = "images";    
+                await createNewItemVersionForPage(itemCopy);
+                
+                imagePanels = state.imagePanels.filter((panel)=> {
+                    return data.panel.s3Key !== panel.s3Key; 
+                })
+                dispatch(newVersionCreated({
+                    itemCopy,
+                    imagePanels
+                }));
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    });
+}
+
 const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
@@ -2057,6 +2089,36 @@ export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) =>
             }
             if(state.attachmentsDownloadQueue.length === state.attachmentsDownloadIndex) {
                 resolve();
+            }
+        });
+    });
+}
+
+export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "DeletingAnAttachment",  () => {
+        return new Promise(async (resolve, reject) => {
+            let state, newAttachments, attachmentPanels, itemCopy;
+            state = getState().page;
+            itemCopy = { ...state.itemCopy};
+            newAttachments = itemCopy.attachments.filter(function(attachment) {
+                return data.panel.s3KeyPrefix !== attachment.s3KeyPrefix;
+            });
+            try {
+                
+                itemCopy.attachments = newAttachments;
+                itemCopy.update = "attachments";    
+                await createNewItemVersionForPage(itemCopy);
+                
+                attachmentPanels = state.attachmentPanels.filter((panel)=> {
+                    return data.panel.s3KeyPrefix !== panel.s3KeyPrefix; 
+                })
+                dispatch(newVersionCreated({
+                    itemCopy,
+                    attachmentPanels
+                }));
+                resolve();
+            } catch (error) {
+                reject(error);
             }
         });
     });

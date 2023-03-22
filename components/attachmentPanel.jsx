@@ -12,7 +12,8 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { stopUploadingAnAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk, stopDownloadingAnAttachment } from '../reduxStore/pageSlice';
+import { stopUploadingAnAttachment, uploadAttachmentsThunk, downloadAnAttachmentThunk, stopDownloadingAnAttachment, deleteAnAttachmentThunk } from '../reduxStore/pageSlice';
+import { numberWithCommas } from '../lib/bSafesCommonUI'
 import { debugLog } from '../lib/helper'
 
 export default function AttachmentPanel ({panelIndex, panel}) {
@@ -41,6 +42,13 @@ export default function AttachmentPanel ({panelIndex, panel}) {
         }
     }
 
+    const handleDelete= () => {
+        const confirmDelete = confirm('Are you sure you want to delete this attachment?');
+        if(confirmDelete) {
+            dispatch(deleteAnAttachmentThunk({panel}));
+        }
+    }
+
     useEffect(()=> {
         if(panel.link) {
             saveFileRef.current?.click();
@@ -61,7 +69,7 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                                 <i className="text-dark fa fa-ellipsis-v fa-lg" aria-hidden="true"></i>
                             </span>
                         }  className={`${BSafesStyle.attachmentMoreBtn} pull-right`} id="dropdown-menu-align-end">
-                            <Dropdown.Item eventKey="1" className="deleteImageBtn">Delete</Dropdown.Item>
+                            <Dropdown.Item eventKey="1" onClick={handleDelete}>Delete</Dropdown.Item>
                         </DropdownButton>
                         {(panel.status==="Uploaded" || panel.status==="Downloaded") && <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleDownload}><i className="text-dark fa fa-download fa-lg" aria-hidden="true"></i></Button>}
                         <a ref={saveFileRef} href={panel.link} download={panel.fileName} className="d-none">Save</a>
@@ -85,6 +93,11 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                             <Button variant='link' className='pt-0 px-2 pull-right' onClick={handleStop}><i className="text-dark fa fa-pause fa-lg" aria-hidden="true"></i></Button>
                         </OverlayTrigger>}
                     </div>  
+                    </Col>
+                </Row>
+                <Row>
+                    <Col xs={8} md={9}>
+                        <p className='mb-0'>{numberWithCommas(panel.fileSize) + ' bytes'}</p>
                     </Col>
                 </Row>
                 <Row>
