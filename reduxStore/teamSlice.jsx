@@ -15,7 +15,8 @@ const initialState = {
     teamData: null,
     pageNumber: 1,
     itemsPerPage: 20,
-    total:0
+    total:0,
+    memberSearchResult:null,
 };
 
 const teamSlice = createSlice({
@@ -34,10 +35,16 @@ const teamSlice = createSlice({
         setTeamData: (state, action) => {
             state.teamData = action.payload.teamData;
         },
+        clearMemberSearchResult: (state, action) => {
+            state.memberSearchResult = null;
+        },
+        setMemberSearchResult: (state, action) => {
+            state.memberSearchResult = action.payload;
+        },
     }
 })
 
-export const { activityChanged, teamLoaded, setTeamName, setTeamData } = teamSlice.actions;
+export const { activityChanged, teamLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchResult } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -235,6 +242,34 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
       });
     });
   }
+
+export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "searchingForAMember", () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/findMemberById',
+                body: {
+                    id: data.id
+                }
+            }).then(data => {
+                if (data.status === 'ok') {
+                    dispatch(setMemberSearchResult(data.member));
+                    resolve();
+                } else {
+                    dispatch(setMemberSearchResult({}));
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "findMemberById failed: ", error)
+                reject("findMemberById failed!");
+            })
+        });
+    });
+}
+
+export const addMemberToTeamThunk = (data) => async (dispatch, getState) => {
+
+}
 
 export const teamReducer = teamSlice.reducer;
 

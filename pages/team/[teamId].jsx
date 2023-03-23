@@ -71,7 +71,7 @@ export default function Team(props) {
                   <br />
                   <Row>
                     <Col>
-                      <h2 className="text-center">{workspaceName}</h2>
+                      <h2 className="text-center display-3">{workspaceName}</h2>
                     </Col>
                   </Row>
                   <Row>
