@@ -5,10 +5,11 @@ const forge = require('node-forge');
 import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBDecryptBinaryString } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching
+    activityResult:null,
     error: null,
     teams: [],
     teamName: 'Personal',
@@ -16,6 +17,7 @@ const initialState = {
     pageNumber: 1,
     itemsPerPage: 20,
     total:0,
+    memberSearchValue:'',
     memberSearchResult:null,
 };
 
@@ -26,7 +28,10 @@ const teamSlice = createSlice({
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
-        teamLoaded: (state, action) => {
+        setActivityResult: (state, action) => {
+            state.activityResult = action.payload;
+        },
+        teamsLoaded: (state, action) => {
             state.teams = action.payload.hits;
         },
         setTeamName: (state, action) => {
@@ -38,16 +43,20 @@ const teamSlice = createSlice({
         clearMemberSearchResult: (state, action) => {
             state.memberSearchResult = null;
         },
+        setMemberSearchValue: (state, action) => {
+            state.memberSearchValue = action.payload;
+        },
         setMemberSearchResult: (state, action) => {
             state.memberSearchResult = action.payload;
         },
     }
 })
 
-export const { activityChanged, teamLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchResult } = teamSlice.actions;
+export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
+    dispatch(setActivityResult(null));
     try {
         await activity();
         dispatch(activityChanged("Done"));
@@ -144,7 +153,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                         hits.push(decryptedTeam);
                     }
                    
-                    dispatch(teamLoaded({ total: data.hits.total, hits }));
+                    dispatch(teamsLoaded({ total: data.hits.total, hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);
@@ -267,8 +276,59 @@ export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const addMemberToTeamThunk = (data) => async (dispatch, getState) => {
+export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
+    debugLog(debugOn, 'listTeamMembersThunk');
+}
 
+export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "addingAMemberToTeam", () => {
+        return new Promise(async (resolve, reject) => {
+            let pki, teamId, teamKey,teamName, publicKeyFromPem, encodedTeamKey, encodedTeamName, encryptedTeamKey, encryptedTeamName;
+            const member = data.member;
+            const memberId = member.id;
+            const containerState = getState().container;
+            
+            if(!containerState.workspaceKeyReady){
+                reject("Workspace key not ready!");
+                return;
+            }
+            pki = forge.pki;
+            teamId = containerState.workspace;
+            teamKey = containerState.workspaceKey;
+            teamName = containerState.workspaceName;
+            publicKeyFromPem = pki.publicKeyFromPem(forge.util.decode64(member.publicKey));
+            encodedTeamKey = forge.util.encodeUtf8(teamKey);
+            encryptedTeamKey = publicKeyFromPem.encrypt(encodedTeamKey);
+            encryptedTeamKey = forge.util.encode64(encryptedTeamKey);
+            encodedTeamName = forge.util.encodeUtf8(teamName);
+            encryptedTeamName = publicKeyFromPem.encrypt(encodedTeamName);
+            encryptedTeamName = forge.util.encode64(encryptedTeamName);
+            
+            PostCall({
+                api: '/memberAPI/addATeamMember',
+                body: {
+                    teamId,
+                    memberId,
+                    encryptedTeamName,
+                    teamKeyEnvelope: encryptedTeamKey,
+                }
+            }).then(data => {
+                if (data.status === 'ok') {
+                    dispatch(setActivityResult('Added'));
+                    dispatch(setMemberSearchValue(''));
+                    resolve();
+                } else {
+                    dispatch(setActivityResult(data.error));
+                    dispatch(setMemberSearchValue(''));
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "addAMemberToTeamThunk failed: ", error)
+                reject("error");
+            })
+
+        });
+    });
 }
 
 export const teamReducer = teamSlice.reducer;

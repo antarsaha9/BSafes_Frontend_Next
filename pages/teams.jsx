@@ -48,19 +48,19 @@ export default function Teams() {
         try {
             await createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
             debugLog(debugOn, "Team created");
-            loadTeam();
+            loadTeams();
         } catch (error) {
             alert("Could not create a new team!");
         }
     }
 
-    const loadTeam = () => {
+    const loadTeams = () => {
         dispatch(listTeamsThunk());
     }
 
     useEffect(() => {
         dispatch(clearContainer());
-        loggedIn && loadTeam();
+        loggedIn && loadTeams();
     }, [loggedIn]);
 
     return (
