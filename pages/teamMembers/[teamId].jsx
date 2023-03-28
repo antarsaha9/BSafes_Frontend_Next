@@ -9,6 +9,7 @@ import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
+import Dropdown from 'react-bootstrap/Dropdown' 
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout'
 
@@ -25,15 +26,26 @@ export default function TeamMembers(props) {
     const dispatch = useDispatch();
     const router = useRouter();
 
+    const [readyToList, setReadyToList] = useState(false);
     const [addingMember, setAddingMember] = useState(false);
 
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const workspaceId = useSelector( state => state.container.workspace );
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const container = useSelector( state => state.container.container);
+    const teamMembers = useSelector( state => state.team.teamMembers);
     const memberSearchValue = useSelector( state => state.team.memberSearchValue)
     const memberSearchResult = useSelector(state=>state.team.memberSearchResult);
     
+    const deleteATeamMember = (member) => {
+
+    }
+
+    const teamMembersList = teamMembers.map((member, index)=>{
+        return (
+            <MemberCard key={index} member={member} handleDelete={deleteATeamMember} />    
+        );
+    })
 
     const searchResult =()=> {
         if(memberSearchResult) {
@@ -87,7 +99,11 @@ export default function TeamMembers(props) {
     }, []);
 
     useEffect(()=>{
-        if(loggedIn && router.query.teamId) {
+        dispatch(setWorkspaceKeyReady(false));    
+    }, [loggedIn]);
+
+    useEffect(()=>{
+        if(loggedIn && !workspaceKeyReady && router.query.teamId) {
             const teamId = router.query.teamId;
             
             if(router.query.teamId === workspaceId) {
@@ -95,17 +111,18 @@ export default function TeamMembers(props) {
               dispatch(setWorkspaceKeyReady(true));
             } else {
               dispatch(initWorkspaceThunk({teamId, container:'root'}));
-            }        
+            }     
+            setReadyToList(true);   
         }
-    }, [loggedIn, router.query.teamId]);
+    }, [loggedIn, workspaceKeyReady, router.query.teamId]);
 
     useEffect(() => {
-        if(!workspaceId || !workspaceKeyReady || container !== 'root') return;
+        if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
-        dispatch(listTeamMembersThunk({ pageNumber: 1 }));
-    }, [container, workspaceId, workspaceKeyReady ]);
+        dispatch(listTeamMembersThunk({ teamId:workspaceId, pageNumber: 1 }));
+    }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (
         <div className={BSafesStyle.spaceBackground}>
@@ -163,6 +180,7 @@ export default function TeamMembers(props) {
                                     </div>
                                 </Col>
                             </Row>
+                            {teamMembersList}
                         </>
                     }
                 </Container>
@@ -188,6 +206,8 @@ function ellipsisButton({ children, onClick }, ref) {
     )
 }
 
+const ellipsisToggle = forwardRef(ellipsisButton);
+
 function MemberCard({ member, handleAdd, handleDelete }) {
     const teamActivityResult = useSelector(state=>state.team.activityResult);
 
@@ -199,14 +219,14 @@ function MemberCard({ member, handleAdd, handleDelete }) {
                         <div>
                             <Row >
                                 <Col xs={9}>
-                                    <h6 className="fs-5 display-6">{member.id}</h6>
+                                    <h6 className="fs-5 display-6">{member.id || member.memberId}</h6>
                                 </Col>
                                 <Col xs={3}>
                                     {handleDelete && <Dropdown align="end" className="justify-content-end pull-right">
                                         <Dropdown.Toggle as={ellipsisToggle} variant="link" />
 
                                         <Dropdown.Menu>
-                                            <Dropdown.Item onClick={()=>handleDelete(member.id)}>Delete</Dropdown.Item>
+                                            <Dropdown.Item onClick={()=>handleDelete(member)}>Delete</Dropdown.Item>
                                         </Dropdown.Menu>
                                     </Dropdown>}
                                     {handleAdd &&
@@ -218,7 +238,7 @@ function MemberCard({ member, handleAdd, handleDelete }) {
                             {teamActivityResult &&
                                 <Row>
                                     <Col>
-                                        <p className="text-danger">Error: {teamActivityResult}</p>     
+                                        <p className="text-danger">{teamActivityResult}</p>     
                                     </Col>
                                 </Row>
                             }

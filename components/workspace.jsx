@@ -22,7 +22,7 @@ import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
-export default function Workspace() {
+export default function Workspace({readyToList = false}) {
     const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
@@ -95,12 +95,14 @@ export default function Workspace() {
     }
 
     useEffect(() => {
-        if(!workspaceId || !workspaceKeyReady || container !== 'root') return;
+        debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
+        if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
+        debugLog(debugOn, "listItemsThunk");
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
-    }, [container, workspaceId, workspaceKeyReady ]);
+    }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (
         <Container className={BSafesStyle.container}>

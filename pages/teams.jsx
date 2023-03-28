@@ -24,6 +24,8 @@ export default function Teams() {
     const debugOn = true;
     const dispatch = useDispatch();
     
+    const [containerCleared, setContainerCleared] = useState(false);
+
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const publicKeyPem = useSelector(state => state.auth.publicKey);
 
@@ -56,12 +58,24 @@ export default function Teams() {
 
     const loadTeams = () => {
         dispatch(listTeamsThunk());
+        //loadTeams();
+        setContainerCleared(false);
     }
 
     useEffect(() => {
-        dispatch(clearContainer());
-        loggedIn && loadTeams();
+        debugLog(debugOn, "loggedIn value: ", loggedIn);
+        if(loggedIn && !containerCleared) {
+            dispatch(clearContainer());
+            setContainerCleared(true);
+        }
     }, [loggedIn]);
+
+    useEffect(()=>{
+        if(containerCleared){
+            loadTeams();
+        }
+        
+    }, [containerCleared]);
 
     return (
         <div className={BSafesStyle.spaceBackground}>

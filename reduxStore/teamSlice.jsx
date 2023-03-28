@@ -19,6 +19,8 @@ const initialState = {
     total:0,
     memberSearchValue:'',
     memberSearchResult:null,
+    teamMembers: [],
+    teamMembersTotal:0,
 };
 
 const teamSlice = createSlice({
@@ -49,10 +51,22 @@ const teamSlice = createSlice({
         setMemberSearchResult: (state, action) => {
             state.memberSearchResult = action.payload;
         },
+        setTeamMembers: (state, action) => {
+            const hits = action.payload;
+            state.teamMembersTotal = hits.total;
+            state.teamMembers = hits.hits.map((member)=>member._source);
+        },
+        newTeamMemberAdded: (state, action) => {
+            const teamMember = action.payload;
+            state.teamMembers = [teamMember].concat(state.teamMembers);
+        },
+        clearTeamMembers: (state, action) => {
+            state.teamMembers = [];
+        }
     }
 })
 
-export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult } = teamSlice.actions;
+export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -278,12 +292,36 @@ export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
 
 export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
     debugLog(debugOn, 'listTeamMembersThunk');
+    newActivity(dispatch, "listingTeamMembers", () => {
+        return new Promise(async (resolve, reject) => {
+            const teamId = data.teamId;
+            let state = getState().team;
+            PostCall({
+                api: '/memberAPI/listTeamMembers',
+                body: {
+                    teamId,
+                    size: state.itemsPerPage,
+                    from: (data.pageNumber - 1) * state.itemsPerPage
+                }
+            }).then(data => {
+                if (data.status === 'ok') {
+                    dispatch(setTeamMembers(data.hits));
+                    resolve();
+                } else {
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "listTeamMembers failed: ", error)
+                reject("listTeamMembers failed!");
+            })
+        })
+    })
 }
 
 export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "addingAMemberToTeam", () => {
         return new Promise(async (resolve, reject) => {
-            let pki, teamId, teamKey,teamName, publicKeyFromPem, encodedTeamKey, encodedTeamName, encryptedTeamKey, encryptedTeamName;
+            let pki, teamId, teamKey,teamName, publicKeyFromPem, encodedTeamKey, encodedTeamName, encryptedTeamKey, encryptedTeamName, teamMember;
             const member = data.member;
             const memberId = member.id;
             const containerState = getState().container;
@@ -303,19 +341,20 @@ export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
             encodedTeamName = forge.util.encodeUtf8(teamName);
             encryptedTeamName = publicKeyFromPem.encrypt(encodedTeamName);
             encryptedTeamName = forge.util.encode64(encryptedTeamName);
-            
+            teamMember = {
+                teamId,
+                memberId,
+                encryptedTeamName,
+                teamKeyEnvelope: encryptedTeamKey,
+            }
             PostCall({
                 api: '/memberAPI/addATeamMember',
-                body: {
-                    teamId,
-                    memberId,
-                    encryptedTeamName,
-                    teamKeyEnvelope: encryptedTeamKey,
-                }
+                body: teamMember
             }).then(data => {
                 if (data.status === 'ok') {
                     dispatch(setActivityResult('Added'));
                     dispatch(setMemberSearchValue(''));
+                    dispatch(newTeamMemberAdded(teamMember));
                     resolve();
                 } else {
                     dispatch(setActivityResult(data.error));
