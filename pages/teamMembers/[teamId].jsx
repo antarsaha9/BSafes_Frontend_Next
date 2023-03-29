@@ -17,7 +17,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { initWorkspaceThunk, changeContainerOnly, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
 import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
-import { setMemberSearchValue, clearMemberSearchResult, findMemberByIdThunk, addAMemberToTeamThunk, listTeamMembersThunk} from '../../reduxStore/teamSlice';
+import { setMemberSearchValue, clearMemberSearchResult, findMemberByIdThunk, addAMemberToTeamThunk, listTeamMembersThunk, deleteATeamMemberThunk} from '../../reduxStore/teamSlice';
 import { debugLog } from '../../lib/helper';
 
 export default function TeamMembers(props) {
@@ -38,7 +38,7 @@ export default function TeamMembers(props) {
     const memberSearchResult = useSelector(state=>state.team.memberSearchResult);
     
     const deleteATeamMember = (member) => {
-
+        dispatch(deleteATeamMemberThunk({member}));
     }
 
     const teamMembersList = teamMembers.map((member, index)=>{
@@ -119,7 +119,7 @@ export default function TeamMembers(props) {
     useEffect(() => {
         if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
         dispatch(clearPage());
-        const itemPath = [{_id: workspaceId}];
+        const itemPath = [{_id: workspaceId}, {_id:'tm:'+ workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listTeamMembersThunk({ teamId:workspaceId, pageNumber: 1 }));
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);

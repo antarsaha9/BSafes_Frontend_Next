@@ -60,13 +60,18 @@ const teamSlice = createSlice({
             const teamMember = action.payload;
             state.teamMembers = [teamMember].concat(state.teamMembers);
         },
+        teamMemberDeleted: (state, action) => {
+            const member = action.payload;
+            let teamMembers = state.teamMembers.filter((teamMember)=> {return (teamMember.memberId !== member.memberId)})
+            state.teamMembers = teamMembers;
+        },
         clearTeamMembers: (state, action) => {
             state.teamMembers = [];
         }
     }
 })
 
-export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, clearTeamMembers } = teamSlice.actions;
+export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -123,7 +128,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                     for( i=0; i<data.hits.hits.length; i++) {
                          team = data.hits.hits[i];
                         if (team._source.encryptedTeamName) {
-                            if (team._source.cachedTeamName) {
+                            if (team._source.cachedTeamName && team._source.cachedTeamName !== 'NULL') {
                                 if(team._source.keyVersion === 3){
                                     encodedTeamName = decryptBinaryStringCBC(forge.util.decode64(team._source.cachedTeamName), auth.searchKey, auth.searchIV);
                                     teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
@@ -367,6 +372,36 @@ export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
             })
 
         });
+    });
+}
+
+export const deleteATeamMemberThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "addingAMemberToTeam", () => {
+        return new Promise(async (resolve, reject) => {
+            const member = data.member;
+            const teamId = member.teamId;
+            const memberId = member.memberId;
+
+            PostCall({
+                api: '/memberAPI/deleteATeamMember',
+                body: {
+                    teamId,
+                    memberId
+                }
+            }).then(data => {
+                if (data.status === 'ok') {
+                    dispatch(teamMemberDeleted(member));
+                    resolve();
+                } else {
+                    
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "deleteATeamMemberThunk failed: ", error)
+                reject("error");
+            })
+            
+        })
     });
 }
 
