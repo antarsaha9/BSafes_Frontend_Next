@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from 'next/router';
 import Link from 'next/link'
@@ -24,10 +24,12 @@ export default function Team(props) {
     const router = useRouter();
     const dispatch = useDispatch();
 
+    const [readyToList, setReadyToList] = useState(false);
+
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const workspaceId = useSelector( state => state.container.workspace );
     const workspaceName = useSelector( state => state.container.workspaceName );
-    
+    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady );
     
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -49,18 +51,25 @@ export default function Team(props) {
     }, []);
 
     useEffect(()=>{
-        if(loggedIn && router.query.teamId) {
+      if(loggedIn) {
+        dispatch(setWorkspaceKeyReady(false));
+      }
+    }, [loggedIn]);
+
+    useEffect(()=>{
+        if(loggedIn && !workspaceKeyReady && router.query.teamId) {
             const teamId = router.query.teamId;
-            
+            debugLog(debugOn, "Set up workspace");
             dispatch(clearItems());
             if(router.query.teamId === workspaceId) {
               dispatch(changeContainerOnly({container: 'root'}))
               dispatch(setWorkspaceKeyReady(true));
             } else {
               dispatch(initWorkspaceThunk({teamId, container:'root'}));
-            }        
+            }   
+            setReadyToList(true);     
         }
-    }, [loggedIn, router.query.teamId]);
+    }, [loggedIn, workspaceKeyReady, router.query.teamId]);
 
     return (
         <div className={BSafesStyle.spaceBackground}>
@@ -71,7 +80,7 @@ export default function Team(props) {
                   <br />
                   <Row>
                     <Col>
-                      <h2 className="text-center">{workspaceName}</h2>
+                      <h2 className="text-center display-3">{workspaceName}</h2>
                     </Col>
                   </Row>
                   <Row>
@@ -82,7 +91,7 @@ export default function Team(props) {
                   </Row>
                   <Row className="justify-content-center">
                       <Col lg={8}>
-                          <Workspace />
+                          <Workspace readyToList={readyToList}/>
                       </Col> 
                   </Row>
              </Container>

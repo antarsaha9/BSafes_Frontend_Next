@@ -1,4 +1,5 @@
 import {useRef} from 'react'
+import { useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -9,8 +10,10 @@ import Image from 'react-bootstrap/Image'
 
 import Editor from './editor'
 
-export default function ImagePanel({panelIndex, panel, onImageClicked, editorMode, onContentChanged, onPenClicked, editable=true}) {
+import { deleteAnImageThunk } from '../reduxStore/pageSlice'
 
+export default function ImagePanel({panelIndex, panel, onImageClicked, editorMode, onContentChanged, onPenClicked, editable=true}) {
+    const dispatch = useDispatch();
     const fileInputRef = useRef(null);
 
     const handleUpload = (event) => {
@@ -39,6 +42,13 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
         onPenClicked(panelIndex);
     }
 
+    const handleDelete = () => {
+        const confirmDelete = confirm('Are you sure you want to delete this image?');
+        if(confirmDelete) {
+            dispatch(deleteAnImageThunk({panel}));
+        }
+    }
+
     return (
         <div>
             <input ref={fileInputRef} type="file" multiple className="d-none editControl" id="image" />
@@ -63,8 +73,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                             <i className="text-dark fa fa-ellipsis-v" aria-hidden="true"></i>
                          </span>
                     }  className="pull-right" id="dropdown-menu-align-end">
-                        <Dropdown.Item eventKey="1" className="changeImageBtn">Change Image</Dropdown.Item>
-                        <Dropdown.Item eventKey="2" className="deleteImageBtn">Delete Image</Dropdown.Item>
+                        <Dropdown.Item eventKey="2" className="deleteImageBtn" onClick={handleDelete}>Delete Image</Dropdown.Item>
                                 </DropdownButton>
                                 :""
                             }

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
@@ -18,6 +18,8 @@ export default function Safe() {
     const router = useRouter();
     const dispatch = useDispatch();
     
+    const [readyToList, setReadyToList] = useState(false);
+
     const memberId = useSelector( state => state.auth.memberId );
     const workspaceKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
@@ -48,6 +50,7 @@ export default function Safe() {
             const workspaceId = 'u:' + memberId + ':' + currentKeyVersion + ':' + '0'; ;
             dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
             dispatch(setWorkspaceKeyReady(true));
+            setReadyToList(true);
         }
     }, [memberId])
     
@@ -57,7 +60,7 @@ export default function Safe() {
             <Container fluid>
                 <Row className="justify-content-center">
                     <Col lg={8}>
-                        <Workspace />
+                        <Workspace readyToList={readyToList}/>
                     </Col> 
                 </Row>
            </Container>

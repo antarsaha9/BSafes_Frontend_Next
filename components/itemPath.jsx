@@ -52,6 +52,11 @@ export default function ItemPath() {
                         itemTitleText = workspaceName;
                         pathItemLink = '/team/' + item._id;
                         break;
+                    case 'tm':
+                        pathItemIcon = "fa fa-users";
+                        itemTitleText = 'Members';
+                        pathItemLink = '/teamMembers/' + item._id;
+                        break;
                     case 'b':
                         pathItemIcon = "fa fa-archive";
                         pathItemLink = '/box/contents/' + item._id;
@@ -86,7 +91,7 @@ export default function ItemPath() {
                         break;
                 }
 
-                if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't') {
+                if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't' || pathItemType === 'tm') {
                 } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
                     if(item._source.title) {

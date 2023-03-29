@@ -25,6 +25,8 @@ export default function Teams() {
     const debugOn = true;
     const dispatch = useDispatch();
     
+    const [containerCleared, setContainerCleared] = useState(false);
+
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const publicKeyPem = useSelector(state => state.auth.publicKey);
 
@@ -52,7 +54,7 @@ export default function Teams() {
         try {
             await createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
             debugLog(debugOn, "Team created");
-            loadTeam();
+            loadTeams();
         } catch (error) {
             alert("Could not create a new team!");
         }
@@ -60,12 +62,23 @@ export default function Teams() {
 
     const loadTeam = (pageNumber) => {
         dispatch(listTeamsThunk({pageNumber}));
+        setContainerCleared(false);
     }
 
     useEffect(() => {
-        dispatch(clearContainer());
-        loggedIn && loadTeam();
+        debugLog(debugOn, "loggedIn value: ", loggedIn);
+        if(loggedIn && !containerCleared) {
+            dispatch(clearContainer());
+            setContainerCleared(true);
+        }
     }, [loggedIn]);
+
+    useEffect(()=>{
+        if(containerCleared){
+            loadTeams();
+        }
+        
+    }, [containerCleared]);
 
     return (
         <div className={BSafesStyle.spaceBackground}>
