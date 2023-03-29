@@ -17,6 +17,7 @@ import { abort, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI"
+import { PaginationControl } from "react-bootstrap-pagination-control";
 
 export default function TrashBox() {
     const debugOn = true;
@@ -37,6 +38,9 @@ export default function TrashBox() {
     const itemsState = useSelector(state => state.container.items);
     const selectedItems = useSelector(state => state.container.selectedItems);
     const trashBoxId = useSelector(state => state.container.trashBoxId);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const total = useSelector( state => state.container.total);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
 
     const items = itemsState.map((item, index) =>
         <Row key={index}>
@@ -55,7 +59,7 @@ export default function TrashBox() {
         try {
             await restoreItemsFromTrash({ payload });
             dispatch(clearSelected());
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            listItems({});
         } catch(error) {
             debugLog(debugOn, 'handleRestore failed: ', error)
         }
@@ -69,7 +73,7 @@ export default function TrashBox() {
         }
         try {
             await emptyTrashBoxItems({ payload });
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            listItems({});
         } catch(error) {
             debugLog(debugOn, 'handleEmpty failed: ', error)
         }
@@ -150,8 +154,12 @@ export default function TrashBox() {
     useEffect(()=> {
         if(!trashBoxId || trashBoxId === 'Unknown') return;
         dispatch(changeContainerOnly({container: trashBoxId}));
-        dispatch(listItemsThunk({pageNumber: 1}));
+        listItems({})
     }, [trashBoxId])
+
+    const listItems = ({ pageNumber = 1 }) => {
+        dispatch(listItemsThunk({ pageNumber }));
+    }
 
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -188,7 +196,23 @@ export default function TrashBox() {
                                 <br />
 
                                 {items}
-
+                                {itemsState && itemsState.length > 0 &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({ pageNumber: page })
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

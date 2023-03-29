@@ -16,6 +16,7 @@ import TurningPageControls from "../../../components/turningPageControls";
 import { listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import {  } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
+import { PaginationControl } from "react-bootstrap-pagination-control";
 
 
 export default function NotebookContents() {
@@ -28,8 +29,11 @@ export default function NotebookContents() {
 
     const containerInWorkspace = useSelector( state => state.container.container);
     const pageNumber = useSelector( state => state.container.pageNumber);
+    const total = useSelector( state => state.container.total);
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
     const itemsState = useSelector( state => state.container.items);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const mode = useSelector( state => state.container.mode);
     
     const pageItemId = useSelector( state => state.page.id);
 
@@ -90,11 +94,11 @@ export default function NotebookContents() {
     }
 
     const handleSubmitSearch = (searchValue) => {
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+        listItems({searchMode:'search'})  // PASSING SEARCH MODE EXPLICITELY BECAUSE UPDATED STATE WILL NOT REFLECT IMMMEDIATELY
     }
 
     const handleCancelSearch = () => {
-        dispatch(listItemsThunk({pageNumber: 1}));
+        listItems({searchMode:'listAll'})  // PASSING SEARCH MODE EXPLICITELY BECAUSE UPDATED STATE WILL NOT REFLECT IMMMEDIATELY
     }
 
     const handleGoToFirstItem = async () => {
@@ -115,6 +119,14 @@ export default function NotebookContents() {
         } catch(error) {
             alert("Could not get the first item in the container");
         }
+    }
+
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
 
     return (
@@ -144,6 +156,23 @@ export default function NotebookContents() {
                                     </Col>
                                 </Row>
                                 {items}
+                                {itemsState && itemsState.length > 0 &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({ pageNumber: page })
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

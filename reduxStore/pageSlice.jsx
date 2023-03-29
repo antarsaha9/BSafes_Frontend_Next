@@ -54,6 +54,9 @@ const initialState = {
     attachmentsDownloadIndex:0,
     abortController: null,
     itemVersions:[],
+    totalItemVersions: 0,
+    itemVersionsPerPage: 1,
+    itemVersionsPageNumber: 1,
     newCommentEditorMode: 'ReadOnly',
     comments:[]
 }
@@ -286,7 +289,14 @@ const pageSlice = createSlice({
             state.decrypttionRequired = false;
         },
         itemVersionsFetched: (state, action) => {
-            state.itemVersions.push(...action.payload);
+            state.itemVersions.push(...action.payload.itemversions);
+            state.totalItemVersions = action.payload.total;
+            state.itemVersionsPageNumber = action.payload.pageNumber;
+        },
+        resetItemversions: (state, action) => {
+            state.itemVersions = initialState.itemVersions;
+            state.totalItemVersions = initialState.totalItemVersions;
+            state.itemVersionsPageNumber = initialState.itemVersionsPageNumber;
         },
         downloadingContentImage: (state, action) => {
             if(state.aborted ) return;
@@ -508,7 +518,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, downloadingAttachment, attachmentDownloaded, downloadChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, resetItemversions, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, downloadingAttachment, attachmentDownloaded, downloadChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -546,6 +556,15 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction) => {
     });
 }
 
+function getContainerIdFromItemId(itemId) {
+    let itemIdParts, containerId;
+    itemIdParts = itemId.split(':');
+    itemIdParts.pop();
+    containerId = itemIdParts.join(':');
+    containerId = containerId.replace('p:', ':');
+    return containerId;
+}
+
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         
@@ -555,11 +574,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
         const getContainerData = (itemId) => {
             return new Promise(async (resolve, reject) => {
-                let itemIdParts, containerId;
-                itemIdParts = itemId.split(':');
-                itemIdParts.pop();
-                containerId = itemIdParts.join(':');
-                containerId = containerId.replace('p:', ':');
+                const containerId = getContainerIdFromItemId(itemId)
                 debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
                 PostCall({
                     api:'/memberAPI/getPageItem',
@@ -580,8 +595,31 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 });
             });
         }
-        
+
         return new Promise(async (resolve, reject) => {
+            function getItemPath(itemId, addEmptyPath=false) {
+                PostCall({
+                    api: '/memberAPI/getItemPath',
+                    body: { itemId },
+                }).then(result => {
+                    debugLog(debugOn, result);
+                    if (result.status === 'ok') {
+                        state = getState().page;
+                        if (data.itemId !== state.activeRequest) {
+                            debugLog(debugOn, "Aborted");
+                            return;
+                        }
+                        if(addEmptyPath)
+                            dispatch(itemPathLoaded([...result.itemPath, { _source: {}, _id: ':' }]));
+                        else
+                            dispatch(itemPathLoaded(result.itemPath));
+                    } else {
+                        debugLog(debugOn, "woo... failed to get the item path.!", result.status);
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "woo... failed to get the item path.", error)
+                })
+            }
             let state;
             dispatch(setActiveRequest(data.itemId));
             debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
@@ -599,6 +637,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     }                            
                     if(result.item) {
                         dispatch(dataFetched({item:result.item}));
+                        getItemPath(data.itemId);
                         if(result.item.content.startsWith('s3Object/')){
                             const signedContentUrl = result.item.signedContentUrl;
                             const response = await XHRDownload(null, dispatch, signedContentUrl, null);                         
@@ -652,6 +691,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if(!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
                             try {
                                 const container = await getContainerData(data.itemId);
+                                getItemPath(getContainerIdFromItemId(data.itemId), true)
                                 state = getState().page;
                                 if(data.itemId === state.activeRequest) {
                                     dispatch(containerDataFetched({itemId: data.itemId, container}));
@@ -674,28 +714,6 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to get a page item.")
                 reject("woo... failed to get a page item!");
             })
-
-            function getItemPath() {
-                PostCall({
-                    api:'/memberAPI/getItemPath',
-                    body: {itemId: data.itemId},
-                }).then( result => {
-                    debugLog(debugOn, result);
-                    if(result.status === 'ok') {    
-                        state = getState().page;
-                        if(data.itemId !== state.activeRequest) {
-                            debugLog(debugOn, "Aborted");
-                            return;
-                        }                            
-                        dispatch(itemPathLoaded(result.itemPath));
-                    } else {
-                        debugLog(debugOn, "woo... failed to get the item path.!", result.status);
-                    }
-                }).catch( error => {
-                    debugLog(debugOn, "woo... failed to get the item path.", error)
-                })
-            }
-            getItemPath();
         });
     });
 }
@@ -852,16 +870,19 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) => {
+export const getItemVersionsHistoryThunk = (data={}) => async (dispatch, getState) => {
     newActivity(dispatch, "LoadingVersionsHistory", () => {
         return new Promise(async (resolve, reject) => {
             const state = getState().page;
+            if (state.itemVersions.length>0 &&  !data.nextPage )
+                    dispatch(resetItemversions());
+            const pageNumber = data.nextPage ? (state.itemVersionsPageNumber || 1) + 1 : 1;
             PostCall({
                 api: '/memberAPI/getItemVersionsHistory',
                 body: {
                     itemId: state.id,
-                    size: 20,
-                    from: 0,
+                    size: state.itemVersionsPerPage,
+                    from: (pageNumber - 1) * state.itemVersionsPerPage,
                 },
             }).then(result => {
                 debugLog(debugOn, result);
@@ -881,19 +902,19 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                             }
                             return payload;
                         });
-                        dispatch(itemVersionsFetched(modifiedHits));
-
+                        dispatch(itemVersionsFetched({itemversions:modifiedHits, total:result.hits.total, pageNumber}));
+                        resolve();
                     } else {
                         reject("woo... failed to get a item version history!");
                     }
                 } else {
-                    debugLog(debugOn, "woo... failed to get a item version history!", data.error);
+                    debugLog(debugOn, "woo... failed to get a item version history!", result.error);
                     reject("woo... failed to get a item version history!");
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... failed to get a item version history.", error)
                 reject("woo... failed to get a item version history!");
-            })
+            });
         });
     });
 }

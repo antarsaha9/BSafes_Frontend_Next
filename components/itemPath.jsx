@@ -89,9 +89,9 @@ export default function ItemPath() {
                 if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't') {
                 } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
+                    if(item._source.title) {
                     decoded = forge.util.decode64(item._source.keyEnvelope);
                     itemKey = decryptBinaryString(decoded, workspaceKey);
-                    if(item._source.title) {
                         encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey);
                         title = forge.util.decodeUtf8(encodedTitle);
                         title = DOMPurify.sanitize(title);
@@ -99,7 +99,7 @@ export default function ItemPath() {
                         temp.innerHTML = title;
                         itemTitleText = temp.textContent || temp.innerText;
                     } else {
-                        itemTitleText = '';
+                        itemTitleText = 'untitled';
                     }
                     
                 }

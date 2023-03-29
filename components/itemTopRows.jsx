@@ -96,6 +96,8 @@ export default function ItemTopRows() {
 
 function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
     const itemVersions = useSelector(state => state.page.itemVersions);
+    const totalItemVersions = useSelector(state => state.page.totalItemVersions);
+    const dispatch = useDispatch();
 
     return (
         <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
@@ -109,9 +111,10 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
                 <ListGroup>
                     {itemVersions?.map(ItemVersionCard)}
                 </ListGroup>
-                {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
-                    <a href="#" onClick={handleMoreVersionClick}>More ...</a>
-                </div>} */}
+                {totalItemVersions > itemVersions.length ? <div classs="text-center hidden" id="moreVersions">
+                    <Button variant="link" href="#" size="sm" onClick={() => dispatch(getItemVersionsHistoryThunk({ nextPage: true }))}>More ...</Button>
+                    {/* <a href="#" onClick={handleMoreVersionClick}>More ...</a> */}
+                </div> : null}
             </ModalBody>
         </Modal>
     )

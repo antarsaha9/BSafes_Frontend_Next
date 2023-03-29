@@ -27,6 +27,7 @@ const teamSlice = createSlice({
         },
         teamLoaded: (state, action) => {
             state.teams = action.payload.hits;
+            state.total = action.payload.total;
         },
         setTeamName: (state, action) => {
             state.teamName = action.payload.teamName;
@@ -34,10 +35,13 @@ const teamSlice = createSlice({
         setTeamData: (state, action) => {
             state.teamData = action.payload.teamData;
         },
+        setTeamPageNumber: (state, action) => {
+            state.pageNumber = action.payload.pageNumber;
+        },
     }
 })
 
-export const { activityChanged, teamLoaded, setTeamName, setTeamData } = teamSlice.actions;
+export const { activityChanged, teamLoaded, setTeamName, setTeamData, setTeamPageNumber } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -49,7 +53,7 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
-export const listTeamsThunk = (data) => async (dispatch, getState) => {
+export const listTeamsThunk = ({pageNumber}) => async (dispatch, getState) => {
     function cacheTeamNameForTeamMember(teamId, cachedTeamName) {
         return new Promise(async (resolve, reject) => {
             PostCall({
@@ -80,10 +84,14 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
             state = getState().team;
             auth = getState().auth;
             hits = [];
+            if (pageNumber)
+                dispatch(setTeamPageNumber({pageNumber}))
+            else
+                pageNumber = state.pageNumber;
             PostCall({
                 api: '/memberAPI/listTeams',
                 body: {
-                    from: (state.pageNumber -1 ) * state.itemsPerPage,
+                    from: (pageNumber -1 ) * state.itemsPerPage,
                     size: state.itemsPerPage
                 }
             }).then(async data => {

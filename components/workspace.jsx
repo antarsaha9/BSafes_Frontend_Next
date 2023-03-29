@@ -21,6 +21,7 @@ import { getItemLink } from '../lib/bSafesCommonUI'
 import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
+import { PaginationControl } from 'react-bootstrap-pagination-control';
 
 export default function Workspace() {
     const debugOn = false;
@@ -39,6 +40,9 @@ export default function Workspace() {
     const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
@@ -78,6 +82,14 @@ export default function Workspace() {
         router.push(link);
     }
 
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
+    }
+
     const onSearchValueChanged = (e) => {
         debugLog(debugOn, "search value:", e.target.value);
         setSearchValue(e.target.value);
@@ -85,13 +97,13 @@ export default function Workspace() {
 
     const onSubmit = (e) => {
         e.preventDefault();
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+        listItems({searchMode:'search'})  // PASSING SEARCH MODE EXPLICITELY BECAUSE UPDATED STATE WILL NOT REFLECT IMMMEDIATELY
     }
 
     const onCancelSearch = (e) => {
         e.preventDefault();
         setSearchValue('');
-        dispatch(listItemsThunk({pageNumber: 1}));
+        listItems({searchMode:'listAll'})  // PASSING SEARCH MODE EXPLICITELY BECAUSE UPDATED STATE WILL NOT REFLECT IMMMEDIATELY
     }
 
     useEffect(() => {
@@ -99,7 +111,7 @@ export default function Workspace() {
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
-        dispatch(listItemsThunk({pageNumber: 1}));
+        listItems({});
     }, [container, workspaceId, workspaceKeyReady ]);
 
     return (
@@ -138,6 +150,23 @@ export default function Workspace() {
             }
             {items}
             <br />
+            {itemsState && itemsState.length > 0 &&
+                <Row>
+                    <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                        <div className='mt-4 d-flex justify-content-center'>
+                            <PaginationControl
+                                page={pageNumber}
+                                // between={4}
+                                total={total}
+                                limit={itemsPerPage}
+                                changePage={(page) => {
+                                    listItems({pageNumber:page})
+                                }}
+                                ellipsis={1}
+                            />
+                        </div>
+                    </Col>
+                </Row>}
             <br />
             {workspaceId && <Row>
                 <Col xs={12}>
