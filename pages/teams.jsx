@@ -60,7 +60,7 @@ export default function Teams() {
         }
     }
 
-    const loadTeam = (pageNumber) => {
+    const loadTeams = (pageNumber) => {
         dispatch(listTeamsThunk({pageNumber}));
         setContainerCleared(false);
     }
@@ -125,7 +125,7 @@ export default function Teams() {
                                     total={total}
                                     limit={itemsPerPage}
                                     changePage={(page) => {
-                                        loadTeam(page)
+                                        loadTeams(page)
                                     }}
                                     ellipsis={1}
                                 />

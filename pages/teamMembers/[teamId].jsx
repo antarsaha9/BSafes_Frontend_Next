@@ -19,6 +19,7 @@ import { initWorkspaceThunk, changeContainerOnly, setWorkspaceKeyReady } from '.
 import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
 import { setMemberSearchValue, clearMemberSearchResult, findMemberByIdThunk, addAMemberToTeamThunk, listTeamMembersThunk, deleteATeamMemberThunk} from '../../reduxStore/teamSlice';
 import { debugLog } from '../../lib/helper';
+import { PaginationControl } from 'react-bootstrap-pagination-control';
 
 export default function TeamMembers(props) {
     const debugOn = true;
@@ -34,8 +35,12 @@ export default function TeamMembers(props) {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const container = useSelector( state => state.container.container);
     const teamMembers = useSelector( state => state.team.teamMembers);
-    const memberSearchValue = useSelector( state => state.team.memberSearchValue)
+    const memberSearchValue = useSelector( state => state.team.memberSearchValue);
     const memberSearchResult = useSelector(state=>state.team.memberSearchResult);
+
+    const pageNumber = useSelector(state => state.team.pageNumber);
+    const itemsPerPage = useSelector(state => state.team.itemsPerPage);
+    const total = useSelector(state => state.team.teamMembersTotal);
     
     const deleteATeamMember = (member) => {
         dispatch(deleteATeamMemberThunk({member}));
@@ -69,7 +74,7 @@ export default function TeamMembers(props) {
 
     const handleCancelSearch = () => {
         setAddingMember(false);
-        dispatch(listTeamMembersThunk({ pageNumber: 1 }));
+        loadTeamMembers();
     }
 
     const onSubmit = () => {
@@ -77,6 +82,10 @@ export default function TeamMembers(props) {
     }
     const onSearchValueChanged = (e) => {
         dispatch(setMemberSearchValue(e.target.value));
+    }
+
+    const loadTeamMembers = (pageNumber) => {
+        dispatch(listTeamMembersThunk({ teamId: workspaceId, pageNumber }));
     }
 
     useEffect(() => {
@@ -121,7 +130,7 @@ export default function TeamMembers(props) {
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}, {_id:'tm:'+ workspaceId}];
         dispatch(itemPathLoaded(itemPath));
-        dispatch(listTeamMembersThunk({ teamId:workspaceId, pageNumber: 1 }));
+        loadTeamMembers();
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (
@@ -181,6 +190,23 @@ export default function TeamMembers(props) {
                                 </Col>
                             </Row>
                             {teamMembersList}
+                            {teamMembers && teamMembers.length > 0 && 
+                                <Row>
+                                    <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                        <div className='mt-4 d-flex justify-content-center'>
+                                            <PaginationControl
+                                                page={pageNumber}
+                                                // between={4}
+                                                total={total}
+                                                limit={itemsPerPage}
+                                                changePage={(page) => {
+                                                    loadTeamMembers(page)
+                                                }}
+                                                ellipsis={1}
+                                            />
+                                        </div>
+                                    </Col>
+                                </Row>}
                         </>
                     }
                 </Container>

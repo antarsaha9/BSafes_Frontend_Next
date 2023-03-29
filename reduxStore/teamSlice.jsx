@@ -308,13 +308,19 @@ export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "listingTeamMembers", () => {
         return new Promise(async (resolve, reject) => {
             const teamId = data.teamId;
+            let pageNumber = data.pageNumber;
             let state = getState().team;
+            if (pageNumber)
+                dispatch(setTeamPageNumber({pageNumber}))
+            else
+                pageNumber = state.pageNumber;
+            console.log({pageNumber});
             PostCall({
                 api: '/memberAPI/listTeamMembers',
                 body: {
                     teamId,
                     size: state.itemsPerPage,
-                    from: (data.pageNumber - 1) * state.itemsPerPage
+                    from: (pageNumber - 1) * state.itemsPerPage
                 }
             }).then(data => {
                 if (data.status === 'ok') {
