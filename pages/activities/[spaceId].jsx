@@ -123,13 +123,13 @@ function GroupedActivity({ items }) {
 
             {rest.length > 0 &&
                 <>
-                    {!open && <div className='text-center'><i class='fa fa-caret-down' /></div>}
+                    {!open && <div className='text-center'><i className='fa fa-caret-down' /></div>}
                     <Collapse in={open}>
                         <div>
-                            {rest.map(ActivityCard)}
+                            {rest.map((ra, i)=><ActivityCard {...ra} key={i} />)}
                         </div>
                     </Collapse>
-                    {open && <div className='text-center'><i class='fa fa-caret-up' /></div>}
+                    {open && <div className='text-center'><i className='fa fa-caret-up' /></div>}
                 </>
             }
         </>
