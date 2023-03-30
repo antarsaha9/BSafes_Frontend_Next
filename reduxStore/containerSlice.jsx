@@ -3,8 +3,8 @@ import { createSlice} from '@reduxjs/toolkit';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
-import { debugLog, PostCall } from '../lib/helper'
-import {  stringToEncryptedTokens, newResultItem } from '../lib/bSafesCommonUI';
+import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
+import {  stringToEncryptedTokens, newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, decryptBinaryStringCBC } from '../lib/crypto';
 
 import { getTeamData } from './teamSlice';
@@ -35,8 +35,43 @@ const initialState = {
     containerList: [],
     startDateValue: (new Date()).getTime(),
     diaryContentsPageFirstLoaded: true,
-    trashBoxId:null
+    trashBoxId:null,
+    activities:[]
 };
+
+function separateActivities(activities, getTitle) {
+    var previousId;
+    return activities.reduce((acc, activity) => {
+        const updatedTime = formatTimeDisplay(activity._source.createdTime);
+        let title, titleText;
+        
+        let updatedText;
+        if(activity._source.version < 0) {
+            titleText = 'Trashed item';
+            updatedText = activity._source.update;
+        } else {
+            title = activity._id.charAt(0) === 't' ? "Trash Box" : getTitle(activity);
+            titleText = extractHTMLElementText(title);
+            updatedText = activity._source.version === 1 ? "Creation" : "Updated " + activity._source.update
+        }
+        const formatedActivity = {
+            id: activity._source.id,
+            container: activity._source.container,
+            titleText,
+            updatedText,
+            updatedBy: DOMPurify.sanitize(activity._source.displayName ? activity._source.displayName : activity._source.updatedBy),
+            updatedTime,
+            createdTime: activity._source.createdTime
+        }
+        if (previousId !== activity._source.id) {
+            previousId = activity._source.id;
+            acc.push([formatedActivity]);
+        } else {
+            acc[acc.length - 1].push(formatedActivity)
+        }
+        return acc;
+    }, []);
+}
 
 const containerSlice = createSlice({
     name: "container",
@@ -130,11 +165,16 @@ const containerSlice = createSlice({
         },
         trashBoxIdLoaded: (state, action) => {
             state.trashBoxId = action.payload.trashBoxId;;
-        } 
+        },
+        activitiesLoaded: (state, action) => {
+            const groupedActivities = separateActivities(action.payload.activities.hits, (a)=>newResultItem(a, state.workspaceKey).title);
+            state.total = action.payload.activities.total;
+            state.activities = groupedActivities;
+        }
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -575,6 +615,36 @@ export const restoreItemsFromTrash = async (data) => {
             debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
             reject("restoreItemsFromTrash failed!");
         })
+    });
+}
+
+export const listActivitiesThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "ListingActivities", () => {
+        return new Promise(async (resolve, reject) => {
+            const state = getState().container;
+            const pageNumber = data.pageNumber;
+
+            PostCall({
+                api: '/memberAPI/listActivities',
+                body: {
+                    space: state.workspace,
+                    size: state.itemsPerPage,
+                    from: (pageNumber - 1) * state.itemsPerPage,
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(activitiesLoaded({ activities: data.hits }));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "listActivities failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "listActivities failed: ", error)
+                reject("listActivities failed!");
+            })
+        });
     });
 }
 

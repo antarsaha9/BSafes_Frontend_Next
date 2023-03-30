@@ -86,7 +86,7 @@ export default function Team(props) {
                   <Row>
                     <Col className="text-center">
                       <Link href={`/teamMembers/${workspaceId}`}>Members</Link> |
-					            <Link href="/activities/">Activities</Link>
+					            <Link href={`/activities/${workspaceId}`}>Activities</Link>
                     </Col>
                   </Row>
                   <Row className="justify-content-center">

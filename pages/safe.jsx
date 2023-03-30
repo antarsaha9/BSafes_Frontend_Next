@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
+import Link from 'next/link'
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
@@ -24,6 +25,7 @@ export default function Safe() {
     const workspaceKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
+    const workspaceId = useSelector( state => state.container.workspace );
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -58,6 +60,13 @@ export default function Safe() {
       <div className={BSafesStyle.spaceBackground}>
         <ContentPageLayout> 
             <Container fluid>
+                <br />
+                <br />
+                <Row>
+                    <Col className="text-center">
+					            <Link href={`/activities/${workspaceId}`}>Activities</Link>
+                    </Col>
+                </Row>
                 <Row className="justify-content-center">
                     <Col lg={8}>
                         <Workspace readyToList={readyToList}/>
