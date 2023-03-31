@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import {useRouter} from "next/router";
 
 import Navbar from 'react-bootstrap/Navbar'
 import Container from 'react-bootstrap/Container'
@@ -17,16 +18,19 @@ import { preflightAsyncThunk } from '../../reduxStore/auth';
 const ContentPageLayout = ({children}) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
+    const router = useRouter();
     const dispatch = useDispatch();
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
     const logIn = (e) => {
-        debugLog(debugOn, "Log out");
+        debugLog(debugOn, "Log in");
+        router.push('/logIn');
     }
 
     const logOut = (e) => {
         debugLog(debugOn, "Log out");
+        router.push('/logOut');
     }
 
     useEffect(() => {
@@ -46,12 +50,10 @@ const ContentPageLayout = ({children}) => {
                         </Dropdown.Toggle>
 
                         <Dropdown.Menu>
-                            <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-                            <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
                             {isLoggedIn? 
-                                <Dropdown.Item onClick={logOut} href="#/action-3">Log out</Dropdown.Item>
+                                <Dropdown.Item onClick={logOut}>Log out</Dropdown.Item>
                                 :
-                                <Dropdown.Item onClick={logIn} href="#/action-3">Log In</Dropdown.Item>
+                                <Dropdown.Item onClick={logIn}>Log In</Dropdown.Item>
                             }
                         </Dropdown.Menu>
                     </Dropdown>
