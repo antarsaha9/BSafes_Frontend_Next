@@ -121,6 +121,7 @@ export default function ItemPath() {
             })
             setPathItems(decryptedItems);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [aborted, itemPath, workspaceKeyReady])
 
     return (

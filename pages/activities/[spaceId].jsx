@@ -53,10 +53,12 @@ export default function Activities(props) {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=>{
-        dispatch(setWorkspaceKeyReady(false));    
+        dispatch(setWorkspaceKeyReady(false)); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps  
     }, [loggedIn]);
 
     useEffect(()=>{
@@ -76,6 +78,7 @@ export default function Activities(props) {
             
             setReadyToList(true);   
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn, workspaceKeyReady, router.query.spaceId]);
 
     useEffect(() => {
@@ -84,6 +87,7 @@ export default function Activities(props) {
         const itemPath = [{_id: workspaceId}, {_id:'ac:'+ workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listActivitiesThunk({ pageNumber: 1 }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (

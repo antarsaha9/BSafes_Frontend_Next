@@ -32,6 +32,7 @@ const ContentPageLayout = ({children}) => {
     useEffect(() => {
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
         dispatch(preflightAsyncThunk());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
     return (

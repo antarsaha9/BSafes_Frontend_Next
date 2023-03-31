@@ -79,6 +79,7 @@ export default function DiaryContents() {
             debugLog(debugOn, "startDate changed -> list items");
             dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [startDate])
 
     useEffect(()=> {
@@ -118,7 +119,7 @@ export default function DiaryContents() {
         }
 
         setAllItemsInCurrentPage(allItems);
-    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itemsState]);
 
     return (

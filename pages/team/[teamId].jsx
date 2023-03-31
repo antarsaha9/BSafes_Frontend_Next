@@ -48,12 +48,14 @@ export default function Team(props) {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=>{
       if(loggedIn) {
         dispatch(setWorkspaceKeyReady(false));
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn]);
 
     useEffect(()=>{
@@ -69,6 +71,7 @@ export default function Team(props) {
             }   
             setReadyToList(true);     
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn, workspaceKeyReady, router.query.teamId]);
 
     return (

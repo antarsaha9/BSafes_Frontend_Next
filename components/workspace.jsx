@@ -102,6 +102,7 @@ export default function Workspace({readyToList = false}) {
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (

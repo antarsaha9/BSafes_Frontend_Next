@@ -131,6 +131,7 @@ export default function Diary() {
                 setEditingEditorMode("Writing");
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
     
     return (

@@ -44,6 +44,7 @@ export default function Safe() {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
@@ -54,6 +55,7 @@ export default function Safe() {
             dispatch(setWorkspaceKeyReady(true));
             setReadyToList(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [memberId])
     
     return (

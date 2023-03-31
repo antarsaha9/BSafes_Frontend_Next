@@ -68,13 +68,14 @@ export default function Teams() {
             dispatch(clearContainer());
             setContainerCleared(true);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps   
     }, [loggedIn]);
 
     useEffect(()=>{
         if(containerCleared){
             loadTeams();
         }
-        
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [containerCleared]);
 
     return (

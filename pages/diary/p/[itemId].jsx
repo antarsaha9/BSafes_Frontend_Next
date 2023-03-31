@@ -117,6 +117,7 @@ export default function DiaryPage() {
                 dispatch(setPageStyle(BSafesStyle.rightPagePanel));
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.query.itemId]);
 
     return (

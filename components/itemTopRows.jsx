@@ -60,6 +60,7 @@ export default function ItemTopRows() {
         } else if (activity === "Error") {
 
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     return (
