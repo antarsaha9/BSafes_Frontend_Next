@@ -123,7 +123,7 @@ function GroupedActivity({ items }) {
                     {!open && <div className='text-center' onClick={() => setOpen(!open)}><i className='fa fa-caret-down' /></div>}
                     <Collapse in={open}>
                         <div>
-                            {rest.map(ActivityCard)}
+                            {rest.map((ra, i)=><ActivityCard {...ra} key={i} />)}
                         </div>
                     </Collapse>
                     {open && <div className='text-center' onClick={() => setOpen(!open)}><i className='fa fa-caret-up' /></div>}
