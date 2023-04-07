@@ -20,6 +20,7 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
 
+    // eslint-disable-next-line react/display-name
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
         <Button variant='link' size='sm' className='text-white pull-right' onClick={onClick} ref={ref}><i className="fa fa-calendar fa-lg" aria-hidden="true"></i></Button>
     ));

@@ -120,6 +120,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 break;
             default:
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode])
  
     useEffect(()=>{
@@ -145,6 +146,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.preS3Upload = preS3UploadHook;
         window.bsafesFroala.postS3Upload = postS3UploadHook;
         window.bsafesFroala.uploadData = uploadDataHook;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
 
     const handlePenClicked = () => {

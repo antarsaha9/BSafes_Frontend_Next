@@ -62,6 +62,7 @@ const PageItemWrapper = ({ itemId, children}) => {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=> {
@@ -85,6 +86,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           }
         }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoggedIn, itemId]);
 
     useEffect(()=>{
@@ -92,6 +94,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           debugLog(debugOn, "Dispatch getPageItemThunk ...");
           dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pageItemId, pageCleared]);
 
     useEffect(() => {
@@ -99,6 +102,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           debugLog(debugOn, "setContainerData ...");
           dispatch(setContainerData({ itemId: pageItemId, container: { space: workspace, id: containerInWorkspace } }));
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigationMode]);
 
     useEffect(()=>{
@@ -110,6 +114,7 @@ const PageItemWrapper = ({ itemId, children}) => {
               dispatch(setPageStyle(BSafesStyle.rightPagePanel));
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pageNumber])
 
     useEffect(()=>{
@@ -133,6 +138,7 @@ const PageItemWrapper = ({ itemId, children}) => {
         dispatch(clearContainer());
         setContainerCleared(true);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [space]);
 
     useEffect(()=>{
@@ -155,6 +161,7 @@ const PageItemWrapper = ({ itemId, children}) => {
               }            
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [containerCleared]);
 
     useEffect(()=>{
@@ -173,6 +180,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           setPageCleared(false);
           setContainerCleared(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workspaceKeyReady, itemCopy]);
 
     useEffect(()=>{ 
@@ -194,6 +202,7 @@ const PageItemWrapper = ({ itemId, children}) => {
             }    
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workspaceKeyReady, containerInWorkspace]);
 
     

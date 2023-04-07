@@ -1,31 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import {useRouter} from "next/router";
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
-
-import jquery from "jquery"
+import Spinner from 'react-bootstrap/Spinner';
 
 import { debugLog} from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
-import Scripts from '../components/scripts'
 import KeyInput from "../components/keyInput";
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
 export default function LogIn() {
     const debugOn = false;
+    const router = useRouter();
     const dispatch = useDispatch();
     
     const [keyPassword, setKeyPassword] = useState("");
-
     const nicknameRef = useRef(null);
-
-    const scriptsLoaded = useSelector(state => state.scripts.done);
+    const activity = useSelector(state=>state.auth.activity);
+    const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
 
     const keyPasswordChanged = ( password ) => {
         debugLog(debugOn, "keyPassword: ", password);
@@ -39,11 +38,10 @@ export default function LogIn() {
     }
 
     useEffect(()=> {
-        window.$ = window.jQuery = jquery;
-        if(scriptsLoaded) {
-            //argon2Functions.loadArgon2('native-wasm');
+        if(isLoggedIn) {
+            router.push('/safe');
         }
-    }, [scriptsLoaded]);
+    }, [isLoggedIn])
 
     return (
         <ContentPageLayout> 
@@ -55,7 +53,7 @@ export default function LogIn() {
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">
                                 <Form.Label>Nickname</Form.Label>
-                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Enter a nickname' />
+                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Enter a nickname' autoComplete="off" />
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
@@ -64,13 +62,21 @@ export default function LogIn() {
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
                             </Form.Group>
-                            <Button variant="dark" onClick={handleSubmit}>Submit</Button>
-                            
+                            <Button variant="dark" onClick={handleSubmit} disabled={activity==="LoggingIn"}>
+                                {activity==="LoggingIn"?
+                                    <Spinner animation="border" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </Spinner>
+                                    :'Unlock'
+                                }
+                            </Button>
+                            {(activity ==='Error') && 
+                                <p className="text-danger">Please provide correct Nickname and Key Passowrd </p>
+                            }
                         </Form>
                     </Col>           
                 </Row>
             </Container>
-            <Scripts />
         </ContentPageLayout>
     )
 }

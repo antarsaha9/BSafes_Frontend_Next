@@ -6,6 +6,8 @@ import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLo
 const debugOn = false;
 
 const initialState = {
+    activity: "Done",
+    error: null,
     memberId: null,
     displayName: null,
     isLoggedIn: false,
@@ -20,6 +22,9 @@ const authSlice = createSlice({
     name: "auth",
     initialState: initialState,
     reducers: {
+        activityChanged: (state, action) => {
+            state.activity = action.payload;
+        },
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
@@ -37,7 +42,18 @@ const authSlice = createSlice({
     }
 });
 
-export const { loggedIn, loggedOut} = authSlice.actions;
+export const {activityChanged, loggedIn, loggedOut} = authSlice.actions;
+
+const newActivity = async (dispatch, type, activity) => {
+    dispatch(activityChanged(type));
+    try {
+        await activity();
+        dispatch(activityChanged("Done"));
+    } catch(error) {
+        if(error === "Aborted") return;
+        dispatch(activityChanged("Error"));
+    }
+}
 
 export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
 
@@ -68,83 +84,96 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const logInAsyncThunk = (data) => async (dispatch, getState) => {
-
-        const credentials = await calculateCredentials(data.nickname, data.keyPassword, true);
-
-        if(credentials) {
-            debugLog(debugOn, "credentials: ", credentials);
-
-            PostCall({
-                api:'/logIn',
-                body: credentials.keyPack,
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status !== 'ok') {
+    newActivity(dispatch, "LoggingIn", () => {
+        return new Promise(async (resolve, reject) => {
+            const credentials = await calculateCredentials(data.nickname, data.keyPassword, true);
+            if(credentials) {
+                debugLog(debugOn, "credentials: ", credentials);
+    
+                PostCall({
+                    api:'/logIn',
+                    body: credentials.keyPack,
+                }).then( data => {
+                    debugLog(debugOn, data);
+                    if(data.status !== 'ok') {
+                        debugLog(debugOn, "woo... failed to login.")
+                        reject();
+                        return;
+                    }
+                    credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
+                    credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
+                    credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
+                    credentials.keyPack.publicKey = data.publicKey;
+    
+                    function verifyChallenge() {
+                        let randomMessage = data.randomMessage;
+                        randomMessage = forge.util.encode64(randomMessage);
+                        
+                        let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                        privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
+                        const pki = forge.pki;
+                        let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
+                        const md = forge.md.sha1.create();
+                        md.update(randomMessage, 'utf8');
+                        let signature = privateKeyFromPem.sign(md);
+                        signature = forge.util.encode64(signature);
+    
+    
+                        PostCall({
+                            api:'/memberAPI/verifyChallenge',
+                            body: { signature },
+                        }).then( data => {
+                            if(data.status == "ok") {
+                                debugLog(debugOn, "Logged in.");
+                                credentials.memberId = data.memberId;
+                                credentials.displayName = data.displayName;
+                                saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                                
+                                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                                resolve();
+                            } else {
+                                debugLog(debugOn, "Error: ", data.error);
+                                reject(error);
+                            }
+                        }).catch( error => {
+                            debugLog(debugOn, "woo... failed to verify challenge.");
+                            reject(error);
+                        })
+                    } 
+                        
+                    verifyChallenge();
+    
+                }).catch( error => {
                     debugLog(debugOn, "woo... failed to login.")
-                    return;
-                }
-                credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
-                credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
-                credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
-                credentials.keyPack.publicKey = data.publicKey;
-
-                function verifyChallenge() {
-                    let randomMessage = data.randomMessage;
-                    randomMessage = forge.util.encode64(randomMessage);
-                    
-                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
-                    privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
-                    const pki = forge.pki;
-                    let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
-                    const md = forge.md.sha1.create();
-                    md.update(randomMessage, 'utf8');
-                    let signature = privateKeyFromPem.sign(md);
-                    signature = forge.util.encode64(signature);
-
-
-                    PostCall({
-                        api:'/memberAPI/verifyChallenge',
-                        body: { signature },
-                    }).then( data => {
-                        if(data.status == "ok") {
-                            debugLog(debugOn, "Logged in.");
-                            credentials.memberId = data.memberId;
-                            credentials.displayName = data.displayName;
-                            saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
-                            
-                            dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-                        } else {
-                            debugLog(debugOn, "Error: ", data.error);
-                        }
-                    }).catch( error => {
-                        debugLog(debugOn, "woo... failed to verify challenge.");
-                    })
-                } 
-                    
-                verifyChallenge();
-
-            }).catch( error => {
-                debugLog(debugOn, "woo... failed to login.")
-            })
-        }
-
+                    reject(error);
+                })
+            }
+        })
+    });
 }
 
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
-    localStorage.clear();
+    newActivity(dispatch, "LoggingOut", () => {
+        return new Promise(async (resolve, reject) => {
+            localStorage.clear();
 
-    PostCall({
-        api:'/memberAPI/logOut'
-    }).then( data => {
-        debugLog(debugOn, data);
-        if(data.status === 'ok') {
-            dispatch(loggedOut());
-        } else {
-            debugLog(debugOn, "woo... failed to log out: ", data.error)
-        } 
-    }).catch( error => {
-        debugLog(debugOn, "woo... failed to log out.")
-    })
+            PostCall({
+                api:'/memberAPI/logOut'
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    dispatch(loggedOut());
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... failed to log out: ", data.error)
+                    reject();
+                } 
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to log out.")
+                reject();
+            })
+        });
+    });
 }
 
 export const preflightAsyncThunk = () => async (dispatch, getState) => {

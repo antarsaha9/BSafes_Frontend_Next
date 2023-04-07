@@ -282,6 +282,7 @@ export default function PageCommons() {
                 setEditingEditorMode("Writing");
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     useEffect(()=>{
@@ -297,7 +298,7 @@ export default function PageCommons() {
             };
             element.replaceWith(elementClone);
         });
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
     useEffect(()=> {
@@ -351,7 +352,7 @@ export default function PageCommons() {
                 dispatch(updateContentImagesDisplayIndex(i+1));
             }          
         }
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);
 
     useEffect(()=> {
@@ -431,7 +432,7 @@ export default function PageCommons() {
                 dispatch(updateContentVideosDisplayIndex(i+1));
             }          
         }
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentVideosDownloadQueue]);
 
     useEffect(()=>{
@@ -448,6 +449,7 @@ export default function PageCommons() {
             });
             
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
 
     const photoSwipeGallery = () => {

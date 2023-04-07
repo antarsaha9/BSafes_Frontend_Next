@@ -111,6 +111,7 @@ export default function TrashBox() {
         return () => {
             router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
@@ -130,6 +131,7 @@ export default function TrashBox() {
                 setContainerCleared(true);
             }    
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoggedIn, router.query.spaceId]);
 
     useEffect(()=>{
@@ -141,6 +143,7 @@ export default function TrashBox() {
                 dispatch(initWorkspaceThunk({teamId:space, container: 'Unknown'}));          
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [space, containerCleared]);
 
     useEffect(() => {
@@ -149,12 +152,14 @@ export default function TrashBox() {
         const itemPath = [{_id: workspaceId}, {_id:'t:workspaceId'}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(getTrashBoxThunk());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workspaceId, workspaceKeyReady ]);
 
     useEffect(()=> {
         if(!trashBoxId || trashBoxId === 'Unknown') return;
         dispatch(changeContainerOnly({container: trashBoxId}));
         listItems({})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [trashBoxId])
 
     const listItems = ({ pageNumber = 1 }) => {

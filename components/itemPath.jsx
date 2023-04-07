@@ -57,6 +57,11 @@ export default function ItemPath() {
                         itemTitleText = 'Members';
                         pathItemLink = '/teamMembers/' + item._id;
                         break;
+                    case 'ac':
+                        pathItemIcon = "fa fa-tasks";
+                        itemTitleText = 'Activities';
+                        pathItemLink = '/activities/' + item._id;
+                        break;
                     case 'b':
                         pathItemIcon = "fa fa-archive";
                         pathItemLink = '/box/contents/' + item._id;
@@ -91,7 +96,7 @@ export default function ItemPath() {
                         break;
                 }
 
-                if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't' || pathItemType === 'tm') {
+                if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't' || pathItemType === 'tm' || pathItemType === 'ac' ) {
                 } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                 } else {
                     if(item._source.title) {
@@ -116,6 +121,7 @@ export default function ItemPath() {
             })
             setPathItems(decryptedItems);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [aborted, itemPath, workspaceKeyReady])
 
     return (

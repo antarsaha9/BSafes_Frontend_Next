@@ -105,10 +105,12 @@ export default function TeamMembers(props) {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=>{
-        dispatch(setWorkspaceKeyReady(false));    
+        dispatch(setWorkspaceKeyReady(false));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn]);
 
     useEffect(()=>{
@@ -123,6 +125,7 @@ export default function TeamMembers(props) {
             }     
             setReadyToList(true);   
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps   
     }, [loggedIn, workspaceKeyReady, router.query.teamId]);
 
     useEffect(() => {
@@ -131,6 +134,7 @@ export default function TeamMembers(props) {
         const itemPath = [{_id: workspaceId}, {_id:'tm:'+ workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         loadTeamMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
     return (

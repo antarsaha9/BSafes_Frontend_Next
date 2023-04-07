@@ -129,6 +129,7 @@ export default function Box() {
                 setEditingEditorMode("Writing");
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
 

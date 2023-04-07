@@ -48,12 +48,14 @@ export default function Team(props) {
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=>{
       if(loggedIn) {
         dispatch(setWorkspaceKeyReady(false));
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn]);
 
     useEffect(()=>{
@@ -69,6 +71,7 @@ export default function Team(props) {
             }   
             setReadyToList(true);     
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loggedIn, workspaceKeyReady, router.query.teamId]);
 
     return (
@@ -86,7 +89,7 @@ export default function Team(props) {
                   <Row>
                     <Col className="text-center">
                       <Link href={`/teamMembers/${workspaceId}`}>Members</Link> |
-					            <Link href="/activities/">Activities</Link>
+					            <Link href={`/activities/${workspaceId}`}>Activities</Link>
                     </Col>
                   </Row>
                   <Row className="justify-content-center">
