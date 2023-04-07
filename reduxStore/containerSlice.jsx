@@ -170,11 +170,14 @@ const containerSlice = createSlice({
             const groupedActivities = separateActivities(action.payload.activities.hits, (a)=>newResultItem(a, state.workspaceKey).title);
             state.total = action.payload.activities.total;
             state.activities = groupedActivities;
-        }
+        },
+        setActivitiesPageNumber: (state, action) => {
+            state.pageNumber = action.payload.pageNumber;
+        },
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded, setActivitiesPageNumber} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -622,8 +625,13 @@ export const listActivitiesThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "ListingActivities", () => {
         return new Promise(async (resolve, reject) => {
             const state = getState().container;
-            const pageNumber = data.pageNumber;
-
+            // const pageNumber = data.pageNumber;
+            
+            let pageNumber = data.pageNumber;
+            if (pageNumber)
+                dispatch(setActivitiesPageNumber({pageNumber}))
+            else
+                pageNumber = state.pageNumber;
             PostCall({
                 api: '/memberAPI/listActivities',
                 body: {

@@ -18,6 +18,7 @@ import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
 
 import { debugLog } from '../../lib/helper';
 import { getItemLink } from '../../lib/bSafesCommonUI';
+import { PaginationControl } from 'react-bootstrap-pagination-control';
 
 export default function Activities(props) {
     const debugOn = true;
@@ -35,6 +36,9 @@ export default function Activities(props) {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const container = useSelector( state => state.container.container);
     const activities = useSelector(state => state.container.activities);
+    const total = useSelector(state => state.container.total);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const pageNumber = useSelector(state => state.container.pageNumber);
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -109,6 +113,24 @@ export default function Activities(props) {
                             </ListGroup>
                         </Col>
                     </Row>
+                    {activities && activities.length > 0 &&
+                        <Row>
+                            <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                <div className='mt-4 d-flex justify-content-center'>
+                                    <PaginationControl
+                                        page={pageNumber}
+                                        // between={4}
+                                        total={total}
+                                        limit={itemsPerPage}
+                                        changePage={(page) => {
+                                            // listItems({ pageNumber: page })
+                                            dispatch(listActivitiesThunk({ pageNumber: page }))
+                                        }}
+                                        ellipsis={1}
+                                    />
+                                </div>
+                            </Col>
+                        </Row>}
                 </Container>
             </ContentPageLayout>
         </div>
