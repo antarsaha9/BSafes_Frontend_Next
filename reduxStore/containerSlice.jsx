@@ -245,12 +245,12 @@ export async function createANewItem(titleStr, currentContainer, selectedItemTyp
 };
 
 export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
+    dispatch(clearContainer());
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
             let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
             auth = getState().auth;
             try {
-                dispatch(clearContainer());
                 team = await getTeamData(data.teamId);
                 teamKeyEnvelope = team.teamKeyEnvelope;
                 privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);

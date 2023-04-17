@@ -10,12 +10,14 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
+import Spinner from 'react-bootstrap/Spinner';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
+import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
 import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
@@ -35,10 +37,14 @@ export default function Workspace({readyToList = false}) {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
     const container = useSelector( state => state.container.container);
     const mode = useSelector( state => state.container.mode);
+    const activity = useSelector( state => state.container.activity);
 
     const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
@@ -94,6 +100,14 @@ export default function Workspace({readyToList = false}) {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
 
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
+    }
+
     useEffect(() => {
         debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
         if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
@@ -126,6 +140,11 @@ export default function Workspace({readyToList = false}) {
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <br />
+            { (activity !== 'Done' && activity !== 'Error') &&
+                <Row className="justify-content-center">
+                    <Spinner animation='border' />
+                </Row>
+            }
             <br />
             { mode ==='search' &&
             <>
@@ -138,8 +157,26 @@ export default function Workspace({readyToList = false}) {
                 </Row>
                 <br />
             </>
-            }
+            }     
             {items}
+            {itemsState && itemsState.length > 0 &&
+                <Row>
+                    <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                        <div className='mt-4 d-flex justify-content-center'>
+                            <PaginationControl
+                                page={pageNumber}
+                                // between={4}
+                                total={total}
+                                limit={itemsPerPage}
+                                changePage={(page) => {
+                                    listItems({pageNumber:page})
+                                }}
+                                ellipsis={1}
+                            />
+                        </div>
+                    </Col>
+                </Row>}
+            <br />
             <br />
             <br />
             {workspaceId && <Row>

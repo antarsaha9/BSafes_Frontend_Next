@@ -35,6 +35,17 @@ const teamSlice = createSlice({
         },
         teamsLoaded: (state, action) => {
             state.teams = action.payload.hits;
+            state.total = action.payload.total;
+            state.pageNumber = action.payload.pageNumber;
+        },
+        newTeamAddedOnTop: (state, action) => {
+            state.teams.unshift(action.payload);
+        },
+        newTeamAddedBefore: (state, action) => {
+            state.teams.splice(action.payload.targetIndex, 0, action.payload.team);
+        },
+        newTeamAddedAfter: (state, action) => {
+            state.teams.splice(action.payload.targetIndex+1, 0, action.payload.team);
         },
         setTeamName: (state, action) => {
             state.teamName = action.payload.teamName;
@@ -71,7 +82,7 @@ const teamSlice = createSlice({
     }
 })
 
-export const { activityChanged, setActivityResult, teamsLoaded, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
+export const { activityChanged, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -111,14 +122,15 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
     
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let i, state, auth, hits=[], decryptedTeam, team, privateKeyFromPem, encodedTeamName, teamName, cachedTeamName;
+            let i, state, auth, hits=[], decryptedTeam, team, privateKeyFromPem, encodedTeamName, teamName, cachedTeamName, pageNumber;
             state = getState().team;
             auth = getState().auth;
             hits = [];
+            pageNumber = data.pageNumber;
             PostCall({
                 api: '/memberAPI/listTeams',
                 body: {
-                    from: (state.pageNumber -1 ) * state.itemsPerPage,
+                    from: (pageNumber -1 ) * state.itemsPerPage,
                     size: state.itemsPerPage
                 }
             }).then(async data => {
@@ -172,7 +184,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                         hits.push(decryptedTeam);
                     }
                    
-                    dispatch(teamsLoaded({ total: data.hits.total, hits }));
+                    dispatch(teamsLoaded({ pageNumber ,total: data.hits.total, hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);
@@ -269,7 +281,89 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
             }
       });
     });
-  }
+}
+
+export const createANewTeamThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "CreatingANewTeam", () => {
+        return new Promise(async (resolve, reject) => {
+            const teamName = data.title;
+            const publicKeyPem = data.publicKeyPem;
+            const addAction = data.addAction;
+            const targetIndex = data.targetIndex;
+            const targetTeam = data.targetTeam;
+            const targetPosition = data.targetPosition;
+            const teamKey = generateTeamKey();
+            const encodedTeamName = forge.util.encodeUtf8(teamName);
+            const encryptedTeamName = encryptBinaryString(encodedTeamName, teamKey);
+  
+            const publicKeyFromPem = forge.pki.publicKeyFromPem(publicKeyPem);
+            const encodedTeamKey = forge.util.encodeUtf8(teamKey);
+            const encryptedTeamKey = publicKeyFromPem.encrypt(encodedTeamKey);
+            const encryptedTeamNameByMemberPublic = publicKeyFromPem.encrypt(encodedTeamName);
+  
+            const salt = forge.random.getBytesSync(16);
+            const randomKey = forge.random.getBytesSync(32);
+            const searchKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
+            const searchKeyEnvelope = encryptBinaryString(searchKey, teamKey);
+  
+            const searchIV = forge.random.getBytesSync(16);
+            const searchIVEnvelope = encryptBinaryString(searchIV, teamKey);
+
+            const addActionOptions = {
+                name: forge.util.encode64(encryptedTeamName),
+                teamKeyEnvelope: forge.util.encode64(encryptedTeamKey),
+                searchKeyEnvelope: forge.util.encode64(searchKeyEnvelope),
+                searchIVEnvelope: forge.util.encode64(searchIVEnvelope),
+                encryptedTeamNameByMemberPublic: forge.util.encode64(encryptedTeamNameByMemberPublic),
+                addAction: addAction,
+            };
+  
+            if (addAction !== "addATeamOnTop") {
+                addActionOptions.targetTeam = targetTeam;
+                addActionOptions.targetPosition = targetPosition;
+            }
+
+            debugLog(debugOn, addActionOptions);
+
+            PostCall({
+                api: '/memberAPI/createANewTeam',
+                body: addActionOptions
+            }).then(result => {
+                debugLog(debugOn, result);
+  
+                if (result.status === 'ok') {
+                    if (result.team) {
+                        let team = {
+                            title: teamName,
+                            id: result.team.id,
+                            position: result.team.position
+                        }
+                        switch(addAction) {
+                            case 'addATeamOnTop':
+                                dispatch(newTeamAddedOnTop(team));
+                                break;
+                            case 'addATeamBefore':
+                                dispatch(newTeamAddedBefore({team, targetIndex}));
+                                break;
+                            case 'addATeamAfter':
+                                dispatch(newTeamAddedAfter({team, targetIndex}));
+                                break;
+                            default:
+                        }
+                        resolve(result.team);
+                    } else {
+                        debugLog(debugOn, "woo... failed to create a team!", result.error);
+                        reject("woo... failed to create a team!");
+                    }
+                } else {
+                    debugLog(debugOn, "woo... failed to create a team!", result.error);
+                    reject("woo... failed to create a team!");
+                }
+            });
+
+        });
+    });
+}
 
 export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "searchingForAMember", () => {
