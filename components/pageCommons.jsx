@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
@@ -14,9 +14,11 @@ import Comments from "./comments";
 import BSafesStyle from '../styles/BSafes.module.css'
 import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
+import { useRouter } from "next/router";
 
+const warningText = 'You have unsaved changes - are you sure you wish to leave this page and discard changes?';
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -30,6 +32,8 @@ export default function PageCommons() {
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [editingEditorId, setEditingEditorId] = useState(null);
+    const [optedToGetUnsavedChanges, setOptedToGetUnsavedChanges] = useState(false);
+    const [localUnsavedChanges, setLocalUnsavedChanges] = useState(null);
 
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
@@ -41,6 +45,9 @@ export default function PageCommons() {
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
 
+    const itemId = useSelector( state => state.page.id);
+    const container = useSelector( state => state.page.container);
+
     const pswpRef = useRef(null);
 
     const imageFilesInputRef = useRef(null);
@@ -49,6 +56,75 @@ export default function PageCommons() {
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
 
+    const localstorageKey = itemId+'contentType#Write'  
+    const handleBrowseAwayRef = useRef();
+    const handleWindowCloseRef = useRef();
+    const SaveRestoreHookAssigned = useRef(false);
+    const askedUserToRestore = useRef(false);  
+
+    const handleContentChangeRealTime = (content)=>{
+        localStorage.setItem(localstorageKey, content)            
+    }
+
+    const deleteUnsavedChanges = useCallback(() => {
+        localStorage.removeItem(localstorageKey);
+    }, [localstorageKey]);
+    useEffect(()=>{
+        console.log('called');
+        window.test = handleBrowseAwayRef;
+        window.addEventListener('beforeunload', (...e) => handleWindowCloseRef.current(...e));
+        router.events.on('routeChangeStart', () => handleBrowseAwayRef.current());
+        SaveRestoreHookAssigned.current = true;
+        return () => {
+            window.removeEventListener('beforeunload', (...e) => handleWindowCloseRef.current(...e));
+            router.events.off('routeChangeStart', () => handleBrowseAwayRef.current());
+        };
+        
+    }, []);
+    
+    useEffect(() => {
+        if (activity === 'Done' && !!container) {
+            if (unsavedChanges() && !askedUserToRestore.current) {
+                if (window.confirm('Found item contents in Local Storage.\nWould you like to recover the content from local storage?')) {
+                    const content = localStorage.getItem(localstorageKey);
+                    setOptedToGetUnsavedChanges(true);
+                    setLocalUnsavedChanges(content);
+                    setTimeout(() => {
+                        handleWrite();
+                    }, 1000);
+                }
+                else {
+                    deleteUnsavedChanges();
+                }
+                askedUserToRestore.current = true;
+            }
+        }
+    }, [activity, container]);
+    const router = useRouter()
+    
+    const unsavedChanges = useCallback(() => {
+        return !!localStorage.getItem(localstorageKey);
+    }, [itemId]);
+    
+    const handleWindowClose = useCallback((e) => {
+        if (!unsavedChanges()) return;
+        e.preventDefault();
+        return (e.returnValue = warningText);
+    }, [itemId]);
+
+    
+    const handleBrowseAway = useCallback(() => {
+        if (!unsavedChanges()) return;
+        if (window.confirm(warningText)) {
+            deleteUnsavedChanges();
+            return;
+        };
+        router.events.emit('routeChangeError');
+        throw 'routeChange aborted.';
+    }, [itemId]);
+
+    handleBrowseAwayRef.current = handleBrowseAway;
+    handleWindowCloseRef.current = handleWindowClose;
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
 
@@ -179,12 +255,23 @@ export default function PageCommons() {
     const handleSave = () => {
         debugLog(debugOn, "handleSave");
         setEditingEditorMode("Saving");
+
+        if (optedToGetUnsavedChanges){
+            setOptedToGetUnsavedChanges(false);
+            setLocalUnsavedChanges(null);
+        }
+        deleteUnsavedChanges(); 
     }
 
     const handleCancel = () => {
         debugLog(debugOn, "handleCancel");
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
+        if (optedToGetUnsavedChanges){
+            setOptedToGetUnsavedChanges(false);
+            setLocalUnsavedChanges(null);
+        }
+        deleteUnsavedChanges(); 
     }
 
     const handleImageButton = (e) => {
@@ -273,7 +360,7 @@ export default function PageCommons() {
 
     useEffect(() => {
         if(activity === "Done") {
-            if(editingEditorId) {
+            if(!optedToGetUnsavedChanges && editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
@@ -511,7 +598,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col md="10" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor key='title' editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
@@ -521,7 +608,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" md="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor key='content' editorId="content" mode={contentEditorMode} content={optedToGetUnsavedChanges?localUnsavedChanges: contentEditorContent} onContentChangeRealTime={handleContentChangeRealTime} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <br />

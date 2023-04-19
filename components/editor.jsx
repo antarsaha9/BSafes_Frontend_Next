@@ -16,7 +16,7 @@ import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/help
 import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, onContentChangeRealTime}) {
     const debugOn = false;    
     const editorRef = useRef(null);
     const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
@@ -89,6 +89,11 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             debugLog(debugOn, "setEditorOn")
             setEditorOn(true);
         }
+        if (onContentChangeRealTime){
+            $(editorRef.current).on('froalaEditor.contentChanged', function (e, editor) {
+                onContentChangeRealTime(editor.html.get());
+            });
+        }
     }
 
     const saving = () => {
@@ -97,6 +102,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         setTimeout(()=> {
             onContentChanged(editorId, content);
         }, 0) 
+        
+        if (onContentChangeRealTime)
+            $(editorRef.current).off('froalaEditor.contentChanged');
+
     }
 
     const readOnly = () => {
@@ -108,12 +117,13 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     useEffect(()=> {
+        // TODO need optimization here, check scriptsloaded only if mode is writing
         switch (mode) {
             case "ReadOnly":
                 readOnly();
                 break;
             case "Writing":
-                writing();
+                scriptsLoaded && writing();
                 break;
             case "Saving":
                 saving();
@@ -121,7 +131,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             default:
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [mode])
+    }, [mode, scriptsLoaded])
  
     useEffect(()=>{
         if(itemId && itemKey) {
@@ -273,10 +283,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     </Col>
                 </Row>
             }
-            <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
+            {scriptsLoaded && <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
                 <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                 </div>
-            </Row>
+            </Row>}
         </>
     );
 }
