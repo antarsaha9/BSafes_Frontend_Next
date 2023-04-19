@@ -1,13 +1,14 @@
 import { forwardRef, useRef, useEffect, useState } from 'react'
+import { useSelector } from 'react-redux'
 import { useRouter } from "next/router";
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Card from 'react-bootstrap/Card'
-
 import InputGroup from 'react-bootstrap/InputGroup';
 import Form from 'react-bootstrap/Form';
+import Spinner from 'react-bootstrap/Spinner';
 
 import ReactDatePicker from 'react-datepicker'
 
@@ -19,6 +20,9 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
     const searchInputRef = useRef(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
+
+    const pageActivity = useSelector( state => state.page.activity );
+    const containerActivity = useSelector( state => state.container.activity);
 
     // eslint-disable-next-line react/display-name
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
@@ -58,6 +62,11 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
 
     return (
         <>
+            { (((pageActivity !== 'Done' && pageActivity !== 'Error') || (containerActivity !== 'Done' && containerActivity !== 'Error'))) &&
+                        
+                <Spinner className={BSafesStyle.screenCenter} animation='border' />    
+                                      
+            }
             <Row>
                 <Col xs={12} sm={{ span: 10, offset: 1 }} lg={{ span: 8, offset: 2 }}>
                     <Card className={`${BSafesStyle.containerControlPanel}`}>

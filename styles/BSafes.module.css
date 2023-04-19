@@ -27,6 +27,15 @@
   background-color:#f8f8f8 ;
   min-height: 980px;
 }
+
+.screenCenter {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  /* bring your own prefixes */
+  margin-left: -1em;
+  z-index: 1000;
+}
 /* End of general */
 
 /*--********  Navigation bar */

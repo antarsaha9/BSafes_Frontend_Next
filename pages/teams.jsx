@@ -7,17 +7,18 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card';
+import Spinner from 'react-bootstrap/Spinner';
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import AddATeamButton from '../components/addATeamButton';
 import NewTeamModal from '../components/newTeamModal';
 import TeamCard from '../components/teamCard';
+import PaginationControl from '../components/paginationControl';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearContainer } from '../reduxStore/containerSlice';
-import { clearItems } from '../reduxStore/teamSlice';
-import { createANewTeam, listTeamsThunk } from '../reduxStore/teamSlice';
+import { clearContainer, createANewItem } from '../reduxStore/containerSlice';
+import { createANewTeamThunk, listTeamsThunk } from '../reduxStore/teamSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Teams() {
@@ -29,17 +30,23 @@ export default function Teams() {
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const publicKeyPem = useSelector(state => state.auth.publicKey);
 
+    const activity = useSelector(state => state.team.activity);
     const teams = useSelector(state => state.team.teams);
-
+    const pageNumber = useSelector(state => state.team.pageNumber);
+    const itemsPerPage = useSelector(state => state.team.itemsPerPage);
+    const total = useSelector(state => state.team.total);
+    
     const [addAction, setAddAction] = useState(null);
+    const [targetIndex, setTargetIndex] = useState(null);
     const [targetTeam, setTargetTeam] = useState(null);
-    const [targetTeamPosition, setTargetTeamPosition] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
     const [showNewTeamModal, setShowNewTeamModal] = useState(false);
 
-    const addATeam = (addAction = 'addATeamOnTop', targetTeam, targetTeamPosition) => {
-        setAddAction(addAction);
+    const addATeam = ({action='addATeamOnTop', index, targetTeam, targetPosition}) => {
+        setAddAction(action);
+        setTargetIndex(index);
         setTargetTeam(targetTeam);
-        setTargetTeamPosition(targetTeamPosition);
+        setTargetPosition(targetPosition);
         setShowNewTeamModal(true);
     }
     const handleClose = () => setShowNewTeamModal(false);
@@ -47,17 +54,11 @@ export default function Teams() {
     const handleCreateANewTeam = async (title) => {
         debugLog(debugOn, "createANewTeam", title);
         setShowNewTeamModal(false);
-        try {
-            await createANewTeam(title, addAction, targetTeam, targetTeamPosition, publicKeyPem);
-            debugLog(debugOn, "Team created");
-            loadTeams();
-        } catch (error) {
-            alert("Could not create a new team!");
-        }
+        dispatch(createANewTeamThunk({title, addAction, targetIndex, targetTeam, targetPosition, publicKeyPem}));
     }
 
-    const loadTeams = () => {
-        dispatch(listTeamsThunk());
+    const loadTeams = (pageNumber=1) => {
+        dispatch(listTeamsThunk({pageNumber}));
         //loadTeams();
         setContainerCleared(false);
     }
@@ -81,7 +82,14 @@ export default function Teams() {
     return (
         <div className={BSafesStyle.spaceBackground}>
             <ContentPageLayout> 
+    
                 <Container fluid>
+
+                    { (((activity !== 'Done' && activity !== 'Error'))) &&
+                        
+                        <Spinner className={BSafesStyle.screenCenter} animation='border' />    
+                  
+                    }
                     <Row>
 				        <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
 					        <Card>
@@ -109,10 +117,27 @@ export default function Teams() {
                     <Row>
                         <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
                             {teams.map((team, index) => {
-                                return <TeamCard key={index} team={team} onAdd={addATeam} />
+                                return <TeamCard key={index} index={index} team={team} onAdd={addATeam} />
                             })}
                         </Col>
                     </Row>
+                    {teams && teams.length > 0 && 
+                    <Row>
+                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                            <div className='mt-4 d-flex justify-content-center'>
+                                <PaginationControl
+                                    page={pageNumber}
+                                    // between={4}
+                                    total={total}
+                                    limit={itemsPerPage}
+                                    changePage={(page) => {
+                                        loadTeams(page)
+                                    }}
+                                    ellipsis={1}
+                                />
+                            </div>
+                        </Col>
+                    </Row>}
                 </Container>
             </ContentPageLayout>
         </div>

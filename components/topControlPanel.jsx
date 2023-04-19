@@ -10,6 +10,7 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Dropdown from 'react-bootstrap/Dropdown'
+import Spinner from 'react-bootstrap/Spinner';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -25,9 +26,11 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
+    const pageActivity = useSelector( state => state.page.activity );
     const pageItemId = useSelector( state => state.page.id);
     const position = useSelector( state => state.page.position);
 
+    const containerActivity = useSelector( state => state.container.activity);
     const container = useSelector( state => state.container.container);
     const mode = useSelector( state => state.container.mode);
 
@@ -93,7 +96,12 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     }, [showSearchBar])
 
     return (
-    <>
+    <>  
+        { (((pageActivity !== 'Done' && pageActivity !== 'Error') || (containerActivity !== 'Done' && containerActivity !== 'Error'))) &&
+                        
+            <Spinner className={BSafesStyle.screenCenter} animation='border' />    
+                          
+        }
         <Row>
             <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
                 <Card className={`${BSafesStyle.containerControlPanel}`}>

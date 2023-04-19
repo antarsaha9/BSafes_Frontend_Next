@@ -12,10 +12,10 @@ import BSafesStyle from '../../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import PageItemWrapper from "../../../components/pageItemWrapper";
-
 import DiaryTopControlPanel from "../../../components/diaryTopControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
+import PaginationControl from "../../../components/paginationControl";
 
 import { setStartDateValue, setDiaryContentsPageFirstLoaded, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
 import { } from "../../../reduxStore/pageSlice";
@@ -28,6 +28,8 @@ export default function DiaryContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
+    const [searchValue, setSearchValue] = useState(null);
+
     const space = useSelector( state => state.page.space);
 
     const mode = useSelector( state => state.container.mode);
@@ -36,6 +38,9 @@ export default function DiaryContents() {
     const [startDate, setStartDate] = useState(new Date(startDateValue));
     const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
     const itemsState = useSelector( state => state.container.items);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
 
     const pageItemId = useSelector( state => state.page.id);
@@ -63,12 +68,19 @@ export default function DiaryContents() {
         setStartDate(newDate);
     }
 
-    const handleSubmitSearch = (searchValue) => {
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    const handleSubmitSearch = (value) => {
+        setSearchValue(value);
+        dispatch(searchItemsThunk({searchValue:value, pageNumber:1}));
     }
 
     const handleCancelSearch = () => {
         dispatch(listItemsThunk({startDate: format(startDate, 'yyyyLL')}));
+    }
+
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
 
     useEffect(()=>{
@@ -155,6 +167,23 @@ export default function DiaryContents() {
                                     </Col>
                                 </Row>
                                 {items}
+                                { mode === 'search' && itemsState && itemsState.length > 0 &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({pageNumber:page})
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>
