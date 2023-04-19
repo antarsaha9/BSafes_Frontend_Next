@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -11,11 +11,11 @@ import ContentPageLayout from '../../../components/layouts/contentPageLayout';
 import PageItemWrapper from "../../../components/pageItemWrapper";
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemCard from '../../../components/itemCard'
-
 import AddAnItemButton from "../../../components/addAnItemButton";
 import NewItemModal from "../../../components/newItemModal";
+import PaginationControl from "../../../components/paginationControl";
 
-import { createANewItem, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import { createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import {  } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
@@ -32,9 +32,15 @@ export default function BoxContents() {
     const [targetItem, setTargetItem] = useState(null);
     const [targetPosition, setTargetPosition] = useState(null);
     const [showNewItemModal, setShowNewItemModal] = useState(false);
+    const [searchValue, setSearchValue] = useState(null);
 
     const containerInWorkspace = useSelector( state => state.container.container);
+    const mode = useSelector( state => state.container.mode);
     const itemsState = useSelector( state => state.container.items);
+    const newItem = useSelector( state => state.container.newItem);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
@@ -104,23 +110,38 @@ export default function BoxContents() {
 
     const handleClose = () => setShowNewItemModal(false);
 
-    const handleCreateANewItem = async (title) => {
-        debugLog(debugOn, "createANewItem", title);
+    const handleCreateANewItem = async (titleStr) => {
+        debugLog(debugOn, "createANewItem", titleStr);
         setShowNewItemModal(false);
 
-        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
-        const link = getItemLink(item);
-
-        router.push(link);
+        dispatch(createANewItemThunk({titleStr, currentContainer:containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}))
+        //const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
     }
 
-    const handleSubmitSearch = (searchValue) => {
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    const handleSubmitSearch = (value) => {
+        setSearchValue(value);
+        dispatch(searchItemsThunk({searchValue:value, pageNumber:1}));
     }
 
     const handleCancelSearch = () => {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
+
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
+    }
+
+    useEffect(()=> {
+        if(newItem) {
+            const link = getItemLink(newItem);
+            dispatch(clearNewItem());
+            router.push(link);
+        }
+    }, [newItem]);
 
     return (
         <div className={BSafesStyle.pageBackground}>
@@ -143,7 +164,23 @@ export default function BoxContents() {
                                 <br />
                                 
                                 {items}
-
+                                {itemsState && itemsState.length > 0 &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({pageNumber:page})
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

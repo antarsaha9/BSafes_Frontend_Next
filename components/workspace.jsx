@@ -20,7 +20,7 @@ import ItemCard from './itemCard'
 import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
-import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
 import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
@@ -42,6 +42,7 @@ export default function Workspace({readyToList = false}) {
     const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
+    const newItem = useSelector( state => state.container.newItem);
     const pageNumber = useSelector(state => state.container.pageNumber);
     const itemsPerPage = useSelector(state => state.container.itemsPerPage);
     const total = useSelector(state => state.container.total);
@@ -73,15 +74,12 @@ export default function Workspace({readyToList = false}) {
 
     const handleClose = () => setShowNewItemModal(false);
 
-    const handleCreateANewItem = async (title) => {
-        debugLog(debugOn, "createANewItem", title);
+    const handleCreateANewItem = async (titleStr) => {
+        debugLog(debugOn, "createANewItem", titleStr);
         setShowNewItemModal(false);
 
-
-        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
-        const link = getItemLink(item);
-
-        router.push(link);
+        dispatch(createANewItemThunk({titleStr, currentContainer:workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}));
+    
     }
 
     const onSearchValueChanged = (e) => {
@@ -118,6 +116,14 @@ export default function Workspace({readyToList = false}) {
         dispatch(listItemsThunk({pageNumber: 1}));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
+
+    useEffect(()=> {
+        if(newItem) {
+            const link = getItemLink(newItem);
+            dispatch(clearNewItem());
+            router.push(link);
+        }
+    }, [newItem]);
 
     return (
         <Container className={BSafesStyle.container}>

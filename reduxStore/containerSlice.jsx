@@ -29,6 +29,7 @@ const initialState = {
     totalNumberOfPages:0,
     hits:[],
     items:[],
+    newItem: null,
     selectedItems: [],
     containersPerPage: 20,
     containersPageNumber: 1,
@@ -141,6 +142,12 @@ const containerSlice = createSlice({
             state.hits = [];
             state.items = [];
         },
+        setNewItem: (state, action) => {
+            state.newItem = action.payload;
+        },
+        clearNewItem: (state, action) => {
+            state.newItem = null;
+        },
         selectItem: (state, action) => {
             state.selectedItems = state.selectedItems.concat([action.payload]);
         },
@@ -174,7 +181,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -192,56 +199,68 @@ export function setupNewItemKey() {
     const itemKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
     return itemKey;
 }
-  
-export async function createANewItem(titleStr, currentContainer, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey, searchIV) {
-    return new Promise( (resolve, reject) => {
-        const title = '<h2>' + titleStr + '</h2>';
-        const encodedTitle = forge.util.encodeUtf8(title);
-      
-        const itemKey = setupNewItemKey();
-        const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
-        const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
-      
-        const titleTokens = stringToEncryptedTokens(titleStr, searchKey, searchIV);
-      
-        let addActionOptions;
-        if (addAction === "addAnItemOnTop") {
-          addActionOptions = {
-            "targetContainer": currentContainer,
-            "type": selectedItemType,
-            "keyEnvelope": forge.util.encode64(keyEnvelope),
-            "title": forge.util.encode64(encryptedTitle),
-            "titleTokens": JSON.stringify(titleTokens)
-          };
-        } else {
-          addActionOptions = {
-            "targetContainer": currentContainer,
-            "targetItem": targetItem,
-            "targetPosition": targetPosition,
-            "type": selectedItemType,
-            "keyEnvelope": forge.util.encode64(keyEnvelope),
-            "title": forge.util.encode64(encryptedTitle),
-            "titleTokens": JSON.stringify(titleTokens)
-          };
-        }
-        
-        PostCall({
-            api:'/memberAPI/' + addAction,
-            body: addActionOptions
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                debugLog(debugOn, `${addAction} succeeded`);
-                resolve(data.item)
+
+export const createANewItemThunk = (data) => async (dispatch, getState) => {
+    const titleStr = data.titleStr;
+    const currentContainer = data.currentContainer;
+    const selectedItemType = data.selectedItemType;
+    const addAction = data.addAction;
+    const targetItem = data.targetItem; 
+    const targetPosition = data.targetPosition; 
+    const workspaceKey = data.workspaceKey;
+    const searchKey = data.searchKey;
+    const searchIV = data.searchIV;
+    newActivity(dispatch, "CreatingANewItem", () => {
+        return new Promise( (resolve, reject) => {
+            const title = '<h2>' + titleStr + '</h2>';
+            const encodedTitle = forge.util.encodeUtf8(title);
+          
+            const itemKey = setupNewItemKey();
+            const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+            const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
+          
+            const titleTokens = stringToEncryptedTokens(titleStr, searchKey, searchIV);
+          
+            let addActionOptions;
+            if (addAction === "addAnItemOnTop") {
+              addActionOptions = {
+                "targetContainer": currentContainer,
+                "type": selectedItemType,
+                "keyEnvelope": forge.util.encode64(keyEnvelope),
+                "title": forge.util.encode64(encryptedTitle),
+                "titleTokens": JSON.stringify(titleTokens)
+              };
             } else {
-                debugLog(debugOn, `${addAction} failed: `, data.error)
-                reject(data.error);
-            } 
-        }).catch( error => {
-            debugLog(debugOn,  `${addAction} failed.`)
-            reject(error);
-        })
-     });
+              addActionOptions = {
+                "targetContainer": currentContainer,
+                "targetItem": targetItem,
+                "targetPosition": targetPosition,
+                "type": selectedItemType,
+                "keyEnvelope": forge.util.encode64(keyEnvelope),
+                "title": forge.util.encode64(encryptedTitle),
+                "titleTokens": JSON.stringify(titleTokens)
+              };
+            }
+            
+            PostCall({
+                api:'/memberAPI/' + addAction,
+                body: addActionOptions
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    debugLog(debugOn, `${addAction} succeeded`);
+                    dispatch(setNewItem(data.item))
+                    resolve()
+                } else {
+                    debugLog(debugOn, `${addAction} failed: `, data.error)
+                    reject(data.error);
+                } 
+            }).catch( error => {
+                debugLog(debugOn,  `${addAction} failed.`)
+                reject(error);
+            })
+         });
+    });
 };
 
 export const initWorkspaceThunk = (data) => async (dispatch, getState) => {

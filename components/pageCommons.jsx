@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
+import Spinner from 'react-bootstrap/Spinner';
 
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
@@ -504,6 +505,11 @@ export default function PageCommons() {
 
     return (
         <>
+            { (((activity !== 'Done' && activity !== 'Error'))) &&
+                        
+                <Spinner className={BSafesStyle.screenCenter} animation='border' />    
+                  
+            }
             <Row className="justify-content-center">
                 <Col md="10">
                     <hr />
