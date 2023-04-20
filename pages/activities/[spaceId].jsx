@@ -8,12 +8,14 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Collapse from 'react-bootstrap/Collapse';
+import Button from 'react-bootstrap/Button';
+import Spinner from 'react-bootstrap/Spinner';
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
-import { initWorkspaceThunk, initContainer, changeContainerOnly, setWorkspaceKeyReady, listActivitiesThunk } from '../../reduxStore/containerSlice';
+import { initWorkspaceThunk, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearActivities, listActivitiesThunk } from '../../reduxStore/containerSlice';
 import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
 
 import { debugLog } from '../../lib/helper';
@@ -31,10 +33,16 @@ export default function Activities(props) {
     const expandedKey = useSelector( state => state.auth.expandedKey );
     const personalSearchKey = useSelector( state => state.auth.searchKey);
     const personalSearchIV = useSelector( state => state.auth.searchIV);
+    
+    const activity = useSelector(state => state.container.activity);
     const workspaceId = useSelector( state => state.container.workspace );
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const container = useSelector( state => state.container.container);
     const activities = useSelector(state => state.container.activities);
+
+    const moreActivities = () => {
+        dispatch(listActivitiesThunk({}));
+    }
 
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
@@ -75,7 +83,7 @@ export default function Activities(props) {
                     dispatch(initWorkspaceThunk({teamId:spaceId, container:'root'}));
                 }     
             }
-            
+            dispatch(clearActivities());
             setReadyToList(true);   
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,7 +94,7 @@ export default function Activities(props) {
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}, {_id:'ac:'+ workspaceId}];
         dispatch(itemPathLoaded(itemPath));
-        dispatch(listActivitiesThunk({ pageNumber: 1 }));
+        dispatch(listActivitiesThunk({pageNumber: 1}));
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady ]);
 
@@ -102,6 +110,11 @@ export default function Activities(props) {
                             <h1 className="text-center display-5">Activities</h1>
                         </Col>
                     </Row>
+                    { (activity !== 'Done' && activity !== 'Error') &&
+                        <Row className="justify-content-center">
+                            <Spinner animation='border' />
+                        </Row>
+                    }
                     <Row className="justify-content-center">
                         <Col lg={8}>
                             <ListGroup>
@@ -109,6 +122,13 @@ export default function Activities(props) {
                             </ListGroup>
                         </Col>
                     </Row>
+                    <br />
+                    { (activity === 'Done' ) &&
+                        <Row className="justify-content-center">
+                            <Button variant="link" onClick={moreActivities}>More</Button>
+                        </Row>}
+                    <br />
+                    <br />
                 </Container>
             </ContentPageLayout>
         </div>

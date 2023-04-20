@@ -173,15 +173,21 @@ const containerSlice = createSlice({
         trashBoxIdLoaded: (state, action) => {
             state.trashBoxId = action.payload.trashBoxId;;
         },
+        clearActivities: (state, action) => {
+            state.activities = [];
+            state.total = 0;
+            state.pageNumber = 1;
+        },
         activitiesLoaded: (state, action) => {
             const groupedActivities = separateActivities(action.payload.activities.hits, (a)=>newResultItem(a, state.workspaceKey).title);
             state.total = action.payload.activities.total;
-            state.activities = groupedActivities;
+            state.pageNumber = action.payload.pageNumber;
+            state.activities = state.activities.concat(groupedActivities);
         }
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, activitiesLoaded} = containerSlice.actions;
+export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -641,7 +647,7 @@ export const listActivitiesThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "ListingActivities", () => {
         return new Promise(async (resolve, reject) => {
             const state = getState().container;
-            const pageNumber = data.pageNumber;
+            const pageNumber = data.pageNumber || state.pageNumber + 1;
 
             PostCall({
                 api: '/memberAPI/listActivities',
@@ -653,7 +659,7 @@ export const listActivitiesThunk = (data) => async (dispatch, getState) => {
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(activitiesLoaded({ activities: data.hits }));
+                    dispatch(activitiesLoaded({ pageNumber, activities: data.hits }));
                     resolve();
                 } else {
                     debugLog(debugOn, "listActivities failed: ", data.error);
