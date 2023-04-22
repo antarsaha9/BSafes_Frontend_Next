@@ -162,7 +162,8 @@ function ActivityCard({ root, ...activity }) {
     // Link cant be generated, because according to getItemLink definition, it expects "container" attribute, but itemVersion don't hold container.
     const itemLink = getItemLink(activity);
     const componnet = (
-        <ListGroup.Item className={root?'':'bg-light bg-gradient'}>
+        <div>
+        
             <Row>
                 <Col xs={12}>
                     <h4 className="my-0">{activity.titleText}</h4>
@@ -172,26 +173,39 @@ function ActivityCard({ root, ...activity }) {
                 <Col xs={6}>
                     <span className="">{activity.updatedBy}</span>
                 </Col>
-                <Col xs={6}>
-                    <span className="pull-right">{activity.updatedTime}</span>
-                </Col>
             </Row>
             <Row>
                 <Col xs={6}>
-                    <span className="">{activity.updatedText}</span>
+                    <span className="">{`${activity.updatedText}, ${activity.updatedTime}`}</span>
                 </Col>
                 <Col xs={6}>
-                    {/* <span className="pull-right">llakdjlsa</span> */}
+                    <span className="pull-right"></span>
                 </Col>
             </Row>
+        </div>
+    )
 
+    return (
+        <ListGroup.Item className={root?'':'bg-light bg-gradient'} style={{ cursor: 'pointer' }}>
+            <Row>
+                {itemLink?
+                    <Link href={itemLink}>
+                        <Col xs={11}>
+                            {componnet}
+                        </Col>
+                    </Link>
+                    :
+                    <Col xs={11}>
+                        {componnet}
+                    </Col>
+                }
+                <Col xs={1} >
+                    <a className={`${BSafesStyle.externalLink}`} target="_blank" href={itemLink} rel="noopener noreferrer">
+                        <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                    </a>
+                </Col>
+            </Row>
         </ListGroup.Item>
     )
-    if (itemLink)
-        return (
-            <Link href={itemLink}>
-                {componnet}
-            </Link>
-        )
-    else return componnet;
+
 }
