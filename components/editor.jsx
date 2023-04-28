@@ -19,7 +19,8 @@ import { rotateImage } from '../lib/wnImage';
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = false;    
     const editorRef = useRef(null);
-    const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
+    // const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
+    const froalaKey = useSelector(state=> state.auth.froalaKey);
 
     const scriptsLoaded = useSelector(state => state.scripts.done);
 

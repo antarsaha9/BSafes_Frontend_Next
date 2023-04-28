@@ -2,7 +2,7 @@ import { createSlice, current } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto';
 const debugOn = false;
 
 const initialState = {
@@ -35,6 +35,7 @@ const authSlice = createSlice({
             state.privateKey = credentials.secret.privateKey;
             state.searchKey = credentials.secret.searchKey;
             state.searchIV = credentials.secret.searchIV;
+            state.froalaKey = action.payload.froalaKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
@@ -184,7 +185,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaKey:data.froalaKey}));
             } else {
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
