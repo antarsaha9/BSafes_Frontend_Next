@@ -1,6 +1,6 @@
 import Router from "next/router";
 import { useEffect, useState } from "react";
-const pathRegex = /^\/((?# checking paths that have trailing slashes)(?:activities|box(?:\/contents)?|diary(?:\/(?:contents|p))?|folder(?:\/(?:contents|p))?|notebook(?:\/(?:contents|p))?|page|tagsInput|team(?:Members)?|teams|trashBox)\/([^\/]+))|((?# checking paths that dont have trailing slashes)log(?:In|Out)|buyQuotas|keySetup|plans|safe)$/
+const pathRegex = /^\/((?:activities|box(?:\/contents)?|diary(?:\/(?:contents|p))?|folder(?:\/(?:contents|p))?|notebook(?:\/(?:contents|p))?|page|tagsInput|team(?:Members)?|trashBox)\/([^\/]+))|(log(?:In|Out)|buyQuotas|keySetup|plans|safe|teams)$/
 
 export default function Custom404() {
   const [isNotFound, setIsNotFound] = useState(false);
