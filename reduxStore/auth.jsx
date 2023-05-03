@@ -68,6 +68,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
+                localStorage.setItem("authToken", data.authToken);
                 credentials.memberId = data.memberId;
                 credentials.displayName = data.displayName;
                 saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
@@ -100,6 +101,9 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         reject();
                         return;
                     }
+
+                    localStorage.setItem("authToken", data.authToken);
+
                     credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
                     credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
                     credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
@@ -155,7 +159,6 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoggingOut", () => {
         return new Promise(async (resolve, reject) => {
-            localStorage.clear();
 
             PostCall({
                 api:'/memberAPI/logOut'
@@ -172,6 +175,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to log out.")
                 reject();
             })
+            localStorage.clear();
         });
     });
 }
