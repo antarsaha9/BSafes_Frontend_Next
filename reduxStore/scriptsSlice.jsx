@@ -121,7 +121,7 @@ const scripts = [
      src: "https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js",
      loaded: false
     },
-    {id: "photoswipe-ui-defaultweb-streams-polyfill",
+    {id: "ponyfill.min.js",
      src: "https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/ponyfill.min.js",
      loaded: false
     },
