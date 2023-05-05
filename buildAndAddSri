@@ -1,0 +1,7 @@
+cd out
+rm -rf *
+cd ..
+npm run build
+cd upload
+cp -r ../out/* .
+node ../tools/addSriProtection.js .
