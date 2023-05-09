@@ -9,9 +9,12 @@ import { useEffect } from 'react';
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/downloadFile/serviceWorker.js?v4").then(
+      navigator.serviceWorker.register("/downloadFile/serviceWorker.js?v39").then(
           function(registration) {
             console.log("Service worker registration successful with scope: ", registration.scope);
+              //registration.active.postMessage(
+              //  "Test message sent immediately after creation"
+              //);
           },
           function(err) {
             console.log("Service worker registration failed: ", err)

@@ -1962,16 +1962,41 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
-        let i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
+        let messageChannel, downloadLink, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
         
         const s3KeyPrefix = attachment.s3KeyPrefix;
         const keyVersion = s3KeyPrefix.split(":")[1];
 
         const fileStream = streamSaver.createWriteStream(attachment.fileName, {
             size: attachment.fileSize // Makes the percentage visiable in the download
-          })
+        })
       
-        
+        navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
+            if (registration) {
+                messageChannel =  new MessageChannel();
+
+                registration.active.postMessage({
+                    type: 'INIT_PORT',
+                  }, [messageChannel.port2]);
+
+                messageChannel.port1.onmessage = (event) => {
+                    // Print the result
+                    console.log(event.data.payload);
+                    //downloadLink = document.createElement('a')
+                    //downloadLink.href = "/downloadFile/a"
+                    //downloadLink.click()
+                };
+
+                registration.active.postMessage({
+                    type: 'INCREASE_COUNT',
+                });
+
+            }
+        });
+
+        resolve();
+        return;
+
         function writeAChunkToFile(thisArray) {
             return new Promise(async (resolve, reject)=>{
                 writer.write(thisArray).then(()=> {
