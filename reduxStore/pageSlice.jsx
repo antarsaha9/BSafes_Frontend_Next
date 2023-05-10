@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { setupNewItemKey } from './containerSlice';
 
-import { sleepWithPrint, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
+import { checkIsMobileOrSafari, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
@@ -508,6 +508,15 @@ const pageSlice = createSlice({
             panel.status = "Downloaded";
             state.attachmentsDownloadIndex += 1;
         },
+        setupWriterFailed: (state, action) => {
+            let attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
+            let panel = state.attachmentPanels.find((item) => item.queueId === attachment.queueId);
+            if(!panel) return;
+            panel.status = "DownloadFailed";
+        },
+        writerClosed: (state, action) => {
+            state.writer = null;
+        },
         downloadAChunkFailed: (state, action) => {
             let attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
             state.writer = action.payload.writer;
@@ -540,7 +549,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1963,51 +1972,110 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
         let messageChannel, downloadLink, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
-        
+        const isMobileOrSafari = checkIsMobileOrSafari();
         const s3KeyPrefix = attachment.s3KeyPrefix;
         const keyVersion = s3KeyPrefix.split(":")[1];
 
-        const fileStream = streamSaver.createWriteStream(attachment.fileName, {
-            size: attachment.fileSize // Makes the percentage visiable in the download
-        })
-      
-        navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
-            if (registration) {
-                messageChannel =  new MessageChannel();
-
-                registration.active.postMessage({
-                    type: 'INIT_PORT',
-                  }, [messageChannel.port2]);
-
-                messageChannel.port1.onmessage = (event) => {
-                    // Print the result
-                    console.log(event.data.payload);
-                    //downloadLink = document.createElement('a')
-                    //downloadLink.href = "/downloadFile/a"
-                    //downloadLink.click()
-                };
-
-                registration.active.postMessage({
-                    type: 'INCREASE_COUNT',
+        //const fileStream = streamSaver.createWriteStream(attachment.fileName, {
+        //    size: attachment.fileSize // Makes the percentage visiable in the download
+        //})
+ 
+        async function setupWriter() {
+            function talkToServiceWorker() {
+                return new Promise(async (resolve, reject)=> {
+                    navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
+                        if (registration) {
+                            messageChannel =  new MessageChannel();
+            
+                            registration.active.postMessage({
+                                type: 'INIT_PORT',
+                              }, [messageChannel.port2]);
+            
+                            messageChannel.port1.onmessage = (event) => {
+                                // Print the result
+                                console.log(event.data);
+                                if(event.data) {
+                                    switch(event.data.type) {
+                                        case 'STREAM_CLOSED':
+                                            messageChannel.port1.onmessage = null
+                                            messageChannel.port1.close();
+                                            messageChannel.port2.close();
+                                            messageChannel = null;
+                                            dispatch(writerClosed());
+                                            break;
+                                        default:
+                                    }
+                                }
+                                //downloadLink = document.createElement('a')
+                                //downloadLink.href = "/downloadFile/a"
+                                //downloadLink.click()
+                            };
+                            resolve();
+                        } else {
+                            debugLog(debugOn, "s");
+                            reject("erviceWorker.getRegistration error")
+                        }
+                    });
+                }).catch((error) => {
+                    debugLog(debugOn, "serviceWorker.getRegistration error: ", error);
+                    reject(error);
                 });
-
             }
-        });
 
-        resolve();
-        return;
+            if(isMobileOrSafari) {
+                return true;
+            } else {
+                try {
+                    await talkToServiceWorker();
+                    return true;
+                } catch(error) {
+                    debugLog(debugOn, "setupWriter failed: ", error)
+                    return false;
+                }   
+            }
+        }
 
-        function writeAChunkToFile(thisArray) {
+        function reconnectWriter() {
+            if(isMobileOrSafari){
+
+            } else {
+                messageChannel= state.writer;
+            }
+        }
+        
+        function writeAChunkToFile(chunk) {
             return new Promise(async (resolve, reject)=>{
-                writer.write(thisArray).then(()=> {
-                    console.log("chunk written to file: " );
+                if(isMobileOrSafari) {
                     resolve();
-                }, (reason)=> {
-                    console.log(reason);
-                    reject(reason);
-                })
+                } else {
+                    messageChannel.port1.postMessage({
+                        type: 'BINARY',
+                        chunk
+                    }); 
+                    resolve();
+                }
             })
         }
+
+        function writeAChunkToFileFailed(chunkIndex) {
+            if(isMobileOrSafari) {
+
+            } else {
+                dispatch(downloadAChunkFailed({chunkIndex, writer:messageChannel}));
+            }
+            
+        }
+
+        function closeWriter() {
+            if(isMobileOrSafari) {
+
+            } else {
+                messageChannel.port1.postMessage({
+                    type: 'END_OF_FILE'
+                }); 
+            }
+        }
+
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
                 try {
@@ -2025,19 +2093,16 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
                         decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
                         debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
-                        decryptedDataInArrary = new Uint8Array(decryptedChunkStr.length);
-                        for(let i=0; i< decryptedChunkStr.length; i++) {
-                            decryptedDataInArrary[i]= decryptedChunkStr.charCodeAt(i)
-                        }
-                        await writeAChunkToFile(decryptedDataInArrary);
+                        
+                        await writeAChunkToFile(decryptedChunkStr);
     
                     } else if(keyVersion === '1') {
 
                     }
                     resolve();
                 } catch(error) {
-                    debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);
-                    dispatch(downloadAChunkFailed({chunkIndex, writer}));
+                    debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
+                    writeAChunkToFileFailed(chunkIndex);
                     reject(error);
                 }
             });
@@ -2051,11 +2116,19 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         if(attachment.failedChunk) {
             startingChunk = attachment.failedChunk;
-            writer = state.writer;
+            reconnectWriter();
         } else {
             startingChunk = 0;
-            writer = window.writer = fileStream.getWriter();
+
+            if(!await setupWriter()){
+                dispatch(setupWriterFailed());
+                reject();
+                return;
+            };
+
         }  
+        
+
         for(i=startingChunk; i< numberOfChunks; i++) {
             try{
                 await downloadDecryptAndAssemble(i);
@@ -2067,13 +2140,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
         if(i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-            try {
-                writer.close();
-                resolve();
-            } catch(error) {
-                debugLog(debugOn, 'downloadAnAttachment failed: ', error); 
-                reject(error);
-            }
+            closeWriter();
+            resolve();
         }
     });
 }
