@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/downloadFile/serviceWorkerV44.js?v53").then(
+      navigator.serviceWorker.register("/downloadFile/serviceWorkerV55.js?v55").then(
           function(registration) {
             console.log("Service worker registration successful with scope: ", registration.scope);
               //registration.active.postMessage(

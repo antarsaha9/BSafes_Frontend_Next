@@ -29,9 +29,13 @@ self.addEventListener("message", (event)=> {
         if(event.data) {
           switch(event.data.type){
             case 'BINARY':
-              console.log("chunk length: ", event.data.chunk.length);
-              //controller.enqueue(event.data.chunk);
-              controller.enqueue('abc');
+              let chunkLength = event.data.chunk.length;
+              console.log("chunk length: ", chunkLength);
+              let chunkArrary = new Uint8Array(chunkLength);
+              for (let i=0; i< chunkLength; i++) {
+                chunkArrary[i] = event.data.chunk.charCodeAt(i);
+              }
+              controller.enqueue(chunkArrary);
               break;
             case 'END_OF_FILE':
               console.log("END_OF_FILE ");
@@ -45,6 +49,7 @@ self.addEventListener("message", (event)=> {
     }});
 
     streams['/test'] = {stream: newStream};
+    port.postMessage({ type:"STREAM_OPENED"}); 
   }
 
   if(event.data) {

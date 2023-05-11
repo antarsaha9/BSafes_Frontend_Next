@@ -1971,7 +1971,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
-        let messageChannel, downloadLink, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
+        let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
         const isMobileOrSafari = checkIsMobileOrSafari();
         const s3KeyPrefix = attachment.s3KeyPrefix;
         const keyVersion = s3KeyPrefix.split(":")[1];
@@ -1996,6 +1996,16 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                 console.log(event.data);
                                 if(event.data) {
                                     switch(event.data.type) {
+                                        case 'STREAM_OPENED':
+                                            /*downloadLink = document.createElement('a')
+                                            downloadLink.href = "/downloadFile/a"
+                                            downloadLink.click()*/
+                                            const iframe = document.createElement('iframe')
+                                            iframe.hidden = true
+                                            iframe.src = '/downloadFile/a'
+                                            document.body.appendChild(iframe);
+                                            debugLog(debugOn, "STREAM_OPENED");
+                                            break;
                                         case 'STREAM_CLOSED':
                                             messageChannel.port1.onmessage = null
                                             messageChannel.port1.close();
@@ -2006,9 +2016,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                         default:
                                     }
                                 }
-                                //downloadLink = document.createElement('a')
-                                //downloadLink.href = "/downloadFile/a"
-                                //downloadLink.click()
                             };
                             resolve();
                         } else {
@@ -2023,6 +2030,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             }
 
             if(isMobileOrSafari) {
+                fileInUint8Array = new Uint8Array(attachment.fileSize);
+                fileInUint8ArrayIndex = 0;
                 return true;
             } else {
                 try {
@@ -2037,7 +2046,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         function reconnectWriter() {
             if(isMobileOrSafari){
-
+                fileInUint8Array = state.writer.fileInUint8Array;
+                fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
             } else {
                 messageChannel= state.writer;
             }
@@ -2046,6 +2056,15 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         function writeAChunkToFile(chunk) {
             return new Promise(async (resolve, reject)=>{
                 if(isMobileOrSafari) {
+                    for(let offset =0; offset< chunk.length; offset++) {
+                        if(fileInUint8ArrayIndex + offset < fileInUint8Array.length){
+                            fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
+                        } else {
+                            reject("writeAChunkToFile error: fileInUint8Array overflow");
+                            return;
+                        }
+                    }
+                    fileInUint8ArrayIndex += chunk.length;
                     resolve();
                 } else {
                     messageChannel.port1.postMessage({
@@ -2059,7 +2078,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         function writeAChunkToFileFailed(chunkIndex) {
             if(isMobileOrSafari) {
-
+                dispatch(downloadAChunkFailed({chunkIndex, writer:{fileInUint8Array, fileInUint8ArrayIndex}}));
             } else {
                 dispatch(downloadAChunkFailed({chunkIndex, writer:messageChannel}));
             }
@@ -2068,7 +2087,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         function closeWriter() {
             if(isMobileOrSafari) {
-
+                dispatch(writerClosed());
             } else {
                 messageChannel.port1.postMessage({
                     type: 'END_OF_FILE'
@@ -2131,7 +2150,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         for(i=startingChunk; i< numberOfChunks; i++) {
             try{
-                await downloadDecryptAndAssemble(i);
+                await downloadDecryptAndAssemble(i);          
             } catch(error) {
                 debugLog(debugOn, "downloadAnAttachment failed: ", error);
                 reject(error);
@@ -2140,6 +2159,15 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
         if(i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
+            if(isMobileOrSafari) {
+                let blob = new Blob([fileInUint8Array], {
+                    type: attachment.fileType
+                });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = attachment.fileName;
+                link.click();
+            }
             closeWriter();
             resolve();
         }
