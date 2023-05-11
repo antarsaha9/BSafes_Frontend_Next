@@ -48,8 +48,17 @@ self.addEventListener("message", (event)=> {
       }
     }});
 
-    streams['/test'] = {stream: newStream};
-    port.postMessage({ type:"STREAM_OPENED"}); 
+    let fileName = event.data.fileName;
+    let fileSize = event.data.fileSize;
+    let id = encodeURI( fileName + Date.now());
+    let streamInfo = {
+      id,
+      fileName,
+      fileSize,
+      stream: newStream
+    };
+    streams[id] = streamInfo;
+    port.postMessage({ type:"STREAM_OPENED", stream: {id}}); 
   }
 
   if(event.data) {
@@ -126,56 +135,32 @@ self.addEventListener("message", (event)=> {
 
 self.addEventListener("fetch", (event) => {
     console.log(`Handling fetch event for ${event.request.url}`);
+    const id = event.request.url.split('/').pop();
+    let streamInfo = streams[id];
+    if(!streamInfo){
+      return null;
+    }
 
-    var responseBody = "abcdefg123456";
+    let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
+    let fileSize = streamInfo.fileSize;
 
-      
-    var responseInit = {
+    var responseHeader = {
         // status/statusText default to 200/OK, but we're explicitly setting them here.
         status: 200,
         statusText: 'OK',
         headers: {
           'Content-Type': 'application/octet-stream; charset=utf-8',
-          'Content-Disposition': 'attachment; filename="random.pdf"',
-          'Content-Length': 80,
+          'Content-Disposition': "attachment; filename*=UTF-8''" + fileName,
+          'Content-Length': fileSize,
           //'Content-Security-Policy': "default-src 'none'",
           //'X-Content-Security-Policy': "default-src 'none'",
           //'X-WebKit-CSP': "default-src 'none'",
           //'X-XSS-Protection': '1; mode=block'
         }
     };
-    if(0) {
-    const reader = readableStream.getReader();
-    let charsReceived = 0;
-    let result = "";
-
-    // read() returns a promise that resolves
-    // when a value has been received
-   
-    reader.read().then(function processText({ done, value }) {
-      // Result objects contain two properties:
-      // done  - true if the stream has already given you all its data.
-      // value - some data. Always undefined when done is true.
-      if (done) {
-        console.log("Stream complete: ", result);
-        
-        return;
-      }
-
-      charsReceived += value.length;
-      const chunk = value;
-
-      result += chunk;
-
-      // Read some more, and call this function again
-      return reader.read().then(processText);
-    });
-    }
-
-    var mockResponse = new Response(streams['/test'].stream, responseInit);
-    event.respondWith(mockResponse);
-    //event.respondWith(new Response(testStream), responseInit);
     
+    var response = new Response(streamInfo.stream, responseHeader);
+    event.respondWith(response);
   
 });
   

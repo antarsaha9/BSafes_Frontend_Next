@@ -1989,6 +1989,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             
                             registration.active.postMessage({
                                 type: 'INIT_PORT',
+                                fileName:attachment.fileName,
+                                fileSize:attachment.fileSize
                               }, [messageChannel.port2]);
             
                             messageChannel.port1.onmessage = (event) => {
@@ -1997,12 +1999,9 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                 if(event.data) {
                                     switch(event.data.type) {
                                         case 'STREAM_OPENED':
-                                            /*downloadLink = document.createElement('a')
-                                            downloadLink.href = "/downloadFile/a"
-                                            downloadLink.click()*/
-                                            const iframe = document.createElement('iframe')
-                                            iframe.hidden = true
-                                            iframe.src = '/downloadFile/a'
+                                            const iframe = document.createElement('iframe');
+                                            iframe.hidden = true;
+                                            iframe.src = '/downloadFile/' + event.data.stream.id;
                                             document.body.appendChild(iframe);
                                             debugLog(debugOn, "STREAM_OPENED");
                                             break;
