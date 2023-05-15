@@ -1,10 +1,5 @@
-let getVersionPort;
-let count = 0;
-let testStream;
-let readableStream;
-let done = false;
-
 let streams = {};
+let videoStreams = {};
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -50,7 +45,7 @@ self.addEventListener("message", (event)=> {
 
     let fileName = event.data.fileName;
     let fileSize = event.data.fileSize;
-    let id = encodeURI( fileName + Date.now());
+    let id = encodeURI( 'video/' + fileName + Date.now());
     let streamInfo = {
       id,
       fileName,
@@ -61,82 +56,74 @@ self.addEventListener("message", (event)=> {
     port.postMessage({ type:"STREAM_OPENED", stream: {id}}); 
   }
 
+  function setupVideoStream(event) {
+    let videoStream;
+    let port;
+
+    let fileName = event.data.fileName;
+    let fileType = event.data.fileType;
+    let fileSize = event.data.fileSize;
+    
+    videoStream = new ReadableStream({ start: async controller => {
+      port = event.ports[0];
+      const encoder = new TextEncoder();
+      controller.enqueue(encoder.encode(''));
+
+      port.onmessage = event => {
+        if(event.data) {
+          switch(event.data.type){
+            case 'BINARY':
+              let chunkLength = event.data.chunk.length;
+              console.log("chunk length: ", chunkLength);
+              let chunkArrary = new Uint8Array(chunkLength);
+              for (let i=0; i< chunkLength; i++) {
+                chunkArrary[i] = event.data.chunk.charCodeAt(i);
+              }
+              controller.enqueue(chunkArrary);
+              break;
+            case 'END_OF_FILE':
+              console.log("END_OF_FILE ");
+              controller.close();
+              port.postMessage({ type:"STREAM_CLOSED"});        
+              break;
+            default:
+          }
+        }  
+      }
+    }});
+    
+    let id = encodeURI( fileName + Date.now());
+    let streamInfo = {
+      id,
+      fileName,
+      fileSize,
+      stream: videoStream
+    };
+    videoStreams[id] = streamInfo;
+    port.postMessage({ type:"STREAM_OPENED", stream: {id}}); 
+  }
+
   if(event.data) {
     switch(event.data.type) {
       case 'INIT_PORT':
         setupNewStream(event);
         break;
+      case 'INIT_VIDEO_PORT':
+        setupVideoStream(event);
+        break;
       default:
     }
-  }
-  if(0) {
-  if (event.data && event.data.type === 'INIT_PORT') {
-    getVersionPort = event.ports[0];
-    
-    var counter = 0;
-    const encoder = new TextEncoder();
-    const sampleStr = "abcdefghij0123456789";
-    let chunk = "";
-    for(let i=0; i< 5*1000*1000; i++){
-      chunk += sampleStr;
-    }
-    
-      testStream = new ReadableStream({ start: async controller => {
-        switch (++counter) {
-        case 1:
-            controller.enqueue(encoder.encode(''));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.enqueue(encoder.encode(chunk));
-            await sleep(3000);
-            controller.close();
-            return;
-        case 2:
-            controller.enqueue(encoder.encode('chunk #1'));
-            return;
-        case 3:
-            controller.enqueue(encoder.encode(' '));
-            return;
-        case 4:
-            controller.enqueue(encoder.encode('chunk #2'));
-            return;
-        case 5:
-            controller.enqueue(encoder.encode(' '));
-            return;
-        case 6:
-            controller.enqueue(encoder.encode('chunk #3'));
-            return;
-        case 7:
-            controller.enqueue(encoder.encode(' '));
-            return;
-        case 8:
-            controller.enqueue(encoder.encode('chunk #4'));
-            return;
-        default:
-            controller.close();
-        }
-    }});
-  }
   }
 })
 
 self.addEventListener("fetch", (event) => {
     console.log(`Handling fetch event for ${event.request.url}`);
-    const id = event.request.url.split('/').pop();
-    let streamInfo = streams[id];
+    const idParts = event.request.url.split('/downloadFile/')[1].split('/');
+    const isVideo = (idParts[0] === 'video');
+    const id = idParts.pop();
+    
+
+    let streamInfo = isVideo?videoStreams[id]:streams[id];
     if(!streamInfo){
       return null;
     }

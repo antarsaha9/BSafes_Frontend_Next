@@ -291,11 +291,22 @@ export default function PageCommons() {
         const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
         Array.from(videoDownloads).forEach(element => {
             const elementClone = element.cloneNode(true); // Remove all possible event listeners
+            let s3Key, chunks, fileName, fileType, fileSize;
             elementClone.onclick = (e) => {
                 const id =  e.target.id;
                 const idParts = id.split('&');
-	            const s3Key = idParts[0];
-                dispatch(downloadContentVideoThunk({id, s3Key}));
+                if(idParts[0] === 'chunks') {
+                    s3Key = idParts[3];
+                    chunks = parseInt(idParts[1]);
+                    fileName = idParts[2];
+                    fileSize = parseInt(idParts[5]);
+                    fileType = idParts[4];
+                    dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+                } else {
+                    s3Key = idParts[0];
+                    dispatch(downloadContentVideoThunk({id, s3Key}));
+                }
+	            
             };
             element.replaceWith(elementClone);
         });

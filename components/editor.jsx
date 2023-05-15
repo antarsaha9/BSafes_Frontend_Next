@@ -13,7 +13,7 @@ const forge = require('node-forge');
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
-import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
+import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
@@ -141,9 +141,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
         window.bsafesFroala.rotateImage = rotateImageHook;
         window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
+        window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
         window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
         window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
+        window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
         window.bsafesFroala.preS3Upload = preS3UploadHook;
+        window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
         window.bsafesFroala.postS3Upload = postS3UploadHook;
         window.bsafesFroala.uploadData = uploadDataHook;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -184,12 +187,20 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         }
     }
 
+    const compareArraryBufferAndUnit8ArrayHook = (thisBuffer, thisArray) => {
+        return compareArraryBufferAndUnit8Array(thisBuffer, thisArray);
+    }
+
     const encryptBinaryStringHook = (binaryString, key) => {
         return encryptBinaryString(binaryString, key);
     }
 
     const encryptLargeBinaryStringHook = (binaryString, key) => {
         return encryptLargeBinaryString(binaryString, key);
+    }
+
+    const encryptChunkArrayBufferToBinaryStringAsyncHook = (arrayBuffer, key) => {
+        return encryptChunkArrayBufferToBinaryStringAsync(arrayBuffer, key);
     }
 
     const preS3UploadHook = () => {
@@ -213,6 +224,34 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 reject({status:"error", error});
             })
         });
+    }
+
+    const preS3ChunkUploadHook = (itemId, chunkIndex, timeStamp) => {
+        return new Promise((resolve, reject) => {
+            let s3Key, s3KeyPrefix, signedURL;
+            PostCall({
+              api:'/memberAPI/preS3ChunkUpload',
+              body: {
+                  itemId,
+                  chunkIndex: chunkIndex.toString(),
+                  timeStamp: timeStamp
+              }
+            }).then( data => {
+              debugLog(debugOn, data);
+              if(data.status === 'ok') {   
+                  s3Key = data.s3Key;                        
+                  s3KeyPrefix = s3Key.split('_chunk_')[0];
+                  signedURL = data.signedURL;
+                  resolve({s3Key, s3KeyPrefix, signedURL});
+              } else {
+                  debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
+                  reject(data.error);
+              }
+            }).catch( error => {
+              debugLog(debugOn, "preS3ChunkUpload failed: ", error)
+              reject(error);
+            })
+        });;
     }
 
     const postS3UploadHook = (s3Object) => {

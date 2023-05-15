@@ -949,45 +949,222 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     let video;
     let state = getState().page;
     const itemId = state.id;
+    const isMobileOrSafari = checkIsMobileOrSafari();
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
         dispatch(downloadContentVideo(data));
         return;
     }
 
     const downloadAVideo = (video) => {
-        let decryptedVideoStr, link;
+        let decryptedVideoStr;
         return new Promise(async (resolve, reject) => {
-            const s3Key = video.s3Key;
-            const keyVersion = s3Key.split(":")[1];
-            try {
-                dispatch(downloadingContentVideo({itemId, progress:5}));
-                const signedURL = await preS3Download(state.id, s3Key);
-                dispatch(downloadingContentVideo({itemId, progress:10}));
-                const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
-                debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
-                
-                if(keyVersion === '3') {
-                    const buffer = Buffer.from(response, 'binary');
-                    const downloadedBinaryString = buffer.toString('binary');
-                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                    decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                    debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
+            
+            if(video.chunks) {
+                let s3KeyPrefix, encrytedFileName, fileName, fileType, fileSize, numberOfChunks, messageChannel, fileInUint8Array, fileInUint8ArrayIndex, videoLinkFromServiceWorker;
+                encrytedFileName = atob(video.fileName);
+                fileName = decryptBinaryString(encrytedFileName, state.itemKey);
+                fileName = decodeURI(fileName);
+                fileType = decodeURI(video.fileType);
+                fileSize = video.fileSize;
+                numberOfChunks = video.chunks;
+                s3KeyPrefix = video.s3Key;
+
+                async function setupWriter() {
+                    function talkToServiceWorker() {
+                        return new Promise(async (resolve, reject)=> {
+                            navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
+                                if (registration) {
+                                    messageChannel =  new MessageChannel();
+                    
+                                    registration.active.postMessage({
+                                        type: 'INIT_VIDEO_PORT',
+                                        fileName,
+                                        fileType,
+                                        fileSize
+                                      }, [messageChannel.port2]);
+                    
+                                    messageChannel.port1.onmessage = (event) => {
+                                        // Print the result
+                                        debugLog(debugOn, event.data);
+                                        if(event.data) {
+                                            switch(event.data.type) {
+                                                case 'STREAM_OPENED':
+                                                    videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.stream.id;
+                                                    
+                                                    debugLog(debugOn, "STREAM_OPENED");
+                                                    resolve();
+                                                    break;
+                                                case 'STREAM_CLOSED':
+                                                    messageChannel.port1.onmessage = null
+                                                    messageChannel.port1.close();
+                                                    messageChannel.port2.close();
+                                                    messageChannel = null;
+                                                    break;
+                                                default:
+                                            }
+                                        }
+                                    };
+                                    
+                                } else {
+                                    debugLog(debugOn, "erviceWorker.getRegistration error");
+                                    reject("erviceWorker.getRegistration error")
+                                }
+                            });
+                        })
+                    }
         
-                } else if(keyVersion === '1') {
-
+                    if(isMobileOrSafari) {
+                        fileInUint8Array = new Uint8Array(fileSize);
+                        fileInUint8ArrayIndex = 0;
+                        return true;
+                    } else {
+                        try {
+                            await talkToServiceWorker();
+                            return true;
+                        } catch(error) {
+                            debugLog(debugOn, "setupWriter failed: ", error)
+                            return false;
+                        }   
+                    }
                 }
+
+                function writeAChunkToFile(chunk) {
+                    return new Promise(async (resolve, reject)=>{
+                        if(isMobileOrSafari) {
+                            for(let offset =0; offset< chunk.length; offset++) {
+                                if(fileInUint8ArrayIndex + offset < fileInUint8Array.length){
+                                    fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
+                                } else {
+                                    reject("writeAChunkToFile error: fileInUint8Array overflow");
+                                    return;
+                                }
+                            }
+                            fileInUint8ArrayIndex += chunk.length;
+                            resolve();
+                        } else {
+                            messageChannel.port1.postMessage({
+                                type: 'BINARY',
+                                chunk
+                            }); 
+                            resolve();
+                        }
+                    })
+                }
+
+                function writeAChunkToFileFailed(chunkIndex) {
+                    if(isMobileOrSafari) {
+                        
+                    } else {
+
+                    }
+                    
+                }
+
+                function closeWriter() {
+                    if(isMobileOrSafari) {
+                    } else {
+                        messageChannel.port1.postMessage({
+                            type: 'END_OF_FILE'
+                        }); 
+                    }
+                }
+
+                function downloadDecryptAndAssemble(chunkIndex) {
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false);
+                            let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks);                          
+                            debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
+                            if(state.activeRequest !== itemId) {
+                                reject("Aborted");
+                                return;        
+                            }      
+                           
+                            
+                            let buffer = Buffer.from(response, 'binary');
+                            let downloadedBinaryString = buffer.toString('binary');
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                            let decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
+                                
+                            await writeAChunkToFile(decryptedChunkStr);
+            
+                            
+                            resolve();
+                        } catch(error) {
+                            debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
+                            writeAChunkToFileFailed(chunkIndex);
+                            reject(error);
+                        }
+                    });
+                }
+
+                if(!await setupWriter()){
+                    reject("setupWriter failed");
+                    return;
+                };
+
+                let i;
+                for(i=0; i< numberOfChunks; i++) {
+                    try{
+                        await downloadDecryptAndAssemble(i);   
+                        if(i === 0 && !isMobileOrSafari) {
+                            dispatch(contentVideoDownloaded({itemId, videoLinkFromServiceWorker}));
+                        }       
+                    } catch(error) {
+                        debugLog(debugOn, "downloadAnAttachment failed: ", error);
+                        reject(error);
+                        break;
+                    }
+                }
+                if(i === numberOfChunks) {
+                    debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
+                    if(isMobileOrSafari) {
+                        let blob = new Blob([fileInUint8Array], {
+                            type: fileType
+                        });
+                       
+                        const link = window.URL.createObjectURL(blob);
+    
+                        dispatch(contentVideoDownloaded({itemId, link}));
+                    }
+                    closeWriter();
+                    resolve();
+                }
+
+            } else {
+                const s3Key = video.s3Key;
+                const keyVersion = s3Key.split(":")[1];
+                try {
+                    dispatch(downloadingContentVideo({itemId, progress:5}));
+                    const signedURL = await preS3Download(state.id, s3Key);
+                    dispatch(downloadingContentVideo({itemId, progress:10}));
+                    const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
+                    debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
                 
-                const decryptedVideoDataInUint8Array = convertBinaryStringToUint8Array(decryptedVideoStr);
-                const link = window.URL.createObjectURL(new Blob([decryptedVideoDataInUint8Array]), {
-                    type: 'video/*'
-                });
+                    if(keyVersion === '3') {
+                        const buffer = Buffer.from(response, 'binary');
+                        const downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                        debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
+        
+                    } else if(keyVersion === '1') {
 
-                dispatch(contentVideoDownloaded({itemId, link}));
-                resolve();
+                    }
+                
+                    const decryptedVideoDataInUint8Array = convertBinaryStringToUint8Array(decryptedVideoStr);
+                    const link = window.URL.createObjectURL(new Blob([decryptedVideoDataInUint8Array]), {
+                        type: 'video/*'
+                    });
 
-            } catch(error) {
-                debugLog(debugOn, 'downloadFromS3 error: ', error)
-                reject(error);
+                    dispatch(contentVideoDownloaded({itemId, link}));
+                    resolve();
+
+                } catch(error) {
+                    debugLog(debugOn, 'downloadFromS3 error: ', error)
+                    reject(error);
+                }
             }
         });
     }
@@ -1995,7 +2172,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             
                             messageChannel.port1.onmessage = (event) => {
                                 // Print the result
-                                console.log(event.data);
+                                debugLog(debugOn, event.data);
                                 if(event.data) {
                                     switch(event.data.type) {
                                         case 'STREAM_OPENED':
@@ -2004,6 +2181,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                             iframe.src = '/downloadFile/' + event.data.stream.id;
                                             document.body.appendChild(iframe);
                                             debugLog(debugOn, "STREAM_OPENED");
+                                            resolve();
                                             break;
                                         case 'STREAM_CLOSED':
                                             messageChannel.port1.onmessage = null
@@ -2016,7 +2194,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                     }
                                 }
                             };
-                            resolve();
+                            
                         } else {
                             debugLog(debugOn, "s");
                             reject("erviceWorker.getRegistration error")
