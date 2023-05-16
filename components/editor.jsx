@@ -51,6 +51,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                   }
                 break;
             case 'content':
+                $(editorRef.current).html(content);
                 froalaOptions = {
                     key: froalaKey,
                     toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],

@@ -15,6 +15,7 @@ import Comments from "./comments";
 import BSafesStyle from '../styles/BSafes.module.css'
 import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
+import { de } from "date-fns/locale";
 
 export default function PageCommons() {
     const debugOn = false;
@@ -271,23 +272,8 @@ export default function PageCommons() {
             }
         }
     };
-
-    useEffect(() => {
-        if(activity === "Done") {
-            if(editingEditorId) {
-                setEditingEditorMode("ReadOnly");
-                setEditingEditorId(null);
-            }
-        } else if (activity === "Error") {
-            if(editingEditorId) {
-                setEditingEditorMode("Writing");
-            }
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activity]);
-
-    useEffect(()=>{
-        if(contentEditorContent === null) return;
+    
+    const buildContentVideos = () => {
         const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
         Array.from(videoDownloads).forEach(element => {
             const elementClone = element.cloneNode(true); // Remove all possible event listeners
@@ -310,6 +296,29 @@ export default function PageCommons() {
             };
             element.replaceWith(elementClone);
         });
+    }
+
+    useEffect(() => {
+        debugLog(debugOn, "pageCommons mounted.");
+    }, []);
+
+    useEffect(() => {
+        if(activity === "Done") {
+            if(editingEditorId) {
+                setEditingEditorMode("ReadOnly");
+                setEditingEditorId(null);
+            }
+        } else if (activity === "Error") {
+            if(editingEditorId) {
+                setEditingEditorMode("Writing");
+            }
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activity]);
+
+    useEffect(()=>{
+        if(contentEditorContent === null) return;
+        buildContentVideos();
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
@@ -450,7 +459,9 @@ export default function PageCommons() {
     useEffect(()=>{
         if(contentEditorMode === "ReadOnly"){
             debugLog(debugOn, "ReadOnly");
-
+            
+            buildContentVideos();
+           
             contentImagesDownloadQueue.forEach(image => {
                 if(image.status === "Downloaded") {
                     const imageElement = document.getElementById(image.id);
@@ -513,6 +524,7 @@ export default function PageCommons() {
             </div>
         )
     }
+
 
     return (
         <>

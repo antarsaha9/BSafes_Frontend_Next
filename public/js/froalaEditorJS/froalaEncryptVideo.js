@@ -385,6 +385,7 @@
       _editVideo($video.parent());
 
       editor.events.trigger('video.loaded', [$video.parent()]);
+      
     }
 
     /**
@@ -679,8 +680,8 @@
       // Create video object and set the load event.
       var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
       $video.toggleClass('fr-draggable', editor.opts.videoMove);
-
-			$video.find('video').addClass('bSafesVideo');		
+			
+      $video.find('video').addClass('bSafesVideo');		
 			var id = s3Key + "&" + videoSize;	
 			$video.find('video').attr('id', id);
 
@@ -717,7 +718,29 @@
         loadCallback.call($video.find('video').get(0));
       }
       else {
+
         $video.find('video').on('canplaythrough load', loadCallback);
+        
+        $video.find('video').on('loadeddata', (event)=>{
+          console.log('video loaded');
+          setTimeout(()=> {
+            let video = $video.find('video')[0];
+
+          let $canvas = $('<canvas id = "canvas" width = "600" height = "300"></canvas>');
+          $canvas.insertAfter('body');
+          let canvas = $canvas[0];
+      
+          let ratio = video.videoWidth/video.videoHeight;
+          let myWidth = video.videoWidth-100;
+          let myHeight = parseInt(myWidth/ratio,10);
+          canvas.width = myWidth;
+          canvas.height = myHeight;
+          let context = canvas.getContext('2d');
+          context.fillRect(0,0,myWidth,myHeight);
+          context.drawImage(video,0,0,myWidth,myHeight);
+          },10000);
+          
+        });
       }
 
       return $video;
@@ -1175,7 +1198,7 @@
           return false;
         }
 
-        const chunkSize = 10 * 1024 * 1024;
+        const chunkSize = 1 * 1024 * 1024;
         const video = videos[0];
 				const fileType = video.type;
         const fileSize = video.size;
@@ -1299,115 +1322,7 @@
           }        
         }      
       }
-      
-  if(0){
-      var s3Key;
-
-			function uploadToS3(data, fn) {
-				var signedURL;
-
-        async function callPreS3Upload(fn) {
-          const data = await preS3Upload();
-
-          if(data.status === 'ok') {
-            s3Key = data.s3Key;
-            signedURL = data.signedURL;
-            fn(null);
-          } else {
-            fn(data.error);
-          }
-
-        };
-
-				function _uploadProgress (e) {
-					if (e.lengthComputable) {
-          	var complete = (e.loaded / e.total * 100 | 0);
-             _setProgressMessage(editor.language.translate('Uploading'), complete);
-						 console.log(complete);
-          }
-				};
-
-				callPreS3Upload(async function(err) {
-					if(err) {
-						fn(err);
-					} else {
-            try {
-              await uploadData(data, signedURL, _uploadProgress);
-              fn(null);
-            } catch(error) {
-              alert('Uploading failed');
-              console.log(error);
-              fn('Uploading failed');
-            }
-					}
-				});
-			};
-	
-      // Make sure we have what to upload.
-      if (typeof videos != 'undefined' && videos.length > 0) {
-
-        // Check if we should cancel the video upload.
-        if (editor.events.trigger('video.beforeUpload', [videos]) === false) {
-
-          return false;
-        }
-
-        var video = videos[0];
-				var fileType = video.type;
-
-        // Check video max size.
-        if (video.size > editor.opts.videoMaxSize) {
-          _throwError(MAX_SIZE_EXCEEDED);
-
-          return false;
-        }
-
-        // Check video types.
-        if (editor.opts.videoAllowedTypes.indexOf(video.type.replace(/video\//g, '')) < 0) {
-          _throwError(BAD_FILE_TYPE);
-
-          return false;
-        }
-
-        showProgressBar();
-        editor.events.disableBlur();
-        editor.edit.off();
-        editor.events.enableBlur();
-
-        function encryptDataInBinaryString(data, fn) {
-          var time1 = Date.now();
-          var binaryStr = data;
-          console.log('encrypting', binaryStr.length);
-          var encryptedStr = encryptLargeBinaryString(binaryStr, itemKey, itemIV);
-
-          fn(null, encryptedStr);
-        };
-        _setProgressMessage(editor.language.translate('Encrypting'), 0);
-				var reader = new FileReader();
-				reader.addEventListener('load', function () {
-					var videoData = reader.result;
-					var videoInUint8Array = new Uint8Array(videoData);
-          var videoString = convertUint8ArrayToBinaryString(videoInUint8Array);
-					var videoSize = videoInUint8Array.length;
-					var videoBlob = new Blob([videoInUint8Array], {type: fileType});
-					$('#testVideo').attr('type', fileType);
-					videoLink = window.URL.createObjectURL(videoBlob);
-
-					encryptDataInBinaryString(videoString, function(error, encryptedVideoDataInBinaryString) {
-            uploadToS3(encryptedVideoDataInBinaryString, function(err) {
-							if(err) {
-                alert('uploadToS3:' + err);
-							} else {
-								_videoUploaded.call(null, $current_video, videoLink, s3Key, videoSize); 	
-							}
-						});
-					});
-				}, false);
-				
-				reader.readAsArrayBuffer(video);
-      }
-  }
-      }
+    }
 
     /**
      * Video drop inside the upload zone.

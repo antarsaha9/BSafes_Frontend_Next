@@ -1109,7 +1109,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     try{
                         await downloadDecryptAndAssemble(i);   
                         if(i === 0 && !isMobileOrSafari) {
-                            dispatch(contentVideoDownloaded({itemId, videoLinkFromServiceWorker}));
+                            dispatch(contentVideoDownloaded({itemId, link:videoLinkFromServiceWorker}));
                         }       
                     } catch(error) {
                         debugLog(debugOn, "downloadAnAttachment failed: ", error);

@@ -5,8 +5,18 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-self.addEventListener("install", function(event) {
-    console.log("Hello world from service worker!")
+self.addEventListener('install', event => {
+  // Bypass the waiting lifecycle stage,
+  // just in case there's an older version of this SW registration.
+  console.log('Service worker installed.');
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener('activate', event => {
+  // Take control of all pages under this SW's scope immediately,
+  // instead of waiting for reload/navigation. https://stackoverflow.com/questions/33978993/serviceworker-no-fetchevent-for-javascript-triggered-request
+  console.log('Service worker activited');
+  event.waitUntil(self.clients.claim());
 });
 
 self.addEventListener("message", (event)=> {
@@ -104,6 +114,7 @@ self.addEventListener("message", (event)=> {
   }
 
   if(event.data) {
+    event.waitUntil(self.clients.claim());
     switch(event.data.type) {
       case 'INIT_PORT':
         setupNewStream(event);
@@ -118,7 +129,10 @@ self.addEventListener("message", (event)=> {
 
 self.addEventListener("fetch", (event) => {
     console.log(`Handling fetch event for ${event.request.url}`);
-    const idParts = event.request.url.split('/downloadFile/')[1].split('/');
+    let idParts = event.request.url.split('/downloadFile/');
+    if(!idParts[1]) return null;
+    
+    idParts = idParts[1].split('/');
     const isVideo = (idParts[0] === 'video');
     const id = idParts.pop();
     
