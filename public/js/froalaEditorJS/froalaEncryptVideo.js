@@ -370,7 +370,7 @@
       editor.events.trigger(replaced ? 'video.replaced' : 'video.inserted', [$video]);
     }
 
-    function _loadedCallback () {
+    function _loadedCallback (s3Key) {
       var $video = $(this);
 
       editor.popups.hide('video.insert');
@@ -386,6 +386,81 @@
 
       editor.events.trigger('video.loaded', [$video.parent()]);
       
+      async function getVideoSnapshot() {
+        let video = $video[0];
+        await video.play();
+        video.pause();
+
+        let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
+        let canvas = $canvas[0];
+        $canvas.insertAfter('body');
+        let ratio = video.videoWidth/video.videoHeight;
+        let myWidth = 640; 
+        let myHeight = parseInt(myWidth/ratio,10);
+        canvas.width = myWidth;
+        canvas.height = myHeight;
+        let context = canvas.getContext('2d');
+
+        const uploadSnapshot = () => {
+          const itemId = $('.container').data('itemId');
+          const itemKey = $('.container').data('itemKey');			
+          s3KeyParts = s3Key.split('&');
+          let numberOfChunks = s3KeyParts[1];
+          let s3KeyPrefix = s3KeyParts[3];
+        }
+
+        const takeAShot = () => {
+          console.log("takeAShot...");
+          context.fillRect(0,0,myWidth,myHeight);
+          context.drawImage(video,0,0,myWidth,myHeight);
+          let imageData = context.getImageData(0,0,myWidth, myHeight);
+          let isBlank = true;
+          for (let i=0; i< imageData.data.length; i++) {
+            //console.log(imageData.data[i]);
+            if((i+1)%4){
+              if(imageData.data[i] !== 0) {
+                isBlank = false;
+                break;
+              }
+            }
+          }
+          if(isBlank) {
+            setTimeout(takeAShot, 1000);
+          } else {
+            canvas.toBlob((blob) => {
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                console.log(reader.result);
+                let array = new Uint8Array(reader.result.length);
+                for(let i=0; i< reader.result.length; i++) {
+                  array[i] = reader.result.charCodeAt(i);
+                }
+                let url = window.URL.createObjectURL(new Blob([array]), {
+                  type: 'image/*'
+                })
+                const newImg = document.createElement("img");
+          
+                newImg.onload = () => {
+                  // no longer need to read the blob so it's revoked
+                  URL.revokeObjectURL(url);
+                };
+          
+                newImg.src = url;
+                document.body.appendChild(newImg);
+                uploadSnapshot();
+              };
+
+              reader.readAsBinaryString(blob);
+     
+            });
+          }
+        }
+        
+        setTimeout(takeAShot, 100); 
+      }
+
+      getVideoSnapshot();
     }
 
     /**
@@ -715,32 +790,16 @@
       editor.selection.clear();
 
       if ($video.find('video').get(0).readyState > $video.find('video').get(0).HAVE_FUTURE_DATA || editor.helpers.isIOS()) {
-        loadCallback.call($video.find('video').get(0));
+        loadCallback.call($video.find('video').get(0), s3Key);
       }
       else {
-
-        $video.find('video').on('canplaythrough load', loadCallback);
+        const loadCallbackWithS3Key = () => {
+          loadCallback.call($video.find('video').get(0), s3Key);
+        }
+        $video.find('video').on('canplaythrough load', 
+          loadCallbackWithS3Key
+        );
         
-        $video.find('video').on('loadeddata', (event)=>{
-          console.log('video loaded');
-          setTimeout(()=> {
-            let video = $video.find('video')[0];
-
-          let $canvas = $('<canvas id = "canvas" width = "600" height = "300"></canvas>');
-          $canvas.insertAfter('body');
-          let canvas = $canvas[0];
-      
-          let ratio = video.videoWidth/video.videoHeight;
-          let myWidth = video.videoWidth-100;
-          let myHeight = parseInt(myWidth/ratio,10);
-          canvas.width = myWidth;
-          canvas.height = myHeight;
-          let context = canvas.getContext('2d');
-          context.fillRect(0,0,myWidth,myHeight);
-          context.drawImage(video,0,0,myWidth,myHeight);
-          },10000);
-          
-        });
       }
 
       return $video;
