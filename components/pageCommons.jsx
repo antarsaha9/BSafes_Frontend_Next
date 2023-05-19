@@ -371,7 +371,9 @@ export default function PageCommons() {
                 imageElement = document.getElementById(image.id);
                 imageElement.src = image.src;
                 dispatch(updateContentImagesDisplayIndex(i+1));
-            }          
+            } else if(image.status === "DownloadFailed") {
+                dispatch(updateContentImagesDisplayIndex(i+1));
+            }  
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);

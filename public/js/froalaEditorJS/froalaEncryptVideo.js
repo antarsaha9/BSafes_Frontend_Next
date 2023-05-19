@@ -401,12 +401,28 @@
         canvas.height = myHeight;
         let context = canvas.getContext('2d');
 
-        const uploadSnapshot = () => {
+        const uploadSnapshot = async (data) => {
           const itemId = $('.container').data('itemId');
-          const itemKey = $('.container').data('itemKey');			
-          s3KeyParts = s3Key.split('&');
-          let numberOfChunks = s3KeyParts[1];
+          const itemKey = $('.container').data('itemKey');
+          let encryptedStr = encryptLargeBinaryString(data, itemKey);
+          let s3KeyParts = s3Key.split('&');
           let s3KeyPrefix = s3KeyParts[3];
+          let timeStamp = s3KeyPrefix.split(':').pop(); 
+    
+          try {
+            let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
+            let signedURL = result.signedURL;
+            console.log('video snapshot signed url', signedURL );
+                          
+            const onUploadProgress = (progressEvent) => {
+                let percentCompleted = progressEvent.loaded*100/progressEvent.total;
+                console.log( `Video snapshot upload progress: ${percentCompleted} `);
+            }
+                            
+            await uploadData(encryptedStr, signedURL, onUploadProgress);  
+          } catch (error) {
+            console.log("uploadSnapshot failed");
+          }
         }
 
         const takeAShot = () => {
@@ -432,6 +448,8 @@
 
               reader.onload = () => {
                 console.log(reader.result);
+                
+                if(0) {
                 let array = new Uint8Array(reader.result.length);
                 for(let i=0; i< reader.result.length; i++) {
                   array[i] = reader.result.charCodeAt(i);
@@ -448,8 +466,10 @@
           
                 newImg.src = url;
                 document.body.appendChild(newImg);
-                uploadSnapshot();
+                }
+                uploadSnapshot(reader.result);
               };
+              
 
               reader.readAsBinaryString(blob);
      

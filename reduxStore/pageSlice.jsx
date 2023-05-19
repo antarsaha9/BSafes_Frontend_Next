@@ -77,6 +77,30 @@ const dataFetchedFunc = (state, action) => {
 
 }
 
+function findMediasInContent(state, content) {
+    const tempElement = document.createElement("div");
+    tempElement.innerHTML = content;
+
+    const images = tempElement.querySelectorAll(".bSafesImage");
+    images.forEach((item) => {
+        let id = item.id;
+        let idParts = id.split('&');
+        let s3Key = idParts[0];
+                
+        state.contentImagesDownloadQueue.push({id, s3Key});
+    });
+
+    const videos = tempElement.querySelectorAll(".bSafesDownloadVideo");
+    videos.forEach((item) => {
+        let id = item.id;
+        let idParts = id.split('&');
+        if(idParts[0] === 'chunks') {
+            let s3Key = idParts[3] + '_chunk_99999';
+            state.contentImagesDownloadQueue.push({id, s3Key});
+        }
+    });
+}
+
 function decryptPageItemFunc(state, workspaceKey) {
     if(!state.decrypttionRequired) return;
     const item = state.itemCopy;
@@ -133,17 +157,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             content = DOMPurify.sanitize(content);            
             state.content = content;
 
-            const tempElement = document.createElement("div");
-            tempElement.innerHTML = content;
-            const images = tempElement.querySelectorAll(".bSafesImage");
-
-            images.forEach((item) => {
-                const id = item.id;
-                const idParts = id.split('&');
-                const s3Key = idParts[0];
-                
-                state.contentImagesDownloadQueue.push({id, s3Key});
-            });
+            findMediasInContent(state, content);
 
         } catch (err) {
             state.error = err;
@@ -252,6 +266,7 @@ const pageSlice = createSlice({
             if(state.aborted ) return;
             if(action.payload.item.id !== state.activeRequest) return;
             state.content = action.payload.item.content;
+            findMediasInContent(state, state.content);
         },
         itemPathLoaded: (state, action) => {
             state.itemPath = action.payload;
@@ -306,6 +321,15 @@ const pageSlice = createSlice({
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
             if(!image) return;
             image.status = "Downloaded";
+            image.src = action.payload.link;
+            state.contentImagedDownloadIndex += 1;
+        },
+        contentImageDownloadFailed: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
+            const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            if(!image) return;
+            image.status = "DownloadFailed";
             image.src = action.payload.link;
             state.contentImagedDownloadIndex += 1;
         },
@@ -549,7 +573,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -581,8 +605,17 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
         }, false);
 
         xhr.onload = function(e) {
-            resolve(this.response)
+            if(xhr.status === 200) {
+                resolve(this.response)
+            } else {
+                reject();
+            }
+            
         };
+
+        xhr.onerror = function(e) {
+            reject();
+        }
 
         xhr.onabort = (event) => {
             reject(event);
@@ -591,6 +624,68 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
         xhr.send();
         dispatch(setXHR({xhr}));
     });
+}
+
+const startDownloadingContentImages = async (itemId, dispatch, getState) => {
+    let state = getState().page; 
+    const downloadAnImage = (image) => {
+
+        return new Promise(async (resolve, reject) => {
+            const s3Key = image.s3Key;
+            const keyVersion = s3Key.split(":")[1];
+            try {
+                dispatch(downloadingContentImage({itemId, progress:5}));    
+                const signedURL = await preS3Download(state.id, s3Key);
+                dispatch(downloadingContentImage({itemId, progress:10}));
+
+                const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
+                debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
+                
+                if(itemId !== state.activeRequest) { 
+                    debugLog(debugOn, "Aborted!");
+                    reject("Aborted")
+                    return;
+                };
+                
+                let decryptedImageStr
+                if(keyVersion === '3') {
+                    const buffer = Buffer.from(response, 'binary');
+                    const downloadedBinaryString = buffer.toString('binary');
+                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                    decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
+                    debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+    
+                } else if(keyVersion === '1') {
+
+                }
+                const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
+                const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
+                    type: 'image/*'
+                });
+                                  
+                dispatch(contentImageDownloaded({itemId, link}));
+                resolve();
+                                       
+            } catch(error) {
+                debugLog(debugOn, 'downloadFromS3 error: ', error);
+                dispatch(contentImageDownloadFailed({itemId, link:null}));
+                reject(error);
+            }
+        });
+    }
+    while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
+        if(state.aborted) {
+            debugLog(debugOn, "abort: ", state.aborted);
+            break;
+        } 
+        const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+        try {
+            await downloadAnImage(image); 
+        } catch (error) {
+        
+        }
+        state = getState().page; 
+    }
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
@@ -686,6 +781,13 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             const decodedContent =  DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
                             dispatch(contentDecrypted({item:{id: data.itemId, content:decodedContent}}));
                             
+                            state = getState().page;
+
+                            if(state.contentImagesDownloadQueue.length) {
+                                startDownloadingContentImages(data.itemId, dispatch, getState);
+                            }   
+
+                            resolve();
                         } else {
                             resolve();
                         }
@@ -752,67 +854,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     state = getState().page; 
     newActivity(dispatch, "Decrypting", () => {
         const itemId = data.itemId;
-        const startDownloadingContentImages = async () => {
-            state = getState().page; 
-            const downloadAnImage = (image) => {
-
-                return new Promise(async (resolve, reject) => {
-                    const s3Key = image.s3Key;
-                    const keyVersion = s3Key.split(":")[1];
-                    try {
-                        dispatch(downloadingContentImage({itemId, progress:5}));    
-                        const signedURL = await preS3Download(state.id, s3Key);
-                        dispatch(downloadingContentImage({itemId, progress:10}));
-
-                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
-                        debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
-                        
-                        if(itemId !== state.activeRequest) { 
-                            debugLog(debugOn, "Aborted!");
-                            reject("Aborted")
-                            return;
-                        };
-                        
-                        let decryptedImageStr
-                        if(keyVersion === '3') {
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-            
-                        } else if(keyVersion === '1') {
-
-                        }
-                        const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
-                        const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
-                            type: 'image/*'
-                        });
-                                          
-                        dispatch(contentImageDownloaded({itemId, link}));
-                        resolve();
-                                               
-                    } catch(error) {
-                        debugLog(debugOn, 'downloadFromS3 error: ', error)
-                        reject(error);
-                    }
-                });
-            }
-            while(state.contentImagedDownloadIndex < state.contentImagesDownloadQueue.length) {
-                if(state.aborted) {
-                    debugLog(debugOn, "abort: ", state.aborted);
-                    break;
-                } 
-                const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
-                try {
-                    await downloadAnImage(image); 
-                } catch (error) {
-                    break;
-                }
-                state = getState().page; 
-            }
-        }
-
+        
         const startDownloadingImages = async () => {
             state = getState().page; 
             const downloadAnImage = (image) => {
@@ -889,7 +931,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
             dispatch(decryptPageItem({itemId, workspaceKey: data.workspaceKey}));
             state = getState().page;    
             if(state.contentImagesDownloadQueue.length) {
-                startDownloadingContentImages();
+                startDownloadingContentImages(itemId, dispatch, getState);
             }                    
             if(state.imageDownloadQueue.length) {
                 startDownloadingImages();
@@ -1475,7 +1517,7 @@ function preProcessEditorContentBeforeSaving(content) {
     
         videoImg.id = videoId;
         videoImg.style = videoStyle;
-        const placeholder = 'https://via.placeholder.com/' + `320x200`;
+        const placeholder = 'https://via.placeholder.com/' + `640x480`;
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
     });
