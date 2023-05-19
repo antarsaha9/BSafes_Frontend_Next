@@ -138,18 +138,25 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     useEffect(()=>{
         if(!(scriptsLoaded && window)) return;
-        debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
-        window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
-        window.bsafesFroala.rotateImage = rotateImageHook;
-        window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
-        window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
-        window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
-        window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
-        window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
-        window.bsafesFroala.preS3Upload = preS3UploadHook;
-        window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
-        window.bsafesFroala.postS3Upload = postS3UploadHook;
-        window.bsafesFroala.uploadData = uploadDataHook;
+        import('../lib/importScripts').then(async ic=>{
+            await ic.FroalaPlugins();
+            ic.Codemirror();
+            ic.Photoswipe();
+            ic.Others();
+
+            debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
+            window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
+            window.bsafesFroala.rotateImage = rotateImageHook;
+            window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
+            window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
+            window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
+            window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
+            window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
+            window.bsafesFroala.preS3Upload = preS3UploadHook;
+            window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
+            window.bsafesFroala.postS3Upload = postS3UploadHook;
+            window.bsafesFroala.uploadData = uploadDataHook;
+        })
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
 
