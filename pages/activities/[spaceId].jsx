@@ -189,7 +189,7 @@ function ActivityCard({ root, ...activity }) {
         <ListGroup.Item className={root?'':'bg-light bg-gradient'} style={{ cursor: 'pointer' }}>
             <Row>
                 {itemLink?
-                    <Link href={itemLink}>
+                    <Link href={itemLink} legacyBehavior>
                         <Col xs={11}>
                             {componnet}
                         </Col>
@@ -206,6 +206,6 @@ function ActivityCard({ root, ...activity }) {
                 </Col>
             </Row>
         </ListGroup.Item>
-    )
+    );
 
 }

@@ -144,7 +144,7 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
         <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Link href={isOpenable?getItemLink(item):'#'}> 
+                    <Link href={isOpenable?getItemLink(item):'#'} legacyBehavior> 
                         <Col xs={9}>   
                             {item.itemPack.type === 'D' &&
                                 <div >
@@ -226,5 +226,5 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
             </Card.Body>
             <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />
         </Card>
-    )
+    );
 }
