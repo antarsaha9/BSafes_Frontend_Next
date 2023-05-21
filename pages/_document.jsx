@@ -1,5 +1,5 @@
 import {Html, Head, Main, NextScript} from 'next/document'
-import Stylesheets from '../components/stylesheets';
+// import Stylesheets from '../components/stylesheets';
 
 const Document = () => {
     return (
@@ -11,7 +11,7 @@ const Document = () => {
 				{/* <link href='https://fonts.googleapis.com/css?family=Oswald:400,300,700&subset=latin,latin-ext&display=swap' rel='stylesheet' /> */}
 				{/* <link href='https://fonts.googleapis.com/css?family=Montserrat:400,700&display=swap' rel='stylesheet' /> */}
 				{/* <link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,300italic,700&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,cyrillic,latin-ext&display=swap' rel='stylesheet' /> */}
-                <Stylesheets />
+                {/* <Stylesheets /> */}
             </Head>
             <body>
                 <Main />

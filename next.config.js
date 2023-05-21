@@ -1,9 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // sassOptions: {
-  //   includePaths: [path.join(__dirname, 'styles')],
-  // },
   webpack: (config, { isServer }) => {
     if (!isServer) {
         // don't resolve 'fs' module on the client to prevent this error on build --> Error: Can't resolve 'fs'
@@ -25,19 +22,7 @@ const nextConfig = {
       loader: "base64-loader",
       type: "javascript/auto",
     });
-
-    // config.module.rules.push({
-    //   test: /\.s[ac]ss$/i,
-    //   use: [
-    //     // Creates `style` nodes from JS strings
-    //     "style-loader",
-    //     // Translates CSS into CommonJS
-    //     "css-loader",
-    //     // Compiles Sass to CSS
-    //     "sass-loader",
-    //   ],
-    // },);
-    
+  
   
     config.module.noParse = /\.wasm$/;
   
