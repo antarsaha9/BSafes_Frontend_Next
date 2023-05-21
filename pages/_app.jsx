@@ -4,6 +4,8 @@ import '../styles/bootstrap.min.css'
 import '../styles/react-tagsinput-bsafes.css'
 import "../styles/react-datepicker-bsafes.css";
 import "../styles/froala-editor-bsafes.css"
+import '../lib/importStyles';
+import '../styles/Styles.scss';
 import { useEffect } from 'react';
 
 function MyApp({ Component, pageProps }) {

@@ -5,24 +5,12 @@ import { debugLog } from '../lib/helper';
 const debugOn = false;
 
 const scripts = [
-    {id: "line_height.min.js",
-     src:"https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.9.8/js/plugins/line_height.min.js",
-     loaded: false
-    },
-    // {id: "ponyfill.min.js",
-    //  src: "https://cdn.jsdelivr.net/npm/web-streams-polyfill@2.0.2/dist/ponyfill.min.js",
-    //  loaded: false
-    // },
-    {id: "Blob.js",
-     src: "https://cdn.jsdelivr.net/gh/eligrey/Blob.js/Blob.js",
-     loaded: false
-    },
 ];
 
 const initialState = {
-    scripts: [scripts[0]],
+    scripts: scripts.length>0?[scripts[0]]:[],
     index: 0,
-    done: false,
+    done: true,
 }
 
 const scriptsSlice = createSlice({

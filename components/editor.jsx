@@ -15,13 +15,12 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
+import { Spinner } from "react-bootstrap";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = false;    
     const editorRef = useRef(null);
     const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
-
-    const scriptsLoaded = useSelector(state => state.scripts.done);
 
     const expandedKey = useSelector( state => state.auth.expandedKey);
     const itemId = useSelector( state => state.page.id);
@@ -32,6 +31,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     
 
     const [ editorOn, setEditorOn ] = useState(false);
+    const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
     
@@ -134,29 +134,33 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     useEffect(() => {
         window.$ = window.jQuery = jquery;``
+
+        import('../lib/importScripts').then(async ic=>{
+            await ic.FroalaPlugins;
+            await ic.Codemirror;
+            await ic.Photoswipe;
+            await ic.Others;
+
+            setScriptsLoaded(true)
+        });
     },[]);
 
     useEffect(()=>{
         if(!(scriptsLoaded && window)) return;
-        import('../lib/importScripts').then(async ic=>{
-            await ic.FroalaPlugins();
-            ic.Codemirror();
-            ic.Photoswipe();
-            ic.Others();
-
-            debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
-            window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
-            window.bsafesFroala.rotateImage = rotateImageHook;
-            window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
-            window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
-            window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
-            window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
-            window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
-            window.bsafesFroala.preS3Upload = preS3UploadHook;
-            window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
-            window.bsafesFroala.postS3Upload = postS3UploadHook;
-            window.bsafesFroala.uploadData = uploadDataHook;
-        })
+        
+        debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
+        window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
+        window.bsafesFroala.rotateImage = rotateImageHook;
+        window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
+        window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
+        window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
+        window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
+        window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
+        window.bsafesFroala.preS3Upload = preS3UploadHook;
+        window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
+        window.bsafesFroala.postS3Upload = postS3UploadHook;
+        window.bsafesFroala.uploadData = uploadDataHook;
+        
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
 
@@ -303,7 +307,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     return (
-        <>
+        
+        <>{scriptsLoaded?<>
             {  (showPen)&&(editable)?
                 
                 <Row>
@@ -323,7 +328,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
                 <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                 </div>
-            </Row>
+            </Row></>:
+                <Spinner className={BSafesStyle.screenCenter} animation='border' />}
         </>
     );
 }
