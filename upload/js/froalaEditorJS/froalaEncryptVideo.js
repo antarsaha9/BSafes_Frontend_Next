@@ -370,7 +370,7 @@
       editor.events.trigger(replaced ? 'video.replaced' : 'video.inserted', [$video]);
     }
 
-    function _loadedCallback () {
+    function _loadedCallback (s3Key) {
       var $video = $(this);
 
       editor.popups.hide('video.insert');
@@ -385,6 +385,102 @@
       _editVideo($video.parent());
 
       editor.events.trigger('video.loaded', [$video.parent()]);
+      
+      async function getVideoSnapshot() {
+        let video = $video[0];
+        await video.play();
+        video.pause();
+
+        let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
+        let canvas = $canvas[0];
+        $canvas.insertAfter('body');
+        let ratio = video.videoWidth/video.videoHeight;
+        let myWidth = 640; 
+        let myHeight = parseInt(myWidth/ratio,10);
+        canvas.width = myWidth;
+        canvas.height = myHeight;
+        let context = canvas.getContext('2d');
+
+        const uploadSnapshot = async (data) => {
+          const itemId = $('.container').data('itemId');
+          const itemKey = $('.container').data('itemKey');
+          let encryptedStr = encryptLargeBinaryString(data, itemKey);
+          let s3KeyParts = s3Key.split('&');
+          let s3KeyPrefix = s3KeyParts[3];
+          let timeStamp = s3KeyPrefix.split(':').pop(); 
+    
+          try {
+            let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
+            let signedURL = result.signedURL;
+            console.log('video snapshot signed url', signedURL );
+                          
+            const onUploadProgress = (progressEvent) => {
+                let percentCompleted = progressEvent.loaded*100/progressEvent.total;
+                console.log( `Video snapshot upload progress: ${percentCompleted} `);
+            }
+                            
+            await uploadData(encryptedStr, signedURL, onUploadProgress);  
+          } catch (error) {
+            console.log("uploadSnapshot failed");
+          }
+        }
+
+        const takeAShot = () => {
+          console.log("takeAShot...");
+          context.fillRect(0,0,myWidth,myHeight);
+          context.drawImage(video,0,0,myWidth,myHeight);
+          let imageData = context.getImageData(0,0,myWidth, myHeight);
+          let isBlank = true;
+          for (let i=0; i< imageData.data.length; i++) {
+            //console.log(imageData.data[i]);
+            if((i+1)%4){
+              if(imageData.data[i] !== 0) {
+                isBlank = false;
+                break;
+              }
+            }
+          }
+          if(isBlank) {
+            setTimeout(takeAShot, 1000);
+          } else {
+            canvas.toBlob((blob) => {
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                console.log(reader.result);
+                
+                if(0) {
+                let array = new Uint8Array(reader.result.length);
+                for(let i=0; i< reader.result.length; i++) {
+                  array[i] = reader.result.charCodeAt(i);
+                }
+                let url = window.URL.createObjectURL(new Blob([array]), {
+                  type: 'image/*'
+                })
+                const newImg = document.createElement("img");
+          
+                newImg.onload = () => {
+                  // no longer need to read the blob so it's revoked
+                  URL.revokeObjectURL(url);
+                };
+          
+                newImg.src = url;
+                document.body.appendChild(newImg);
+                }
+                uploadSnapshot(reader.result);
+              };
+              
+
+              reader.readAsBinaryString(blob);
+     
+            });
+          }
+        }
+        
+        setTimeout(takeAShot, 100); 
+      }
+
+      getVideoSnapshot();
     }
 
     /**
@@ -679,8 +775,8 @@
       // Create video object and set the load event.
       var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
       $video.toggleClass('fr-draggable', editor.opts.videoMove);
-
-			$video.find('video').addClass('bSafesVideo');		
+			
+      $video.find('video').addClass('bSafesVideo');		
 			var id = s3Key + "&" + videoSize;	
 			$video.find('video').attr('id', id);
 
@@ -714,10 +810,16 @@
       editor.selection.clear();
 
       if ($video.find('video').get(0).readyState > $video.find('video').get(0).HAVE_FUTURE_DATA || editor.helpers.isIOS()) {
-        loadCallback.call($video.find('video').get(0));
+        loadCallback.call($video.find('video').get(0), s3Key);
       }
       else {
-        $video.find('video').on('canplaythrough load', loadCallback);
+        const loadCallbackWithS3Key = () => {
+          loadCallback.call($video.find('video').get(0), s3Key);
+        }
+        $video.find('video').on('canplaythrough load', 
+          loadCallbackWithS3Key
+        );
+        
       }
 
       return $video;
@@ -1164,74 +1266,29 @@
     /**
      * Do video upload.
      */
-    function upload (videos) {
-      var itemKey = $('.container').data('itemKey');
-      var itemIV = $('.container').data('itemIV');			
-			var s3Key;
+    async function upload (videos) {
+      const itemId = $('.container').data('itemId');
+      const itemKey = $('.container').data('itemKey');
+      const itemIV = $('.container').data('itemIV');			
 
-			function uploadToS3(data, fn) {
-				var signedURL;
-
-        async function callPreS3Upload(fn) {
-          const data = await preS3Upload();
-
-          if(data.status === 'ok') {
-            s3Key = data.s3Key;
-            signedURL = data.signedURL;
-            fn(null);
-          } else {
-            fn(data.error);
-          }
-
-        };
-
-				function _uploadProgress (e) {
-					if (e.lengthComputable) {
-          	var complete = (e.loaded / e.total * 100 | 0);
-             _setProgressMessage(editor.language.translate('Uploading'), complete);
-						 console.log(complete);
-          }
-				};
-
-				callPreS3Upload(async function(err) {
-					if(err) {
-						fn(err);
-					} else {
-            try {
-              await uploadData(data, signedURL, _uploadProgress);
-              fn(null);
-            } catch(error) {
-              alert('Uploading failed');
-              console.log(error);
-              fn('Uploading failed');
-            }
-					}
-				});
-			};
-	
-      // Make sure we have what to upload.
       if (typeof videos != 'undefined' && videos.length > 0) {
-
         // Check if we should cancel the video upload.
         if (editor.events.trigger('video.beforeUpload', [videos]) === false) {
-
           return false;
         }
 
-        var video = videos[0];
-				var fileType = video.type;
+        const chunkSize = 1 * 1024 * 1024;
+        const video = videos[0];
+				const fileType = video.type;
+        const fileSize = video.size;
+        const numberOfChunks = Math.floor(fileSize/chunkSize) + 1;
+        const encodedFileName = encodeURI(video.name);
+	      const encryptedFileName = encryptBinaryString(encodedFileName, itemKey);
+        let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
 
-        // Check video max size.
-        if (video.size > editor.opts.videoMaxSize) {
-          _throwError(MAX_SIZE_EXCEEDED);
-
-          return false;
-        }
-
-        // Check video types.
+          // Check video types.
         if (editor.opts.videoAllowedTypes.indexOf(video.type.replace(/video\//g, '')) < 0) {
           _throwError(BAD_FILE_TYPE);
-
           return false;
         }
 
@@ -1240,37 +1297,109 @@
         editor.edit.off();
         editor.events.enableBlur();
 
-        function encryptDataInBinaryString(data, fn) {
-          var time1 = Date.now();
-          var binaryStr = data;
-          console.log('encrypting', binaryStr.length);
-          var encryptedStr = encryptLargeBinaryString(binaryStr, itemKey, itemIV);
+        function sleep(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        }
 
-          fn(null, encryptedStr);
-        };
-        _setProgressMessage(editor.language.translate('Encrypting'), 0);
-				var reader = new FileReader();
-				reader.addEventListener('load', function () {
-					var videoData = reader.result;
-					var videoInUint8Array = new Uint8Array(videoData);
-          var videoString = convertUint8ArrayToBinaryString(videoInUint8Array);
-					var videoSize = videoInUint8Array.length;
-					var videoBlob = new Blob([videoInUint8Array], {type: fileType});
-					$('#testVideo').attr('type', fileType);
-					videoLink = window.URL.createObjectURL(videoBlob);
+        function sliceEncryptAndUpload(file, chunkIndex) {
+            return new Promise((resolve, reject) => {
+                let reader, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
+               
+                offset = (chunkIndex) * chunkSize;
+                reader = new FileReader();
+                const blob = file.slice(offset, offset + chunkSize);
+                
+                function uploadAChunk(index, data) {
+                    let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
+                    
+                    s3KeyPrefixParts = s3KeyPrefix.split(':');
+                    timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1];
+    
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            result = await preS3ChunkUpload(itemId, index, timeStamp);
+                            fileUploadProgress = index*(100/numberOfChunks) + 15/numberOfChunks;
+                            console.log(`File upload prgoress: ${fileUploadProgress}`);
+                          
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            console.log('chunk signed url', signedURL );
+    
+                            controller = new AbortController();
+                          
+                            const onUploadProgress = (progressEvent) => {
+                              let percentCompleted = 15 + Math.ceil(progressEvent.loaded*85/progressEvent.total);
+                              fileUploadProgress = index*(100/numberOfChunks) + percentCompleted/numberOfChunks;
+                              console.log( `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                              console.log( `File upload prgoress: ${fileUploadProgress}`);
+                              _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                            }
+                            
+                            await uploadData(data, signedURL, onUploadProgress);              
+                            
+                            resolve();
+                        } catch(error) {
+                            console.log('uploadAChunk failed: ', error);
+                            reject(error);
+                        }
+                    });
+                }
+    
+                reader.onloadend = async function(e) {
+                    data = reader.result;
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                    _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                    console.log(`File upload prgoress: ${fileUploadProgress}`);
+                    
+                    encryptedData = await encryptChunkArrayBufferToBinaryStringAsync(data, itemKey);
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                    console.log(`File upload prgoress: ${fileUploadProgress}`);
+                    _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
 
-					encryptDataInBinaryString(videoString, function(error, encryptedVideoDataInBinaryString) {
-            uploadToS3(encryptedVideoDataInBinaryString, function(err) {
-							if(err) {
-                alert('uploadToS3:' + err);
-							} else {
-								_videoUploaded.call(null, $current_video, videoLink, s3Key, videoSize); 	
-							}
-						});
-					});
-				}, false);
-				
-				reader.readAsArrayBuffer(video);
+                    encryptedFileSize += encryptedData.length;
+                    if(0/*Validation*/) {
+                        decryptedData = await decryptChunkBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
+                        isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
+                        console.log(`decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
+                    }
+                    try {   
+                        await uploadAChunk(chunkIndex, encryptedData);
+                        resolve();
+                    } catch(error) {
+                        console.log('sliceEncryptAndUpload failed: ', error);
+                        reject(error);
+                    }
+                  };
+                reader.readAsArrayBuffer(blob);
+            });
+        }
+
+        startingChunk = 0;
+        for(i=startingChunk; i<numberOfChunks; i++){
+          try {
+              console.log('sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
+              await sliceEncryptAndUpload(video, i);   
+          } catch(error) {
+              console.log( 'uploadAnAttachment failed: ', error); 
+              _setProgressMessage(editor.language.translate('Uploading ...'), i*(100/numberOfChunks));
+              await sleep(3000);
+              i--;
+              //reject(error);
+              //break;
+          }
+        }
+
+        if(i === numberOfChunks){
+          console.log(`uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
+          try {
+            let videoLink = window.URL.createObjectURL(video);
+            let s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
+            _videoUploaded.call(null, $current_video, videoLink, s3KeyInfo, fileSize);
+          } catch (error) {
+            console.log('Could not get videoLink');
+          }        
+        }      
       }
     }
 

@@ -18,7 +18,7 @@ import { debugLog } from '../lib/helper';
 import { de } from "date-fns/locale";
 
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -318,7 +318,7 @@ export default function PageCommons() {
 
     useEffect(()=>{
         if(contentEditorContent === null) return;
-        buildContentVideos();
+        //buildContentVideos();
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
@@ -351,6 +351,7 @@ export default function PageCommons() {
                     imageElementClone = imageElement.cloneNode(true);
                     contentImageContainer = document.createElement('div');
                     contentImageContainer.style.position = 'relative';
+                    contentImageContainer.style.textAlign = 'center';
                 
                     contentImageContainer.id = 'imageContainer_' + image.id;
                     contentImageContainer.appendChild(imageElementClone);
@@ -364,16 +365,48 @@ export default function PageCommons() {
                     progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
                     contentImageContainer.appendChild(progressElement);
                 }
-            } else if(image.status === "Downloaded") {
+                return;
+            } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
                 contentImageContainer = document.getElementById('imageContainer_' + image.id);
                 progressElement = document.getElementById('progress_' + image.id);
                 if(progressElement) contentImageContainer.removeChild(progressElement);
-                imageElement = document.getElementById(image.id);
-                imageElement.src = image.src;
+                
+                if(image.status === "Downloaded") {
+                    imageElement.src = image.src;
+                }
+
                 dispatch(updateContentImagesDisplayIndex(i+1));
-            } else if(image.status === "DownloadFailed") {
-                dispatch(updateContentImagesDisplayIndex(i+1));
-            }  
+            } 
+            if(imageElement.classList.contains('bSafesDownloadVideo')){
+                
+                const handleVideoClick = (e) => {
+                    const id =  e.target.id;
+                    const idParts = id.split('&');
+                    if(idParts[0] === 'chunks') {
+                        let s3Key = idParts[3];
+                        let chunks = parseInt(idParts[1]);
+                        let fileName = idParts[2];
+                        let fileSize = parseInt(idParts[5]);
+                        let fileType = idParts[4];
+                        dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+                    } else {
+                        let s3Key = idParts[0];
+                        dispatch(downloadContentVideoThunk({id, s3Key}));
+                    }
+                    
+                }; 
+
+                let playIcon = document.createElement('i');
+                playIcon.className = 'contentVideoPlayIcon';
+                playIcon.classList.add('fa');
+                playIcon.classList.add('fa-play-circle-o');
+                playIcon.classList.add('fa-3x');
+                playIcon.setAttribute('aria-hidden', "true");
+                playIcon.id = image.id;
+                contentImageContainer.appendChild(playIcon);
+                playIcon.onclick = handleVideoClick;
+                imageElement.onclick = handleVideoClick;
+            }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);
@@ -425,11 +458,14 @@ export default function PageCommons() {
                 progressElement = document.getElementById('progress_' + video.id);
                 if(progressElement) contentVideoContainer.removeChild(progressElement);
                 videoElement = document.getElementById(video.id);
+                let playIcon = contentVideoContainer.parentNode.getElementsByTagName('i')[0];
+                if(playIcon) contentVideoContainer.parentNode.removeChild(playIcon);
 
                 const videoSpan = document.createElement('span'); 
                 
                 videoSpan.className = 'fr-video';
                 videoSpan.classList.add('fr-draggable');
+                
                 videoSpan.setAttribute('contenteditable', 'true');
                 videoSpan.setAttribute('draggable', 'true');
                 
@@ -452,6 +488,17 @@ export default function PageCommons() {
 
                 videoSpan.appendChild(newVideoElement);
                 videoElement.replaceWith(videoSpan);
+                newVideoElement.onprogress =(e) => {
+                    debugLog(debugOn, "content video progress");
+                    let timeRanges = newVideoElement.buffered;
+                    for(let i=0; i< timeRanges.length; i++) {
+                        debugLog(debugOn, `start: ${timeRanges.start(i)}, end: ${timeRanges.end(i)}`);
+                    }
+                }
+                newVideoElement.onloadeddata = (e) => {
+                    newVideoElement.play();
+                }
+
                 dispatch(updateContentVideosDisplayIndex(i+1));
             }          
         }
@@ -462,7 +509,7 @@ export default function PageCommons() {
         if(contentEditorMode === "ReadOnly"){
             debugLog(debugOn, "ReadOnly");
             
-            buildContentVideos();
+            //buildContentVideos();
            
             contentImagesDownloadQueue.forEach(image => {
                 if(image.status === "Downloaded") {

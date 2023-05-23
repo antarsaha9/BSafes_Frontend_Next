@@ -5,7 +5,7 @@ const axios = require('axios');
 
 import { setupNewItemKey } from './containerSlice';
 
-import { checkIsMobileOrSafari, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
+import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
@@ -991,7 +991,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     let video;
     let state = getState().page;
     const itemId = state.id;
-    const isMobileOrSafari = checkIsMobileOrSafari();
+    const isUsingServiceWorker = usingServiceWorker();
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
         dispatch(downloadContentVideo(data));
         return;
@@ -1022,7 +1022,8 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                         type: 'INIT_VIDEO_PORT',
                                         fileName,
                                         fileType,
-                                        fileSize
+                                        fileSize,
+                                        browserInfo: getBrowserInfo()
                                       }, [messageChannel.port2]);
                     
                                     messageChannel.port1.onmessage = (event) => {
@@ -1055,7 +1056,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                         })
                     }
         
-                    if(isMobileOrSafari) {
+                    if(!isUsingServiceWorker) {
                         fileInUint8Array = new Uint8Array(fileSize);
                         fileInUint8ArrayIndex = 0;
                         return true;
@@ -1072,7 +1073,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
 
                 function writeAChunkToFile(chunk) {
                     return new Promise(async (resolve, reject)=>{
-                        if(isMobileOrSafari) {
+                        if(!isUsingServiceWorker) {
                             for(let offset =0; offset< chunk.length; offset++) {
                                 if(fileInUint8ArrayIndex + offset < fileInUint8Array.length){
                                     fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
@@ -1094,7 +1095,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 }
 
                 function writeAChunkToFileFailed(chunkIndex) {
-                    if(isMobileOrSafari) {
+                    if(!isUsingServiceWorker) {
                         
                     } else {
 
@@ -1103,7 +1104,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 }
 
                 function closeWriter() {
-                    if(isMobileOrSafari) {
+                    if(!isUsingServiceWorker) {
                     } else {
                         messageChannel.port1.postMessage({
                             type: 'END_OF_FILE'
@@ -1148,20 +1149,21 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
 
                 let i;
                 for(i=0; i< numberOfChunks; i++) {
+                    state = getState().page;
+                    if(state.aborted) break;
                     try{
                         await downloadDecryptAndAssemble(i);   
-                        if(i === 0 && !isMobileOrSafari) {
+                        if(i === 0 && isUsingServiceWorker) {
                             dispatch(contentVideoDownloaded({itemId, link:videoLinkFromServiceWorker}));
                         }       
                     } catch(error) {
                         debugLog(debugOn, "downloadAnAttachment failed: ", error);
-                        reject(error);
                         break;
                     }
                 }
                 if(i === numberOfChunks) {
                     debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-                    if(isMobileOrSafari) {
+                    if(!isUsingServiceWorker) {
                         let blob = new Blob([fileInUint8Array], {
                             type: fileType
                         });
@@ -1172,6 +1174,8 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     }
                     closeWriter();
                     resolve();
+                } else {
+                    reject();
                 }
 
             } else {
@@ -1211,16 +1215,22 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         });
     }
 
-    return new Promise(async (resolve, reject) => {
+    return new Promise(async (resolve) => {
         dispatch(downloadContentVideo(data));
         state = getState().page;
         while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
             if(state.aborted) break;
-            video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
-            await downloadAVideo(video);
+            try {
+                video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+                await downloadAVideo(video);
+            } catch(error) {
+                break;
+            }
+            
             state = getState().page;
         }
         resolve();
+        
     });
 }
 
@@ -2191,7 +2201,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
-        const isMobileOrSafari = checkIsMobileOrSafari();
+        const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
         const keyVersion = s3KeyPrefix.split(":")[1];
 
@@ -2209,7 +2219,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                             registration.active.postMessage({
                                 type: 'INIT_PORT',
                                 fileName:attachment.fileName,
-                                fileSize:attachment.fileSize
+                                fileSize:attachment.fileSize,
+                                browserInfo: getBrowserInfo()
                               }, [messageChannel.port2]);
             
                             messageChannel.port1.onmessage = (event) => {
@@ -2248,7 +2259,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 });
             }
 
-            if(isMobileOrSafari) {
+            if(!isUsingServiceWorker) {
                 fileInUint8Array = new Uint8Array(attachment.fileSize);
                 fileInUint8ArrayIndex = 0;
                 return true;
@@ -2264,7 +2275,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
 
         function reconnectWriter() {
-            if(isMobileOrSafari){
+            if(!isUsingServiceWorker){
                 fileInUint8Array = state.writer.fileInUint8Array;
                 fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
             } else {
@@ -2274,7 +2285,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         
         function writeAChunkToFile(chunk) {
             return new Promise(async (resolve, reject)=>{
-                if(isMobileOrSafari) {
+                if(!isUsingServiceWorker) {
                     for(let offset =0; offset< chunk.length; offset++) {
                         if(fileInUint8ArrayIndex + offset < fileInUint8Array.length){
                             fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
@@ -2296,7 +2307,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
 
         function writeAChunkToFileFailed(chunkIndex) {
-            if(isMobileOrSafari) {
+            if(!isUsingServiceWorker) {
                 dispatch(downloadAChunkFailed({chunkIndex, writer:{fileInUint8Array, fileInUint8ArrayIndex}}));
             } else {
                 dispatch(downloadAChunkFailed({chunkIndex, writer:messageChannel}));
@@ -2305,7 +2316,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
 
         function closeWriter() {
-            if(isMobileOrSafari) {
+            if(!isUsingServiceWorker) {
                 dispatch(writerClosed());
             } else {
                 messageChannel.port1.postMessage({
@@ -2378,7 +2389,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
         if(i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-            if(isMobileOrSafari) {
+            if(!isUsingServiceWorker) {
                 let blob = new Blob([fileInUint8Array], {
                     type: attachment.fileType
                 });
