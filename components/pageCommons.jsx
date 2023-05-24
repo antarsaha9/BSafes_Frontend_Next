@@ -424,6 +424,7 @@ export default function PageCommons() {
             if(video.status === "Downloading") {
                 contentVideoContainer = document.getElementById('videoContainer_' + video.id);
                 progressElement = document.getElementById('progress_' + video.id);
+                debugLog(debugOn, "Content video downloading progress: ", video.progress);
                 if(contentVideoContainer){
                     if(!progressElement) {
                         progressElement = document.createElement('div');
@@ -453,7 +454,7 @@ export default function PageCommons() {
                     progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
                     contentVideoContainer.appendChild(progressElement);
                 }
-            } else if(video.status === "Downloaded") {
+            } else if((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
                 contentVideoContainer = document.getElementById('videoContainer_' + video.id);
                 progressElement = document.getElementById('progress_' + video.id);
                 if(progressElement) contentVideoContainer.removeChild(progressElement);

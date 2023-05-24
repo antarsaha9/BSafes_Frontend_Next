@@ -10,7 +10,7 @@ import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, dec
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     aborted: false,
@@ -313,7 +313,7 @@ const pageSlice = createSlice({
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
             if(!image) return;
             image.status = "Downloading";
-            image.progress = action.payload;
+            image.progress = action.payload.progress;
         },
         contentImageDownloaded: (state, action) => {
             if(state.aborted ) return;
@@ -346,7 +346,15 @@ const pageSlice = createSlice({
             const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
             if(!video) return;
             video.status = "Downloading";
-            video.progress = action.payload;
+            video.progress = action.payload.progress;
+        },
+        contentVideoFromServiceWorker: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
+            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            if(!video) return;
+            video.status = "DownloadedFromServiceWorker";
+            video.src = action.payload.link;
         },
         contentVideoDownloaded: (state, action) => {
             if(state.aborted ) return;
@@ -354,7 +362,7 @@ const pageSlice = createSlice({
             const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
             if(!video) return;
             video.status = "Downloaded";
-            video.src = action.payload.link;
+            if(action.payload.link) video.src = action.payload.link;
             state.contentVideosDownloadIndex += 1;
         },
         updateContentVideosDisplayIndex: (state, action) => {
@@ -573,7 +581,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -1154,7 +1162,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     try{
                         await downloadDecryptAndAssemble(i);   
                         if(i === 0 && isUsingServiceWorker) {
-                            dispatch(contentVideoDownloaded({itemId, link:videoLinkFromServiceWorker}));
+                            dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
                         }       
                     } catch(error) {
                         debugLog(debugOn, "downloadAnAttachment failed: ", error);
@@ -1163,15 +1171,15 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 }
                 if(i === numberOfChunks) {
                     debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
+                    let link = null;
                     if(!isUsingServiceWorker) {
                         let blob = new Blob([fileInUint8Array], {
                             type: fileType
                         });
                        
-                        const link = window.URL.createObjectURL(blob);
-    
-                        dispatch(contentVideoDownloaded({itemId, link}));
-                    }
+                        link = window.URL.createObjectURL(blob);  
+                    } 
+                    dispatch(contentVideoDownloaded({itemId, link}));
                     closeWriter();
                     resolve();
                 } else {

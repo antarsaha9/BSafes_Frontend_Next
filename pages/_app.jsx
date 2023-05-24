@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV61.js?v68", {
+      navigator.serviceWorker.register("/serviceWorkerV68.js?v68", {
         scope: "/",
       }).then(
           function(registration) {
