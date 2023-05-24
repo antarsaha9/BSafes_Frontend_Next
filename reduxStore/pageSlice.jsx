@@ -10,7 +10,7 @@ import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, dec
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     aborted: false,
@@ -999,6 +999,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     let video;
     let state = getState().page;
     const itemId = state.id;
+    debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
     const isUsingServiceWorker = usingServiceWorker();
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
         dispatch(downloadContentVideo(data));
@@ -1006,6 +1007,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     }
 
     const downloadAVideo = (video) => {
+        debugLog(debugOn, "downloadAVideo");
         let decryptedVideoStr;
         return new Promise(async (resolve, reject) => {
             
@@ -1020,10 +1022,14 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 s3KeyPrefix = video.s3Key;
 
                 async function setupWriter() {
+                    debugLog(debugOn, "setupWriter");
                     function talkToServiceWorker() {
                         return new Promise(async (resolve, reject)=> {
-                            navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
+                            debugLog(debugOn, "talkToServiceWorker");
+                            navigator.serviceWorker.getRegistration("/").then((registration) => {
+                                debugLog(debugOn, "registration: ", registration);
                                 if (registration) {
+
                                     messageChannel =  new MessageChannel();
                     
                                     registration.active.postMessage({
@@ -1080,6 +1086,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 }
 
                 function writeAChunkToFile(chunk) {
+                    debugLog(debugOn, "writeAChunkToFile");
                     return new Promise(async (resolve, reject)=>{
                         if(!isUsingServiceWorker) {
                             for(let offset =0; offset< chunk.length; offset++) {
@@ -1121,6 +1128,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 }
 
                 function downloadDecryptAndAssemble(chunkIndex) {
+                    debugLog(debugOn, "downloadDecryptAndAssemble", chunkIndex);
                     return new Promise(async (resolve, reject) => {
                         try {
                             let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false);
@@ -1160,6 +1168,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     state = getState().page;
                     if(state.aborted) break;
                     try{
+                        
                         await downloadDecryptAndAssemble(i);   
                         if(i === 0 && isUsingServiceWorker) {
                             dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
@@ -1226,9 +1235,11 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     return new Promise(async (resolve) => {
         dispatch(downloadContentVideo(data));
         state = getState().page;
+        debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
         while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
             if(state.aborted) break;
             try {
+                debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
                 video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
                 await downloadAVideo(video);
             } catch(error) {
