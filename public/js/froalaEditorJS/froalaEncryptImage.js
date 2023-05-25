@@ -970,7 +970,7 @@
 	
 			  	function _uploadProgress (e) {
       			if (e.lengthComputable) {
-        			var complete = (e.loaded / e.total * 100 | 0);
+        			var complete = (e.loaded / e.total * 100 | 0).toFixed(2);
         			_setProgressMessage(editor.language.translate('Uploading'), complete);
       			}
     			};

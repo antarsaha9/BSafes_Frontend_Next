@@ -55,11 +55,14 @@ self.addEventListener("message", (event)=> {
 
     let fileName = event.data.fileName;
     let fileSize = event.data.fileSize;
+    let browserInfo = event.data.browserInfo;
+
     let id = encodeURI( 'video/' + fileName + Date.now());
     let streamInfo = {
       id,
       fileName,
       fileSize,
+      browserInfo,
       stream: newStream
     };
     streams[id] = streamInfo;
@@ -73,6 +76,7 @@ self.addEventListener("message", (event)=> {
     let fileName = event.data.fileName;
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
+    let browserInfo = event.data.browserInfo;
     
     videoStream = new ReadableStream({ start: async controller => {
       port = event.ports[0];
@@ -105,8 +109,10 @@ self.addEventListener("message", (event)=> {
     let id = encodeURI( fileName + Date.now());
     let streamInfo = {
       id,
+      fileType,
       fileName,
       fileSize,
+      browserInfo,
       stream: videoStream
     };
     videoStreams[id] = streamInfo;
@@ -142,22 +148,32 @@ self.addEventListener("fetch", (event) => {
       return null;
     }
 
+    console.log('stream found: ', streamInfo);
+
     let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
     let fileSize = streamInfo.fileSize;
+    let fileType = streamInfo.fileType;
+    let browserInfo = streamInfo.browserInfo;
+
+    let headers = {
+      'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
+      'Content-Disposition': "attachment; filename*=UTF-8''" + fileName,
+      'Content-Length': fileSize,
+      //'Content-Security-Policy': "default-src 'none'",
+      //'X-Content-Security-Policy': "default-src 'none'",
+      //'X-WebKit-CSP': "default-src 'none'",
+      //'X-XSS-Protection': '1; mode=block'
+    }
+
+    if(browserInfo.isChrome) {
+      headers['Accept-Ranges'] = 'bytes';
+    }
 
     var responseHeader = {
         // status/statusText default to 200/OK, but we're explicitly setting them here.
         status: 200,
         statusText: 'OK',
-        headers: {
-          'Content-Type': 'application/octet-stream; charset=utf-8',
-          'Content-Disposition': "attachment; filename*=UTF-8''" + fileName,
-          'Content-Length': fileSize,
-          //'Content-Security-Policy': "default-src 'none'",
-          //'X-Content-Security-Policy': "default-src 'none'",
-          //'X-WebKit-CSP': "default-src 'none'",
-          //'X-XSS-Protection': '1; mode=block'
-        }
+        headers
     };
     
     var response = new Response(streamInfo.stream, responseHeader);
