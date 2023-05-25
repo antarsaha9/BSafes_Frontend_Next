@@ -136,6 +136,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.$ = window.jQuery = jquery;``
 
         import('../lib/importScripts').then(async ic=>{
+            await ic.Froala;
             await ic.FroalaPlugins;
             await ic.Codemirror;
             await ic.Photoswipe;
