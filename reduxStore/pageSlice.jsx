@@ -460,7 +460,9 @@ const pageSlice = createSlice({
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.attachmentsUploadQueue.length;
-                const newUpload = {file: files[i], numberOfChunks:Math.floor(files[i].size/state.chunkSize) + 1};
+                let numberOfChunks = Math.floor(files[i].size/state.chunkSize);
+                if(files[i].size % state.chunkSize) numberOfChunks+=1;
+                const newUpload = {file: files[i], numberOfChunks};
                 state.attachmentsUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
@@ -1008,7 +1010,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
 
     const downloadAVideo = (video) => {
         debugLog(debugOn, "downloadAVideo");
-        let decryptedVideoStr;
+        let decryptedVideoStr, videoStarted=false;
         return new Promise(async (resolve, reject) => {
             
             if(video.chunks) {
@@ -1034,13 +1036,14 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     
                                     registration.active.postMessage({
                                         type: 'INIT_VIDEO_PORT',
+                                        s3KeyPrefix,
                                         fileName,
                                         fileType,
                                         fileSize,
                                         browserInfo: getBrowserInfo()
                                       }, [messageChannel.port2]);
                     
-                                    messageChannel.port1.onmessage = (event) => {
+                                    messageChannel.port1.onmessage = async (event) => {
                                         // Print the result
                                         debugLog(debugOn, event.data);
                                         if(event.data) {
@@ -1049,7 +1052,26 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                     videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.stream.id;
                                                     
                                                     debugLog(debugOn, "STREAM_OPENED");
+                                                    
+                                                    if(event.data.initalChunkIndex !== -1) {
+                                                        await downloadDecryptAndAssemble(event.data.initalChunkIndex);
+                                                    }
+
+                                                    if(event.data.initalChunkIndex !== 0 ) {
+                                                        dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
+                                                        videoStarted = true;  
+                                                    } 
+                                                    
+                                                    
                                                     resolve();
+                                                    break;
+                                                case 'NEXT_CHUNK':
+                                                    debugLog(debugOn, "NEXT_CHUNK: ", event.data.nextChunkIndex);
+                                                    if(!videoStarted){
+                                                        dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
+                                                        videoStarted = true;
+                                                    }
+                                                    await downloadDecryptAndAssemble(event.data.nextChunkIndex);
                                                     break;
                                                 case 'STREAM_CLOSED':
                                                     messageChannel.port1.onmessage = null
@@ -1085,7 +1107,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     }
                 }
 
-                function writeAChunkToFile(chunk) {
+                function writeAChunkToFile(chunkIndex, chunk) {
                     debugLog(debugOn, "writeAChunkToFile");
                     return new Promise(async (resolve, reject)=>{
                         if(!isUsingServiceWorker) {
@@ -1100,8 +1122,10 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                             fileInUint8ArrayIndex += chunk.length;
                             resolve();
                         } else {
+                            debugLog(debugOn, "BINARY: ", Date.now());
                             messageChannel.port1.postMessage({
                                 type: 'BINARY',
+                                chunkIndex,
                                 chunk
                             }); 
                             resolve();
@@ -1146,7 +1170,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                             let decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
                             debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
                                 
-                            await writeAChunkToFile(decryptedChunkStr);
+                            await writeAChunkToFile(chunkIndex, decryptedChunkStr);
             
                             
                             resolve();
@@ -1162,7 +1186,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     reject("setupWriter failed");
                     return;
                 };
-
+if (0) {
                 let i;
                 for(i=0; i< numberOfChunks; i++) {
                     state = getState().page;
@@ -1194,7 +1218,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 } else {
                     reject();
                 }
-
+}
             } else {
                 const s3Key = video.s3Key;
                 const keyVersion = s3Key.split(":")[1];

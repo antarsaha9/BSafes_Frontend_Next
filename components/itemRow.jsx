@@ -198,7 +198,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                                 <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
-                                <Form.Group className="me-2" controlId="formBasicCheckbox">
+                                <Form.Group className="me-2" >
                                     <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
                                 { !(selectedItems.length) &&

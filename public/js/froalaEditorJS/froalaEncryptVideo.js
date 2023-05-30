@@ -1277,11 +1277,12 @@
           return false;
         }
 
-        const chunkSize = 1 * 1024 * 1024;
+        const chunkSize = 512 * 1024;
         const video = videos[0];
 				const fileType = video.type;
         const fileSize = video.size;
-        const numberOfChunks = Math.floor(fileSize/chunkSize) + 1;
+        let numberOfChunks = Math.floor(fileSize/chunkSize) + 1;
+        if(fileSize%chunkSize) numberOfChunks += 1;
         const encodedFileName = encodeURI(video.name);
 	      const encryptedFileName = encryptBinaryString(encodedFileName, itemKey);
         let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
