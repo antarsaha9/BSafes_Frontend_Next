@@ -385,15 +385,18 @@ self.addEventListener("fetch", (event) => {
         } else {
           end = parseInt(end);
         }
-
+        if(end >= fileSize){
+          end = fileSize-1;
+        }
         let chunkIndex = Math.floor(start/chunkSize);
         
         const waitForResponse = async () => {
           let responseData, response;
           let result = await getChunkFromDB(id, chunkIndex);
           if(result) {
-            if(end%chunkSize < chunkSize-1){
+            if(end < (chunkIndex + 1)* chunkSize -1){
               responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)
+            
             } else {
               responseData = result.dataInBinary.substring(start%chunkSize);
               end = (chunkIndex +1) * chunkSize - 1;
@@ -412,7 +415,11 @@ self.addEventListener("fetch", (event) => {
               headers
             };
 
-            response = new Response(responseData, responseHeader);
+            let responseDataInUint8Arrary = new Uint8Array(responseData.length);
+            for(let i=0; i<responseData.length; i++) {
+              responseDataInUint8Arrary[i] = responseData.charCodeAt(i);
+            }
+            response = new Response(responseDataInUint8Arrary, responseHeader);
           } else {
 
           }
