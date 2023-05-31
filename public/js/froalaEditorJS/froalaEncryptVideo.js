@@ -1281,11 +1281,13 @@
         const video = videos[0];
 				const fileType = video.type;
         const fileSize = video.size;
-        let numberOfChunks = Math.floor(fileSize/chunkSize) + 1;
+        let numberOfChunks = Math.floor(fileSize/chunkSize);
         if(fileSize%chunkSize) numberOfChunks += 1;
-        const encodedFileName = encodeURI(video.name);
+        const fileName = video.name;
+        const encodedFileName = encodeURI(fileName);
 	      const encryptedFileName = encryptBinaryString(encodedFileName, itemKey);
         let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+        let serviceWorkerReady = false, videoLinkFromServiceWorker = null;
 
           // Check video types.
         if (editor.opts.videoAllowedTypes.indexOf(video.type.replace(/video\//g, '')) < 0) {
@@ -1302,9 +1304,102 @@
           return new Promise(resolve => setTimeout(resolve, ms));
         }
 
+        // BEGIN **** For playing back video from service worker ***
+        async function setupWriter(s3KeyPrefix) {
+          console.log("setupWriter");
+          function talkToServiceWorker() {
+              return new Promise(async (resolve, reject)=> {
+                  console.log("talkToServiceWorker");
+                  navigator.serviceWorker.getRegistration("/").then((registration) => {
+                      console.log("registration: ", registration);
+                      if (registration) {
+
+                          messageChannel =  new MessageChannel();
+          
+                          registration.active.postMessage({
+                              type: 'INIT_EDITOR_VIDEO_PORT',
+                              s3KeyPrefix,
+                              fileName,
+                              fileType,
+                              fileSize,
+                              browserInfo: getBrowserInfo()
+                            }, [messageChannel.port2]);
+          
+                          messageChannel.port1.onmessage = async (event) => {
+                              // Print the result
+                              console.log(event.data);
+                              if(event.data) {
+                                  switch(event.data.type) {
+                                      case 'STREAM_OPENED':
+                                          videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.stream.id;
+                                          
+                                          console.log("STREAM_OPENED");
+                                                    
+                                          resolve();
+                                          break;
+                                      case 'NEXT_CHUNK':
+                                          
+                                          break;
+                                      case 'STREAM_CLOSED':
+                                          messageChannel.port1.onmessage = null
+                                          messageChannel.port1.close();
+                                          messageChannel.port2.close();
+                                          messageChannel = null;
+                                          break;
+                                      default:
+                                  }
+                              }
+                          };
+                          
+                      } else {
+                          console.log("erviceWorker.getRegistration error");
+                          reject("erviceWorker.getRegistration error")
+                      }
+                  });
+              })
+          }
+
+          try {
+            await talkToServiceWorker();
+            return true;
+          } catch(error) {
+            console.log("setupWriter failed: ", error)
+            return false;
+          }   
+
+        }
+
+        function writeAChunkToFile(chunkIndex, chunk) {
+          console.log("writeAChunkToFile");
+          return new Promise(async (resolve, reject)=>{
+              
+              console.log("BINARY: ", Date.now());
+              messageChannel.port1.postMessage({
+                  type: 'BINARY',
+                  chunkIndex,
+                  chunk
+              }); 
+              resolve();
+              
+          })
+        }
+
+        function writeAChunkToFileFailed(chunkIndex) {
+
+        }
+
+        function closeWriter() {
+
+          messageChannel.port1.postMessage({
+              type: 'END_OF_FILE'
+          }); 
+          
+        }
+        // END **** For playing back video from service worker ***
+
         function sliceEncryptAndUpload(file, chunkIndex) {
             return new Promise((resolve, reject) => {
-                let reader, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
+                let reader, offset, data, binaryData, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
                
                 offset = (chunkIndex) * chunkSize;
                 reader = new FileReader();
@@ -1326,7 +1421,13 @@
                             s3KeyPrefix = result.s3KeyPrefix;
                             signedURL = result.signedURL;
                             console.log('chunk signed url', signedURL );
-    
+                            
+                            if(!serviceWorkerReady) {
+                              await setupWriter(s3KeyPrefix);
+                              serviceWorkerReady = true;
+
+                            }
+
                             controller = new AbortController();
                           
                             const onUploadProgress = (progressEvent) => {
@@ -1338,7 +1439,7 @@
                             }
                             
                             await uploadData(data, signedURL, onUploadProgress);              
-                            
+                            await writeAChunkToFile(chunkIndex, binaryData);
                             resolve();
                         } catch(error) {
                             console.log('uploadAChunk failed: ', error);
@@ -1349,6 +1450,7 @@
     
                 reader.onloadend = async function(e) {
                     data = reader.result;
+                    binaryData = arraryBufferToStr(data);
                     fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
                     _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
                     console.log(`File upload prgoress: ${fileUploadProgress}`);
@@ -1394,7 +1496,7 @@
         if(i === numberOfChunks){
           console.log(`uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
           try {
-            let videoLink = window.URL.createObjectURL(video);
+            let videoLink = videoLinkFromServiceWorker;//window.URL.createObjectURL(video);
             let s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
             _videoUploaded.call(null, $current_video, videoLink, s3KeyInfo, fileSize);
           } catch (error) {

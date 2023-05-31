@@ -7,7 +7,7 @@ import { setupNewItemKey } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -1546,6 +1546,23 @@ function preProcessEditorContentBeforeSaving(content) {
         totalS3ObjectsSize += size;
         const placeholder = 'https://via.placeholder.com/' + dimension;
         item.src = placeholder;
+
+        //Check if progress bar exists. If not, add one.
+        let progressElementId = 'progress_' + id;
+        let progressBarId = 'progressBar_' + id;
+        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
+        if(!progressElement){
+            progressElement = document.createElement('div');
+            progressElement.className = 'progress';
+            progressElement.id = progressElementId;
+            progressElement.style.width = '250px';
+            progressElement.style.margin = 'auto';
+            progressElement.setAttribute('hidden', true);
+            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
+            item.after(progressElement);
+        }
+
+
     });
 
     images.forEach((item) => { // Clean up any bSafes status class

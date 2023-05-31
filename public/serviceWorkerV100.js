@@ -281,6 +281,53 @@ self.addEventListener("message", (event)=> {
     }
   }
 
+  async function setupEditorVideoStream(event) {
+    
+    let port = event.ports[0];
+    let timeStamp = event.data.s3KeyPrefix.split(':').pop();
+    let fileName = event.data.fileName;
+    let fileType = event.data.fileType;
+    let fileSize = event.data.fileSize;
+    let browserInfo = event.data.browserInfo;
+    let numberOfChunks = Math.floor(fileSize/chunkSize);
+    if(fileSize%chunkSize) numberOfChunks += 1;
+        
+    let id = encodeURI( `${timeStamp}_${fileName}`);
+
+    let streamInfo = {
+      id,
+      fileType,
+      fileName,
+      fileSize,
+      browserInfo,
+      numberOfChunks
+    };
+
+    videoStreams[id] = streamInfo;
+    
+    port.postMessage({ type:"STREAM_OPENED", stream: {id}}); 
+
+    port.onmessage = async event => {
+      if(event.data) {
+        try {
+          switch(event.data.type){
+            case 'BINARY':
+              let chunkLength = event.data.chunk.length;
+              console.log("chunk length: ", chunkLength);
+        
+              await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
+        
+              break;
+            default:
+          }
+        } catch(error) {
+          console.log("port.onmessage failed: ", error)
+        }
+        
+      }  
+    }
+  }
+
   if(event.data) {
     event.waitUntil(self.clients.claim());
     switch(event.data.type) {
@@ -289,6 +336,9 @@ self.addEventListener("message", (event)=> {
         break;
       case 'INIT_VIDEO_PORT':
         setupVideoStream(event);
+        break;
+      case 'INIT_EDITOR_VIDEO_PORT':
+        setupEditorVideoStream(event);
         break;
       default:
     }

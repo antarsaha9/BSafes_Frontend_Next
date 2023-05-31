@@ -323,7 +323,7 @@ export default function PageCommons() {
     }, [contentEditorContent]);
 
     useEffect(()=> {
-        let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;
+        let image, imageElement, imageElementClone, progressElement, progressBarElement;
         let i = contentImagesDisplayIndex;
         if(i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
@@ -333,43 +333,27 @@ export default function PageCommons() {
                 return;
             }
             if(image.status === "Downloading") {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
-                progressElement = document.getElementById('progress_' + image.id);
-                if(contentImageContainer){
-                    if(!progressElement) {
-                        progressElement = document.createElement('div');
-                        progressElement.className = 'progress';
-                        progressElement.id = 'progress_' + image.id;
-                        progressElement.style.width = '250px';
-                        progressElement.style.margin = 'auto';
-                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                        contentImageContainer.appendChild(progressElement);
-                    }
-                    progressBarElement = document.getElementById('progressBar_' + image.id);
-                    if(progressBarElement) progressBarElement.style.width = image.progress + '%';
-                } else {
-                    imageElementClone = imageElement.cloneNode(true);
-                    contentImageContainer = document.createElement('div');
-                    contentImageContainer.style.position = 'relative';
-                    contentImageContainer.style.textAlign = 'center';
                 
-                    contentImageContainer.id = 'imageContainer_' + image.id;
-                    contentImageContainer.appendChild(imageElementClone);
-                    imageElement.replaceWith(contentImageContainer);   
-                    
+                progressElement = document.getElementById('progress_' + image.id);
+                
+                if(!progressElement) {
                     progressElement = document.createElement('div');
                     progressElement.className = 'progress';
                     progressElement.id = 'progress_' + image.id;
                     progressElement.style.width = '250px';
                     progressElement.style.margin = 'auto';
                     progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                    contentImageContainer.appendChild(progressElement);
+                    imageElement.after(progressElement);
                 }
+                progressElement.removeAttribute('hidden');
+                progressBarElement = document.getElementById('progressBar_' + image.id);
+                if(progressBarElement) progressBarElement.style.width = image.progress + '%';
+                
                 return;
             } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+
                 progressElement = document.getElementById('progress_' + image.id);
-                if(progressElement) contentImageContainer.removeChild(progressElement);
+                if(progressElement) progressElement.setAttribute('hidden', true);
                 
                 if(image.status === "Downloaded") {
                     imageElement.src = image.src;
