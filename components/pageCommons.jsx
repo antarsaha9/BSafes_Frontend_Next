@@ -357,40 +357,33 @@ export default function PageCommons() {
                 
                 if(image.status === "Downloaded") {
                     imageElement.src = image.src;
+                    if(imageElement.classList.contains('bSafesDownloadVideo')){
+                
+                        const handleVideoClick = (e) => {
+                            const id =  image.id;
+                            const idParts = id.split('&');
+                            if(idParts[0] === 'chunks') {
+                                let s3Key = idParts[3];
+                                let chunks = parseInt(idParts[1]);
+                                let fileName = idParts[2];
+                                let fileSize = parseInt(idParts[5]);
+                                let fileType = idParts[4];
+                                dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+                            } else {
+                                let s3Key = idParts[0];
+                                dispatch(downloadContentVideoThunk({id, s3Key}));
+                            }
+                            
+                        }; 
+        
+                        let playVideoElement = document.getElementById('playVideo_' + image.id)
+                        playVideoElement.onclick = handleVideoClick;
+                    }
                 }
 
                 dispatch(updateContentImagesDisplayIndex(i+1));
             } 
-            if(imageElement.classList.contains('bSafesDownloadVideo')){
-                
-                const handleVideoClick = (e) => {
-                    const id =  e.target.id;
-                    const idParts = id.split('&');
-                    if(idParts[0] === 'chunks') {
-                        let s3Key = idParts[3];
-                        let chunks = parseInt(idParts[1]);
-                        let fileName = idParts[2];
-                        let fileSize = parseInt(idParts[5]);
-                        let fileType = idParts[4];
-                        dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
-                    } else {
-                        let s3Key = idParts[0];
-                        dispatch(downloadContentVideoThunk({id, s3Key}));
-                    }
-                    
-                }; 
-
-                let playIcon = document.createElement('i');
-                playIcon.className = 'contentVideoPlayIcon';
-                playIcon.classList.add('fa');
-                playIcon.classList.add('fa-play-circle-o');
-                playIcon.classList.add('fa-3x');
-                playIcon.setAttribute('aria-hidden', "true");
-                playIcon.id = image.id;
-                contentImageContainer.appendChild(playIcon);
-                playIcon.onclick = handleVideoClick;
-                imageElement.onclick = handleVideoClick;
-            }
+            
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);

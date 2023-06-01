@@ -1186,39 +1186,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     reject("setupWriter failed");
                     return;
                 };
-if (0) {
-                let i;
-                for(i=0; i< numberOfChunks; i++) {
-                    state = getState().page;
-                    if(state.aborted) break;
-                    try{
-                        
-                        await downloadDecryptAndAssemble(i);   
-                        if(i === 0 && isUsingServiceWorker) {
-                            dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
-                        }       
-                    } catch(error) {
-                        debugLog(debugOn, "downloadAnAttachment failed: ", error);
-                        break;
-                    }
-                }
-                if(i === numberOfChunks) {
-                    debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-                    let link = null;
-                    if(!isUsingServiceWorker) {
-                        let blob = new Blob([fileInUint8Array], {
-                            type: fileType
-                        });
-                       
-                        link = window.URL.createObjectURL(blob);  
-                    } 
-                    dispatch(contentVideoDownloaded({itemId, link}));
-                    closeWriter();
-                    resolve();
-                } else {
-                    reject();
-                }
-}
+                
             } else {
                 const s3Key = video.s3Key;
                 const keyVersion = s3Key.split(":")[1];
@@ -1590,6 +1558,34 @@ function preProcessEditorContentBeforeSaving(content) {
         const placeholder = 'https://via.placeholder.com/' + `640x480`;
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
+
+        //Check if progress bar exists. If not, add one.
+        let progressElementId = 'progress_' + videoId;
+        let progressBarId = 'progressBar_' + videoId;
+        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
+        if(!progressElement){
+            progressElement = document.createElement('div');
+            progressElement.className = 'progress';
+            progressElement.id = progressElementId;
+            progressElement.style.width = '250px';
+            progressElement.style.margin = 'auto';
+            progressElement.setAttribute('hidden', true);
+            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
+            videoImg.after(progressElement);
+
+            let videoControlsElementId = 'videoControls_' + videoId;
+            let playVideoId = 'playVideo_' + videoId;
+        
+            let videoControlsElement = document.createElement('div');
+            videoControlsElement.className = 'videoControls';
+            videoControlsElement.classList.add('text-center') 
+            videoControlsElement.id = videoControlsElementId;
+            videoControlsElement.style.width = '250px';
+            videoControlsElement.style.margin = 'auto';
+            
+            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
+            progressElement.after(videoControlsElement);
+        }
     });
 
     const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');
