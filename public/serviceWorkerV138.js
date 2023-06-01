@@ -14,7 +14,7 @@ const DBName = "videoChunks";
 const storeName = "videoChunksStore";
 
 const myIndexedDB = self.indexedDB;
-let videoChunksDB;
+let videoChunksDB = null;
 
 function helloDB() {
   console.log("Hello indexedDB :", myIndexedDB);
@@ -138,7 +138,6 @@ self.addEventListener('activate', event => {
     return new Promise(async (resolve, reject) => {
       try {
         await self.clients.claim();
-        videoChunksDB = await openDB();
         
         console.log('Activating service worker');
         resolve();
@@ -152,9 +151,11 @@ self.addEventListener('activate', event => {
   event.waitUntil(beforeActivate());
 });
 
-self.addEventListener("message", (event)=> {
+self.addEventListener("message", async (event)=> {
   console.log("Service worker received message: ", event.data);
-  
+  if(!videoChunksDB) {
+    videoChunksDB = await openDB();
+  }
   function setupNewStream(event) {
     let newStream;
     let port;
@@ -329,7 +330,7 @@ self.addEventListener("message", (event)=> {
   }
 
   if(event.data) {
-    event.waitUntil(self.clients.claim());
+    await self.clients.claim();
     switch(event.data.type) {
       case 'INIT_PORT':
         setupNewStream(event);

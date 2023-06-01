@@ -1036,29 +1036,7 @@
         };
 
         function callPostS3Upload(fn) {
-          let expandedKey;
-
-          bSafesPreflight(async function(err, key) {
-            if(err) {
-              alert(err);
-            } else {
-              expandedKey = key;
-              var keyEnvelope = encryptBinaryString(itemKey, expandedKey);
-              const s3Object = {
-                "id": s3Key,
-								"itemId": itemId,
-                "keyEnvelope": keyEnvelope, 
-                "size": s3ObjectSize,
-              }; 
-              
-              try {
-                await postS3Upload(s3Object);
-                fn(null);
-              } catch(error){
-                fn(error);
-              }
-            }
-          });
+          fn(null);
         };
 
         function encryptDataInBinaryString(data, fn) {
