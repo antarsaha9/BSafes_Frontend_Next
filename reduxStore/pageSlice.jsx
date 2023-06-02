@@ -1002,7 +1002,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     let state = getState().page;
     const itemId = state.id;
     debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-    const isUsingServiceWorker = usingServiceWorker();
+    const isUsingServiceWorker = true;
     if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
         dispatch(downloadContentVideo(data));
         return;
