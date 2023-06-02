@@ -1053,11 +1053,11 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                     
                                                     debugLog(debugOn, "STREAM_OPENED");
                                                     
-                                                    if(event.data.initalChunkIndex !== -1) {
-                                                        await downloadDecryptAndAssemble(event.data.initalChunkIndex);
+                                                    if(event.data.initialChunkIndex >= 0) {
+                                                        await downloadDecryptAndAssemble(event.data.initialChunkIndex);
                                                     }
 
-                                                    if(event.data.initalChunkIndex !== 0 ) {
+                                                    if(event.data.initialChunkIndex !== 0 ) {
                                                         dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
                                                         videoStarted = true;  
                                                     } 
@@ -1071,7 +1071,10 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                         dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
                                                         videoStarted = true;
                                                     }
-                                                    await downloadDecryptAndAssemble(event.data.nextChunkIndex);
+                                                    if(event.data.nextChunkIndex>=0){
+                                                        await downloadDecryptAndAssemble(event.data.nextChunkIndex);
+                                                    }
+                                                    
                                                     break;
                                                 case 'STREAM_CLOSED':
                                                     messageChannel.port1.onmessage = null

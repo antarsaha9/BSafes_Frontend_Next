@@ -214,10 +214,6 @@ self.addEventListener("message", async (event)=> {
     let numberOfChunks = Math.floor(fileSize/chunkSize);
     if(fileSize%chunkSize) numberOfChunks += 1;
 
-    let eventTarget = new EventTarget();
-    eventTarget.addEventListener("CHUNK_AVAILABLE", (e)=> {
-      console.log("CHUNK_AVAILABLE");
-    })
         
     let id = encodeURI( `${timeStamp}_${fileName}`);
 
@@ -229,24 +225,37 @@ self.addEventListener("message", async (event)=> {
       browserInfo,
       numberOfChunks,
       twoBytesSent: false,
-      nextChunkIndex: 1,
+      nextChunkIndex: (numberOfChunks === 1)?-99999:1,
       chunksInfo: {}
     };
 
     videoStreams[id] = streamInfo;
     
-    let i = 0;
-    for(i=0; i<numberOfChunks; i++){
-      let result = await getChunkFromDB(id, i);
-      if(result) {
-      
-      } else {
-        break;
-      }
+    function findNextChunkToDownload(from) {
+      return new Promise(async (resolve) => {
+        if( (from >= numberOfChunks) || from < 0) {
+          resolve(-99999);
+          return;
+        }
+        let i = 0;
+        for(i=from; i<numberOfChunks; i++){
+          let result = await getChunkFromDB(id, i);
+          if(!result) {
+            break;
+          }
+        }
+        resolve((i===numberOfChunks)?-99999:i);
+      })
     }
-    let initalChunkIndex = (i=== numberOfChunks)? -1:i;
+
     
-    port.postMessage({ type:"STREAM_OPENED", stream: {id}, initalChunkIndex}); 
+    let initialChunkIndex = await findNextChunkToDownload(0);
+    let nextChunkIndex = await findNextChunkToDownload(initialChunkIndex+1);
+    streamInfo.nextChunkIndex = nextChunkIndex;
+    
+    console.log(`Service Worker SEND: STREAM_OPENED initialChunkIndex: ${initialChunkIndex}`)
+    port.postMessage({ type:"STREAM_OPENED", stream: {id}, initialChunkIndex}); 
+    streamInfo.requestedChunkIndex = initialChunkIndex;
 
     port.onmessage = async event => {
       if(event.data) {
@@ -255,20 +264,22 @@ self.addEventListener("message", async (event)=> {
             case 'BINARY':
               let chunkLength = event.data.chunk.length;
               console.log("chunk length: ", chunkLength);
+              console.log(`Service Worker RECEIVE: chunkIndex: ${event.data.chunkIndex}`)
               await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
               
-              port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: streamInfo.nextChunkIndex}); 
-              
-              let i;
-              for (i= (streamInfo.nextChunkIndex+1); i < numberOfChunks; i++) {
-                let result = await getChunkFromDB(id, i);
-                if(result) {
-      
-                } else {
-                  break;
-                }
+              if(streamInfo.chunksInfo[event.data.chunkIndex] && streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches){
+                console.log(`Pending fetches exist for chunkIndex: ${event.data.chunkIndex}`);
+                streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches.forEach((target)=> {
+                  console.log(`dispatch CHUNK_AVAILABLE for chunkIndex:${event.data.chunkIndex}`)
+                  target.dispatchEvent(new Event("CHUNK_AVAILABLE"));
+                })
               }
-              let nextChunkIndex = (i=== numberOfChunks)? -1:i;
+
+              console.log(`Service Worker SEND: NEXT_CHUNK nextChunkIndex: ${streamInfo.nextChunkIndex}`)
+              port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: streamInfo.nextChunkIndex}); 
+              streamInfo.requestedChunkIndex = streamInfo.nextChunkIndex;
+
+              nextChunkIndex = await findNextChunkToDownload(streamInfo.nextChunkIndex+1)
               streamInfo.nextChunkIndex = nextChunkIndex;
 
               break;
@@ -375,6 +386,8 @@ self.addEventListener("fetch", (event) => {
         range = range.split('=')[1].split('-');
         start = parseInt(range[0]);
         end = range[1];
+        
+        console.log(`Range request: start:${start} end:${end}`);
 
         if(end === "") {
           if(!streamInfo.twoBytesSent){
@@ -389,15 +402,14 @@ self.addEventListener("fetch", (event) => {
         if(end >= fileSize){
           end = fileSize-1;
         }
+
         let chunkIndex = Math.floor(start/chunkSize);
         
         const waitForResponse = async () => {
-          let responseData, response;
-          let result = await getChunkFromDB(id, chunkIndex);
-          if(result) {
+          function responseFromDBResult(result){
+            let responseData, response;
             if(end < (chunkIndex + 1)* chunkSize -1){
-              responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)
-            
+              responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)  
             } else {
               responseData = result.dataInBinary.substring(start%chunkSize);
               end = (chunkIndex +1) * chunkSize - 1;
@@ -408,6 +420,7 @@ self.addEventListener("fetch", (event) => {
             headers['Accept-Ranges'] = 'bytes';
             headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
             headers['Content-Length'] = responseData.length;
+            console.log("Content-Range: ", headers['Content-Range']);
             
             let responseHeader = {
               // status/statusText default to 200/OK, but we're explicitly setting them here.
@@ -421,38 +434,51 @@ self.addEventListener("fetch", (event) => {
               responseDataInUint8Arrary[i] = responseData.charCodeAt(i);
             }
             response = new Response(responseDataInUint8Arrary, responseHeader);
-          } else {
-
-          }
-          return response;
-        }
-        event.respondWith(waitForResponse());
-if(0) {
-        if(start >= firstVideoChunk.length){
-          const waitForResponse = async () => {
-            let response = new Response("Hello"/*streamInfo.stream*/, responseHeader);
-            await new Promise(resolve=>{
-              setTimeout(()=> {
-                resolve();
-              }, 25000);
-            })
             return response;
           }
-          event.respondWith(waitForResponse());
-          return;
-        }
 
-        
-        
-        if(end >= firstVideoChunk.length) end = firstVideoChunk.length;
-        responseData = new Uint8Array(end-start+1);
-        let index = 0;
-        for(let i=start; i<=end; i++) {
-          responseData[index] = firstVideoChunk.charCodeAt(i);
-          index++;
+          return new Promise(async (resolve)=>{
+
+            let result = await getChunkFromDB(id, chunkIndex);
+            if(result) {
+              let response = responseFromDBResult(result);
+              resolve(response);
+            } else {
+              console.log(`chunkIndex: ${chunkIndex} not in DB`);
+              if(chunkIndex !== streamInfo.requestedChunkIndex){
+                console.log(`chunkIndex: ${chunkIndex} becomes next chunk`);
+                streamInfo.nextChunkIndex = chunkIndex;
+              }
+              
+              let eventTarget = new EventTarget();
+              eventTarget.addEventListener("CHUNK_AVAILABLE", async (e)=> {
+                console.log("CHUNK_AVAILABLE: ", chunkIndex);
+                let result = await getChunkFromDB(id, chunkIndex);
+                let response = responseFromDBResult(result);
+                resolve(response);
+              });
+
+              console.log(`Add eventTarget for chunkIndex: ${chunkIndex}`)
+              
+              if(!streamInfo.chunksInfo[chunkIndex]){
+                streamInfo.chunksInfo[chunkIndex] ={
+                  pendingFetches: [eventTarget],
+                }
+              } else {
+                let pendingFetches = streamInfo.chunksInfo[chunkIndex].pendingFetches;
+                if(pendingFetches) {
+                  pendingFetches.push(eventTarget);
+                } else {
+                  pendingFetches = [eventTarget];
+                }
+                streamInfo.chunksInfo[chunkIndex].pendingFetches = pendingFetches;
+              }
+            }
+          });
+          
         }
+        event.respondWith(waitForResponse());
       }
-}
     } else {
       
       let headers = {
