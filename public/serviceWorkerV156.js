@@ -109,7 +109,7 @@ function getChunkFromDB(videoId, chunkIndex) {
     .get(chunkId);
 
     request.onsuccess = (e) => {
-      console.log("got chunk: ", e.target.result );
+      //console.log("got chunk: ", e.target.result );
       resolve(e.target.result);
     } 
 
@@ -150,6 +150,23 @@ self.addEventListener('activate', event => {
 
   event.waitUntil(beforeActivate());
 });
+
+function findNextChunkToDownload(id, numberOfChunks, from) {
+  return new Promise(async (resolve) => {
+    if( (from >= numberOfChunks) || from < 0) {
+      resolve(-99999);
+      return;
+    }
+    let i = 0;
+    for(i=from; i<numberOfChunks; i++){
+      let result = await getChunkFromDB(id, i);
+      if(!result) {
+        break;
+      }
+    }
+    resolve((i===numberOfChunks)?-99999:i);
+  })
+}
 
 self.addEventListener("message", async (event)=> {
   console.log("Service worker received message: ", event.data);
@@ -218,6 +235,7 @@ self.addEventListener("message", async (event)=> {
     let id = encodeURI( `${timeStamp}_${fileName}`);
 
     let streamInfo = {
+      port,
       id,
       fileType,
       fileName,
@@ -231,26 +249,8 @@ self.addEventListener("message", async (event)=> {
 
     videoStreams[id] = streamInfo;
     
-    function findNextChunkToDownload(from) {
-      return new Promise(async (resolve) => {
-        if( (from >= numberOfChunks) || from < 0) {
-          resolve(-99999);
-          return;
-        }
-        let i = 0;
-        for(i=from; i<numberOfChunks; i++){
-          let result = await getChunkFromDB(id, i);
-          if(!result) {
-            break;
-          }
-        }
-        resolve((i===numberOfChunks)?-99999:i);
-      })
-    }
-
-    
-    let initialChunkIndex = await findNextChunkToDownload(0);
-    let nextChunkIndex = await findNextChunkToDownload(initialChunkIndex+1);
+    let initialChunkIndex = await findNextChunkToDownload(id, numberOfChunks, 0);
+    let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, initialChunkIndex+1);
     streamInfo.nextChunkIndex = nextChunkIndex;
     
     console.log(`Service Worker SEND: STREAM_OPENED initialChunkIndex: ${initialChunkIndex}`)
@@ -279,7 +279,7 @@ self.addEventListener("message", async (event)=> {
               port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: streamInfo.nextChunkIndex}); 
               streamInfo.requestedChunkIndex = streamInfo.nextChunkIndex;
 
-              nextChunkIndex = await findNextChunkToDownload(streamInfo.nextChunkIndex+1)
+              nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, streamInfo.nextChunkIndex+1)
               streamInfo.nextChunkIndex = nextChunkIndex;
 
               break;
@@ -379,7 +379,9 @@ self.addEventListener("fetch", (event) => {
     let fileType = streamInfo.fileType;
 
     if(isVideo) {
-     
+      let timeOut = streamInfo.timeOut;
+      if(timeOut) clearTimeout(timeOut);
+
       let range = event.request.headers.get('Range');
       let start, end, responseData;
       if(range) {
@@ -438,16 +440,29 @@ self.addEventListener("fetch", (event) => {
           }
 
           return new Promise(async (resolve)=>{
-
+            let numberOfChunks = streamInfo.numberOfChunks;
             let result = await getChunkFromDB(id, chunkIndex);
             if(result) {
               let response = responseFromDBResult(result);
+              let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
+              streamInfo.nextChunkIndex = nextChunkIndex;
               resolve(response);
             } else {
               console.log(`chunkIndex: ${chunkIndex} not in DB`);
               if(chunkIndex !== streamInfo.requestedChunkIndex){
                 console.log(`chunkIndex: ${chunkIndex} becomes next chunk`);
-                streamInfo.nextChunkIndex = chunkIndex;
+                
+                if(streamInfo.requestedChunkIndex < 0) {
+                  console.log("service worker onfetch: requestedChunkIndex < 0 ");
+                  let port = streamInfo.port;
+                  port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: chunkIndex}); 
+                  streamInfo.requestedChunkIndex = chunkIndex;
+                  
+                  let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
+                  streamInfo.nextChunkIndex = nextChunkIndex;
+                } else {
+                  streamInfo.nextChunkIndex = chunkIndex;
+                }   
               }
               
               let eventTarget = new EventTarget();
@@ -474,6 +489,10 @@ self.addEventListener("fetch", (event) => {
                 streamInfo.chunksInfo[chunkIndex].pendingFetches = pendingFetches;
               }
             }
+            timeOut = setTimeout(()=> {
+              streamInfo.nextChunkIndex = -99998;
+            }, 3000);
+            streamInfo.timeOut = timeOut;
           });
           
         }

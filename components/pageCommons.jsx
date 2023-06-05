@@ -31,6 +31,8 @@ export default function PageCommons() {
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
+    const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
+    
     const [editingEditorId, setEditingEditorId] = useState(null);
 
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
@@ -78,10 +80,16 @@ export default function PageCommons() {
         gallery.init();
     }
 
+    function beforeWritingContent() {
+        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
+        setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        setContentEditorMode("Writing");
+    }
+
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         if(editorId === 'content'){
-            setContentEditorMode("Writing");
+            beforeWritingContent();
             setEditingEditorId("content");
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
@@ -140,7 +148,7 @@ export default function PageCommons() {
 
     const handleWrite = () =>{
         debugLog(debugOn, "handleWrite");
-        setContentEditorMode("Writing");
+        beforeWritingContent();
         setEditingEditorId("content");
     }
 
@@ -319,6 +327,7 @@ export default function PageCommons() {
     useEffect(()=>{
         if(contentEditorContent === null) return;
         //buildContentVideos();
+        setcontentEditorContentWithImagesAndVideos(contentEditorContent);
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
@@ -564,7 +573,7 @@ if (0) { // Obsolete
             debugLog(debugOn, "ReadOnly");
             
             //buildContentVideos();
-           
+            /*
             contentImagesDownloadQueue.forEach(image => {
                 if(image.status === "Downloaded") {
                     const imageElement = document.getElementById(image.id);
@@ -572,7 +581,7 @@ if (0) { // Obsolete
                         imageElement.src = image.src;
                     }
                 }
-            });
+            });*/
             
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -653,7 +662,7 @@ if (0) { // Obsolete
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" md="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <br />

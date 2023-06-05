@@ -10,7 +10,7 @@ import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, dec
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     aborted: false,
