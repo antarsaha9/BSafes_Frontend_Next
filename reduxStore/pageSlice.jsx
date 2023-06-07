@@ -39,8 +39,6 @@ const initialState = {
     contentImagedDownloadIndex: 0,
     contentImagesDisplayIndex:0,
     contentVideosDownloadQueue:[],
-    contentVideosDownloadIndex:0,
-    contentVideosDisplayIndex:0,
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
@@ -343,7 +341,8 @@ const pageSlice = createSlice({
         downloadingContentVideo: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "Downloading";
             video.progress = action.payload.progress;
@@ -351,7 +350,8 @@ const pageSlice = createSlice({
         contentVideoFromServiceWorker: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "DownloadedFromServiceWorker";
             video.src = action.payload.link;
@@ -359,14 +359,11 @@ const pageSlice = createSlice({
         contentVideoDownloaded: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "Downloaded";
             if(action.payload.link) video.src = action.payload.link;
-            state.contentVideosDownloadIndex += 1;
-        },
-        updateContentVideosDisplayIndex: (state, action) => {
-            state.contentVideosDisplayIndex = action.payload;
         },
         addUploadImages: (state, action) => {
             if(state.aborted ) return;
@@ -583,7 +580,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -596,8 +593,7 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
-
-const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgress=0, progressRatio=1) => {
+const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgress=0, progressRatio=1, indexInQueue=-1) => {
     return new Promise( async (resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', signedURL, true);
@@ -609,7 +605,11 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
                 percentComplete = baseProgress + percentComplete*progressRatio;
                 debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
                 if(downloadingFunction) {
-                    dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                    if(indexInQueue>=0) {
+                        dispatch(downloadingFunction({itemId, progress:percentComplete, indexInQueue}));
+                    } else {
+                        dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                    }         
                 }
             }
         }, false);
@@ -998,17 +998,15 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
 }
 
 export const downloadContentVideoThunk = (data) => async (dispatch, getState) => {
-    let video;
+    const video = data;
     let state = getState().page;
+    const indexInVideoDownloadQueue = state.contentVideosDownloadQueue.length;;
     const itemId = state.id;
-    debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
     const isUsingServiceWorker = true;
-    if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-        dispatch(downloadContentVideo(data));
-        return;
-    }
 
-    const downloadAVideo = (video) => {
+    dispatch(downloadContentVideo(data));
+    
+    const downloadAVideo = (video, indexInQueue) => {
         debugLog(debugOn, "downloadAVideo");
         let decryptedVideoStr, videoStarted=false;
         return new Promise(async (resolve, reject) => {
@@ -1058,7 +1056,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                     }
 
                                                     if(event.data.initialChunkIndex !== 0 ) {
-                                                        dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
+                                                        dispatch(contentVideoFromServiceWorker({itemId, indexInQueue, link:videoLinkFromServiceWorker}));
                                                         videoStarted = true;  
                                                     } 
                                                     
@@ -1068,7 +1066,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                 case 'NEXT_CHUNK':
                                                     debugLog(debugOn, "NEXT_CHUNK: ", event.data.nextChunkIndex);
                                                     if(!videoStarted){
-                                                        dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
+                                                        dispatch(contentVideoFromServiceWorker({itemId, indexInQueue, link:videoLinkFromServiceWorker}));
                                                         videoStarted = true;
                                                     }
                                                     if(event.data.nextChunkIndex>=0){
@@ -1088,8 +1086,8 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                     };
                                     
                                 } else {
-                                    debugLog(debugOn, "erviceWorker.getRegistration error");
-                                    reject("erviceWorker.getRegistration error")
+                                    debugLog(debugOn, "serviceWorker.getRegistration error");
+                                    reject("serviceWorker.getRegistration error")
                                 }
                             });
                         })
@@ -1145,21 +1143,12 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     
                 }
 
-                function closeWriter() {
-                    if(!isUsingServiceWorker) {
-                    } else {
-                        messageChannel.port1.postMessage({
-                            type: 'END_OF_FILE'
-                        }); 
-                    }
-                }
-
                 function downloadDecryptAndAssemble(chunkIndex) {
                     debugLog(debugOn, "downloadDecryptAndAssemble", chunkIndex);
                     return new Promise(async (resolve, reject) => {
                         try {
                             let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false);
-                            let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks);                          
+                            let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks, indexInVideoDownloadQueue);                          
                             debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                             if(state.activeRequest !== itemId) {
                                 reject("Aborted");
@@ -1216,7 +1205,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                         type: 'video/*'
                     });
 
-                    dispatch(contentVideoDownloaded({itemId, link}));
+                    dispatch(contentVideoDownloaded({itemId, indexInQueue, link}));
                     resolve();
 
                 } catch(error) {
@@ -1228,22 +1217,16 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     }
 
     return new Promise(async (resolve) => {
-        dispatch(downloadContentVideo(data));
+
         state = getState().page;
-        debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-        while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-            if(state.aborted) break;
-            try {
-                debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-                video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
-                await downloadAVideo(video);
-            } catch(error) {
-                break;
-            }
-            
-            state = getState().page;
+        debugLog(debugOn, `downloadContentVideoThunk: index:${indexInVideoDownloadQueue}, length: ${state.contentVideosDownloadQueue.length}`);
+        
+        try {
+            await downloadAVideo(video, indexInVideoDownloadQueue);
+            resolve();
+        } catch(error) {
+            reject();
         }
-        resolve();
         
     });
 }
