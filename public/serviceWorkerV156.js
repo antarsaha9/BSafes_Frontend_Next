@@ -1,7 +1,8 @@
 const chunkSize = 512 * 1024;
-
+const broadcastChannelName = 'streamService';
 let streams = {};
 let videoStreams = {};
+let streamWaitingList = {};
 
 // ======== Support functions =================================
 
@@ -10,11 +11,13 @@ function sleep(ms) {
 }
 
 // indexedDB
-const DBName = "videoChunks";
-const storeName = "videoChunksStore";
+const DBName = "streams";
+const chunkStoreName = "videoChunksStore";
+const streamStoreName = "streamStore";
 
 const myIndexedDB = self.indexedDB;
-let videoChunksDB = null;
+
+let streamDB = null;
 
 function helloDB() {
   console.log("Hello indexedDB :", myIndexedDB);
@@ -22,9 +25,10 @@ function helloDB() {
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = myIndexedDB.open(DBName, 4);
+    const request = myIndexedDB.open(DBName, 1);
     let upgradedNeeded = false;
 
+    
     request.onerror = (e) => {
       console.log("openDB error: ", error);
       reject(error);
@@ -39,7 +43,8 @@ function openDB() {
       upgradedNeeded = true;
       const db = e.target.result;
       const transaction = e.target.transaction;
-      db.createObjectStore(storeName, {keyPath: "chunkId"});
+      db.createObjectStore(chunkStoreName, {keyPath: "chunkId"});
+      db.createObjectStore(streamStoreName, {keyPath: "videoId"});
       transaction.oncomplete = (e) => {
         resolve(db);
       }
@@ -58,23 +63,19 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
       dataInBinary
     }
 
-    const request = videoChunksDB
-    .transaction(storeName, "readwrite")
-    .objectStore(storeName)
+    const request = streamDB
+    .transaction(chunkStoreName, "readwrite")
+    .objectStore(chunkStoreName)
     .add(chunkDataInBinary);
 
     request.onsuccess = (e) => {
       console.log("chunk added: ", e.target.result);
-      const stream = videoStreams[videoId];
-      
       resolve();
     }
 
     request.onerror = (e) => {
       console.log("addChunkToDB failed: ", e.target.error);
       if(e.target.error.name == "ConstraintError"){
-        const stream = videoStreams[videoId];
-        
         resolve();
       }
     }
@@ -86,9 +87,9 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
 function deleteChunkInDB(chunkId) {
   return new Promise((resolve) => {
 
-    videoChunksDB
-    .transaction(storeName, "readwrite")
-    .objectStore(storeName)
+    streamDB
+    .transaction(chunkStoreName, "readwrite")
+    .objectStore(chunkStoreName)
     .delete(chunkId)
     .onsuccess = (e) => {
       console.log("chunk deleted: ",chunkId);
@@ -103,9 +104,9 @@ function getChunkFromDB(videoId, chunkIndex) {
   return new Promise((resolve) => {
     const chunkId = `${videoId}_${chunkIndex}`; 
 
-    const request = videoChunksDB
-    .transaction(storeName)
-    .objectStore(storeName)
+    const request = streamDB
+    .transaction(chunkStoreName)
+    .objectStore(chunkStoreName)
     .get(chunkId);
 
     request.onsuccess = (e) => {
@@ -120,6 +121,73 @@ function getChunkFromDB(videoId, chunkIndex) {
     
   })
 }
+
+function addStreamToDB(streamId, streamInfo) { 
+  return new Promise((resolve) => {
+    
+    const data = {
+      streamId,
+      streamInfo
+    }
+
+    const request = streamDB
+    .transaction(streamStoreName, "readwrite")
+    .objectStore(streamStoreName)
+    .add(data);
+
+    request.onsuccess = (e) => {
+      console.log("stream added: ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("addStreamToDB failed: ", e.target.error);
+      if(e.target.error.name == "ConstraintError"){
+        resolve();
+      }
+    }
+
+  })
+  
+}
+
+function deleteStreamInDB(streamId) {
+  return new Promise((resolve) => {
+
+    streamDB
+    .transaction(streamStoreName, "readwrite")
+    .objectStore(streamStoreName)
+    .delete(streamId)
+    .onsuccess = (e) => {
+      console.log("stream deleted: ",streamId);
+      resolve();
+    }
+    
+  })
+}
+
+function getStreamFromDB(streamId) {
+
+  return new Promise((resolve) => {
+    
+    const request = streamDB
+    .transaction(streamStoreName)
+    .objectStore(streamStoreName)
+    .get(streamId);
+
+    request.onsuccess = (e) => {
+      //console.log("got chunk: ", e.target.result );
+      resolve(e.target.result);
+    } 
+
+    request.onerror = (e) => {
+      console.log("getStreamFromDB failed: ", e.target.error);
+      resolve(null);
+    }
+    
+  })
+}
+
 
 self.addEventListener('install', event => {
   // Bypass the waiting lifecycle stage,
@@ -170,8 +238,8 @@ function findNextChunkToDownload(id, numberOfChunks, from) {
 
 self.addEventListener("message", async (event)=> {
   console.log("Service worker received message: ", event.data);
-  if(!videoChunksDB) {
-    videoChunksDB = await openDB();
+  if(!streamDB) {
+    streamDB = await openDB();
   }
   function setupNewStream(event) {
     let newStream;
@@ -228,6 +296,8 @@ self.addEventListener("message", async (event)=> {
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
+    let resumeForNewStream = event.data.resumeForNewStream;
+    let start = event.data.start;
     let numberOfChunks = Math.floor(fileSize/chunkSize);
     if(fileSize%chunkSize) numberOfChunks += 1;
 
@@ -248,6 +318,10 @@ self.addEventListener("message", async (event)=> {
     };
 
     videoStreams[id] = streamInfo;
+    if(streamWaitingList[id]){
+      let target = streamWaitingList[id].target;
+      target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { streamInfo }));
+    }
     
     let initialChunkIndex = await findNextChunkToDownload(id, numberOfChunks, 0);
     let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, initialChunkIndex+1);
@@ -316,6 +390,7 @@ self.addEventListener("message", async (event)=> {
     };
 
     videoStreams[id] = streamInfo;
+    //await addStreamToDB(id, streamInfo);
     
     port.postMessage({ type:"STREAM_OPENED", stream: {id}}); 
 
@@ -357,8 +432,9 @@ self.addEventListener("message", async (event)=> {
   }
 })
 
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", async (event) => {
     console.log(`Handling fetch event for ${event.request.url}`);
+    
     let idParts = event.request.url.split('/downloadFile/');
     if(!idParts[1]) return null;
     
@@ -366,30 +442,66 @@ self.addEventListener("fetch", (event) => {
     const isVideo = (idParts[0] === 'video');
     const id = idParts.pop();
     
-
-    let streamInfo = isVideo?videoStreams[id]:streams[id];
-    if(!streamInfo){
-      return null;
-    }
-
-    console.log('stream found: ', streamInfo);
-
-    let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
-    let fileSize = streamInfo.fileSize;
-    let fileType = streamInfo.fileType;
+    let streamInfo;
 
     if(isVideo) {
-      let timeOut = streamInfo.timeOut;
-      if(timeOut) clearTimeout(timeOut);
-
       let range = event.request.headers.get('Range');
-      let start, end, responseData;
-      if(range) {
-        range = range.split('=')[1].split('-');
-        start = parseInt(range[0]);
-        end = range[1];
+      let start, end;
+
+      range = range.split('=')[1].split('-');
+      start = parseInt(range[0]);
+      end = range[1];
+
+      function getStreamInfo() {
+        return new Promise(resolve=>{
+          let streamInfo = videoStreams[id];
+          if(streamInfo) {
+            resolve(streamInfo);
+          } else {
+            event.waitUntil(
+              (async () => {
+                // Exit early if we don't have access to the client.
+                // Eg, if it's cross-origin.
+                if (!event.clientId) return;
+          
+                // Get the client.
+                const client = await self.clients.get(event.clientId);
+                // Exit early if we don't get the client.
+                // Eg, if it closed.
+                if (!client) return;
+          
+                // Send a message to the client.
+                client.postMessage({
+                  type: "STREAM_NOT_FOUND",
+                  id,
+                  start
+                });
+
+                let target = new EventTarget();
+                streamWaitingList[id] = {
+                  target
+                }
+                eventTarget.addEventListener("STREAM_AVAILABLE", async (e)=> {
+                  console.log("STREAM_AVAILABLE: ", e.streamInfo); 
+                  resolve(e.streamInfo);
+                });
+              })()
+            );
+          }
+        })
+      }
+
+      streamInfo = await getStreamInfo();
         
-        console.log(`Range request: start:${start} end:${end}`);
+      console.log(`Range request: start:${start} end:${end}`);
+
+      if(streamInfo){
+        let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
+        let fileSize = streamInfo.fileSize;
+        let fileType = streamInfo.fileType;
+
+        let timeOut = streamInfo.timeOut;
+        if(timeOut) clearTimeout(timeOut);
 
         if(end === "") {
           if(!streamInfo.twoBytesSent){
@@ -399,8 +511,9 @@ self.addEventListener("fetch", (event) => {
             end = start + 65535;
           }     
         } else {
-          end = parseInt(end);
+            end = parseInt(end);
         }
+  
         if(end >= fileSize){
           end = fileSize-1;
         }
@@ -425,7 +538,6 @@ self.addEventListener("fetch", (event) => {
             console.log("Content-Range: ", headers['Content-Range']);
             
             let responseHeader = {
-              // status/statusText default to 200/OK, but we're explicitly setting them here.
               status: 206,
               statusText: 'OK',
               headers
@@ -497,9 +609,20 @@ self.addEventListener("fetch", (event) => {
           
         }
         event.respondWith(waitForResponse());
+      } else {
+       
       }
     } else {
+      streamInfo = streams[id];
       
+      if(!streamInfo){
+        return null;
+      }
+      
+      let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
+      let fileSize = streamInfo.fileSize;
+      let fileType = streamInfo.fileType;
+
       let headers = {
         'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
         'Content-Disposition': "attachment; filename*=UTF-8''" + fileName,

@@ -1,4 +1,5 @@
 import { createSlice} from '@reduxjs/toolkit';
+
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
@@ -1003,10 +1004,30 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     const indexInVideoDownloadQueue = state.contentVideosDownloadQueue.length;;
     const itemId = state.id;
     const isUsingServiceWorker = true;
+    
+    if(state.contentVideosDownloadQueue.length === 0) {
+        navigator.serviceWorker.addEventListener("message", async (event) => {
+            console.log(event.data);
+            if(event.data.type === 'STREAM_NOT_FOUND'){
+                let videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.id;
+                state = getState().page;
+                let video = null;
+                let i;
+                for(i=0; i<state.contentVideosDownloadQueue.length; i++){
+                    video = state.contentVideosDownloadQueue[i];
+                    if(video.src === videoLinkFromServiceWorker) break;
+                }
+                if(video) {
+                    let start = event.data.start;
+                    await downloadAVideo(video, i, true, start);
+                }
+            }
+        });
+    }
 
     dispatch(downloadContentVideo(data));
     
-    const downloadAVideo = (video, indexInQueue) => {
+    const downloadAVideo = (video, indexInQueue, resumeForNewStream=false, start=0) => {
         debugLog(debugOn, "downloadAVideo");
         let decryptedVideoStr, videoStarted=false;
         return new Promise(async (resolve, reject) => {
@@ -1038,7 +1059,9 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                         fileName,
                                         fileType,
                                         fileSize,
-                                        browserInfo: getBrowserInfo()
+                                        browserInfo: getBrowserInfo(),
+                                        resumeForNewStream,
+                                        start
                                       }, [messageChannel.port2]);
                     
                                     messageChannel.port1.onmessage = async (event) => {
