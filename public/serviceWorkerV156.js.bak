@@ -320,7 +320,7 @@ self.addEventListener("message", async (event)=> {
     videoStreams[id] = streamInfo;
     if(streamWaitingList[id]){
       let target = streamWaitingList[id].target;
-      target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { detail:streamInfo }));
+      target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { streamInfo }));
     }
     
     let initialChunkIndex = await findNextChunkToDownload(id, numberOfChunks, 0);
@@ -441,230 +441,99 @@ self.addEventListener("fetch", async (event) => {
     idParts = idParts[1].split('/');
     const isVideo = (idParts[0] === 'video');
     const id = idParts.pop();
-    
-    let streamInfo;
 
     if(isVideo) {
+      event.waitUntil(
+        (async () => {
+          // Exit early if we don't have access to the client.
+          // Eg, if it's cross-origin.
+          if (!event.clientId) return;
+    
+          // Get the client.
+          const client = await self.clients.get(event.clientId);
+          // Exit early if we don't get the client.
+          // Eg, if it closed.
+          if (!client) return;
+    
+          // Send a message to the client.
+          client.postMessage({
+            msg: "Hey I just got a fetch from you!",
+            url: event.request.url,
+          });
+        })()
+      );
+if(0){
+      
+      function fetchVideo() {
+  
+        function getClient() {
+          return new Promise(async (resolve) => {
+            let client = await self.clients.get(event.clientId);
+            resolve(client);
+          })
+        }
 
-      function waitForResponse() {
-        let range = event.request.headers.get('Range');
-        let start, end;
-
-        range = range.split('=')[1].split('-');
-        start = parseInt(range[0]);
-        end = range[1];
-        
-        function getStreamInfo(client) {
-          return new Promise(resolve=>{
+        function getStreamInfo() {
+          return new Promise(async (resolve)=>{
             let streamInfo = videoStreams[id];
             if(streamInfo) {
               resolve(streamInfo);
             } else {
-              // Send a message to the client.
-              client.postMessage({
-                type: "STREAM_NOT_FOUND",
-                id,
-                start
-              });
+              //event.waitUntil(
+                //(async () => {
+                  // Exit early if we don't have access to the client.
+                  // Eg, if it's cross-origin.
+                  if (!event.clientId) return;
+            
+                  // Get the client.
+                  //const client = await self.clients.get(event.clientId);
+                  // Exit early if we don't get the client.
+                  // Eg, if it closed.
+                  //if (!client) return;
+            
+                  // Send a message to the client.
+                  client.postMessage({
+                    type: "STREAM_NOT_FOUND",
+                    id,
+                    start
+                  });
   
-              let target = new EventTarget();
-              streamWaitingList[id] = {
-                target
-              }
-              target.addEventListener("STREAM_AVAILABLE", async (e)=> {
-                console.log("STREAM_AVAILABLE: ", e.detail); 
-                resolve(e.detail);
-              });
+                  let target = new EventTarget();
+                  streamWaitingList[id] = {
+                    target
+                  }
+                  target.addEventListener("STREAM_AVAILABLE", async (e)=> {
+                    console.log("STREAM_AVAILABLE: ", e.streamInfo); 
+                    resolve(e.streamInfo);
+                  });
+                //})()
+              //);
             }
           })
         }
-
-        return new Promise(async (resolve, reject)=> {
-          console.log("waitForStream");
+  
+        return new Promise(async (resolve) => {
+          let streamInfo;
           let client;
-          client = await self.clients.get(event.clientId)
-          console.log("client: ", client);  
+          let range = event.request.headers.get('Range');
+          let start, end;
 
-          streamInfo = await getStreamInfo(client);
+          range = range.split('=')[1].split('-');
+          start = parseInt(range[0]);
+          end = range[1];
 
-          if(streamInfo){
-            let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
-            let fileSize = streamInfo.fileSize;
-            let fileType = streamInfo.fileType;
-    
-            let timeOut = streamInfo.timeOut;
-            if(timeOut) clearTimeout(timeOut);
-    
-            if(end === "") {
-              if(!streamInfo.twoBytesSent){
-                end = start + 1;
-                streamInfo.twoBytesSent = true;
-              } else {
-                end = start + 65535;
-              }     
-            } else {
-                end = parseInt(end);
-            }
-      
-            if(end >= fileSize){
-              end = fileSize-1;
-            }
-    
-            let chunkIndex = Math.floor(start/chunkSize);
-            
-            const waitForResult = () => {
-              function responseFromDBResult(result){
-                let responseData, response;
-                if(end < (chunkIndex + 1)* chunkSize -1){
-                  responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)  
-                } else {
-                  responseData = result.dataInBinary.substring(start%chunkSize);
-                  end = (chunkIndex +1) * chunkSize - 1;
-                }
-                let headers = {
-                  'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
-                }      
-                headers['Accept-Ranges'] = 'bytes';
-                headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
-                headers['Content-Length'] = responseData.length;
-                console.log("Content-Range: ", headers['Content-Range']);
-                
-                let responseHeader = {
-                  status: 206,
-                  statusText: 'OK',
-                  headers
-                };
-    
-                let responseDataInUint8Arrary = new Uint8Array(responseData.length);
-                for(let i=0; i<responseData.length; i++) {
-                  responseDataInUint8Arrary[i] = responseData.charCodeAt(i);
-                }
-                response = new Response(responseDataInUint8Arrary, responseHeader);
-                return response;
-              }
-    
-              return new Promise(async (resolve)=>{
-                let numberOfChunks = streamInfo.numberOfChunks;
-                let result = await getChunkFromDB(id, chunkIndex);
-                if(result) {
-                  let response = responseFromDBResult(result);
-                  let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-                  streamInfo.nextChunkIndex = nextChunkIndex;
-                  resolve(response);
-                } else {
-                  console.log(`chunkIndex: ${chunkIndex} not in DB`);
-                  if(chunkIndex !== streamInfo.requestedChunkIndex){
-                    console.log(`chunkIndex: ${chunkIndex} becomes next chunk`);
-                    
-                    if(streamInfo.requestedChunkIndex < 0) {
-                      console.log("service worker onfetch: requestedChunkIndex < 0 ");
-                      let port = streamInfo.port;
-                      port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: chunkIndex}); 
-                      streamInfo.requestedChunkIndex = chunkIndex;
-                      
-                      let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-                      streamInfo.nextChunkIndex = nextChunkIndex;
-                    } else {
-                      streamInfo.nextChunkIndex = chunkIndex;
-                    }   
-                  }
-                  
-                  let eventTarget = new EventTarget();
-                  eventTarget.addEventListener("CHUNK_AVAILABLE", async (e)=> {
-                    console.log("CHUNK_AVAILABLE: ", chunkIndex);
-                    let result = await getChunkFromDB(id, chunkIndex);
-                    let response = responseFromDBResult(result);
-                    resolve(response);
-                  });
-    
-                  console.log(`Add eventTarget for chunkIndex: ${chunkIndex}`)
-                  
-                  if(!streamInfo.chunksInfo[chunkIndex]){
-                    streamInfo.chunksInfo[chunkIndex] ={
-                      pendingFetches: [eventTarget],
-                    }
-                  } else {
-                    let pendingFetches = streamInfo.chunksInfo[chunkIndex].pendingFetches;
-                    if(pendingFetches) {
-                      pendingFetches.push(eventTarget);
-                    } else {
-                      pendingFetches = [eventTarget];
-                    }
-                    streamInfo.chunksInfo[chunkIndex].pendingFetches = pendingFetches;
-                  }
-                }
-                timeOut = setTimeout(()=> {
-                  streamInfo.nextChunkIndex = -99998;
-                }, 3000);
-                streamInfo.timeOut = timeOut;
-              });
-              
-            }
-            
-            try {
-              let result = await waitForResult();
-              resolve(result);
-            } catch(error) {
-              reject();
-            }
-          }
-        })
-      }
-
-      event.respondWith(waitForResponse());
-
-
-
-
-if(0) {
-      let range = event.request.headers.get('Range');
-      let start, end;
-
-      range = range.split('=')[1].split('-');
-      start = parseInt(range[0]);
-      end = range[1];
-
-      function getStreamInfo() {
-        return new Promise(resolve=>{
-          let streamInfo = videoStreams[id];
-          if(streamInfo) {
-            resolve(streamInfo);
-          } else {
-            event.waitUntil(
-              (async () => {
-                // Exit early if we don't have access to the client.
-                // Eg, if it's cross-origin.
-                if (!event.clientId) return;
-          
-                // Get the client.
-                const client = await self.clients.get(event.clientId);
-                // Exit early if we don't get the client.
-                // Eg, if it closed.
-                if (!client) return;
-          
-                // Send a message to the client.
-                client.postMessage({
-                  type: "STREAM_NOT_FOUND",
-                  id,
-                  start
-                });
-
-                let target = new EventTarget();
-                streamWaitingList[id] = {
-                  target
-                }
-                eventTarget.addEventListener("STREAM_AVAILABLE", async (e)=> {
-                  console.log("STREAM_AVAILABLE: ", e.streamInfo); 
-                  resolve(e.streamInfo);
-                });
-              })()
-            );
-          }
-        })
-      }
-
-      streamInfo = await getStreamInfo();
+          client = await self.clients.get(event.clientId);
         
+          streamInfo = await getStreamInfo();
+        });
+      }
+
+      event.waitUntil(fetchVideo());
+      
+}      
+
+      
+if(0){  
       console.log(`Range request: start:${start} end:${end}`);
 
       if(streamInfo){
@@ -786,6 +655,7 @@ if(0) {
       }
 }
     } else {
+      let streamInfo;
       streamInfo = streams[id];
       
       if(!streamInfo){
