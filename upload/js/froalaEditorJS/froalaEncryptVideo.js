@@ -449,24 +449,6 @@
               reader.onload = () => {
                 console.log(reader.result);
                 
-                if(0) {
-                let array = new Uint8Array(reader.result.length);
-                for(let i=0; i< reader.result.length; i++) {
-                  array[i] = reader.result.charCodeAt(i);
-                }
-                let url = window.URL.createObjectURL(new Blob([array]), {
-                  type: 'image/*'
-                })
-                const newImg = document.createElement("img");
-          
-                newImg.onload = () => {
-                  // no longer need to read the blob so it's revoked
-                  URL.revokeObjectURL(url);
-                };
-          
-                newImg.src = url;
-                document.body.appendChild(newImg);
-                }
                 uploadSnapshot(reader.result);
               };
               
@@ -1384,17 +1366,6 @@
           })
         }
 
-        function writeAChunkToFileFailed(chunkIndex) {
-
-        }
-
-        function closeWriter() {
-
-          messageChannel.port1.postMessage({
-              type: 'END_OF_FILE'
-          }); 
-          
-        }
         // END **** For playing back video from service worker ***
 
         function sliceEncryptAndUpload(file, chunkIndex) {

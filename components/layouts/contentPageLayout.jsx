@@ -15,7 +15,7 @@ import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
 
-const ContentPageLayout = ({children}) => {
+const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
@@ -44,8 +44,8 @@ const ContentPageLayout = ({children}) => {
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
                 <Container fluid>
                     <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>BSafes</span></Navbar.Brand>
-                    <Dropdown align="end" className="justify-content-end">
-                        <Dropdown.Toggle variant="link" id="dropdown-basic">
+                    {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
+                        <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
                             <span className={BSafesStyle.memberBadge}>S</span>
                         </Dropdown.Toggle>
 
@@ -56,11 +56,11 @@ const ContentPageLayout = ({children}) => {
                                 <Dropdown.Item onClick={logIn}>Log In</Dropdown.Item>
                             }
                         </Dropdown.Menu>
-                    </Dropdown>
+                    </Dropdown>}
                 </Container>
                 
             </Navbar>
-            <ItemPath />
+            {showPathRow && <ItemPath />}
             {children}
             <ItemsToolbar />
         </div>
