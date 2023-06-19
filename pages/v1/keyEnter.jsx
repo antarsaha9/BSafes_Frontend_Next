@@ -6,6 +6,7 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
+import InputGroup from 'react-bootstrap/InputGroup';
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner';
 
@@ -23,39 +24,33 @@ export default function LogIn() {
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
             <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
-                <Container className="mt-5 ">     
+                <Container className="mt-5">
+                    <br />
+                    <br />   
                     <Row>
-                        <Col>
-                            <h1 className='display-5 text-center'>Member Sign In</h1>
-                        </Col>           
-                    </Row>
-                    <Row>
-                        <Col xs={{span:12, offset:0}} sm={{span:12, offset:0}} md={{span:10, offset:1}} lg={{span:8, offset:2}}>
-                            <Form style={{backgroundColor:'white'}}>
+                        <Col xs={{span:10, offset:1}} sm={{span:10, offset:1}} md={{span:8, offset:2}} lg={{span:6, offset:3}}>
+                            <Form className="text-center" style={{backgroundColor:'white'}}>
                                 <br />
-                                <Col xs={{span:10, offset:1}} sm={{span:8, offset:2}} >
-                                    <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
-                                        <Form.Label>Account ID</Form.Label>
-                                        <h4 >email@example.com</h4>
-                                    </Form.Group>
-                                    <Form.Group className="mb-3" controlId="Nickname">
-                                        <Form.Label>Member Name</Form.Label>
-                                        <Form.Control className='py-2' type="text" placeholder='' autoComplete="off" />
-                                    </Form.Group>
-                                    <Form.Group className="mb-3" controlId="keyPassword">
-                                        <Form.Label>Password</Form.Label>
-                                        <Form.Control className='py-2' type="password" placeholder='' autoComplete="off" />
-                                    </Form.Group>
-                                    <Row>
-                                        <Col>
-                                            <Button className='pull-right'>
-                                                Done
+                                <h1 className="display-3"><i className="fa fa-2x fa-lock" aria-hidden="true"></i></h1>
+                                <p>Key Hint?</p>
+                                <p>Enter Your Key</p>
+                                <Row>
+                                    <Col xs={{span:10, offset:1}} sm={{span:8, offset:2}} md={{span:6, offset:3}} lg={{span:6, offset:3}}>
+                                        <InputGroup className="mb-3">
+                                            <Form.Control className="py-2"
+                                                placeholder=""
+                                                aria-label="Recipient's username"
+                                                aria-describedby="basic-addon2"
+                                            />
+                                            <Button variant="primary" id="button-addon2" className="py-0">
+                                                Go
                                             </Button>
-                                        </Col>
-                                    </Row>
-                                </Col>
+                                        </InputGroup>
+                                    </Col>
+                                </Row>
+                                <p>Key verification would take a few seconds...</p>
                                 <br />
-                            </Form>
+                            </Form>                      
                         </Col>
                     </Row>
                 </Container>
