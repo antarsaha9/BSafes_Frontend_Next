@@ -50,7 +50,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to resolve nickname.")
-                    reject();
+                    reject("NicknameSignInError");
                     return;
                 }    
                 const masterId = data.masterId;
@@ -59,7 +59,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "nicknameSignIn failed: ", error)
-                reject(error);
+                reject("NicknameSignInError");
             })
         });s
     })
@@ -85,10 +85,11 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to login.")
-                    reject();
+                    reject('InvalidMember');
                     return;
                 }    
                 
+                localStorage.setItem("authToken", data.authToken);
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "AuthenticateManagedMember failed: ", error)

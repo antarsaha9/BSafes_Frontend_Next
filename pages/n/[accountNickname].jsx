@@ -14,7 +14,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import { debugLog} from '../../lib/helper'
-import { nicknameSignInAsyncThunk } from '../../reduxStore/v1AccountSlice';
+import { nicknameSignInAsyncThunk, authenticateManagedMemberAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 export default function LogIn() {
     const debugOn = true;
@@ -68,11 +68,12 @@ export default function LogIn() {
                                 <Col xs={{span:10, offset:1}} sm={{span:8, offset:2}} >
                                     <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
                                         <Form.Label>Account ID</Form.Label>
-                                        { (activity !== 'Done' && activity !== 'Error') &&
+                                        { (activity === 'NicknameSignIn') &&
                                             <Row className="justify-content-center">
                                                 <Spinner animation='border' />
                                             </Row>
                                         }
+                                        {activity === "NicknameSignInError" && <p className="text-danger" >Invalid Account !</p>}
                                         <h4 >{displayMasterId}</h4>
                                     </Form.Group>
                                     <br />
@@ -87,11 +88,16 @@ export default function LogIn() {
                                     <Row>
                                         <Col>
                                             <Button className='pull-right' onClick={handleDone}>
-                                                Done
+                                                {activity === "AuthenticateManagedMember"?
+                                                    <Spinner animation='border' />
+                                                    :
+                                                    'Done'
+                                                }
+                                                
                                             </Button>
                                         </Col>
                                     </Row>
-                                    <p className="text-danger" >Invalid member !</p>
+                                    {activity === "InvalidMember" && <p className="text-danger" >Invalid member !</p>}
                                 </Col>
                                 <br />
                             </Form>
