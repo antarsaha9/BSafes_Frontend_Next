@@ -8,6 +8,7 @@ const initialState = {
     activity: "Done",
     masterId: "",
     displayMasterId: "",
+    nextAuthStep: null
 }
 
 const v1AccountSlice = createSlice({
@@ -20,11 +21,14 @@ const v1AccountSlice = createSlice({
         nicknameResolved: (state, action) => {
             state.masterId = action.payload.masterId;
             state.displayMasterId = action.payload.displayMasterId;
+        },
+        setNextAuthStep: (state, action) => {
+            state.nextAuthStep = action.payload;
         }
     }
 });
 
-export const { activityChanged, nicknameResolved } = v1AccountSlice.actions;
+export const { activityChanged, nicknameResolved, setNextAuthStep } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -90,12 +94,41 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 }    
                 
                 localStorage.setItem("authToken", data.authToken);
+                dispatch(setNextAuthStep(data.nextStep)); 
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "AuthenticateManagedMember failed: ", error)
                 reject('InvalidMember');
             })
         });
+    });
+}
+
+export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "VerifyMFA", () => {
+        return new Promise(async (resolve, reject) => {
+            const token = data.MFAToken;
+
+            PostCall({
+                api:'/verifyMFAToken',
+                body: {
+                    token
+                },
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status !== 'ok') {
+                    debugLog(debugOn, "woo... failed to verify MFA.")
+                    reject('InvalidMFA');
+                    return;
+                }    
+                
+                dispatch(setNextAuthStep(data.nextStep)); 
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "verifyMFAToken failed: ", error)
+                reject('InvalidMFA');
+            })
+        })
     });
 }
 

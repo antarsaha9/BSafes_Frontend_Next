@@ -19,7 +19,20 @@ import KeyInput from "../../components/keyInput";
 
 import { logInAsyncThunk } from '../../reduxStore/auth'
 
-export default function LogIn() {
+export default function KeyEnter() {
+    
+    const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
+    const keyHint = nextAuthStep.keyHint;
+
+    const [key, setKey] = useState('');
+
+    const handleKey = (e) => {
+        setKey(e.target.value);
+    }
+
+    const handleGo = (e) => {
+
+    }
 
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
@@ -32,17 +45,20 @@ export default function LogIn() {
                             <Form className="text-center" style={{backgroundColor:'white'}}>
                                 <br />
                                 <h1 className="display-3"><i className="fa fa-2x fa-lock" aria-hidden="true"></i></h1>
-                                <p>Key Hint?</p>
+                                <p>{keyHint}</p>
                                 <p>Enter Your Key</p>
                                 <Row>
                                     <Col xs={{span:10, offset:1}} sm={{span:8, offset:2}} md={{span:6, offset:3}} lg={{span:6, offset:3}}>
                                         <InputGroup className="mb-3">
                                             <Form.Control className="py-2"
+                                                type="password"
                                                 placeholder=""
                                                 aria-label="Recipient's username"
                                                 aria-describedby="basic-addon2"
+                                                value={key}
+                                                onChange={handleKey}
                                             />
-                                            <Button variant="primary" id="button-addon2" className="py-0">
+                                            <Button variant="primary" id="button-addon2" className="py-0" onClick={handleGo}>
                                                 Go
                                             </Button>
                                         </InputGroup>

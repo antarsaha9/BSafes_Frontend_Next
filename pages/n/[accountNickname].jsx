@@ -28,6 +28,7 @@ export default function LogIn() {
     const activity = useSelector(state=>state.v1Account.activity);
     const masterId = useSelector(state => state.v1Account.masterId);
     const displayMasterId = useSelector(state => state.v1Account.displayMasterId);
+    const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
 
     const handleMemberName = (e) => {
         setMemberName(e.target.value);
@@ -50,6 +51,18 @@ export default function LogIn() {
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps   
     }, [router.query.accountNickname]);
+
+    useEffect(()=>{
+        if(!nextAuthStep) return;
+        switch(nextAuthStep.step){
+            case 'MFARequired':
+                router.push('/v1/extraMFA')
+                break;
+            case 'KeyRequired':
+                break;
+            default:
+        }
+    }, [nextAuthStep]);
 
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
