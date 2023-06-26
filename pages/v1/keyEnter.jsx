@@ -13,16 +13,18 @@ import Spinner from 'react-bootstrap/Spinner';
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog} from '../../lib/helper'
+import { verifyKeyHashAsync } from '../../reduxStore/v1AccountSlice';
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
-import KeyInput from "../../components/keyInput";
-
-import { logInAsyncThunk } from '../../reduxStore/auth'
 
 export default function KeyEnter() {
-    
+    const debugOn = true;
+
+    const dispatch = useDispatch();
+    const router = useRouter();
+
     const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
-    const keyHint = nextAuthStep.keyHint;
+    const keyHint = nextAuthStep && nextAuthStep.keyHint;
 
     const [key, setKey] = useState('');
 
@@ -31,7 +33,7 @@ export default function KeyEnter() {
     }
 
     const handleGo = (e) => {
-
+        dispatch(verifyKeyHashAsync({key}));
     }
 
     return (

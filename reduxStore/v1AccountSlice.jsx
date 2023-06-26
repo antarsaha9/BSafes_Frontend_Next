@@ -1,5 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const forge = require('node-forge');
+const argon2 = require('argon2-browser');
+
 import { debugLog, PostCall } from '../lib/helper'
 
 const debugOn = true;
@@ -132,4 +135,55 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "VerifyKeyHash", () => {
+        return new Promise(async (resolve, reject) => {
+        
+            const goldenKey = data.key; 
+            const state = getState().v1Account;
+            const keySalt = forge.util.decode64(state.nextAuthStep.keySalt); 
+            let expandedKey; 
+
+            if(state.nextAuthStep.schemeVersion === '0') {
+                expandedKey = forge.pkcs5.pbkdf2(goldenKey, keySalt, 10000, 32);
+            } else {
+                const result= await argon2.hash({
+                    pass: goldenKey, 
+                    salt: keySalt,
+                    time: 2,
+                    mem: 100 * 1024,
+                    hashLen: 32,
+                    parallelism: 2,
+                    type: argon2.ArgonType.Argon2id
+                })
+                const expandedKeyHex = result.hashHex;
+                expandedKey = forge.util.hexToBytes(expandedKeyHex); // ö¯¯ç?¤EíBñ]¸øä`âØálÈ%Ã7$
+            }
+
+            const md = forge.md.sha256.create();
+            md.update(expandedKey);
+            const keyHash = md.digest().toHex();
+            PostCall({
+                api:'/memberAPI/verifyKeyHash',
+                body: {
+                    keyHash
+                },
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status !== 'ok') {
+                    debugLog(debugOn, "woo... failed to verify keyHash.")
+                    reject('InvalidKeyHash');
+                    return;
+                }    
+                
+                dispatch(setNextAuthStep(data.nextStep)); 
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "verifyKeyHash failed: ", error)
+                reject('InvalidKeyHash');
+            })
+        });
+    });
+
+}
 export default v1AccountSlice;
