@@ -8,6 +8,7 @@ const debugOn = false;
 const initialState = {
     activity: "Done",
     error: null,
+    accountVersion:'',
     memberId: null,
     displayName: null,
     isLoggedIn: false,
@@ -28,13 +29,16 @@ const authSlice = createSlice({
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
             state.searchKey = credentials.secret.searchKey;
-            state.searchIV = credentials.secret.searchIV;
+            if(state.accountVersion === 'v2') {
+                state.searchIV = credentials.secret.searchIV;
+            }
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;

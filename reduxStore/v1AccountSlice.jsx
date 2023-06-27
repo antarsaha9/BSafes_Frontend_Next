@@ -4,6 +4,9 @@ const forge = require('node-forge');
 const argon2 = require('argon2-browser');
 
 import { debugLog, PostCall } from '../lib/helper'
+import { decryptBinaryString, saveLocalCredentials } from '../lib/crypto';
+
+import { loggedIn } from './auth';
 
 const debugOn = true;
 
@@ -138,7 +141,10 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
 export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "VerifyKeyHash", () => {
         return new Promise(async (resolve, reject) => {
-        
+            const credentials = {
+                secret:{},
+                keyPack:{}
+            };
             const goldenKey = data.key; 
             const state = getState().v1Account;
             const keySalt = forge.util.decode64(state.nextAuthStep.keySalt); 
@@ -159,25 +165,69 @@ export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
                 const expandedKeyHex = result.hashHex;
                 expandedKey = forge.util.hexToBytes(expandedKeyHex); // ö¯¯ç?¤EíBñ]¸øä`âØálÈ%Ã7$
             }
+            credentials.secret.expandedKey = expandedKey;
 
             const md = forge.md.sha256.create();
             md.update(expandedKey);
             const keyHash = md.digest().toHex();
             PostCall({
-                api:'/memberAPI/verifyKeyHash',
+                api:'/memberAPI/verifyV1KeyHash',
                 body: {
                     keyHash
                 },
             }).then( data => {
                 debugLog(debugOn, data);
+                
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to verify keyHash.")
                     reject('InvalidKeyHash');
                     return;
                 }    
                 
-                dispatch(setNextAuthStep(data.nextStep)); 
-                resolve();
+                function verifyV1Challenge() {
+                    let randomMessage = data.randomMessage;
+                    randomMessage = forge.util.encode64(randomMessage);
+                    
+                    credentials.keyPack.publicKey = forge.util.encode64(data.publicKey);
+                    credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
+                    credentials.keyPack.envelopeIV = data.envelopeIV;
+                    credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
+                    credentials.keyPack.searchKeyIV = data.searchKeyIV;
+
+                    const envelopeIV = forge.util.decode64(data.envelopeIV);
+                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                    privateKey = decryptBinaryString(privateKey, expandedKey, envelopeIV);
+                    
+                    const pki = forge.pki;
+                    const privateKeyFromPem = pki.privateKeyFromPem(privateKey);
+                    const md = forge.md.sha1.create();
+                    md.update(randomMessage, 'utf8');
+                    let signature = privateKeyFromPem.sign(md);
+                    signature = forge.util.encode64(signature);
+
+                    PostCall({
+                        api:'/memberAPI/verifyV1Challenge',
+                        body: { signature },
+                    }).then( data => {
+                        if(data.status == "ok") {  
+                            credentials.memberId = data.memberId;
+                            credentials.displayName = data.displayName;
+                            
+                            saveLocalCredentials(credentials, data.sessionKey, data.sessionIV, 'v1');
+                            
+                            dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}))
+                            resolve();
+                        } else {
+                            debugLog(debugOn, "woo... failed to verify challenge: ", data.error);
+                            reject("FailedChallenge");
+                        }
+                    }).catch( error => {
+                        debugLog(debugOn, "woo... failed to verify challenge.");
+                        reject("FailedChallenge");
+                    })
+                } 
+                    
+                verifyV1Challenge();
             }).catch( error => {
                 debugLog(debugOn, "verifyKeyHash failed: ", error)
                 reject('InvalidKeyHash');
