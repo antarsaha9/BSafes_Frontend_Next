@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
 
-import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBDecryptBinaryString } from '../lib/crypto';
+import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBEncryptBinaryString, ECBDecryptBinaryString } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
 
 const debugOn = true;
@@ -162,7 +162,11 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                                 encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
                                 teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
                                 try {
-                                    cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
+                                    if(auth.accountVersion === 'v1') {
+                                        cachedTeamName = ECBEncryptBinaryString(encodedTeamName, auth.searchKey);
+                                    } else if(auth.accountVersion === 'v2') {
+                                        cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
+                                    }      
                                     await cacheTeamNameForTeamMember(team._source.teamId, cachedTeamName);
                                 } catch(error) {
                                     debugLog("cacheTeamName error");

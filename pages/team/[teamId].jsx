@@ -12,7 +12,6 @@ import Workspace from '../../components/workspace'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
-import { getTeamData } from '../../reduxStore/teamSlice';
 import { changeContainerOnly, clearItems, initWorkspaceThunk, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
 import { abort } from '../../reduxStore/pageSlice';
 

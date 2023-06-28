@@ -17,12 +17,12 @@ import PaginationControl from '../components/paginationControl';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearContainer, createANewItem } from '../reduxStore/containerSlice';
+import { clearContainer } from '../reduxStore/containerSlice';
 import { createANewTeamThunk, listTeamsThunk } from '../reduxStore/teamSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Teams() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
     
     const [containerCleared, setContainerCleared] = useState(false);
@@ -59,7 +59,7 @@ export default function Teams() {
 
     const loadTeams = (pageNumber=1) => {
         dispatch(listTeamsThunk({pageNumber}));
-        //loadTeams();
+
         setContainerCleared(false);
     }
 

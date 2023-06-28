@@ -24,6 +24,8 @@ export default function KeyEnter() {
     const router = useRouter();
 
     const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
+    const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
+    
     const keyHint = nextAuthStep && nextAuthStep.keyHint;
 
     const [key, setKey] = useState('');
@@ -35,6 +37,12 @@ export default function KeyEnter() {
     const handleGo = (e) => {
         dispatch(verifyKeyHashAsync({key}));
     }
+
+    useEffect(()=> {
+        if(isLoggedIn) {
+            router.push('/teams');
+        }
+    }, [isLoggedIn])
 
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
