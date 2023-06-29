@@ -132,6 +132,12 @@ const PageItemWrapper = ({ itemId, children}) => {
           }
           dispatch(setWorkspaceKeyReady(true));
           return;
+        } else if(space === workspace){
+          if(container !== containerInWorkspace) {
+            dispatch(changeContainerOnly({container}));
+          }
+          dispatch(setWorkspaceKeyReady(true));
+          return;
         }
         
         dispatch(clearContainer());
@@ -153,10 +159,11 @@ const PageItemWrapper = ({ itemId, children}) => {
               }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
+              const teamId = space.substring(0, space.length - 4);
               if(path !== 'contents'){
-                dispatch(initWorkspaceThunk({teamId:space, container}));
+                dispatch(initWorkspaceThunk({teamId, container}));
               } else {
-                dispatch(initWorkspaceThunk({teamId:space, container:pageItemId}));
+                dispatch(initWorkspaceThunk({teamId, container:pageItemId}));
               }            
           }
       }

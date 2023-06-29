@@ -273,9 +273,10 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
     dispatch(clearContainer());
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
+            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, workspaceId, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
             auth = getState().auth;
             try {
+                workspaceId = data.teamId + ':' + '1' + ':' + '0';
                 team = await getTeamData(data.teamId);
                 teamKeyEnvelope = team.teamKeyEnvelope;
                 privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
@@ -310,7 +311,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                     teamSearchIV = decryptBinaryString(forge.util.decode64(teamSearchIVEnvelope), teamKey);
                 }
                 
-                dispatch(initContainer({container: data.container, workspaceId:data.teamId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
+                dispatch(initContainer({container: data.container, workspaceId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
                 dispatch(setWorkspaceKeyReady(true));
                 resolve();
             } catch(error) {
