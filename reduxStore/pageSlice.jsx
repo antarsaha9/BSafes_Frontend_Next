@@ -108,8 +108,8 @@ function decryptPageItemFunc(state, workspaceKey) {
         state.error = "Undefined item key";
     }
     if(item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
-        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), expandedKey, forge.util.decode64(item.envelopeIV));
-        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), expandedKey, forge.util.decode64(item.ivEnvelopeIV));
+        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), workspaceKey, forge.util.decode64(item.envelopeIV));
+        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), workspaceKey, forge.util.decode64(item.ivEnvelopeIV));
     } else {
         const decoded = forge.util.decode64(item.keyEnvelope);
         state.itemKey = decryptBinaryString(decoded, workspaceKey);
@@ -133,7 +133,6 @@ function decryptPageItemFunc(state, workspaceKey) {
     };
     state.tags = itemTags;
 
-    let titleText = "";
     if (item.title) {
         try {
             const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
@@ -171,7 +170,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             const queueId = 'd' + i;
             if(image.words && image.words !== "") {
                 encryptedWords = forge.util.decode64(image.words);
-                encodedWords = decryptBinaryString(encryptedWords, state.itemKey);
+                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
                 words = forge.util.decodeUtf8(encodedWords);
                 words = DOMPurify.sanitize(words);
             } else {
@@ -194,7 +193,7 @@ function decryptPageItemFunc(state, workspaceKey) {
         for(let i=1; i< item.attachments.length; i++) {
             let attachment = item.attachments[i];
             encryptedFileName = forge.util.decode64(attachment.fileName);
-            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey);
+            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey, state.itemIV);
             fileName = forge.util.decodeUtf8(encodedFileName);
             const newPanel = {
                 queueId: 'a'+i,
@@ -643,7 +642,7 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
 
         return new Promise(async (resolve, reject) => {
             const s3Key = image.s3Key;
-            const keyVersion = s3Key.split(":")[1];
+
             try {
                 dispatch(downloadingContentImage({itemId, progress:5}));    
                 const signedURL = await preS3Download(state.id, s3Key);
@@ -659,16 +658,13 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
                 };
                 
                 let decryptedImageStr
-                if(keyVersion === '3') {
-                    const buffer = Buffer.from(response, 'binary');
-                    const downloadedBinaryString = buffer.toString('binary');
-                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                    decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                    debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-    
-                } else if(keyVersion === '1') {
 
-                }
+                const buffer = Buffer.from(response, 'binary');
+                const downloadedBinaryString = buffer.toString('binary');
+                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+    
                 const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                 const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                     type: 'image/*'
@@ -787,7 +783,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 })
                             }
                             await itemKeyReady();
-                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey)
+                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                             debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
                             const decodedContent =  DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
                             dispatch(contentDecrypted({item:{id: data.itemId, content:decodedContent}}));
@@ -872,7 +868,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
 
                 return new Promise(async (resolve, reject) => {
                     const s3Key = image.s3Key + "_gallery";
-                    const keyVersion = s3Key.split(":")[1];
+
                     try {
                         dispatch(downloadingImage({itemId, progress:5}));
                         const signedURL = await preS3Download(state.id, s3Key);
@@ -887,16 +883,13 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         };
 
                         let decryptedImageStr
-                        if(keyVersion === '3') {
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+                       
+                        const buffer = Buffer.from(response, 'binary');
+                        const downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
             
-                        } else if(keyVersion === '1') {
-
-                        }
                         const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                         const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                             type: 'image/*'
@@ -1035,7 +1028,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
             if(video.chunks) {
                 let s3KeyPrefix, encrytedFileName, fileName, fileType, fileSize, numberOfChunks, messageChannel, fileInUint8Array, fileInUint8ArrayIndex, videoLinkFromServiceWorker;
                 encrytedFileName = atob(video.fileName);
-                fileName = decryptBinaryString(encrytedFileName, state.itemKey);
+                fileName = decryptBinaryString(encrytedFileName, state.itemKey, state.itemIV);
                 fileName = decodeURI(fileName);
                 fileType = decodeURI(video.fileType);
                 fileSize = video.fileSize;
@@ -1204,24 +1197,19 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                 
             } else {
                 const s3Key = video.s3Key;
-                const keyVersion = s3Key.split(":")[1];
+
                 try {
                     dispatch(downloadingContentVideo({itemId, progress:5}));
                     const signedURL = await preS3Download(state.id, s3Key);
                     dispatch(downloadingContentVideo({itemId, progress:10}));
                     const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
                     debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
-                
-                    if(keyVersion === '3') {
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
-        
-                    } else if(keyVersion === '1') {
-
-                    }
+                            
+                    const buffer = Buffer.from(response, 'binary');
+                    const downloadedBinaryString = buffer.toString('binary');
+                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                    decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                    debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
                 
                     const decryptedVideoDataInUint8Array = convertBinaryStringToUint8Array(decryptedVideoStr);
                     const link = window.URL.createObjectURL(new Blob([decryptedVideoDataInUint8Array]), {
@@ -2268,7 +2256,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
-        const keyVersion = s3KeyPrefix.split(":")[1];
 
         //const fileStream = streamSaver.createWriteStream(attachment.fileName, {
         //    size: attachment.fileSize // Makes the percentage visiable in the download
@@ -2401,18 +2388,14 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         return;        
                     }      
                    
-                    if(keyVersion === '3') {
-                        buffer = Buffer.from(response, 'binary');
-                        downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
+                    buffer = Buffer.from(response, 'binary');
+                    downloadedBinaryString = buffer.toString('binary');
+                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                    decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey, state.itemIV)
+                    debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
                         
-                        await writeAChunkToFile(decryptedChunkStr);
+                    await writeAChunkToFile(decryptedChunkStr);
     
-                    } else if(keyVersion === '1') {
-
-                    }
                     resolve();
                 } catch(error) {
                     debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
@@ -2613,7 +2596,7 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                                 content = '';
                                 if(encryptedContent) {
                                     binaryContent = forge.util.decode64(encryptedContent);
-                                    encodedContent = decryptBinaryString(binaryContent, state.itemKey);
+                                    encodedContent = decryptBinaryString(binaryContent, state.itemKey, state.itemIV);
                                     content = forge.util.decodeUtf8(encodedContent);
                                     content = DOMPurify.sanitize(content);
                                 }

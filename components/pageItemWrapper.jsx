@@ -35,7 +35,6 @@ const PageItemWrapper = ({ itemId, children}) => {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const startDateValue = useSelector( state => state.container.startDateValue);
     const [startDate, setStartDate] = useState(new Date(startDateValue));
-    const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
 
     const pageItemId = useSelector(state => state.page.id);
     const pageNumber = useSelector( state=> state.page.pageNumber);
