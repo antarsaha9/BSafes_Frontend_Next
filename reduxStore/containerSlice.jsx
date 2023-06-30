@@ -5,7 +5,7 @@ const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
 import {  stringToEncryptedTokens, newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
-import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, decryptBinaryStringCBC } from '../lib/crypto';
+import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 
 import { getTeamData } from './teamSlice';
 
@@ -425,11 +425,17 @@ export const listContainerThunk = (data) => async (dispatch, getState) => {
 export const searchItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Searching", () => {
         return new Promise(async (resolve, reject) => {
-            let state, body, searchTokens, searchTokensStr;
+            let auth, state, body, searchTokens, searchTokensStr;
             const pageNumber = data.pageNumber;
             dispatch(setMode("search"));
+            auth = getState().auth;
             state = getState().container;
-            searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
+            if(auth.accountVersion === 'v1') {
+                searchTokens = stringToEncryptedTokensECB(data.searchValue, state.searchKey)
+            } else {
+                searchTokens = stringToEncryptedTokensCBC;
+            }
+            
             searchTokensStr = JSON.stringify(searchTokens);
             body = {
                 container: state.container==='root'?state.workspace:state.container,

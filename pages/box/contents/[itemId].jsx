@@ -167,7 +167,7 @@ export default function BoxContents() {
                                 {itemsState && itemsState.length > 0 &&
                                     <Row>
                                         <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                            <div className='mt-4 d-flex justify-content-center'>
+                                            <div className='mt-4'>
                                                 <PaginationControl
                                                     page={pageNumber}
                                                     // between={4}

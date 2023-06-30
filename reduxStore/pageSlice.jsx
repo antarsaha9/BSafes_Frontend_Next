@@ -7,7 +7,7 @@ const axios = require('axios');
 import { setupNewItemKey } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
@@ -116,6 +116,9 @@ function decryptPageItemFunc(state, workspaceKey) {
         state.itemIV = null;
     }
     let itemTags = [];
+    let hiddenTags = {
+        'contentType#Write': true,
+    }
     if (item.tags && item.tags.length > 1) {
         const encryptedTags = item.tags;
         for (let i = 0; i < (item.tags.length - 1); i++) {
@@ -124,7 +127,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             encryptedTag = forge.util.decode64(encryptedTag);
             const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
             const tag = forge.util.decodeUtf8(encodedTag);
-
+            if(hiddenTags[tag]) continue;
             itemTags.push(tag);
           } catch (err) {
             state.error = err;
@@ -1372,11 +1375,15 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            let auth, state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            auth = getState().auth;
             state = getState().page;
             try {
-                       
-	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
+                if(auth.accountVersion === 'v1') {
+                    tagsTokens = tokenfieldToEncryptedTokensECB(data.searchValue, searchKey)
+                } else {
+                    tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
+                }
             
                 if (!state.itemCopy) {
                     try {
@@ -1433,13 +1440,18 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
 export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            let auth, state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            auth = getState().auth;
             state = getState().page;
             try {
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
-                titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
-            
+                if(auth.accountVersion === 'v1') {
+                    titleTokens = stringToEncryptedTokensECB(titleText, searchKey)
+                } else {
+                    titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
+                }
+                
                 if (!state.itemCopy) {
                     try {
                         itemKey = setupNewItemKey();

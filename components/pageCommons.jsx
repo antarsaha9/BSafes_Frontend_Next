@@ -27,6 +27,7 @@ export default function PageCommons() {
 
     const activity = useSelector( state => state.page.activity);
 
+    const pageItemId = useSelector(state => state.page.id);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
@@ -332,6 +333,10 @@ export default function PageCommons() {
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
     }, []);
+
+    useEffect(()=> {
+        setcontentEditorContentWithImagesAndVideos(null);
+    }, [pageItemId])
 
     useEffect(() => {
         if(activity === "Done") {
