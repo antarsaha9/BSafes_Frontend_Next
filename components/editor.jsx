@@ -20,11 +20,11 @@ import { getBrowserInfo, arraryBufferToStr } from "../lib/helper";
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = false;    
     const editorRef = useRef(null);
-    const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
 
     const scriptsLoaded = useSelector(state => state.scripts.done);
 
     const expandedKey = useSelector( state => state.auth.expandedKey);
+    const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
     const itemId = useSelector( state => state.page.id);
     const itemKey = useSelector( state => state.page.itemKey);
     const itemIV = useSelector( state => state.page.itemIV);

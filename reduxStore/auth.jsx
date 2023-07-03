@@ -16,7 +16,8 @@ const initialState = {
     publicKey: null,
     privateKey: null,
     searchKey: null,
-    searchIV: null
+    searchIV: null,
+    froalaLicenseKey: null
 }
 
 const authSlice = createSlice({
@@ -39,6 +40,7 @@ const authSlice = createSlice({
             if(state.accountVersion === 'v2') {
                 state.searchIV = credentials.secret.searchIV;
             }
+            state.froalaLicenseKey = action.payload.froalaLicenseKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
@@ -192,7 +194,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
             } else {
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
