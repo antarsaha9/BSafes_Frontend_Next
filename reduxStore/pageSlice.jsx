@@ -1380,7 +1380,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
             state = getState().page;
             try {
                 if(auth.accountVersion === 'v1') {
-                    tagsTokens = tokenfieldToEncryptedTokensECB(data.searchValue, searchKey)
+                    tagsTokens = tokenfieldToEncryptedTokensECB(tags, searchKey)
                 } else {
                     tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
                 }

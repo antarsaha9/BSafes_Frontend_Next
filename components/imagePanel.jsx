@@ -92,7 +92,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                 :""
             }	
             <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} />
-            <br />
+
         </div>    
     )   
 }
