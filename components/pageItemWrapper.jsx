@@ -23,6 +23,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -159,7 +160,13 @@ const PageItemWrapper = ({ itemId, children}) => {
               }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
-              const teamId = space.substring(0, space.length - 4);
+              let teamId;
+              if(accountVersion === 'v1') {
+                teamId = space.substring(0, space.length - 4);
+              } else {
+                teamId = space;
+              }
+              
               if(path !== 'contents'){
                 dispatch(initWorkspaceThunk({teamId, container}));
               } else {

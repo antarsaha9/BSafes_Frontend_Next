@@ -13,7 +13,7 @@ import Spinner from 'react-bootstrap/Spinner';
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog} from '../../lib/helper'
-import { verifyKeyHashAsync } from '../../reduxStore/v1AccountSlice';
+import { verifyKeyHashAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
@@ -35,7 +35,7 @@ export default function KeyEnter() {
     }
 
     const handleGo = (e) => {
-        dispatch(verifyKeyHashAsync({key}));
+        dispatch(verifyKeyHashAsyncThunk({key}));
     }
 
     useEffect(()=> {

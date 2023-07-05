@@ -29,6 +29,7 @@ export default function Activities(props) {
 
     const [readyToList, setReadyToList] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const expandedKey = useSelector( state => state.auth.expandedKey );
     const personalSearchKey = useSelector( state => state.auth.searchKey);
@@ -80,7 +81,13 @@ export default function Activities(props) {
                     dispatch(changeContainerOnly({container: 'root'}))
                     dispatch(setWorkspaceKeyReady(true));
                 } else {
-                    dispatch(initWorkspaceThunk({teamId:spaceId, container:'root'}));
+                    let teamId;
+                    if(accountVersion === 'v1') {
+                        teamId = spaceId.substring(0, spaceId.length - 4);
+                    } else {
+                         teamId = spaceId;
+                    }
+                    dispatch(initWorkspaceThunk({teamId, container:'root'}));
                 }     
             }
             dispatch(clearActivities());

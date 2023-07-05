@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const argon2 = require('argon2-browser');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { decryptBinaryString, saveLocalCredentials } from '../lib/crypto';
+import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 
 import { loggedIn } from './auth';
 
@@ -65,6 +65,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
                 }    
                 const masterId = data.masterId;
                 const displayMasterId = data.displayMasterId;
+                debugLog(debugOn, "nickname resolved.")
                 dispatch(nicknameResolved({masterId, displayMasterId}));
                 resolve();
             }).catch( error => {
@@ -138,7 +139,7 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
+export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "VerifyKeyHash", () => {
         return new Promise(async (resolve, reject) => {
             const credentials = {
@@ -163,7 +164,7 @@ export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
                     type: argon2.ArgonType.Argon2id
                 })
                 const expandedKeyHex = result.hashHex;
-                expandedKey = forge.util.hexToBytes(expandedKeyHex); // ö¯¯ç?¤EíBñ]¸øä`âØálÈ%Ã7$
+                expandedKey = forge.util.hexToBytes(expandedKeyHex); 
             }
             credentials.secret.expandedKey = expandedKey;
 
@@ -214,7 +215,7 @@ export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
                             credentials.displayName = data.displayName;
                             
                             saveLocalCredentials(credentials, data.sessionKey, data.sessionIV, 'v1');
-                            
+                            dispatch(setNextAuthStep(null));
                             dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}))
                             resolve();
                         } else {
@@ -236,4 +237,29 @@ export const verifyKeyHashAsync = (data) => async (dispatch, getState) => {
     });
 
 }
+
+export const lockAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "VerifyKeyHash", () => {
+        return new Promise(async (resolve, reject) => {
+            clearLocalCredentials('v1');
+            
+            PostCall({
+                api:'/memberAPI/lock'
+            }).then( data => {
+                if(data !== 'ok') {
+                    debugLog(debugOn, "woo... failed to lock.")
+                    reject('LockFailed');
+                    return;
+                }    
+                dispatch(setNextAuthStep(data.nextStep));
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "lock failed: ", error)
+                reject('LockFailed');
+            }) 
+        })
+    })
+}
+
+
 export default v1AccountSlice;

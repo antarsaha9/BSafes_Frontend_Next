@@ -47,12 +47,13 @@ export default function LogIn() {
     useEffect(()=>{
         if(router.query.accountNickname) {
             const nickname = router.query.accountNickname;
+            
             dispatch(nicknameSignInAsyncThunk({nickname}));
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps   
     }, [router.query.accountNickname]);
 
-    useEffect(()=>{
+    /*useEffect(()=>{
         if(!nextAuthStep) return;
         switch(nextAuthStep.step){
             case 'MFARequired':
@@ -62,7 +63,7 @@ export default function LogIn() {
                 break;
             default:
         }
-    }, [nextAuthStep]);
+    }, [nextAuthStep]);*/
 
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
