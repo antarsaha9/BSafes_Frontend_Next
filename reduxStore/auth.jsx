@@ -3,6 +3,8 @@ const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
+import { setNextAuthStep } from './v1AccountSlice';
+
 const debugOn = false;
 
 const initialState = {
@@ -44,6 +46,12 @@ const authSlice = createSlice({
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
+            state.expandedKey = null;
+            state.publicKey = null;
+            state.privateKey = null;
+            state.searchKey = null;
+            state.searchIV = null;
+            state.froalaLicenseKey = null;
         }
     }
 });
@@ -165,7 +173,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoggingOut", () => {
         return new Promise(async (resolve, reject) => {
-
+            localStorage.clear();
             PostCall({
                 api:'/memberAPI/logOut'
             }).then( data => {
@@ -181,7 +189,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to log out.")
                 reject();
             })
-            localStorage.clear();
+            
         });
     });
 }
@@ -194,8 +202,16 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
-            } else {
+                if(data.nextStep) {
+                    dispatch(setNextAuthStep(data.nextStep))
+                } else {
+                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                }
+            } else { 
+                const nextStep = {
+                    step: 'Home',
+                }
+                dispatch(setNextAuthStep(nextStep));
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
         }).catch( error => {

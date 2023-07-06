@@ -6,12 +6,14 @@ const argon2 = require('argon2-browser');
 import { debugLog, PostCall } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 
-import { loggedIn } from './auth';
+import { loggedIn, loggedOut } from './auth';
+import { nextSaturday } from 'date-fns';
 
 const debugOn = true;
 
 const initialState = {
     activity: "Done",
+    nickname: "",
     masterId: "",
     displayMasterId: "",
     nextAuthStep: null
@@ -25,16 +27,24 @@ const v1AccountSlice = createSlice({
             state.activity = action.payload;
         },
         nicknameResolved: (state, action) => {
+            state.nickname = action.payload.nickname;
             state.masterId = action.payload.masterId;
             state.displayMasterId = action.payload.displayMasterId;
         },
         setNextAuthStep: (state, action) => {
             state.nextAuthStep = action.payload;
+        },
+        signedOut: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
         }
     }
 });
 
-export const { activityChanged, nicknameResolved, setNextAuthStep } = v1AccountSlice.actions;
+export const { activityChanged, nicknameResolved, setNextAuthStep, signedOut } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -66,7 +76,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
                 const masterId = data.masterId;
                 const displayMasterId = data.displayMasterId;
                 debugLog(debugOn, "nickname resolved.")
-                dispatch(nicknameResolved({masterId, displayMasterId}));
+                dispatch(nicknameResolved({nickname, masterId, displayMasterId}));
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "nicknameSignIn failed: ", error)
@@ -239,18 +249,19 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const lockAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "VerifyKeyHash", () => {
+    newActivity(dispatch, "Lock", () => {
         return new Promise(async (resolve, reject) => {
             clearLocalCredentials('v1');
-            
+            dispatch(loggedOut());
             PostCall({
                 api:'/memberAPI/lock'
             }).then( data => {
-                if(data !== 'ok') {
+                if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to lock.")
                     reject('LockFailed');
                     return;
                 }    
+                
                 dispatch(setNextAuthStep(data.nextStep));
                 resolve();
             }).catch( error => {
@@ -261,5 +272,35 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
     })
 }
 
+export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, "SignOut", () => {
+        return new Promise(async (resolve, reject) => {
+            const nickname = getState().v1Account.nickname;
+
+            localStorage.clear();
+            dispatch(signedOut());
+            dispatch(loggedOut());
+
+            PostCall({
+                api:'/memberAPI/signOut'
+            }).then( data => {
+                if(data.status !== 'ok') {
+                    debugLog(debugOn, "woo... failed to signout.")
+                    reject('SignOutFailed');
+                    return;
+                }    
+                const nextStep = {
+                    step: 'SignIn',
+                    nickname
+                }
+                dispatch(setNextAuthStep(nextStep));
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "lock failed: ", error)
+                reject('LockFailed');
+            }) 
+        })
+    })
+}
 
 export default v1AccountSlice;

@@ -24,6 +24,7 @@ export default function KeyEnter() {
     const router = useRouter();
 
     const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
+    const accountVersion = useSelector( state=> state.auth.accountVersion);
     const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
     
     const keyHint = nextAuthStep && nextAuthStep.keyHint;
@@ -46,7 +47,7 @@ export default function KeyEnter() {
 
     return (
         <div className={BSafesStyle.managedMemberLoginBackground}>
-            <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
+            <ContentPageLayout showNavbarMenu={accountVersion === 'v1'} showPathRow={false}> 
                 <Container className="mt-5">
                     <br />
                     <br />   

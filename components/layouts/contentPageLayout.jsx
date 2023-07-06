@@ -14,7 +14,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk } from '../../reduxStore/auth';
-import { lockAsyncThunk } from '../../reduxStore/v1AccountSlice';
+import { lockAsyncThunk, signOutAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = false;
@@ -40,6 +40,10 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         dispatch(lockAsyncThunk())
     }
 
+    const signOut = (e) => {
+        dispatch(signOutAsyncThunk())
+    }
+
     useEffect(() => {
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
         dispatch(preflightAsyncThunk());
@@ -49,6 +53,14 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     useEffect(()=> {
         if(!nextAuthStep) return;
         switch(nextAuthStep.step){
+            case 'Home':
+                const path = router.asPath;
+                if(path === '/logIn' || path.startsWith('/n/')) break;
+                router.push('/');
+                break;
+            case 'SignIn':
+                router.push(`/n/${nextAuthStep.nickname}`);
+                break;
             case 'MFARequired':
                 router.push('/v1/extraMFA')
                 break;
@@ -56,6 +68,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                 router.push('/v1/keyEnter');
                 break;
             default:
+                
         }
     }, [nextAuthStep])
     
@@ -85,10 +98,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                                 { isLoggedIn &&
                                     <Dropdown.Item onClick={lock}>Lock</Dropdown.Item> 
                                 }
-                                { (isLoggedIn || nextAuthStep.step === 'KeyRequired')?
-                                    <Dropdown.Item onClick={logOut}>Sign out</Dropdown.Item>
-                                    :
-                                    <Dropdown.Item onClick={logIn}>Sign In</Dropdown.Item> 
+                                { (isLoggedIn || (nextAuthStep && nextAuthStep.step === 'KeyRequired')) &&
+                                    <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
                                 }
                             </Dropdown.Menu>
                         }
