@@ -289,6 +289,7 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
                     reject('SignOutFailed');
                     return;
                 }    
+
                 const nextStep = {
                     step: 'SignIn',
                     nickname

@@ -196,7 +196,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 
 export const preflightAsyncThunk = () => async (dispatch, getState) => {
     await new Promise(resolve => {
-
+        dispatch(setNextAuthStep(null));
         PostCall({
             api:'/memberAPI/preflight'
         }).then( data => {
@@ -222,6 +222,11 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
     
 }
 
+export const checkLocalSession = () => {
+    const authToken = localStorage.getItem('authToken');
+    const encodedGold = localStorage.getItem("encodedGold");
+    return {sessionExists:authToken?true:false, unlocked:encodedGold?true:false};
+} 
 
 export const authReducer = authSlice.reducer;
 
