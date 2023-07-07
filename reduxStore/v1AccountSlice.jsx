@@ -16,7 +16,8 @@ const initialState = {
     nickname: "",
     masterId: "",
     displayMasterId: "",
-    nextAuthStep: null
+    nextAuthStep: null,
+    keyMeta: null,
 }
 
 const v1AccountSlice = createSlice({
@@ -34,6 +35,9 @@ const v1AccountSlice = createSlice({
         setNextAuthStep: (state, action) => {
             state.nextAuthStep = action.payload;
         },
+        setKeyMeta: (state, action) => {
+            state.keyMeta = action.payload;
+        },
         signedOut: (state, action) => {
             const stateKeys = Object.keys(initialState);
             for(let i=0; i<stateKeys.length; i++) {
@@ -44,7 +48,7 @@ const v1AccountSlice = createSlice({
     }
 });
 
-export const { activityChanged, nicknameResolved, setNextAuthStep, signedOut } = v1AccountSlice.actions;
+export const { activityChanged, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -111,6 +115,9 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 }    
                 
                 localStorage.setItem("authToken", data.authToken);
+                if(data.nextStep.keyMeta){
+                    dispatch(setKeyMeta(data.nextStep.keyMeta));
+                }
                 dispatch(setNextAuthStep(data.nextStep)); 
                 resolve();
             }).catch( error => {
@@ -138,7 +145,10 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
                     reject('InvalidMFA');
                     return;
                 }    
-                
+                localStorage.setItem("MFAPassed", 'true');
+                if(data.nextStep.keyMeta){
+                    dispatch(setKeyMeta(data.nextStep.keyMeta));
+                }
                 dispatch(setNextAuthStep(data.nextStep)); 
                 resolve();
             }).catch( error => {
@@ -158,10 +168,10 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
             };
             const goldenKey = data.key; 
             const state = getState().v1Account;
-            const keySalt = forge.util.decode64(state.nextAuthStep.keySalt); 
+            const keySalt = forge.util.decode64(state.keyMeta.keySalt); 
             let expandedKey; 
 
-            if(state.nextAuthStep.schemeVersion === '0') {
+            if(state.keyMeta.schemeVersion === '0') {
                 expandedKey = forge.pkcs5.pbkdf2(goldenKey, keySalt, 10000, 32);
             } else {
                 const result= await argon2.hash({
@@ -277,13 +287,13 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             const nickname = getState().v1Account.nickname;
 
-            localStorage.clear();
             dispatch(signedOut());
             dispatch(loggedOut());
 
             PostCall({
                 api:'/memberAPI/signOut'
             }).then( data => {
+                localStorage.clear();
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to signout.")
                     reject('SignOutFailed');

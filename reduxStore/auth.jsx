@@ -5,11 +5,15 @@ import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
 import { setNextAuthStep } from './v1AccountSlice';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: "Done",
     error: null,
+    contextId:null,
+    preflightReady: false,
+    localSessionState: null,
+    MFAPassed: false,
     accountVersion:'',
     memberId: null,
     displayName: null,
@@ -28,6 +32,15 @@ const authSlice = createSlice({
     reducers: {
         activityChanged: (state, action) => {
             state.activity = action.payload;
+        },
+        setContextId:(state, action) => {
+            state.contextId = action.payload;
+        },
+        setPreflightReady: (state, action) => {
+            state.preflightReady = action.payload;
+        },
+        setLocalSessionState: (state, action) => {
+            state.localSessionState = action.payload;
         },
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
@@ -56,7 +69,7 @@ const authSlice = createSlice({
     }
 });
 
-export const {activityChanged, loggedIn, loggedOut} = authSlice.actions;
+export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, loggedIn, loggedOut} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -214,6 +227,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
                 dispatch(setNextAuthStep(nextStep));
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
+            dispatch(setPreflightReady(true));
         }).catch( error => {
             debugLog(debugOn, "woo... preflight failed.")
         })
@@ -222,11 +236,32 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
     
 }
 
-export const checkLocalSession = () => {
-    const authToken = localStorage.getItem('authToken');
-    const encodedGold = localStorage.getItem("encodedGold");
-    return {sessionExists:authToken?true:false, unlocked:encodedGold?true:false};
-} 
+export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
+    const checkLocalSession = () => {
+        const authToken = localStorage.getItem('authToken');
+        const encodedGold = localStorage.getItem("encodedGold");
+        const MFAPassed = localStorage.getItem("MFAPassed");
+        return {sessionExists:authToken?true:false, MFAPassed:MFAPassed?true:false, unlocked:encodedGold?true:false};
+    } 
+    const state = getState().auth;
+    let contextId = state.contextId;
+    if(!contextId){
+        contextId = Date.now();
+        dispatch(setContextId(contextId));
+    }
+    const intervalId =  `checkSessionStateInterval-${contextId}`;
+    let checkSessionStateInterval = localStorage.getItem(intervalId);
+    
+    if(!checkSessionStateInterval) {
+        const thisInterval = setInterval(()=>{
+            debugLog(debugOn, "Check session state");
+            const state = checkLocalSession();
+            dispatch(setLocalSessionState(state));
+        }, 1000);
+        localStorage.setItem(intervalId, thisInterval)
+        debugLog(debugOn, "Creating new timer: ", thisInterval)
+    }
+}
 
 export const authReducer = authSlice.reducer;
 

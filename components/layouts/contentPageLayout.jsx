@@ -13,7 +13,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
 
-import { preflightAsyncThunk, checkLocalSession, loggedOut } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
@@ -22,20 +22,22 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const [localSessionState, setLocalSessionState] = useState(null);
+    const [nextRoute, setNextRoute] = useState(null);
     
+    const preflightReady = useSelector( state=>state.auth.preflightReady);
+    const localSessionState = useSelector( state => state.auth.localSessionState);
     const accountVersion = useSelector(state => state.auth.accountVersion);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const nextAuthStep = useSelector( state => state.v1Account.nextAuthStep);
 
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
-        router.push('/logIn');
+        changePage('/logIn');
     }
 
     const logOut = (e) => {
         debugLog(debugOn, "Log out");
-        router.push('/logOut');
+        changePage('/logOut');
     }
 
     const lock = (e) => {
@@ -47,76 +49,125 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     }
 
     useEffect(() => {
+        dispatch(setPreflightReady(false));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
         dispatch(preflightAsyncThunk());
 
-        const checkSessionInterval = setInterval(()=>{
-            debugLog(debugOn, "Check session state");
-            const state = checkLocalSession();
-            setLocalSessionState(state);
-        }, 1000);
+        const handleRouteChange = (url, { shallow }) => {
+            debugLog(debugOn, "Route is going to change ...")
+        }
+      
+        router.events.on('routeChangeStart', handleRouteChange)
+      
+          // If the component is unmounted, unsubscribe
+          // from the event with the `off` method:
+
         return () => {
-            clearInterval(checkSessionInterval);
+            router.events.off('routeChangeStart', handleRouteChange);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(()=> {
+        if(preflightReady) {
+            dispatch(createCheckSessionIntervalThunk());
+        }
+    }, [preflightReady]);
+
+    useEffect(()=> {
+        if(!nextRoute) return;
+        const path = router.asPath;
+        if(path === nextRoute) return;
+        changeRoute(nextRoute);
+    }, [nextRoute])
+
+    const changeRoute = (route) => {
+        dispatch(setNextAuthStep(null));
+        const path = router.asPath;
+        if(path === route) return;
+        debugLog(debugOn, "router.push: ", route);
+        router.push(route);
+    }
+
+    const changePage = (page) => {
+        setNextRoute(page);
+    }
+    useEffect(()=> {
         if(!isLoggedIn && localSessionState && localSessionState.unlocked) {
-            router.push('/safe')
+            changePage('/safe')
             return;
         }
 
         if(!isLoggedIn && localSessionState && localSessionState.sessionExists) {
-            
-            return;
-        }
-
-        if(isLoggedIn &&  localSessionState && localSessionState.unlocked) {
             const path = router.asPath;
-            if(path === '/' || path === '/logIn' || path.startsWith('/n/')) {
-                router.push('/safe');
+            if(path.startsWith('/v1/')) {
+                if(path === '/v1/extraMFA') {
+                    if(localSessionState.MFAPassed) {
+                        changePage('/v1/keyEnter');
+                    }
+                }
+            } else {
+                debugLog(debugOn, "route localSessionState: ", localSessionState);
+                changePage('/v1/extraMFA');
             }
             return;
         }
 
-        if(isLoggedIn &&  localSessionState && !localSessionState.unlocked) {
-            dispatch(loggedOut());
+        if(!isLoggedIn && localSessionState && !localSessionState.sessionExists) {
             const path = router.asPath;
-            if(path === '/' || path === '/logIn' || path.startsWith('/n/' || path.startsWith('/v1/'))) return;
-            router.push('/');
-            
+            if(path.startsWith('/v1/')) {
+                changePage('/');
+            }
+        }
+
+        if(isLoggedIn &&  localSessionState && localSessionState.unlocked) {
+            const path = router.asPath;
+            if(path === '/' || path.startsWith('/public/') || path.startsWith('/v1/')){
+                changePage('/safe');
+            }
             return;
         }
 
-        if( localSessionState && !localSessionState.sessionExists) {
-            const path = router.asPath;
-            if(path === '/' || path === '/logIn' || path.startsWith('/n/')) return;
-            router.push('/');
+        if(isLoggedIn &&  localSessionState && !localSessionState.unlocked && !localSessionState.sessionExists) {
+            dispatch(loggedOut());
+            changePage('/');    
+            return;
+        }
+
+        if(isLoggedIn && localSessionState && !localSessionState.unlocked && localSessionState.sessionExists) {
+            dispatch(loggedOut());
+            dispatch(preflightAsyncThunk());
         }
     }, [localSessionState])
 
     useEffect(()=> {
         if(!nextAuthStep) return;
+        
+        debugLog(debugOn, "route nextAuthStep: ", nextAuthStep.step);
+        let nextPage = null;
         switch(nextAuthStep.step){
             case 'Home':
                 const path = router.asPath;
                 if(path === '/logIn' || path.startsWith('/n/')) break;
-                router.push('/');
+                nextPage = '/';
                 break;
             case 'SignIn':
-                router.push(`/n/${nextAuthStep.nickname}`);
+                nextPage = `/n/${nextAuthStep.nickname}`;
                 break;
             case 'MFARequired':
-                router.push('/v1/extraMFA')
+                nextPage = '/v1/extraMFA';
                 break;
             case 'KeyRequired':
-                router.push('/v1/keyEnter');
+                nextPage = '/v1/keyEnter';
                 break;
             default:
                 
         }
-        setNextAuthStep(null);
+        dispatch(setNextAuthStep(null));
+        if(nextPage) {
+            const path = router.asPath;
+            if(path !== nextPage) changePage(nextPage);
+        }
     }, [nextAuthStep])
     
     return (

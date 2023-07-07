@@ -23,11 +23,11 @@ export default function KeyEnter() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const nextAuthStep = useSelector(state=> state.v1Account.nextAuthStep);
+    const keyMeta = useSelector(state=> state.v1Account.keyMeta);
     const accountVersion = useSelector( state=> state.auth.accountVersion);
     const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
     
-    const keyHint = nextAuthStep && nextAuthStep.keyHint;
+    const keyHint = keyMeta && keyMeta.keyHint;
 
     const [key, setKey] = useState('');
 
