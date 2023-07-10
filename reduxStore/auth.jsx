@@ -2,8 +2,8 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
-import { setNextAuthStep } from './v1AccountSlice';
+import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { setNextAuthStep, setKeyMeta } from './v1AccountSlice';
 
 const debugOn = true;
 
@@ -187,12 +187,12 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoggingOut", () => {
         return new Promise(async (resolve, reject) => {
             localStorage.clear();
+            dispatch(loggedOut());
             PostCall({
                 api:'/memberAPI/logOut'
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {
-                    dispatch(loggedOut());
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... failed to log out: ", data.error)
@@ -209,6 +209,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 
 export const preflightAsyncThunk = () => async (dispatch, getState) => {
     await new Promise(resolve => {
+        const auth = getState().auth;
         dispatch(setNextAuthStep(null));
         PostCall({
             api:'/memberAPI/preflight'
@@ -216,16 +217,26 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
                 if(data.nextStep) {
+                    if(data.nextStep.keyMeta){
+                        dispatch(setKeyMeta(data.nextStep.keyMeta));
+                    }
+                    if(data.idleTimeout) {
+                        if(auth.accountVersion === 'v1'){
+                            clearLocalCredentials('v1');
+                        } else {
+                            localStorage.clear();
+                            dispatch(loggedOut());
+                        }
+                    } 
                     dispatch(setNextAuthStep(data.nextStep))
                 } else {
                     dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
                 }
             } else { 
-                const nextStep = {
-                    step: 'Home',
+                if(data.error === 'SessionNotExisted'){
+                    localStorage.clear();
+                    dispatch(loggedOut);
                 }
-                dispatch(setNextAuthStep(nextStep));
-                debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
             dispatch(setPreflightReady(true));
         }).catch( error => {

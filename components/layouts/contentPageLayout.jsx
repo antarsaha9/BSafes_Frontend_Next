@@ -15,6 +15,7 @@ import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk, setPreflightReady, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk } from '../../reduxStore/v1AccountSlice';
+import { ro } from 'date-fns/locale';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = true;
@@ -115,9 +116,9 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
         if(!isLoggedIn && localSessionState && !localSessionState.sessionExists) {
             const path = router.asPath;
-            if(path.startsWith('/v1/')) {
-                changePage('/');
-            }
+            if(path === '/logIn' || path.startsWith('/n/') ) return;
+            changePage('/');
+            
         }
 
         if(isLoggedIn &&  localSessionState && localSessionState.unlocked) {
@@ -196,7 +197,14 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                                 { isLoggedIn &&
                                     <Dropdown.Item onClick={lock}>Lock</Dropdown.Item> 
                                 }
-                                { (isLoggedIn || (nextAuthStep && nextAuthStep.step === 'KeyRequired')) &&
+                                { (isLoggedIn || (router.asPath === '/v1/keyEnter')) &&
+                                    <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
+                                }
+                            </Dropdown.Menu>
+                        }
+                        { accountVersion === '' &&
+                            <Dropdown.Menu>
+                                { (router.asPath === '/v1/keyEnter') &&
                                     <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
                                 }
                             </Dropdown.Menu>

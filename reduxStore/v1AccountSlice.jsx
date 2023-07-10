@@ -42,6 +42,7 @@ const v1AccountSlice = createSlice({
             const stateKeys = Object.keys(initialState);
             for(let i=0; i<stateKeys.length; i++) {
                 let key = stateKeys[i];
+                if(key === 'nickname') continue;
                 state[key] = initialState[key];
             }
         }
@@ -114,7 +115,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                     return;
                 }    
                 
-                localStorage.setItem("authToken", data.authToken);
+                localStorage.setItem("authToken", data.authToken + 'fake');
                 if(data.nextStep.keyMeta){
                     dispatch(setKeyMeta(data.nextStep.keyMeta));
                 }
