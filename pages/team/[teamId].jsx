@@ -12,7 +12,6 @@ import Workspace from '../../components/workspace'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
-import { getTeamData } from '../../reduxStore/teamSlice';
 import { changeContainerOnly, clearItems, initWorkspaceThunk, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
 import { abort } from '../../reduxStore/pageSlice';
 
@@ -63,7 +62,8 @@ export default function Team(props) {
             const teamId = router.query.teamId;
             debugLog(debugOn, "Set up workspace");
             dispatch(clearItems());
-            if(router.query.teamId === workspaceId) {
+            
+            if(workspaceId && workspaceId.startsWith(router.query.teamId)) {
               dispatch(changeContainerOnly({container: 'root'}))
               dispatch(setWorkspaceKeyReady(true));
             } else {

@@ -5,7 +5,7 @@ const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
 import {  stringToEncryptedTokens, newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
-import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, decryptBinaryStringCBC } from '../lib/crypto';
+import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 
 import { getTeamData } from './teamSlice';
 
@@ -218,6 +218,7 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
     const searchIV = data.searchIV;
     newActivity(dispatch, "CreatingANewItem", () => {
         return new Promise( (resolve, reject) => {
+            const auth = getState().auth;
             const title = '<h2>' + titleStr + '</h2>';
             const encodedTitle = forge.util.encodeUtf8(title);
           
@@ -225,7 +226,12 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
             const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
             const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
           
-            const titleTokens = stringToEncryptedTokens(titleStr, searchKey, searchIV);
+            let titleTokens;
+            if(auth.accountVersion === 'v1') {
+                titleTokens = stringToEncryptedTokensECB(titleStr, searchKey)
+            } else {
+                titleTokens = stringToEncryptedTokensCBC(titleStr, searchKey, searchIV);
+            }
           
             let addActionOptions;
             if (addAction === "addAnItemOnTop") {
@@ -273,9 +279,16 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
     dispatch(clearContainer());
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
-            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
+            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, workspaceId, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
             auth = getState().auth;
             try {
+                
+                if(auth.accountVersion === 'v1') {
+                    workspaceId = data.teamId + ':' + '1' + ':' + '0';
+                } else {
+                    workspaceId = data.teamId;
+                }
+                
                 team = await getTeamData(data.teamId);
                 teamKeyEnvelope = team.teamKeyEnvelope;
                 privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
@@ -284,7 +297,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                 encryptedTeamName = team.team._source.name;
                 if(team.team._source.IV) {
                     teamIV = team.team._source.IV;
-                    encodedTeamName = decryptBinaryStringCBC(forge.util.decode64(encryptedTeamName), teamKey, forge.util.decode64(teamIV));
+                    encodedTeamName = decryptBinaryString(forge.util.decode64(encryptedTeamName), teamKey, forge.util.decode64(teamIV));
                 } else {
                     encodedTeamName = decryptBinaryString(forge.util.decode64(encryptedTeamName), teamKey);
                 }
@@ -301,7 +314,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                 teamSearchKeyEnvelope = team.team._source.searchKeyEnvelope;
                 if(team.team._source.searchKeyIV) {
                     teamSearchKeyIV = team.team._source.searchKeyIV;
-                    teamSearchKey = decryptBinaryStringCBC(forge.util.decode64(teamSearchKeyEnvelope), teamKey, forge.util.decode64(teamSearchKeyIV));
+                    teamSearchKey = decryptBinaryString(forge.util.decode64(teamSearchKeyEnvelope), teamKey, forge.util.decode64(teamSearchKeyIV));
                 } else {
                     teamSearchKey = decryptBinaryString(forge.util.decode64(teamSearchKeyEnvelope), teamKey);
                 }
@@ -310,11 +323,11 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                     teamSearchIV = decryptBinaryString(forge.util.decode64(teamSearchIVEnvelope), teamKey);
                 }
                 
-                dispatch(initContainer({container: data.container, workspaceId:data.teamId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
+                dispatch(initContainer({container: data.container, workspaceId, workspaceName:displayTeamName, workspaceKey:teamKey, searchKey:teamSearchKey, searchIV:teamSearchIV }));
                 dispatch(setWorkspaceKeyReady(true));
                 resolve();
             } catch(error) {
-                debugLog(debugOn, "initWorkspaceThunk faile: ", error);
+                debugLog(debugOn, "initWorkspaceThunk failed: ", error);
                 reject(error);
             }
         });
@@ -424,11 +437,17 @@ export const listContainerThunk = (data) => async (dispatch, getState) => {
 export const searchItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Searching", () => {
         return new Promise(async (resolve, reject) => {
-            let state, body, searchTokens, searchTokensStr;
+            let auth, state, body, searchTokens, searchTokensStr;
             const pageNumber = data.pageNumber;
             dispatch(setMode("search"));
+            auth = getState().auth;
             state = getState().container;
-            searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
+            if(auth.accountVersion === 'v1') {
+                searchTokens = stringToEncryptedTokensECB(data.searchValue, state.searchKey)
+            } else {
+                searchTokens = stringToEncryptedTokensCBC(data.searchValue, state.searchKey, state.searchIV);
+            }
+            
             searchTokensStr = JSON.stringify(searchTokens);
             body = {
                 container: state.container==='root'?state.workspace:state.container,

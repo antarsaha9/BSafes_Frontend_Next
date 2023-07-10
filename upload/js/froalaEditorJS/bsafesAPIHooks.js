@@ -47,3 +47,11 @@ async function postS3Upload(s3Object) {
 function uploadData(data, signedURL, onProgress) {
     return window.bsafesFroala.uploadData(data, signedURL, onProgress);    
 }
+
+function getBrowserInfo() {
+    return window.bsafesFroala.getBrowserInfo();
+}
+
+function arraryBufferToStr(arrayBuffer) {
+    return window.bsafesFroala.arraryBufferToStr(arrayBuffer);
+}

@@ -23,6 +23,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -35,7 +36,6 @@ const PageItemWrapper = ({ itemId, children}) => {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const startDateValue = useSelector( state => state.container.startDateValue);
     const [startDate, setStartDate] = useState(new Date(startDateValue));
-    const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
 
     const pageItemId = useSelector(state => state.page.id);
     const pageNumber = useSelector( state=> state.page.pageNumber);
@@ -133,6 +133,12 @@ const PageItemWrapper = ({ itemId, children}) => {
           }
           dispatch(setWorkspaceKeyReady(true));
           return;
+        } else if(space === workspace){
+          if(container !== containerInWorkspace) {
+            dispatch(changeContainerOnly({container}));
+          }
+          dispatch(setWorkspaceKeyReady(true));
+          return;
         }
         
         dispatch(clearContainer());
@@ -154,10 +160,17 @@ const PageItemWrapper = ({ itemId, children}) => {
               }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
-              if(path !== 'contents'){
-                dispatch(initWorkspaceThunk({teamId:space, container}));
+              let teamId;
+              if(accountVersion === 'v1') {
+                teamId = space.substring(0, space.length - 4);
               } else {
-                dispatch(initWorkspaceThunk({teamId:space, container:pageItemId}));
+                teamId = space;
+              }
+              
+              if(path !== 'contents'){
+                dispatch(initWorkspaceThunk({teamId, container}));
+              } else {
+                dispatch(initWorkspaceThunk({teamId, container:pageItemId}));
               }            
           }
       }

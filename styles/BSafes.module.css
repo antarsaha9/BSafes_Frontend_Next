@@ -36,6 +36,12 @@
   margin-left: -1em;
   z-index: 1000;
 }
+
+.inputBox {
+  border:1px solid black;
+  border-radius: 6px;
+  padding: 1rem 1rem;
+}
 /* End of general */
 
 /*--********  Navigation bar */
@@ -50,14 +56,18 @@
   padding-bottom: 0;
 }
 
+.navbarMenu {
+  padding: 0.4rem 1rem;
+}
+
 .memberBadge {
   display: inline-block;
-  width: 42px;
-  height: 42px;
-  margin-top: 5px;
+  width: 36px;
+  height: 36px;
+  margin-top: 2px;
   padding-top: 2px;
   border-radius: 50%;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: bold;
   color: #fff;
   background-color: #000;
@@ -136,6 +146,11 @@
 
 /*--****** Safe *******/
 	/* Safe general */
+.managedMemberLoginBackground {
+  background-color: #f8f8f8;
+  height: 100vh;
+}
+
 
 .safeItemTypeIcon {
   margin-right:20px;

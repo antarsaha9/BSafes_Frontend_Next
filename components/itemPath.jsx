@@ -38,9 +38,9 @@ export default function ItemPath() {
     useEffect(()=>{
         if(!aborted && itemPath && workspaceKeyReady) {
             debugLog(debugOn, "itemPath && workspaceKeyReady");
-            const decryptedItems = itemPath.map((item, index) =>{
+            const decryptedItems = itemPath.map((item) =>{
                 const pathItemType = item._id.split(':')[0];
-                let pathItemIcon, pathItemLink, encodedTitle, title, temp, itemTitleText, decoded, itemKey;
+                let pathItemIcon, pathItemLink, encodedTitle, title, temp, itemTitleText, itemKey, itemIV;
                 switch(pathItemType) {
                     case 'u':
                         pathItemIcon = null;
@@ -97,12 +97,15 @@ export default function ItemPath() {
                 }
 
                 if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't' || pathItemType === 'tm' || pathItemType === 'ac' ) {
-                } else if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
-                } else {
-                    decoded = forge.util.decode64(item._source.keyEnvelope);
-                    itemKey = decryptBinaryString(decoded, workspaceKey);
+                } else { 
+                    if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
+                        itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey, forge.util.decode64(item._source.envelopeIV));
+                        itemIV = decryptBinaryString(forge.util.decode64(item._source.ivEnvelope), workspaceKey, forge.util.decode64(item._source.ivEnvelopeIV));
+                    } else { 
+                        itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey);
+                    }   
                     if(item._source.title) {
-                        encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey);
+                        encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey, itemIV);
                         title = forge.util.decodeUtf8(encodedTitle);
                         title = DOMPurify.sanitize(title);
                         temp = document.createElement('span');
@@ -110,8 +113,7 @@ export default function ItemPath() {
                         itemTitleText = temp.textContent || temp.innerText;
                     } else {
                         itemTitleText = '';
-                    }
-                    
+                    }         
                 }
                 return {
                     title: itemTitleText,

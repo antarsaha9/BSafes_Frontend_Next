@@ -6,14 +6,10 @@ import Col from "react-bootstrap/Col";
 
 import Editor from "./editor";
 
-import { getPageCommentsThunk } from "../reduxStore/pageSlice";
 import { formatTimeDisplay } from "../lib/bSafesCommonUI";
 
 export default function Comments({handlePenClicked, handleContentChanged, editable }) {
-  const dispatch = useDispatch();
 
-  const itemId = useSelector(state => state.page.id);
-  const itemKey = useSelector( state => state.page.itemKey);
   const newCommentEditorMode = useSelector(state => state.page.newCommentEditorMode);
   const comments = useSelector(state => state.page.comments);
 

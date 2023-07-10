@@ -4,6 +4,8 @@ import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
 
+import BSafesStyle from '../styles/BSafes.module.css'
+
 import { debugLog } from '../lib/helper'
 
 export default function KeyInput({onKeyChanged}) {
@@ -161,6 +163,7 @@ export default function KeyInput({onKeyChanged}) {
                     onPaste={handlePaste}
                     onKeyDown={handleKeyDown}
                     value={hidden?maskedKeyState:masterKeyState}
+                    className={BSafesStyle.inputBox}
                 >
                 </Form.Control>
                 <Button onClick={handleClick} variant="dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>

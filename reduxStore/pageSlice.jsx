@@ -1,4 +1,5 @@
 import { createSlice} from '@reduxjs/toolkit';
+
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
@@ -6,11 +7,11 @@ const axios = require('axios');
 import { setupNewItemKey } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC } from '../lib/crypto';
-import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
+import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     aborted: false,
@@ -39,8 +40,6 @@ const initialState = {
     contentImagedDownloadIndex: 0,
     contentImagesDisplayIndex:0,
     contentVideosDownloadQueue:[],
-    contentVideosDownloadIndex:0,
-    contentVideosDisplayIndex:0,
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
@@ -109,14 +108,17 @@ function decryptPageItemFunc(state, workspaceKey) {
         state.error = "Undefined item key";
     }
     if(item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
-        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), expandedKey, forge.util.decode64(item.envelopeIV));
-        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), expandedKey, forge.util.decode64(item.ivEnvelopeIV));
+        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), workspaceKey, forge.util.decode64(item.envelopeIV));
+        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), workspaceKey, forge.util.decode64(item.ivEnvelopeIV));
     } else {
         const decoded = forge.util.decode64(item.keyEnvelope);
         state.itemKey = decryptBinaryString(decoded, workspaceKey);
         state.itemIV = null;
     }
     let itemTags = [];
+    let hiddenTags = {
+        'contentType#Write': true,
+    }
     if (item.tags && item.tags.length > 1) {
         const encryptedTags = item.tags;
         for (let i = 0; i < (item.tags.length - 1); i++) {
@@ -125,7 +127,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             encryptedTag = forge.util.decode64(encryptedTag);
             const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
             const tag = forge.util.decodeUtf8(encodedTag);
-
+            if(hiddenTags[tag]) continue;
             itemTags.push(tag);
           } catch (err) {
             state.error = err;
@@ -134,7 +136,6 @@ function decryptPageItemFunc(state, workspaceKey) {
     };
     state.tags = itemTags;
 
-    let titleText = "";
     if (item.title) {
         try {
             const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
@@ -172,7 +173,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             const queueId = 'd' + i;
             if(image.words && image.words !== "") {
                 encryptedWords = forge.util.decode64(image.words);
-                encodedWords = decryptBinaryString(encryptedWords, state.itemKey);
+                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
                 words = forge.util.decodeUtf8(encodedWords);
                 words = DOMPurify.sanitize(words);
             } else {
@@ -195,7 +196,7 @@ function decryptPageItemFunc(state, workspaceKey) {
         for(let i=1; i< item.attachments.length; i++) {
             let attachment = item.attachments[i];
             encryptedFileName = forge.util.decode64(attachment.fileName);
-            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey);
+            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey, state.itemIV);
             fileName = forge.util.decodeUtf8(encodedFileName);
             const newPanel = {
                 queueId: 'a'+i,
@@ -343,7 +344,8 @@ const pageSlice = createSlice({
         downloadingContentVideo: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "Downloading";
             video.progress = action.payload.progress;
@@ -351,7 +353,8 @@ const pageSlice = createSlice({
         contentVideoFromServiceWorker: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "DownloadedFromServiceWorker";
             video.src = action.payload.link;
@@ -359,14 +362,11 @@ const pageSlice = createSlice({
         contentVideoDownloaded: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            const video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
             if(!video) return;
             video.status = "Downloaded";
             if(action.payload.link) video.src = action.payload.link;
-            state.contentVideosDownloadIndex += 1;
-        },
-        updateContentVideosDisplayIndex: (state, action) => {
-            state.contentVideosDisplayIndex = action.payload;
         },
         addUploadImages: (state, action) => {
             if(state.aborted ) return;
@@ -460,7 +460,9 @@ const pageSlice = createSlice({
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.attachmentsUploadQueue.length;
-                const newUpload = {file: files[i], numberOfChunks:Math.floor(files[i].size/state.chunkSize) + 1};
+                let numberOfChunks = Math.floor(files[i].size/state.chunkSize);
+                if(files[i].size % state.chunkSize) numberOfChunks+=1;
+                const newUpload = {file: files[i], numberOfChunks};
                 state.attachmentsUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
@@ -581,7 +583,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, updateContentVideosDisplayIndex, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -594,8 +596,7 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
-
-const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgress=0, progressRatio=1) => {
+const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgress=0, progressRatio=1, indexInQueue=-1) => {
     return new Promise( async (resolve, reject) => {
         const xhr = new XMLHttpRequest();
         xhr.open('GET', signedURL, true);
@@ -607,7 +608,11 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
                 percentComplete = baseProgress + percentComplete*progressRatio;
                 debugLog(debugOn, "Download progress: ", `${evt.loaded}/${evt.total} ${percentComplete} %`); 
                 if(downloadingFunction) {
-                    dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                    if(indexInQueue>=0) {
+                        dispatch(downloadingFunction({itemId, progress:percentComplete, indexInQueue}));
+                    } else {
+                        dispatch(downloadingFunction({itemId, progress:percentComplete}));
+                    }         
                 }
             }
         }, false);
@@ -640,7 +645,7 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
 
         return new Promise(async (resolve, reject) => {
             const s3Key = image.s3Key;
-            const keyVersion = s3Key.split(":")[1];
+
             try {
                 dispatch(downloadingContentImage({itemId, progress:5}));    
                 const signedURL = await preS3Download(state.id, s3Key);
@@ -656,16 +661,13 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
                 };
                 
                 let decryptedImageStr
-                if(keyVersion === '3') {
-                    const buffer = Buffer.from(response, 'binary');
-                    const downloadedBinaryString = buffer.toString('binary');
-                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                    decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                    debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-    
-                } else if(keyVersion === '1') {
 
-                }
+                const buffer = Buffer.from(response, 'binary');
+                const downloadedBinaryString = buffer.toString('binary');
+                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+    
                 const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                 const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                     type: 'image/*'
@@ -784,7 +786,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 })
                             }
                             await itemKeyReady();
-                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey)
+                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                             debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
                             const decodedContent =  DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
                             dispatch(contentDecrypted({item:{id: data.itemId, content:decodedContent}}));
@@ -869,7 +871,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
 
                 return new Promise(async (resolve, reject) => {
                     const s3Key = image.s3Key + "_gallery";
-                    const keyVersion = s3Key.split(":")[1];
+
                     try {
                         dispatch(downloadingImage({itemId, progress:5}));
                         const signedURL = await preS3Download(state.id, s3Key);
@@ -884,16 +886,13 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         };
 
                         let decryptedImageStr
-                        if(keyVersion === '3') {
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                            decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                            debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
+                       
+                        const buffer = Buffer.from(response, 'binary');
+                        const downloadedBinaryString = buffer.toString('binary');
+                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                        decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                        debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
             
-                        } else if(keyVersion === '1') {
-
-                        }
                         const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                         const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                             type: 'image/*'
@@ -996,25 +995,43 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
 }
 
 export const downloadContentVideoThunk = (data) => async (dispatch, getState) => {
-    let video;
+    const video = data;
     let state = getState().page;
+    const indexInVideoDownloadQueue = state.contentVideosDownloadQueue.length;;
     const itemId = state.id;
-    debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-    const isUsingServiceWorker = usingServiceWorker();
-    if(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-        dispatch(downloadContentVideo(data));
-        return;
+    const isUsingServiceWorker = true;
+    
+    if(state.contentVideosDownloadQueue.length === 0) {
+        navigator.serviceWorker.addEventListener("message", async (event) => {
+            console.log(event.data);
+            if(event.data.type === 'STREAM_NOT_FOUND'){
+                let videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.id;
+                state = getState().page;
+                let video = null;
+                let i;
+                for(i=0; i<state.contentVideosDownloadQueue.length; i++){
+                    video = state.contentVideosDownloadQueue[i];
+                    if(video.src === videoLinkFromServiceWorker) break;
+                }
+                if(video) {
+                    let start = event.data.start;
+                    await downloadAVideo(video, i, true, start);
+                }
+            }
+        });
     }
 
-    const downloadAVideo = (video) => {
+    dispatch(downloadContentVideo(data));
+    
+    const downloadAVideo = (video, indexInQueue, resumeForNewStream=false, start=0) => {
         debugLog(debugOn, "downloadAVideo");
-        let decryptedVideoStr;
+        let decryptedVideoStr, videoStarted=false;
         return new Promise(async (resolve, reject) => {
             
             if(video.chunks) {
                 let s3KeyPrefix, encrytedFileName, fileName, fileType, fileSize, numberOfChunks, messageChannel, fileInUint8Array, fileInUint8ArrayIndex, videoLinkFromServiceWorker;
                 encrytedFileName = atob(video.fileName);
-                fileName = decryptBinaryString(encrytedFileName, state.itemKey);
+                fileName = decryptBinaryString(encrytedFileName, state.itemKey, state.itemIV);
                 fileName = decodeURI(fileName);
                 fileType = decodeURI(video.fileType);
                 fileSize = video.fileSize;
@@ -1034,13 +1051,16 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     
                                     registration.active.postMessage({
                                         type: 'INIT_VIDEO_PORT',
+                                        s3KeyPrefix,
                                         fileName,
                                         fileType,
                                         fileSize,
-                                        browserInfo: getBrowserInfo()
+                                        browserInfo: getBrowserInfo(),
+                                        resumeForNewStream,
+                                        start
                                       }, [messageChannel.port2]);
                     
-                                    messageChannel.port1.onmessage = (event) => {
+                                    messageChannel.port1.onmessage = async (event) => {
                                         // Print the result
                                         debugLog(debugOn, event.data);
                                         if(event.data) {
@@ -1049,7 +1069,29 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                                     videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.stream.id;
                                                     
                                                     debugLog(debugOn, "STREAM_OPENED");
+                                                    
+                                                    if(event.data.initialChunkIndex >= 0) {
+                                                        await downloadDecryptAndAssemble(event.data.initialChunkIndex);
+                                                    }
+
+                                                    if(event.data.initialChunkIndex !== 0 ) {
+                                                        dispatch(contentVideoFromServiceWorker({itemId, indexInQueue, link:videoLinkFromServiceWorker}));
+                                                        videoStarted = true;  
+                                                    } 
+                                                    
+                                                    
                                                     resolve();
+                                                    break;
+                                                case 'NEXT_CHUNK':
+                                                    debugLog(debugOn, "NEXT_CHUNK: ", event.data.nextChunkIndex);
+                                                    if(!videoStarted){
+                                                        dispatch(contentVideoFromServiceWorker({itemId, indexInQueue, link:videoLinkFromServiceWorker}));
+                                                        videoStarted = true;
+                                                    }
+                                                    if(event.data.nextChunkIndex>=0){
+                                                        await downloadDecryptAndAssemble(event.data.nextChunkIndex);
+                                                    }
+                                                    
                                                     break;
                                                 case 'STREAM_CLOSED':
                                                     messageChannel.port1.onmessage = null
@@ -1063,8 +1105,8 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                                     };
                                     
                                 } else {
-                                    debugLog(debugOn, "erviceWorker.getRegistration error");
-                                    reject("erviceWorker.getRegistration error")
+                                    debugLog(debugOn, "serviceWorker.getRegistration error");
+                                    reject("serviceWorker.getRegistration error")
                                 }
                             });
                         })
@@ -1085,7 +1127,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     }
                 }
 
-                function writeAChunkToFile(chunk) {
+                function writeAChunkToFile(chunkIndex, chunk) {
                     debugLog(debugOn, "writeAChunkToFile");
                     return new Promise(async (resolve, reject)=>{
                         if(!isUsingServiceWorker) {
@@ -1100,8 +1142,10 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                             fileInUint8ArrayIndex += chunk.length;
                             resolve();
                         } else {
+                            debugLog(debugOn, "BINARY: ", Date.now());
                             messageChannel.port1.postMessage({
                                 type: 'BINARY',
+                                chunkIndex,
                                 chunk
                             }); 
                             resolve();
@@ -1118,21 +1162,12 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     
                 }
 
-                function closeWriter() {
-                    if(!isUsingServiceWorker) {
-                    } else {
-                        messageChannel.port1.postMessage({
-                            type: 'END_OF_FILE'
-                        }); 
-                    }
-                }
-
                 function downloadDecryptAndAssemble(chunkIndex) {
                     debugLog(debugOn, "downloadDecryptAndAssemble", chunkIndex);
                     return new Promise(async (resolve, reject) => {
                         try {
                             let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false);
-                            let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks);                          
+                            let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks, indexInVideoDownloadQueue);                          
                             debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                             if(state.activeRequest !== itemId) {
                                 reject("Aborted");
@@ -1146,7 +1181,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                             let decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
                             debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
                                 
-                            await writeAChunkToFile(decryptedChunkStr);
+                            await writeAChunkToFile(chunkIndex, decryptedChunkStr);
             
                             
                             resolve();
@@ -1162,66 +1197,29 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     reject("setupWriter failed");
                     return;
                 };
-
-                let i;
-                for(i=0; i< numberOfChunks; i++) {
-                    state = getState().page;
-                    if(state.aborted) break;
-                    try{
-                        
-                        await downloadDecryptAndAssemble(i);   
-                        if(i === 0 && isUsingServiceWorker) {
-                            dispatch(contentVideoFromServiceWorker({itemId, link:videoLinkFromServiceWorker}));
-                        }       
-                    } catch(error) {
-                        debugLog(debugOn, "downloadAnAttachment failed: ", error);
-                        break;
-                    }
-                }
-                if(i === numberOfChunks) {
-                    debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-                    let link = null;
-                    if(!isUsingServiceWorker) {
-                        let blob = new Blob([fileInUint8Array], {
-                            type: fileType
-                        });
-                       
-                        link = window.URL.createObjectURL(blob);  
-                    } 
-                    dispatch(contentVideoDownloaded({itemId, link}));
-                    closeWriter();
-                    resolve();
-                } else {
-                    reject();
-                }
-
+                
             } else {
                 const s3Key = video.s3Key;
-                const keyVersion = s3Key.split(":")[1];
+
                 try {
                     dispatch(downloadingContentVideo({itemId, progress:5}));
                     const signedURL = await preS3Download(state.id, s3Key);
                     dispatch(downloadingContentVideo({itemId, progress:10}));
                     const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
                     debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
-                
-                    if(keyVersion === '3') {
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
-        
-                    } else if(keyVersion === '1') {
-
-                    }
+                            
+                    const buffer = Buffer.from(response, 'binary');
+                    const downloadedBinaryString = buffer.toString('binary');
+                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                    decryptedVideoStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                    debugLog(debugOn, "Decrypted image string length: ", decryptedVideoStr.length);
                 
                     const decryptedVideoDataInUint8Array = convertBinaryStringToUint8Array(decryptedVideoStr);
                     const link = window.URL.createObjectURL(new Blob([decryptedVideoDataInUint8Array]), {
                         type: 'video/*'
                     });
 
-                    dispatch(contentVideoDownloaded({itemId, link}));
+                    dispatch(contentVideoDownloaded({itemId, indexInQueue, link}));
                     resolve();
 
                 } catch(error) {
@@ -1233,22 +1231,16 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     }
 
     return new Promise(async (resolve) => {
-        dispatch(downloadContentVideo(data));
+
         state = getState().page;
-        debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-        while(state.contentVideosDownloadIndex < state.contentVideosDownloadQueue.length) {
-            if(state.aborted) break;
-            try {
-                debugLog(debugOn, `downloadContentVideoThunk: index:${state.contentVideosDownloadIndex}, length: ${state.contentVideosDownloadQueue.length}`);
-                video = state.contentVideosDownloadQueue[state.contentVideosDownloadIndex];
-                await downloadAVideo(video);
-            } catch(error) {
-                break;
-            }
-            
-            state = getState().page;
+        debugLog(debugOn, `downloadContentVideoThunk: index:${indexInVideoDownloadQueue}, length: ${state.contentVideosDownloadQueue.length}`);
+        
+        try {
+            await downloadAVideo(video, indexInVideoDownloadQueue);
+            resolve();
+        } catch(error) {
+            reject();
         }
-        resolve();
         
     });
 }
@@ -1383,11 +1375,15 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            let auth, state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            auth = getState().auth;
             state = getState().page;
             try {
-                       
-	            tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
+                if(auth.accountVersion === 'v1') {
+                    tagsTokens = tokenfieldToEncryptedTokensECB(tags, searchKey)
+                } else {
+                    tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
+                }
             
                 if (!state.itemCopy) {
                     try {
@@ -1444,13 +1440,18 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
 export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, "Saving", () => {
         return new Promise(async (resolve, reject) => {
-            let state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            let auth, state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
+            auth = getState().auth;
             state = getState().page;
             try {
                 titleText = extractHTMLElementText(title);
                 encodedTitle = forge.util.encodeUtf8(title);
-                titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
-            
+                if(auth.accountVersion === 'v1') {
+                    titleTokens = stringToEncryptedTokensECB(titleText, searchKey)
+                } else {
+                    titleTokens = stringToEncryptedTokensCBC(titleText, searchKey, searchIV);
+                }
+                
                 if (!state.itemCopy) {
                     try {
                         itemKey = setupNewItemKey();
@@ -1522,6 +1523,23 @@ function preProcessEditorContentBeforeSaving(content) {
         totalS3ObjectsSize += size;
         const placeholder = 'https://via.placeholder.com/' + dimension;
         item.src = placeholder;
+
+        //Check if progress bar exists. If not, add one.
+        let progressElementId = 'progress_' + id;
+        let progressBarId = 'progressBar_' + id;
+        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
+        if(!progressElement){
+            progressElement = document.createElement('div');
+            progressElement.className = 'progress';
+            progressElement.id = progressElementId;
+            progressElement.style.width = '250px';
+            progressElement.style.margin = 'auto';
+            progressElement.setAttribute('hidden', true);
+            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
+            item.after(progressElement);
+        }
+
+
     });
 
     images.forEach((item) => { // Clean up any bSafes status class
@@ -1549,6 +1567,34 @@ function preProcessEditorContentBeforeSaving(content) {
         const placeholder = 'https://via.placeholder.com/' + `640x480`;
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
+
+        //Check if progress bar exists. If not, add one.
+        let progressElementId = 'progress_' + videoId;
+        let progressBarId = 'progressBar_' + videoId;
+        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
+        if(!progressElement){
+            progressElement = document.createElement('div');
+            progressElement.className = 'progress';
+            progressElement.id = progressElementId;
+            progressElement.style.width = '250px';
+            progressElement.style.margin = 'auto';
+            progressElement.setAttribute('hidden', true);
+            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
+            videoImg.after(progressElement);
+
+            let videoControlsElementId = 'videoControls_' + videoId;
+            let playVideoId = 'playVideo_' + videoId;
+        
+            let videoControlsElement = document.createElement('div');
+            videoControlsElement.className = 'videoControls';
+            videoControlsElement.classList.add('text-center') 
+            videoControlsElement.id = videoControlsElementId;
+            videoControlsElement.style.width = '250px';
+            videoControlsElement.style.margin = 'auto';
+            
+            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
+            progressElement.after(videoControlsElement);
+        }
     });
 
     const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');
@@ -2222,7 +2268,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
-        const keyVersion = s3KeyPrefix.split(":")[1];
 
         //const fileStream = streamSaver.createWriteStream(attachment.fileName, {
         //    size: attachment.fileSize // Makes the percentage visiable in the download
@@ -2355,18 +2400,14 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         return;        
                     }      
                    
-                    if(keyVersion === '3') {
-                        buffer = Buffer.from(response, 'binary');
-                        downloadedBinaryString = buffer.toString('binary');
-                        debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
-                        decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
-                        debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
+                    buffer = Buffer.from(response, 'binary');
+                    downloadedBinaryString = buffer.toString('binary');
+                    debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);    
+                    decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey, state.itemIV)
+                    debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
                         
-                        await writeAChunkToFile(decryptedChunkStr);
+                    await writeAChunkToFile(decryptedChunkStr);
     
-                    } else if(keyVersion === '1') {
-
-                    }
                     resolve();
                 } catch(error) {
                     debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
@@ -2567,7 +2608,7 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                                 content = '';
                                 if(encryptedContent) {
                                     binaryContent = forge.util.decode64(encryptedContent);
-                                    encodedContent = decryptBinaryString(binaryContent, state.itemKey);
+                                    encodedContent = decryptBinaryString(binaryContent, state.itemKey, state.itemIV);
                                     content = forge.util.decodeUtf8(encodedContent);
                                     content = DOMPurify.sanitize(content);
                                 }

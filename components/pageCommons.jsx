@@ -13,9 +13,9 @@ import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
-import { de } from "date-fns/locale";
+import { bs, de } from "date-fns/locale";
 
 export default function PageCommons() {
     const debugOn = true;
@@ -27,17 +27,19 @@ export default function PageCommons() {
 
     const activity = useSelector( state => state.page.activity);
 
+    const pageItemId = useSelector(state => state.page.id);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
+    const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
+    
     const [editingEditorId, setEditingEditorId] = useState(null);
 
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
 
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
-    const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
@@ -78,10 +80,65 @@ export default function PageCommons() {
         gallery.init();
     }
 
+    const handleVideoClick = (e) => {
+        const videoId = e.target.id.replace('playVideo_',"");
+        const progressElement = document.getElementById('progress_' + videoId);
+        progressElement.removeAttribute('hidden');
+        const progressBarElement = progressElement.querySelector('.progress-bar');
+        progressBarElement.style.width = '0%';
+        const videoControlsElement = document.getElementById('videoControls_' + videoId);
+        videoControlsElement.setAttribute('hidden', true)
+        const id =  videoId;
+        const idParts = id.split('&');
+        if(idParts[0] === 'chunks') {
+            let s3Key = idParts[3];
+            let chunks = parseInt(idParts[1]);
+            let fileName = idParts[2];
+            let fileSize = parseInt(idParts[5]);
+            let fileType = idParts[4];
+            dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+        } else {
+            let s3Key = idParts[0];
+            dispatch(downloadContentVideoThunk({id, s3Key}));
+        }
+        
+    }; 
+
+    function beforeWritingContent() {
+        const progressDIVs = document.getElementsByClassName('progress');
+        for(let i=0; i< progressDIVs.length; i++){
+            let element= progressDIVs[i];
+            element.setAttribute('hidden', true);
+        }
+        
+        const videoControlDIVs = document.getElementsByClassName('videoControls');
+        for(let i=0; i<videoControlDIVs.length; i++){
+            let element = videoControlDIVs[i];
+            element.setAttribute('hidden', true);
+        }
+        
+        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
+        setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        setContentEditorMode("Writing");
+    }
+
+    function afterContentReadOnly() {
+        const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
+        for(let i=0; i<bSafesDownloadVideoImages.length; i++){
+            let element = bSafesDownloadVideoImages[i];
+            let videoId = element.id;
+            let videoControlsElementId = 'videoControls_' + videoId;
+            let videoControlsElement = document.getElementById(videoControlsElementId);
+            videoControlsElement.removeAttribute('hidden');
+            let playVideoElement = document.getElementById('playVideo_' + videoId);
+            playVideoElement.onclick = handleVideoClick;
+        }
+    }
+
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         if(editorId === 'content'){
-            setContentEditorMode("Writing");
+            beforeWritingContent();
             setEditingEditorId("content");
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
@@ -140,7 +197,7 @@ export default function PageCommons() {
 
     const handleWrite = () =>{
         debugLog(debugOn, "handleWrite");
-        setContentEditorMode("Writing");
+        beforeWritingContent();
         setEditingEditorId("content");
     }
 
@@ -273,34 +330,13 @@ export default function PageCommons() {
         }
     };
     
-    const buildContentVideos = () => {
-        const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
-        Array.from(videoDownloads).forEach(element => {
-            const elementClone = element.cloneNode(true); // Remove all possible event listeners
-            let s3Key, chunks, fileName, fileType, fileSize;
-            elementClone.onclick = (e) => {
-                const id =  e.target.id;
-                const idParts = id.split('&');
-                if(idParts[0] === 'chunks') {
-                    s3Key = idParts[3];
-                    chunks = parseInt(idParts[1]);
-                    fileName = idParts[2];
-                    fileSize = parseInt(idParts[5]);
-                    fileType = idParts[4];
-                    dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
-                } else {
-                    s3Key = idParts[0];
-                    dispatch(downloadContentVideoThunk({id, s3Key}));
-                }
-	            
-            };
-            element.replaceWith(elementClone);
-        });
-    }
-
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
     }, []);
+
+    useEffect(()=> {
+        setcontentEditorContentWithImagesAndVideos(null);
+    }, [pageItemId])
 
     useEffect(() => {
         if(activity === "Done") {
@@ -318,12 +354,13 @@ export default function PageCommons() {
 
     useEffect(()=>{
         if(contentEditorContent === null) return;
-        //buildContentVideos();
+        afterContentReadOnly();
+        setcontentEditorContentWithImagesAndVideos(contentEditorContent);
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
     useEffect(()=> {
-        let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;
+        let image, imageElement, progressElement, progressBarElement;
         let i = contentImagesDisplayIndex;
         if(i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
@@ -333,194 +370,123 @@ export default function PageCommons() {
                 return;
             }
             if(image.status === "Downloading") {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
-                progressElement = document.getElementById('progress_' + image.id);
-                if(contentImageContainer){
-                    if(!progressElement) {
-                        progressElement = document.createElement('div');
-                        progressElement.className = 'progress';
-                        progressElement.id = 'progress_' + image.id;
-                        progressElement.style.width = '250px';
-                        progressElement.style.margin = 'auto';
-                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                        contentImageContainer.appendChild(progressElement);
-                    }
-                    progressBarElement = document.getElementById('progressBar_' + image.id);
-                    if(progressBarElement) progressBarElement.style.width = image.progress + '%';
-                } else {
-                    imageElementClone = imageElement.cloneNode(true);
-                    contentImageContainer = document.createElement('div');
-                    contentImageContainer.style.position = 'relative';
-                    contentImageContainer.style.textAlign = 'center';
                 
-                    contentImageContainer.id = 'imageContainer_' + image.id;
-                    contentImageContainer.appendChild(imageElementClone);
-                    imageElement.replaceWith(contentImageContainer);   
-                    
+                progressElement = document.getElementById('progress_' + image.id);
+                
+                if(!progressElement) {
                     progressElement = document.createElement('div');
                     progressElement.className = 'progress';
                     progressElement.id = 'progress_' + image.id;
                     progressElement.style.width = '250px';
                     progressElement.style.margin = 'auto';
                     progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                    contentImageContainer.appendChild(progressElement);
+                    imageElement.after(progressElement);
                 }
+                progressElement.removeAttribute('hidden');
+                progressBarElement = document.getElementById('progressBar_' + image.id);
+                if(progressBarElement) progressBarElement.style.width = image.progress + '%';
+                
                 return;
             } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
+
                 progressElement = document.getElementById('progress_' + image.id);
-                if(progressElement) contentImageContainer.removeChild(progressElement);
+                progressElement.setAttribute('hidden', true);
                 
                 if(image.status === "Downloaded") {
                     imageElement.src = image.src;
+                    if(imageElement.classList.contains('bSafesDownloadVideo')){
+                        let videoId = image.id;
+                        let videoControlsElementId, videoControlsElement = null, playVideoElement = null;
+        
+                        videoControlsElementId = 'videoControls_' + videoId;
+                        videoControlsElement = document.getElementById('playVideo_' + videoId)
+                        
+                        if(!videoControlsElement) {
+                            
+                            let playVideoId = 'playVideo_' + videoId;
+        
+                            videoControlsElement = document.createElement('div');
+                            videoControlsElement.className = 'videoControls';
+                            videoControlsElement.classList.add('text-center') 
+                            videoControlsElement.id = videoControlsElementId;
+                            videoControlsElement.style.width = '250px';
+                            videoControlsElement.style.margin = 'auto';
+            
+                            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
+                            progressElement.after(videoControlsElement);
+                            playVideoElement = document.getElementById('playVideo_' + videoId)
+                        } else {
+                            playVideoElement = document.getElementById('playVideo_' + videoId)
+                        }
+
+                        playVideoElement.onclick = handleVideoClick;
+                    }
                 }
 
                 dispatch(updateContentImagesDisplayIndex(i+1));
             } 
-            if(imageElement.classList.contains('bSafesDownloadVideo')){
-                
-                const handleVideoClick = (e) => {
-                    const id =  e.target.id;
-                    const idParts = id.split('&');
-                    if(idParts[0] === 'chunks') {
-                        let s3Key = idParts[3];
-                        let chunks = parseInt(idParts[1]);
-                        let fileName = idParts[2];
-                        let fileSize = parseInt(idParts[5]);
-                        let fileType = idParts[4];
-                        dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
-                    } else {
-                        let s3Key = idParts[0];
-                        dispatch(downloadContentVideoThunk({id, s3Key}));
-                    }
-                    
-                }; 
-
-                let playIcon = document.createElement('i');
-                playIcon.className = 'contentVideoPlayIcon';
-                playIcon.classList.add('fa');
-                playIcon.classList.add('fa-play-circle-o');
-                playIcon.classList.add('fa-3x');
-                playIcon.setAttribute('aria-hidden', "true");
-                playIcon.id = image.id;
-                contentImageContainer.appendChild(playIcon);
-                playIcon.onclick = handleVideoClick;
-                imageElement.onclick = handleVideoClick;
-            }
+            
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);
 
     useEffect(()=> {
         let video, videoElement, videoElementClone, contentVideoContainer, progressElement, progressBarElement;
-        let i = contentVideosDisplayIndex;
-        if(i < contentVideosDownloadQueue.length) {
+        
+        for(let i=0; i< contentVideosDownloadQueue.length; i++) {
             video = contentVideosDownloadQueue[i];
-            videoElement = document.getElementById(video.id);
-            if(!videoElement) {
-                dispatch(updateContentImagesDisplayIndex(i+1));
-                return;
-            }
-            if(video.status === "Downloading") {
-                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
-                progressElement = document.getElementById('progress_' + video.id);
-                debugLog(debugOn, "Content video downloading progress: ", video.progress);
-                if(contentVideoContainer){
-                    if(!progressElement) {
-                        progressElement = document.createElement('div');
-                        progressElement.className = 'progress';
-                        progressElement.id = 'progress_' + video.id;
-                        progressElement.style.width = '250px';
-                        progressElement.style.margin = 'auto';
-                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
-                        contentVideoContainer.appendChild(progressElement);
-                    }
-                    progressBarElement = document.getElementById('progressBar_' + video.id);
-                    if(progressBarElement) progressBarElement.style.width = video.progress + '%';
-                } else {
-                    videoElementClone = videoElement.cloneNode(true);
-                    contentVideoContainer = document.createElement('div');
-                    contentVideoContainer.style.position = 'relative';
-                
-                    contentVideoContainer.id = 'videoContainer_' + video.id;
-                    contentVideoContainer.appendChild(videoElementClone);
-                    videoElement.replaceWith(contentVideoContainer);   
-                    
-                    progressElement = document.createElement('div');
-                    progressElement.className = 'progress';
-                    progressElement.id = 'progress_' + video.id;
-                    progressElement.style.width = '250px';
-                    progressElement.style.margin = 'auto';
-                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
-                    contentVideoContainer.appendChild(progressElement);
-                }
+            const videoId = video.id;
+            videoElement = document.getElementById(videoId);
+            const progressElementId = 'progress_' + videoId;
+
+            if(video.status === "Downloading") {                    
+                let progressBarElement = document.getElementById('progressBar_' + videoId);
+                progressBarElement.style.width = video.progress + '%';
+
             } else if((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
-                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
-                progressElement = document.getElementById('progress_' + video.id);
-                if(progressElement) contentVideoContainer.removeChild(progressElement);
-                videoElement = document.getElementById(video.id);
-                let playIcon = contentVideoContainer.parentNode.getElementsByTagName('i')[0];
-                if(playIcon) contentVideoContainer.parentNode.removeChild(playIcon);
+                let progressElement = document.getElementById(progressElementId);
+                progressElement.setAttribute('hidden', true);
 
-                const videoSpan = document.createElement('span'); 
+                if(!videoElement.classList.contains('fr-video')){
+                    const videoSpan = document.createElement('span'); 
                 
-                videoSpan.className = 'fr-video';
-                videoSpan.classList.add('fr-draggable');
+                    videoSpan.className = 'fr-video';
+                    videoSpan.classList.add('fr-draggable');
                 
-                videoSpan.setAttribute('contenteditable', 'true');
-                videoSpan.setAttribute('draggable', 'true');
+                    videoSpan.setAttribute('contenteditable', 'true');
+                    videoSpan.setAttribute('draggable', 'true');
                 
-                const newVideoElement = document.createElement('video');
-                newVideoElement.className = 'bSafesVideo';
-                newVideoElement.classList.add('fr-draggable');
-                newVideoElement.classList.add('fr-dvi');
-                newVideoElement.classList.add('fr-fvc');
-                newVideoElement.setAttribute('controls', '');
-                newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
-                newVideoElement.id = videoElement.id;
-                newVideoElement.src = video.src;
-                newVideoElement.style = videoElement.style;
+                    const newVideoElement = document.createElement('video');
+                    newVideoElement.className = 'bSafesVideo';
+                    newVideoElement.classList.add('fr-draggable');
+                    newVideoElement.classList.add('fr-dvi');
+                    newVideoElement.classList.add('fr-fvc');
+                    newVideoElement.setAttribute('controls', '');
+                    newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
+                    newVideoElement.id = videoId;
+                    newVideoElement.src = video.src;
+                    newVideoElement.style = videoElement.style;
                 
-	            if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
-	            if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
-	            if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
-	            if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
-	            if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
+	                if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
+	                if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
+	                if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
+	                if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
+	                if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
 
-                videoSpan.appendChild(newVideoElement);
-                videoElement.replaceWith(videoSpan);
-                newVideoElement.onprogress =(e) => {
-                    debugLog(debugOn, "content video progress");
-                    let timeRanges = newVideoElement.buffered;
-                    for(let i=0; i< timeRanges.length; i++) {
-                        debugLog(debugOn, `start: ${timeRanges.start(i)}, end: ${timeRanges.end(i)}`);
-                    }
+                    videoSpan.appendChild(newVideoElement);
+                    videoElement.replaceWith(videoSpan);
                 }
-                newVideoElement.onloadeddata = (e) => {
-                    newVideoElement.play();
-                }
-
-                dispatch(updateContentVideosDisplayIndex(i+1));
-            }          
+                
+            }
         }
+        
     // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentVideosDownloadQueue]);
 
     useEffect(()=>{
         if(contentEditorMode === "ReadOnly"){
             debugLog(debugOn, "ReadOnly");
-            
-            //buildContentVideos();
-           
-            contentImagesDownloadQueue.forEach(image => {
-                if(image.status === "Downloaded") {
-                    const imageElement = document.getElementById(image.id);
-                    if(imageElement && imageElement.src.startsWith('http')) {
-                        imageElement.src = image.src;
-                    }
-                }
-            });
-            
+            afterContentReadOnly();
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
@@ -600,7 +566,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" md="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <br />

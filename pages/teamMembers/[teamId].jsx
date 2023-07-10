@@ -21,7 +21,7 @@ import { setMemberSearchValue, clearMemberSearchResult, findMemberByIdThunk, add
 import { debugLog } from '../../lib/helper';
 
 export default function TeamMembers(props) {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

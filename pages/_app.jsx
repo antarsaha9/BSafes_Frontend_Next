@@ -1,6 +1,6 @@
 import SSRProvider from 'react-bootstrap/SSRProvider'
 import store, {reduxWrapper} from '../reduxStore/store'
-import '../styles/bootstrap.min.css'
+import '../styles/materia.css'
 import '../styles/react-tagsinput-bsafes.css'
 import "../styles/react-datepicker-bsafes.css";
 import "../styles/froala-editor-bsafes.css"
@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV68.js?v68", {
+      navigator.serviceWorker.register("/serviceWorkerV156.js?v181", {
         scope: "/",
       }).then(
           function(registration) {

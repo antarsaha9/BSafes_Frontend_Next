@@ -22,6 +22,7 @@ export default function Safe() {
     const [readyToList, setReadyToList] = useState(false);
 
     const memberId = useSelector( state => state.auth.memberId );
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const workspaceKey = useSelector( state => state.auth.expandedKey );
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -49,7 +50,13 @@ export default function Safe() {
 
     useEffect(() => {
         if(memberId) {
-            const currentKeyVersion = 3;
+            let currentKeyVersion;
+            if(accountVersion === 'v1'){
+              currentKeyVersion = 1;
+            } else if(accountVersion === 'v2'){
+              currentKeyVersion = 3;
+            }
+
             const workspaceId = 'u:' + memberId + ':' + currentKeyVersion + ':' + '0'; ;
             dispatch(initContainer({container: 'root', workspaceId, workspaceKey, searchKey, searchIV }));
             dispatch(setWorkspaceKeyReady(true));

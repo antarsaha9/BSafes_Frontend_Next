@@ -1,13 +1,20 @@
-import { createSlice, current } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
-const debugOn = false;
+import { setNextAuthStep } from './v1AccountSlice';
+
+const debugOn = true;
 
 const initialState = {
     activity: "Done",
     error: null,
+    contextId:null,
+    preflightReady: false,
+    localSessionState: null,
+    MFAPassed: false,
+    accountVersion:'',
     memberId: null,
     displayName: null,
     isLoggedIn: false,
@@ -15,7 +22,8 @@ const initialState = {
     publicKey: null,
     privateKey: null,
     searchKey: null,
-    searchIV: null
+    searchIV: null,
+    froalaLicenseKey: null
 }
 
 const authSlice = createSlice({
@@ -25,24 +33,43 @@ const authSlice = createSlice({
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
+        setContextId:(state, action) => {
+            state.contextId = action.payload;
+        },
+        setPreflightReady: (state, action) => {
+            state.preflightReady = action.payload;
+        },
+        setLocalSessionState: (state, action) => {
+            state.localSessionState = action.payload;
+        },
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
             state.searchKey = credentials.secret.searchKey;
-            state.searchIV = credentials.secret.searchIV;
+            if(state.accountVersion === 'v2') {
+                state.searchIV = credentials.secret.searchIV;
+            }
+            state.froalaLicenseKey = action.payload.froalaLicenseKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
+            state.expandedKey = null;
+            state.publicKey = null;
+            state.privateKey = null;
+            state.searchKey = null;
+            state.searchIV = null;
+            state.froalaLicenseKey = null;
         }
     }
 });
 
-export const {activityChanged, loggedIn, loggedOut} = authSlice.actions;
+export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, loggedIn, loggedOut} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -159,7 +186,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "LoggingOut", () => {
         return new Promise(async (resolve, reject) => {
-
+            localStorage.clear();
             PostCall({
                 api:'/memberAPI/logOut'
             }).then( data => {
@@ -175,23 +202,32 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to log out.")
                 reject();
             })
-            localStorage.clear();
+            
         });
     });
 }
 
 export const preflightAsyncThunk = () => async (dispatch, getState) => {
     await new Promise(resolve => {
-
+        dispatch(setNextAuthStep(null));
         PostCall({
             api:'/memberAPI/preflight'
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-            } else {
+                if(data.nextStep) {
+                    dispatch(setNextAuthStep(data.nextStep))
+                } else {
+                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                }
+            } else { 
+                const nextStep = {
+                    step: 'Home',
+                }
+                dispatch(setNextAuthStep(nextStep));
                 debugLog(debugOn, "woo... preflight failed: ", data.error)
             } 
+            dispatch(setPreflightReady(true));
         }).catch( error => {
             debugLog(debugOn, "woo... preflight failed.")
         })
@@ -200,6 +236,32 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
     
 }
 
+export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
+    const checkLocalSession = () => {
+        const authToken = localStorage.getItem('authToken');
+        const encodedGold = localStorage.getItem("encodedGold");
+        const MFAPassed = localStorage.getItem("MFAPassed");
+        return {sessionExists:authToken?true:false, MFAPassed:MFAPassed?true:false, unlocked:encodedGold?true:false};
+    } 
+    const state = getState().auth;
+    let contextId = state.contextId;
+    if(!contextId){
+        contextId = Date.now();
+        dispatch(setContextId(contextId));
+    }
+    const intervalId =  `checkSessionStateInterval-${contextId}`;
+    let checkSessionStateInterval = localStorage.getItem(intervalId);
+    
+    if(!checkSessionStateInterval) {
+        const thisInterval = setInterval(()=>{
+            debugLog(debugOn, "Check session state");
+            const state = checkLocalSession();
+            dispatch(setLocalSessionState(state));
+        }, 1000);
+        localStorage.setItem(intervalId, thisInterval)
+        debugLog(debugOn, "Creating new timer: ", thisInterval)
+    }
+}
 
 export const authReducer = authSlice.reducer;
 

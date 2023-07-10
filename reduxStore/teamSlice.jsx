@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
 
-import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBDecryptBinaryString } from '../lib/crypto';
+import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBEncryptBinaryString, ECBDecryptBinaryString } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
 
 const debugOn = true;
@@ -141,7 +141,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                          team = data.hits.hits[i];
                         if (team._source.encryptedTeamName) {
                             if (team._source.cachedTeamName && team._source.cachedTeamName !== 'NULL') {
-                                if(team._source.keyVersion === 3){
+                                if( (auth.accountVersion === 'v2') && (team._source.keyVersion === 3)){
                                     encodedTeamName = decryptBinaryStringCBC(forge.util.decode64(team._source.cachedTeamName), auth.searchKey, auth.searchIV);
                                     teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
                                     decryptedTeam = {
@@ -162,7 +162,11 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                                 encodedTeamName = privateKeyFromPem.decrypt(forge.util.decode64(team._source.encryptedTeamName));
                                 teamName = "<h2>" + forge.util.decodeUtf8(encodedTeamName) + "</h2>";
                                 try {
-                                    cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
+                                    if(auth.accountVersion === 'v1') {
+                                        cachedTeamName = ECBEncryptBinaryString(encodedTeamName, auth.searchKey);
+                                    } else if(auth.accountVersion === 'v2') {
+                                        cachedTeamName = encryptBinaryStringCBC(encodedTeamName, auth.searchKey, auth.searchIV);
+                                    }      
                                     await cacheTeamNameForTeamMember(team._source.teamId, cachedTeamName);
                                 } catch(error) {
                                     debugLog("cacheTeamName error");
@@ -286,6 +290,7 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
 export const createANewTeamThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "CreatingANewTeam", () => {
         return new Promise(async (resolve, reject) => {
+            const auth = getState().auth;
             const teamName = data.title;
             const publicKeyPem = data.publicKeyPem;
             const addAction = data.addAction;
@@ -305,19 +310,22 @@ export const createANewTeamThunk = (data) => async (dispatch, getState) => {
             const randomKey = forge.random.getBytesSync(32);
             const searchKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
             const searchKeyEnvelope = encryptBinaryString(searchKey, teamKey);
-  
-            const searchIV = forge.random.getBytesSync(16);
-            const searchIVEnvelope = encryptBinaryString(searchIV, teamKey);
-
+            
+            
             const addActionOptions = {
                 name: forge.util.encode64(encryptedTeamName),
                 teamKeyEnvelope: forge.util.encode64(encryptedTeamKey),
                 searchKeyEnvelope: forge.util.encode64(searchKeyEnvelope),
-                searchIVEnvelope: forge.util.encode64(searchIVEnvelope),
                 encryptedTeamNameByMemberPublic: forge.util.encode64(encryptedTeamNameByMemberPublic),
                 addAction: addAction,
             };
   
+            if(auth.accountVersion !== 'v1'){
+                const searchIV = forge.random.getBytesSync(16);
+                const searchIVEnvelope = encryptBinaryString(searchIV, teamKey);
+                addActionOptions.searchIVEnvelope = forge.util.encode64(searchIVEnvelope);
+            }
+
             if (addAction !== "addATeamOnTop") {
                 addActionOptions.targetTeam = targetTeam;
                 addActionOptions.targetPosition = targetPosition;

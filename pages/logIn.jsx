@@ -9,6 +9,8 @@ import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner';
 
+import BSafesStyle from '../styles/BSafes.module.css'
+
 import { debugLog} from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
@@ -44,7 +46,7 @@ export default function LogIn() {
     }, [isLoggedIn])
 
     return (
-        <ContentPageLayout> 
+        <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
@@ -53,7 +55,7 @@ export default function LogIn() {
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">
                                 <Form.Label>Nickname</Form.Label>
-                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Enter a nickname' autoComplete="off" />
+                                <Form.Control ref={nicknameRef} type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox}/>
                             </Form.Group>
                             <Form.Group className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
