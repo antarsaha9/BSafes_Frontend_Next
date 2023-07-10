@@ -115,7 +115,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                     return;
                 }    
                 
-                localStorage.setItem("authToken", data.authToken + 'fake');
+                localStorage.setItem("authToken", data.authToken);
                 if(data.nextStep.keyMeta){
                     dispatch(setKeyMeta(data.nextStep.keyMeta));
                 }
