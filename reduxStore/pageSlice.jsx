@@ -2269,10 +2269,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
 
-        //const fileStream = streamSaver.createWriteStream(attachment.fileName, {
-        //    size: attachment.fileSize // Makes the percentage visiable in the download
-        //})
- 
         async function setupWriter() {
             function talkToServiceWorker() {
                 return new Promise(async (resolve, reject)=> {

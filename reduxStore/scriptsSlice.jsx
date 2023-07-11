@@ -5,6 +5,7 @@ import { debugLog } from '../lib/helper';
 const debugOn = false;
 
 const scripts = [
+/*
     {id: "bsafesAPIHooks.js",
      src:"/js/froalaEditorJS/bsafesAPIHooks.js",
      loaded: false
@@ -133,12 +134,13 @@ const scripts = [
      src: "https://cdn.jsdelivr.net/npm/streamsaver@2.0.3/StreamSaver.min.js",
      loaded: false
     }
+*/
 ];
 
 const initialState = {
-    scripts: [scripts[0]],
+    scripts: scripts.length>0?[scripts[0]]:[],
     index: 0,
-    done: false,
+    done: true,
 }
 
 const scriptsSlice = createSlice({

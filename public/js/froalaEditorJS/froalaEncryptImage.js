@@ -1124,7 +1124,7 @@
           type: 'image/*'});
 				console.log('blob', blob.size);
 				// Get local image link.
-        link = window.URL.createObjectURL(blob);
+        var link = window.URL.createObjectURL(blob);
 
 				rotateImage(link, exifOrientation, function(err, blob, binaryString){
 					if(err) {

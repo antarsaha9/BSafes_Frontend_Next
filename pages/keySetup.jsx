@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -7,13 +7,7 @@ import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 
-import jquery from "jquery"
-
-const forge = require('node-forge');
-const argon2 = require('argon2-browser')
-
 import { debugLog } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -31,8 +25,6 @@ export default function KeySetup() {
 
     const nicknameRef = useRef(null);
 
-    const scriptsLoaded = useSelector(state => state.scripts.done);
-
     const keyPasswordChanged = ( password ) => {
         debugLog(debugOn, "keyPassword: ", password);
         setKeyPassword(password);
@@ -47,14 +39,6 @@ export default function KeySetup() {
         debugLog(debugOn,  "handleSubmit");
         dispatch(keySetupAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword}));
     }
-
-    useEffect(()=> {
-        window.$ = window.jQuery = jquery;
-        if(scriptsLoaded) {
-            //argon2Functions.loadArgon2('native-wasm');
-        }
-    }, [scriptsLoaded]);
-
 
     return (
         <ContentPageLayout> 
