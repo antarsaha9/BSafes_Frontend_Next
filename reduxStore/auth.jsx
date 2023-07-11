@@ -65,11 +65,14 @@ const authSlice = createSlice({
             state.searchKey = null;
             state.searchIV = null;
             state.froalaLicenseKey = null;
+        },
+        setAccountVersion: (state, action) => {
+            state.accountVersion = action.payload;
         }
     }
 });
 
-export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, loggedIn, loggedOut} = authSlice.actions;
+export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -265,7 +268,7 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     
     if(!checkSessionStateInterval) {
         const thisInterval = setInterval(()=>{
-            debugLog(debugOn, "Check session state");
+            //debugLog(debugOn, "Check session state");
             const state = checkLocalSession();
             dispatch(setLocalSessionState(state));
         }, 1000);

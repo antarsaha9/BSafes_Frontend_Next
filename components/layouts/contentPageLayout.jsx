@@ -14,11 +14,11 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 
 import { preflightAsyncThunk, setPreflightReady, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
-import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk } from '../../reduxStore/v1AccountSlice';
+import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 import { ro } from 'date-fns/locale';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
     const dispatch = useDispatch();
@@ -27,9 +27,13 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     
     const preflightReady = useSelector( state=>state.auth.preflightReady);
     const localSessionState = useSelector( state => state.auth.localSessionState);
+    const sessionExists = localSessionState?localSessionState.sessionExists:null;
+    const unlocked = localSessionState?localSessionState.unlocked:null;
+
     const accountVersion = useSelector(state => state.auth.accountVersion);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const nextAuthStep = useSelector( state => state.v1Account.nextAuthStep);
+    const nickname = useSelector( state=> state.v1Account.nickname);
 
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
@@ -93,7 +97,68 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const changePage = (page) => {
         setNextRoute(page);
     }
+
+    const localSessionStateChanged = () => {
+        if(localSessionState.sessionExists) {
+            if(localSessionState.unlocked) {
+                if(isLoggedIn) {
+                    return;
+                } else {
+                    changePage('/safe')
+                    return;
+                }
+            } else {
+                if(isLoggedIn) {
+                    if(accountVersion === 'v1') {
+                        changePage('/v1/keyEnter')
+                    } 
+                    dispatch(loggedOut);
+                    return;
+                } else { 
+                    dispatch(preflightAsyncThunk());
+                    return;
+                
+                }
+            }
+        } else {
+            if(localSessionState.unlocked) {
+                debugLog(debugOn, "Error: It should never happen");
+                if(isLoggedIn) {
+                    return;
+                } else {
+                    return;
+                }
+            } else {
+                if(isLoggedIn) {
+                    dispatch(loggedOut);
+                    if(accountVersion === 'v1') {
+                        dispatch(signedOut());
+                        changePage(`/n/${nickname}`);
+                    } else {
+                        changePage('/logIn');
+                    }
+                } else {
+                    const path = router.asPath;
+                    if(path !== '/' && !path.startsWith('/public/')) {
+                        if(nickname) {
+                            changePage(`/n/${nickname}`)
+                        } else {
+                            changePage('/');
+                        }
+                    } else {
+                        if(path !== '/' && !path.startsWith('/public/')){
+                            changePage('/logIn');
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     useEffect(()=> {
+        if(!localSessionState) return;
+        localSessionStateChanged();
+if(0) {
         if(!isLoggedIn && localSessionState && localSessionState.unlocked) {
             changePage('/safe')
             return;
@@ -139,7 +204,13 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             dispatch(loggedOut());
             dispatch(preflightAsyncThunk());
         }
-    }, [localSessionState])
+}
+    }, [localSessionState]);
+
+    /*useEffect(()=> {
+        if(unlocked === null) return;
+        localSessionStateChanged();        
+    }, [unlocked])*/
 
     useEffect(()=> {
         if(!nextAuthStep) return;

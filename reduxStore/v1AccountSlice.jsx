@@ -6,7 +6,7 @@ const argon2 = require('argon2-browser');
 import { debugLog, PostCall } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 
-import { loggedIn, loggedOut } from './auth';
+import { loggedIn, loggedOut, setAccountVersion } from './auth';
 import { nextSaturday } from 'date-fns';
 
 const debugOn = true;
@@ -116,6 +116,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 }    
                 
                 localStorage.setItem("authToken", data.authToken);
+                dispatch(setAccountVersion('v1'));
                 if(data.nextStep.keyMeta){
                     dispatch(setKeyMeta(data.nextStep.keyMeta));
                 }
