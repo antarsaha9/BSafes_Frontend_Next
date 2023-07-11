@@ -27,9 +27,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     
     const preflightReady = useSelector( state=>state.auth.preflightReady);
     const localSessionState = useSelector( state => state.auth.localSessionState);
-    const sessionExists = localSessionState?localSessionState.sessionExists:null;
-    const unlocked = localSessionState?localSessionState.unlocked:null;
-
+    
     const accountVersion = useSelector(state => state.auth.accountVersion);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const nextAuthStep = useSelector( state => state.v1Account.nextAuthStep);
@@ -139,17 +137,13 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     }
                 } else {
                     const path = router.asPath;
-                    if(path !== '/' && !path.startsWith('/public/')) {
+                    if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
                         if(nickname) {
                             changePage(`/n/${nickname}`)
                         } else {
                             changePage('/');
                         }
-                    } else {
-                        if(path !== '/' && !path.startsWith('/public/')){
-                            changePage('/logIn');
-                        }
-                    }
+                    } 
                 }
             }
         }
