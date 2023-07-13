@@ -42,6 +42,9 @@ const authSlice = createSlice({
         setLocalSessionState: (state, action) => {
             state.localSessionState = action.payload;
         },
+        setDisplayName: (state, action) => {
+            state.displayName = action.payload;
+        },
         loggedIn: (state, action) => {
             state.isLoggedIn = true;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
@@ -72,7 +75,7 @@ const authSlice = createSlice({
     }
 });
 
-export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
+export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -221,6 +224,7 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
             if(data.status === 'ok') {
                 if(data.nextStep) {
                     if(data.nextStep.keyMeta){
+                        dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
                         dispatch(setKeyMeta(data.nextStep.keyMeta));
                     }
                     if(data.idleTimeout) {
@@ -254,8 +258,8 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     const checkLocalSession = () => {
         const authToken = localStorage.getItem('authToken');
         const encodedGold = localStorage.getItem("encodedGold");
-        const MFAPassed = localStorage.getItem("MFAPassed");
-        return {sessionExists:authToken?true:false, MFAPassed:MFAPassed?true:false, unlocked:encodedGold?true:false};
+        const authState = localStorage.getItem("authState");
+        return {sessionExists:authToken?true:false, authState, unlocked:encodedGold?true:false};
     } 
     const state = getState().auth;
     let contextId = state.contextId;
@@ -268,7 +272,8 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     
     if(!checkSessionStateInterval) {
         const thisInterval = setInterval(()=>{
-            //debugLog(debugOn, "Check session state");
+            //debugLog(debugOn, "Check session state");.
+            const auth = getState().auth;
             const state = checkLocalSession();
             dispatch(setLocalSessionState(state));
         }, 1000);
