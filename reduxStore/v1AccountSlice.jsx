@@ -6,8 +6,7 @@ const argon2 = require('argon2-browser');
 import { debugLog, PostCall } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 
-import { loggedIn, loggedOut, setAccountVersion } from './auth';
-import { nextSaturday } from 'date-fns';
+import { setDisplayName, loggedIn, loggedOut, setAccountVersion } from './auth';
 
 const debugOn = true;
 
@@ -42,7 +41,6 @@ const v1AccountSlice = createSlice({
             const stateKeys = Object.keys(initialState);
             for(let i=0; i<stateKeys.length; i++) {
                 let key = stateKeys[i];
-                if(key === 'nickname') continue;
                 state[key] = initialState[key];
             }
         }
@@ -118,8 +116,10 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 localStorage.setItem("authToken", data.authToken);
                 dispatch(setAccountVersion('v1'));
                 if(data.nextStep.keyMeta){
+                    dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
                     dispatch(setKeyMeta(data.nextStep.keyMeta));
                 }
+                localStorage.setItem("authState", data.nextStep.step);
                 dispatch(setNextAuthStep(data.nextStep)); 
                 resolve();
             }).catch( error => {
@@ -148,9 +148,12 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
                     return;
                 }    
                 localStorage.setItem("MFAPassed", 'true');
+                
                 if(data.nextStep.keyMeta){
+                    dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
                     dispatch(setKeyMeta(data.nextStep.keyMeta));
                 }
+                localStorage.setItem("authState", data.nextStep.step);
                 dispatch(setNextAuthStep(data.nextStep)); 
                 resolve();
             }).catch( error => {
@@ -235,7 +238,8 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
                         if(data.status == "ok") {  
                             credentials.memberId = data.memberId;
                             credentials.displayName = data.displayName;
-                            
+                            debugLog(debugOn, `challenge passed`)
+                            localStorage.setItem("authState", "Unlocked");
                             saveLocalCredentials(credentials, data.sessionKey, data.sessionIV, 'v1');
                             dispatch(setNextAuthStep(null));
                             dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}))
@@ -273,7 +277,7 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
                     reject('LockFailed');
                     return;
                 }    
-                
+                localStorage.setItem("authState", data.nextStep.step);
                 dispatch(setNextAuthStep(data.nextStep));
                 resolve();
             }).catch( error => {
@@ -301,12 +305,13 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
                     reject('SignOutFailed');
                     return;
                 }    
-
+                /*
                 const nextStep = {
                     step: 'SignIn',
                     nickname
                 }
-                dispatch(setNextAuthStep(nextStep));
+                localStorage.setItem("authState", "SignIn");*/
+                dispatch(setNextAuthStep(null));
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "lock failed: ", error)

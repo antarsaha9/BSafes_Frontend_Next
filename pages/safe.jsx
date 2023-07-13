@@ -49,7 +49,7 @@ export default function Safe() {
     }, []);
 
     useEffect(() => {
-        if(memberId) {
+        if(memberId && workspaceKey) {
             let currentKeyVersion;
             if(accountVersion === 'v1'){
               currentKeyVersion = 1;
@@ -63,7 +63,7 @@ export default function Safe() {
             setReadyToList(true);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [memberId])
+    }, [memberId, workspaceKey])
     
     return (
       <div className={BSafesStyle.spaceBackground}>

@@ -13,12 +13,11 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
 
-import { preflightAsyncThunk, setPreflightReady, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
-import { ro } from 'date-fns/locale';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
     const dispatch = useDispatch();
@@ -30,8 +29,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     
     const accountVersion = useSelector(state => state.auth.accountVersion);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const displayName = useSelector(state=> state.auth.displayName);
     const nextAuthStep = useSelector( state => state.v1Account.nextAuthStep);
-    const nickname = useSelector( state=> state.v1Account.nickname);
 
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
@@ -51,6 +50,96 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         dispatch(signOutAsyncThunk())
     }
 
+    const changeRoute = (route) => {
+        dispatch(setNextAuthStep(null));
+        const path = router.asPath;
+        if(path === route) return;
+        debugLog(debugOn, `router.push: , ${route}, state:${JSON.stringify(localSessionState)}`);
+        router.push(route);
+    }
+
+    const changePage = (page) => {
+        setNextRoute(page);
+    }
+
+    const checkIfPublicOrAuthPages = (path) => {
+        return (path === '/' || 
+            path === '/logIn' ||
+            path.startsWith('/n') ||
+            path.startsWith('/v1/' ||
+            path.startsWith('/v3'))); 
+    } 
+
+    const localSessionStateChanged = () => {
+        debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
+        if(!preflightReady) return;
+        if(localSessionState.sessionExists) {
+            if(localSessionState.unlocked) {
+                if(isLoggedIn) {
+                    const path = router.asPath;
+                    if(checkIfPublicOrAuthPages(path)) {
+                        if(accountVersion === 'v1'){
+                            changePage('/teams');
+                        } else {
+                            changePage('/safe');
+                        }
+                    }
+                    return;
+                } else {
+                    if(accountVersion === 'v1'){
+                        changePage('/teams');
+                    } else {
+                        changePage('/safe');
+                    }
+                    return;
+                }
+            } else {
+                if(isLoggedIn) {
+                    dispatch(loggedOut());
+                    if(accountVersion === 'v1') {
+                        changePage('/v1/keyEnter')
+                    } 
+                    return;
+                } else { 
+                    switch(localSessionState.authState) {
+                        case 'MFARequired':
+                            changePage('/v1/extraMFA');
+                            break;
+                        case 'KeyRequired':
+                            changePage('/v1/keyEnter');
+                            break;
+                        default:
+                    }
+                    return;
+                }
+            }
+        } else {
+            if(localSessionState.unlocked) {
+                debugLog(debugOn, "Error: It should never happen");
+                if(isLoggedIn) {
+                    return;
+                } else {
+                    return;
+                }
+            } else {
+                if(isLoggedIn) {
+                    dispatch(loggedOut());
+                    if(accountVersion === 'v1') {
+                        dispatch(signedOut());
+                        changePage(`/`);
+                    } else {
+                        changePage('/logIn');
+                    }
+                } else {
+                    const path = router.asPath;
+                    if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
+                        changePage('/');
+                    } 
+                }
+            }
+        }
+    }
+
     useEffect(() => {
         dispatch(setPreflightReady(false));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
@@ -58,6 +147,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
         const handleRouteChange = (url, { shallow }) => {
             debugLog(debugOn, "Route is going to change ...")
+            dispatch(setPreflightReady(false));
+            dispatch(setLocalSessionState(null));
         }
       
         router.events.on('routeChangeStart', handleRouteChange)
@@ -82,129 +173,13 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         const path = router.asPath;
         if(path === nextRoute) return;
         changeRoute(nextRoute);
-    }, [nextRoute])
-
-    const changeRoute = (route) => {
-        dispatch(setNextAuthStep(null));
-        const path = router.asPath;
-        if(path === route) return;
-        debugLog(debugOn, "router.push: ", route);
-        router.push(route);
-    }
-
-    const changePage = (page) => {
-        setNextRoute(page);
-    }
-
-    const localSessionStateChanged = () => {
-        if(localSessionState.sessionExists) {
-            if(localSessionState.unlocked) {
-                if(isLoggedIn) {
-                    return;
-                } else {
-                    changePage('/safe')
-                    return;
-                }
-            } else {
-                if(isLoggedIn) {
-                    if(accountVersion === 'v1') {
-                        changePage('/v1/keyEnter')
-                    } 
-                    dispatch(loggedOut);
-                    return;
-                } else { 
-                    dispatch(preflightAsyncThunk());
-                    return;
-                
-                }
-            }
-        } else {
-            if(localSessionState.unlocked) {
-                debugLog(debugOn, "Error: It should never happen");
-                if(isLoggedIn) {
-                    return;
-                } else {
-                    return;
-                }
-            } else {
-                if(isLoggedIn) {
-                    dispatch(loggedOut);
-                    if(accountVersion === 'v1') {
-                        dispatch(signedOut());
-                        changePage(`/n/${nickname}`);
-                    } else {
-                        changePage('/logIn');
-                    }
-                } else {
-                    const path = router.asPath;
-                    if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
-                        if(nickname) {
-                            changePage(`/n/${nickname}`)
-                        } else {
-                            changePage('/');
-                        }
-                    } 
-                }
-            }
-        }
-    }
+    }, [nextRoute]);
 
     useEffect(()=> {
         if(!localSessionState) return;
         localSessionStateChanged();
-if(0) {
-        if(!isLoggedIn && localSessionState && localSessionState.unlocked) {
-            changePage('/safe')
-            return;
-        }
-
-        if(!isLoggedIn && localSessionState && localSessionState.sessionExists) {
-            const path = router.asPath;
-            if(path.startsWith('/v1/')) {
-                if(path === '/v1/extraMFA') {
-                    if(localSessionState.MFAPassed) {
-                        changePage('/v1/keyEnter');
-                    }
-                }
-            } else {
-                debugLog(debugOn, "route localSessionState: ", localSessionState);
-                changePage('/v1/extraMFA');
-            }
-            return;
-        }
-
-        if(!isLoggedIn && localSessionState && !localSessionState.sessionExists) {
-            const path = router.asPath;
-            if(path === '/logIn' || path.startsWith('/n/') ) return;
-            changePage('/');
-            
-        }
-
-        if(isLoggedIn &&  localSessionState && localSessionState.unlocked) {
-            const path = router.asPath;
-            if(path === '/' || path.startsWith('/public/') || path.startsWith('/v1/')){
-                changePage('/safe');
-            }
-            return;
-        }
-
-        if(isLoggedIn &&  localSessionState && !localSessionState.unlocked && !localSessionState.sessionExists) {
-            dispatch(loggedOut());
-            changePage('/');    
-            return;
-        }
-
-        if(isLoggedIn && localSessionState && !localSessionState.unlocked && localSessionState.sessionExists) {
-            dispatch(loggedOut());
-            dispatch(preflightAsyncThunk());
-        }
-}
     }, [localSessionState]);
 
-    /*useEffect(()=> {
-        if(unlocked === null) return;
-        localSessionStateChanged();        
-    }, [unlocked])*/
 
     useEffect(()=> {
         if(!nextAuthStep) return;
@@ -243,7 +218,7 @@ if(0) {
                     <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>BSafes</span></Navbar.Brand>
                     {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
                         <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
-                            <span className={BSafesStyle.memberBadge}>S</span>
+                            <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
                         </Dropdown.Toggle>
                         { accountVersion !== 'v1' &&
                             <Dropdown.Menu>
