@@ -187,7 +187,7 @@ export default function Workspace({readyToList = false}) {
             <br />
             {workspaceId && <Row>
                 <Col xs={12}>
-                    <Link href={"/trashBox/" + workspaceId}>
+                    <Link href={"/trashBox/" + workspaceId} legacyBehavior>
                         <Button variant="light" className='pull-right border-0 shadow-none'>
                             <i className="fa fa-5x fa-trash" aria-hidden="true" />
                         </Button>

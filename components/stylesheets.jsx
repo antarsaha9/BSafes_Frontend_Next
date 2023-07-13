@@ -8,7 +8,8 @@ export default function Stylesheets() {
     count ++;
     
     return (
-        <div>
+        <div> 
+			{/*
 				<link rel="preconnect" href="https://fonts.googleapis.com" />
 				<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" />
@@ -29,6 +30,7 @@ export default function Stylesheets() {
 				<link rel="stylesheet" href="/css/froalaEditorCSS/video.css?v0.OB1.20211130" crossOrigin="anonymous"></link>
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css?v0.OB1.20211130" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossOrigin="anonymous" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css?v0.OB1.20211130" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossOrigin="anonymous" />
-		</div>
+			*/}
+		</div> 
     )
 }

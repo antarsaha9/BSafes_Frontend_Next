@@ -15,13 +15,12 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
+import { Spinner } from "react-bootstrap";
 import { getBrowserInfo, arraryBufferToStr } from "../lib/helper";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = false;    
     const editorRef = useRef(null);
-
-    const scriptsLoaded = useSelector(state => state.scripts.done);
 
     const expandedKey = useSelector( state => state.auth.expandedKey);
     const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
@@ -30,9 +29,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const itemIV = useSelector( state => state.page.itemIV);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
-    
-
+   
     const [ editorOn, setEditorOn ] = useState(false);
+    const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
     
@@ -141,10 +140,21 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     useEffect(() => {
         window.$ = window.jQuery = jquery;``
+
+        import('../lib/importScripts').then(async ic=>{
+            await ic.Froala;
+            await ic.FroalaPlugins;
+            await ic.Codemirror;
+            await ic.Photoswipe;
+            await ic.Others;
+
+            setScriptsLoaded(true)
+        });
     },[]);
 
     useEffect(()=>{
         if(!(scriptsLoaded && window)) return;
+
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
         window.bsafesFroala.rotateImage = rotateImageHook;
@@ -313,7 +323,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     return (
-        <>
+        <>{scriptsLoaded?
+            <>
             {  (showPen)&&(editable)?
                 
                 <Row>
@@ -330,6 +341,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                 </div>
             </Row>
+            </>:
+            <Spinner className={BSafesStyle.screenCenter} animation='border' />}
         </>
     );
 }

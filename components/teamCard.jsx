@@ -76,7 +76,7 @@ export default function TeamCard({ index, team, onAdd }) {
         <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Link href={`/team/${team.id}`}>
+                    <Link href={`/team/${team.id}`} legacyBehavior>
                         <Col xs={9}>
                             <div >
                                 <h2 dangerouslySetInnerHTML={{ __html: teamText }} />

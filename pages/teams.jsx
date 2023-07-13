@@ -93,7 +93,7 @@ export default function Teams() {
                     <Row>
 				        <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
 					        <Card>
-                                <Link href='/safe'>
+                                <Link href='/safe' legacyBehavior>
                                     <Card.Body>
                                         <i className="fa fa-heart text-danger"></i>
                                         <h2>Personal</h2>
@@ -141,5 +141,5 @@ export default function Teams() {
                 </Container>
             </ContentPageLayout>
         </div>
-    )
+    );
 }

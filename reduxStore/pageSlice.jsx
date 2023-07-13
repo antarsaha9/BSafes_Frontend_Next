@@ -1193,7 +1193,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     });
                 }
 
-                if(!await setupWriter()){
+                if(!(await setupWriter())){
                     reject("setupWriter failed");
                     return;
                 };
@@ -2425,7 +2425,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         } else {
             startingChunk = 0;
 
-            if(!await setupWriter()){
+            if(!(await setupWriter())){
                 dispatch(setupWriterFailed());
                 reject();
                 return;
