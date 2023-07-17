@@ -9,7 +9,7 @@ import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, s
 
 import { getTeamData } from './teamSlice';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching
@@ -193,6 +193,7 @@ const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
     try {
         await activity();
+        debugLog(debugOn, "newActivity Done");
         dispatch(activityChanged("Done"));
     } catch(error) {
         dispatch(activityChanged("Error"));
@@ -277,9 +278,10 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
 
 export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
     dispatch(clearContainer());
-    newActivity(dispatch, "Loading", () => {
+    
+    newActivity(dispatch, "InitWorkspace", () => {
         return new Promise(async (resolve, reject) => {
-            let auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, workspaceId, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
+            let state, auth, team, teamKeyEnvelope, privateKeyFromPem, encodedTeamKey, teamKey, workspaceId, encryptedTeamName, teamIV, encodedTeamName, teamName, length, displayTeamName, teamSearchKeyEnvelope,teamSearchKeyIV, teamSearchIVEnvelope, teamSearchKey, teamSearchIV ;
             auth = getState().auth;
             try {
                 
@@ -290,6 +292,13 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                 }
                 
                 team = await getTeamData(data.teamId);
+                state = getState().container;
+                if(state.workspaceKeyReady) {
+                    debugLog(debugOn, "Duplicated initWorkspace.")
+                    resolve();
+                    return;
+                }
+
                 teamKeyEnvelope = team.teamKeyEnvelope;
                 privateKeyFromPem = forge.pki.privateKeyFromPem(auth.privateKey);
                 encodedTeamKey = privateKeyFromPem.decrypt(forge.util.decode64(teamKeyEnvelope));

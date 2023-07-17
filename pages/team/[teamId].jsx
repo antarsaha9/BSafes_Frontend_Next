@@ -60,7 +60,7 @@ export default function Team(props) {
     useEffect(()=>{
         if(loggedIn && !workspaceKeyReady && router.query.teamId) {
             const teamId = router.query.teamId;
-            debugLog(debugOn, "Set up workspace");
+            debugLog(debugOn, `Set up workspace loggedIn:${loggedIn} workspaceKeyReady:${workspaceKeyReady} teamId:${router.query.teamId}`);
             dispatch(clearItems());
             
             if(workspaceId && workspaceId.startsWith(router.query.teamId)) {

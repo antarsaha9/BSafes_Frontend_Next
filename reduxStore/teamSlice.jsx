@@ -203,6 +203,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
 }
 
 export const getTeamData = (teamId) => {
+    debugLog(debugOn, "getTeamData()");
     return new Promise(async (resolve, reject) => {
         PostCall({
             api: '/memberAPI/getTeamData',
