@@ -9,7 +9,7 @@ import format from "date-fns/format";
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
-import { abort, clearPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
+import { abort, clearPage, initPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
 
@@ -20,7 +20,6 @@ const PageItemWrapper = ({ itemId, children}) => {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
 
     const accountVersion = useSelector( state => state.auth.accountVersion);
@@ -45,6 +44,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const itemCopy = useSelector( state => state.page.itemCopy);
 
     useEffect(() => {
+        
         const handleRouteChange = (url, { shallow }) => {
           console.log(
             `App is changing to ${url} ${
@@ -53,6 +53,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           )
           
           dispatch(abort());
+          dispatch(clearPage());
         }
     
         router.events.on('routeChangeStart', handleRouteChange)
@@ -68,9 +69,10 @@ const PageItemWrapper = ({ itemId, children}) => {
     useEffect(()=> {
       if(isLoggedIn && itemId) {
         debugLog(debugOn, "page wrapper useEffect itemId: ", itemId);
-        dispatch(clearPage());
+
+        dispatch(initPage());
         dispatch(setChangingPage(false));
-        setPageCleared(true);
+
         dispatch(setWorkspaceKeyReady(false));
         debugLog(debugOn, "set pageItemId: ", router.query.itemId);
         dispatch(setPageItemId(router.query.itemId)); 
@@ -79,8 +81,8 @@ const PageItemWrapper = ({ itemId, children}) => {
         path = path.split('/')[2];
         if(path === 'contents') {
           dispatch(clearItems());
-          let pageType = itemId.split(':')[0];
-          if(pageType === 'd') {
+          let itemType = itemId.split(':')[0];
+          if(itemType === 'd') {
             dispatch(setStartDateValue((new Date()).getTime()));
             dispatch(setDiaryContentsPageFirstLoaded(false));
           }
@@ -90,15 +92,15 @@ const PageItemWrapper = ({ itemId, children}) => {
     }, [isLoggedIn, itemId]);
 
     useEffect(()=>{
-      if(pageItemId && pageCleared) {
+      if(pageItemId) {
           debugLog(debugOn, "Dispatch getPageItemThunk ...");
           dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [pageItemId, pageCleared]);
+    }, [pageItemId]);
 
     useEffect(() => {
-      if (pageCleared && navigationMode) {
+      if (navigationMode) {
           debugLog(debugOn, "setContainerData ...");
           dispatch(setContainerData({ itemId: pageItemId, container: { space: workspace, id: containerInWorkspace } }));
       }
@@ -118,7 +120,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     }, [pageNumber])
 
     useEffect(()=>{
-      if(space && pageCleared) {  
+      if(space) {  
         let path = router.asPath;
         path = path.split('/')[2];      
         
@@ -179,9 +181,10 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{
       debugLog(debugOn, "useEffect [workspaceKey] ...");
+      if(!workspaceKeyReady || !itemCopy) return;
       let path = router.asPath;
       path = path.split('/')[2]; 
-      if(( path !== 'contents' && workspaceKeyReady && workspaceKey && itemCopy && pageCleared)) {
+      if(( path !== 'contents' && workspaceKeyReady && workspaceKey && itemCopy)) {
           let pageType = pageItemId.split(':')[0];
           debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
           dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
@@ -190,7 +193,6 @@ const PageItemWrapper = ({ itemId, children}) => {
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
           }
           
-          setPageCleared(false);
           setContainerCleared(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -198,13 +200,12 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{ 
       debugLog(debugOn, "useEffect [workspaceKey] ...");
-      
-      if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
+      if(!workspaceKeyReady || !pageItemId) return;
+      if( containerInWorkspace &&  workspaceKeyReady ) {
           let pageType = pageItemId.split(':')[0];
           let path = router.asPath;
           path = path.split('/')[2]; 
           if(path === 'contents'){
-            setPageCleared(false);
             setContainerCleared(false);
             debugLog(debugOn, "listItemsThunk ...");
             if( pageType !== 'd' ) {

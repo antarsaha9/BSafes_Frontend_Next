@@ -11,7 +11,7 @@ import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, dec
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     aborted: false,
@@ -231,6 +231,9 @@ const pageSlice = createSlice({
                 let key = stateKeys[i];
                 state[key] = initialState[key];
             }
+        },
+        initPage: (state, action) => {
+            state.aborted = false;
         },
         setChangingPage: (state, action) => {
             state.changingPage = action.payload;
@@ -583,7 +586,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { clearPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { clearPage, initPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -751,7 +754,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     }                            
                     if(result.item) {
                         dispatch(dataFetched({item:result.item}));
-                        if(result.item.content.startsWith('s3Object/')){
+                        if(result.item.content && result.item.content.startsWith('s3Object/')){
                             const signedContentUrl = result.item.signedContentUrl;
                             const response = await XHRDownload(null, dispatch, signedContentUrl, null);                         
                             
@@ -822,15 +825,15 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 reject("woo... failed to get the container data!");
                             }
                         } else {
-                            reject("woo... failed to get a page item!");
+                            reject("woo... failed to get a page item!!!");
                         }
                     }
                 } else {
-                    debugLog(debugOn, "woo... failed to get a page item!", result.error);
+                    debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
                     reject("woo... failed to get a page item!");
                 }
             }).catch( error => {
-                debugLog(debugOn, "woo... failed to get a page item.")
+                debugLog(debugOn, "woo... failed to get a page item:", error)
                 reject("woo... failed to get a page item!");
             })
 
@@ -2105,6 +2108,10 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
 
             reader.onloadend = async function(e) {
                 data = reader.result;
+                if(!data) {
+                    reject("It is not a file.");
+                    return;
+                }
                 fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
                 debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
                 dispatch(uploadingAttachment(fileUploadProgress));

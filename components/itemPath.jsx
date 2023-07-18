@@ -16,7 +16,7 @@ import { debugLog } from '../lib/helper'
 import { decryptBinaryString } from '../lib/crypto'; 
 
 export default function ItemPath() {
-    const debugOn = true;
+    const debugOn = false;
 
     const router = useRouter();
     

@@ -18,7 +18,7 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { } from "../../reduxStore/containerSlice";
-import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getLastAccessedItem, getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
@@ -155,7 +155,7 @@ export default function Notebook() {
                                     <br />
                                     <Row>
                                         <Col>
-                                            <ContainerOpenButton handleOpen={handleOpen} />
+                                            <ContainerOpenButton handleOpen={handleOpen}/>
                                         </Col>
                                     </Row>
                                     <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
