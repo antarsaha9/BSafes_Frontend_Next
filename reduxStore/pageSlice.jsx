@@ -8,8 +8,9 @@ import { setupNewItemKey } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
-import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
+import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
+import { get } from 'jquery';
 
 const debugOn = true;
 
@@ -838,9 +839,15 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
             })
 
             function getItemPath() {
+                let itemId;
+                if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                    itemId = getBookIdFromPage(data.itemId);
+                } else {
+                    itemId = data.itemId;
+                }
                 PostCall({
                     api:'/memberAPI/getItemPath',
-                    body: {itemId: data.itemId},
+                    body: {itemId},
                 }).then( result => {
                     debugLog(debugOn, result);
                     if(result.status === 'ok') {    

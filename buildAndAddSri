@@ -20,3 +20,4 @@ npm run build
 cd upload
 cp -r ../out/* .
 node ../tools/addSriProtection.js .
+cd ..

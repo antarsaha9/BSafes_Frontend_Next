@@ -62,7 +62,7 @@ export default function DiaryPage() {
 
         nextPageId = idParts.join(':');
         debugLog(debugOn, "setNavigationInSameContainer ...");
-        setNavigationInSameContainer(true);
+        dispatch(setNavigationInSameContainer(true));
         router.push(`/diary/p/${nextPageId}`);
     }
 

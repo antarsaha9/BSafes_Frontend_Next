@@ -23,7 +23,7 @@ import { } from "../../reduxStore/containerSlice";
 import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem, getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
 
 export default function Box() {
     const debugOn = false;
@@ -93,17 +93,10 @@ export default function Box() {
 
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
-        try {
-            const item = await getLastAccessedItem(pageItemId);
-            if(item) {
-                debugLog(debugLog, item);
-            } else {
-                const link = `/box/contents/${pageItemId}`;
-                router.push(link);
-            }
-        } catch (error) {
-            debugLog(debugOn, error)
-        }
+        
+        const link = `/box/contents/${pageItemId}`;
+        router.push(link);
+        
     }
 
     const handleCoverClicked = () => {

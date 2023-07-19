@@ -22,7 +22,9 @@ import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
     const debugOn = true;
-    debugLog(debugOn, "Rendering item");
+    debugLog(debugOn, "Rendering NotebookPage");
+
+    const dispatch = useDispatch();
     const router = useRouter();
     
     const pageItemId = useSelector( state => state.page.id);
@@ -59,7 +61,7 @@ export default function NotebookPage() {
 
         nextPageId = idParts.join(':');
         debugLog(debugOn, "setNavigationInSameContainer ...");
-        setNavigationInSameContainer(true);
+        dispatch(setNavigationInSameContainer(true));
         router.push(`/notebook/p/${nextPageId}`);       
     }
 

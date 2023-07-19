@@ -21,7 +21,7 @@ import { } from "../../reduxStore/containerSlice";
 import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem, getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
 
 export default function Notebook() {
     const debugOn = false;
@@ -91,19 +91,11 @@ export default function Notebook() {
 
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
-        try {
-            const item = await getLastAccessedItem(pageItemId);
-            if(item) {
-                debugLog(debugLog, item);
-            } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
-                router.push(firstPage);
-            }
-        } catch (error) {
-            debugLog(debugOn, error)
-        }
+
+        const idParts = pageItemId.split(":");
+        const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+        router.push(firstPage);
+            
     }
 
     const handleCoverClicked = () => {

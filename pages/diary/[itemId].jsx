@@ -18,11 +18,10 @@ import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import {  } from "../../reduxStore/containerSlice";
-import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink, getDiaryPageIndexForToday } from "../../lib/bSafesCommonUI";
 
 export default function Diary() {
     const debugOn = false;
@@ -93,14 +92,8 @@ export default function Diary() {
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
         try {
-            const currentTime = new Date();
-            const year = currentTime.getFullYear();
-            let month, date, pageIndex, link;
-            month = currentTime.getMonth() + 1;
-            if (month < 10) month = '0' + month;
-            date = currentTime.getDate();
-            if (date < 10) date = '0' + date;
-            pageIndex = year + '-' + month + '-' + date;
+            let pageIndex, link;
+            pageIndex = getDiaryPageIndexForToday();
             link = '/diary/p/' + pageItemId.replace('d:', 'dp:') + ':' + pageIndex;
             router.push(link);
         } catch (error) {

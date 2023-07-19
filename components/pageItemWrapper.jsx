@@ -9,7 +9,7 @@ import format from "date-fns/format";
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
-import { abort, clearPage, initPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
+import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
 
