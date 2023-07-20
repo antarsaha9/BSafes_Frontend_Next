@@ -76,6 +76,7 @@ export default function PageCommons() {
         const options = {
             // optionName: 'option value'
             // for example:
+            history: false,
             index: startingIndex // start at first slide
         };
         const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
