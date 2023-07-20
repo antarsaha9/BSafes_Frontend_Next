@@ -167,7 +167,7 @@ export default function DiaryContents() {
                                     </Col>
                                 </Row>
                                 {items}
-                                { mode === 'search' && itemsState && itemsState.length > 0 &&
+                                { mode === 'search' && itemsState && itemsState.length > 0 && (total > itemsPerPage) &&
                                     <Row>
                                         <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
                                             <div className='mt-4 d-flex justify-content-center'>

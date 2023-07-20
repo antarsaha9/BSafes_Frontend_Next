@@ -196,7 +196,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           setContainerCleared(false);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [workspaceKeyReady, itemCopy]);
+    }, [workspaceKeyReady]);
 
     useEffect(()=>{ 
       debugLog(debugOn, "useEffect [workspaceKey] ...");

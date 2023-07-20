@@ -119,7 +119,7 @@ export default function Workspace({readyToList = false}) {
 
     useEffect(()=> {
         if(newItem) {
-            const link = getItemLink(newItem);
+            const link = getItemLink(newItem, true);
             dispatch(clearNewItem());
             router.push(link);
         }

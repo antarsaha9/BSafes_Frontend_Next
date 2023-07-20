@@ -161,7 +161,7 @@ export default function FolderContents() {
                                 <br />
                                 
                                 {items}
-                                {itemsState && itemsState.length > 0 &&
+                                {itemsState && (itemsState.length > 0) && (total > itemsPerPage) &&
                                     <Row>
                                         <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
                                             <div className='mt-4 d-flex justify-content-center'>

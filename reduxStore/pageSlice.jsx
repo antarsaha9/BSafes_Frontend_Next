@@ -4,13 +4,12 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
 
-import { setupNewItemKey } from './containerSlice';
+import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
-import { get } from 'jquery';
 
 const debugOn = true;
 
@@ -809,6 +808,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if(data.navigationInSameContainer) {
                             debugLog(debugOn, "setNavigationMode ...");
                             dispatch(setNavigationMode(true));
+                            dispatch(setNavigationInSameContainer(false));
                             resolve();
                             return;
                         }
