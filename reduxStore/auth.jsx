@@ -228,14 +228,15 @@ export const preflightAsyncThunk = () => async (dispatch, getState) => {
                         dispatch(setKeyMeta(data.nextStep.keyMeta));
                     }
                     if(data.idleTimeout) {
-                        if(auth.accountVersion === 'v1'){
+                        if(data.accountVersion === 'v1'){
                             clearLocalCredentials('v1');
                         } else {
                             localStorage.clear();
                             dispatch(loggedOut());
+                            
                         }
+                        dispatch(setNextAuthStep(data.nextStep))
                     } 
-                    dispatch(setNextAuthStep(data.nextStep))
                 } else {
                     dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
                 }

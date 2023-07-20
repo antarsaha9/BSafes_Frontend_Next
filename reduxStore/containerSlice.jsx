@@ -120,6 +120,7 @@ const containerSlice = createSlice({
             state.items = [];
         },
         pageLoaded: (state, action) => {
+            state.activity = "Loading";
             state.total = action.payload.total;
             state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
             state.pageNumber = action.payload.pageNumber;
