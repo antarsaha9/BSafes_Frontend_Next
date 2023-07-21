@@ -4,6 +4,8 @@
  * Copyright 2014-2017 Froala Labs
  */
 
+const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
+
 (function (factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
@@ -1259,7 +1261,7 @@
           return false;
         }
 
-        const chunkSize = 512 * 1024;
+        const chunkSize = getEditorConfig().videoChunkSize;
         const video = videos[0];
 				const fileType = video.type;
         const fileSize = video.size;
@@ -1269,7 +1271,7 @@
         const encodedFileName = encodeURI(fileName);
 	      const encryptedFileName = encryptBinaryString(encodedFileName, itemKey);
         let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
-        let serviceWorkerReady = false, videoLinkFromServiceWorker = null;
+        let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
 
           // Check video types.
         if (editor.opts.videoAllowedTypes.indexOf(video.type.replace(/video\//g, '')) < 0) {
@@ -1300,6 +1302,7 @@
           
                           registration.active.postMessage({
                               type: 'INIT_EDITOR_VIDEO_PORT',
+                              videoChunkSize: getEditorConfig().videoChunkSize,
                               s3KeyPrefix,
                               fileName,
                               fileType,

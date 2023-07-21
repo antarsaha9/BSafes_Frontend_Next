@@ -8,7 +8,7 @@ import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice'
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToUinit8ArrayAsync, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
-import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId } from '../lib/bSafesCommonUI';
+import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId, getEditorConfig } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
 const debugOn = true;
@@ -1061,6 +1061,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     
                                     registration.active.postMessage({
                                         type: 'INIT_VIDEO_PORT',
+                                        videoChunkSize: getEditorConfig().videoChunkSize,
                                         s3KeyPrefix,
                                         fileName,
                                         fileType,

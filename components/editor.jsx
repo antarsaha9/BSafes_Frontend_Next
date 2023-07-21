@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
+import Spinner from "react-bootstrap/Spinner";
 
 import jquery from "jquery"
 
@@ -12,11 +13,11 @@ const forge = require('node-forge');
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
+import { getEditorConfig } from "../lib/bSafesCommonUI";
+import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
-import { Spinner } from "react-bootstrap";
-import { getBrowserInfo, arraryBufferToStr } from "../lib/helper";
+
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
     const debugOn = false;    
@@ -169,6 +170,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.uploadData = uploadDataHook;
         window.bsafesFroala.getBrowserInfo = getBrowserInfoHook;
         window.bsafesFroala.arraryBufferToStr = arraryBufferToStrHook;
+        window.bsafesFroala.getEditorConfig = getEditorConfigHook;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
 
@@ -322,6 +324,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return arraryBufferToStr(arrayBuffer);
     }
 
+    const getEditorConfigHook = () => {
+        return getEditorConfig();
+    }
     return (
         <>{scriptsLoaded?
             <>

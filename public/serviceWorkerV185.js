@@ -1,4 +1,4 @@
-const chunkSize = 512 * 1024;
+let videoChunkSize;
 const broadcastChannelName = 'streamService';
 let streams = {};
 let videoStreams = {};
@@ -298,8 +298,10 @@ self.addEventListener("message", async (event)=> {
     let browserInfo = event.data.browserInfo;
     let resumeForNewStream = event.data.resumeForNewStream;
     let start = event.data.start;
-    let numberOfChunks = Math.floor(fileSize/chunkSize);
-    if(fileSize%chunkSize) numberOfChunks += 1;
+    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+    videoChunkSize = event.data.videoChunkSize;
+    
+    if(fileSize%videoChunkSize) numberOfChunks += 1;
 
         
     let id = encodeURI( `${timeStamp}_${fileName}`);
@@ -375,8 +377,9 @@ self.addEventListener("message", async (event)=> {
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
-    let numberOfChunks = Math.floor(fileSize/chunkSize);
-    if(fileSize%chunkSize) numberOfChunks += 1;
+    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+    videoChunkSize = event.data.videoChunkSize;
+    if(fileSize%videoChunkSize) numberOfChunks += 1;
         
     let id = encodeURI( `${timeStamp}_${fileName}`);
 
@@ -449,10 +452,11 @@ self.addEventListener("fetch", async (event) => {
       function waitForResponse() {
         let range = event.request.headers.get('Range');
         let start, end;
-
+        console.log(`new video request range: ${range}`);
         range = range.split('=')[1].split('-');
         start = parseInt(range[0]);
         end = range[1];
+        console.log(`new video request range start: ${start} end: ${end}`);
         
         function getStreamInfo(client) {
           return new Promise(resolve=>{
@@ -495,12 +499,13 @@ self.addEventListener("fetch", async (event) => {
             let timeOut = streamInfo.timeOut;
             if(timeOut) clearTimeout(timeOut);
     
+            let chunkIndex = Math.floor(start/videoChunkSize);
             if(end === "") {
               if(!streamInfo.twoBytesSent){
                 end = start + 1;
                 streamInfo.twoBytesSent = true;
               } else {
-                end = start + 65535;
+                end = start + (chunkIndex+1)*videoChunkSize-1;
               }     
             } else {
                 end = parseInt(end);
@@ -509,17 +514,15 @@ self.addEventListener("fetch", async (event) => {
             if(end >= fileSize){
               end = fileSize-1;
             }
-    
-            let chunkIndex = Math.floor(start/chunkSize);
             
             const waitForResult = () => {
               function responseFromDBResult(result){
                 let responseData, response;
-                if(end < (chunkIndex + 1)* chunkSize -1){
-                  responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)  
+                if(end < (chunkIndex + 1)* videoChunkSize -1){
+                  responseData = result.dataInBinary.substring(start%videoChunkSize, end%videoChunkSize+1)  
                 } else {
-                  responseData = result.dataInBinary.substring(start%chunkSize);
-                  end = (chunkIndex +1) * chunkSize - 1;
+                  responseData = result.dataInBinary.substring(start%videoChunkSize);
+                  end = (chunkIndex +1) * videoChunkSize - 1;
                 }
                 let headers = {
                   'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
@@ -527,7 +530,7 @@ self.addEventListener("fetch", async (event) => {
                 headers['Accept-Ranges'] = 'bytes';
                 headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
                 headers['Content-Length'] = responseData.length;
-                console.log("Content-Range: ", headers['Content-Range']);
+                console.log("Response Content-Range: ", headers['Content-Range']);
                 
                 let responseHeader = {
                   status: 206,
@@ -593,10 +596,10 @@ self.addEventListener("fetch", async (event) => {
                     streamInfo.chunksInfo[chunkIndex].pendingFetches = pendingFetches;
                   }
                 }
-                timeOut = setTimeout(()=> {
+                /*timeOut = setTimeout(()=> {
                   streamInfo.nextChunkIndex = -99998;
                 }, 3000);
-                streamInfo.timeOut = timeOut;
+                streamInfo.timeOut = timeOut;*/
               });
               
             }
@@ -613,178 +616,6 @@ self.addEventListener("fetch", async (event) => {
 
       event.respondWith(waitForResponse());
 
-
-
-
-if(0) {
-      let range = event.request.headers.get('Range');
-      let start, end;
-
-      range = range.split('=')[1].split('-');
-      start = parseInt(range[0]);
-      end = range[1];
-
-      function getStreamInfo() {
-        return new Promise(resolve=>{
-          let streamInfo = videoStreams[id];
-          if(streamInfo) {
-            resolve(streamInfo);
-          } else {
-            event.waitUntil(
-              (async () => {
-                // Exit early if we don't have access to the client.
-                // Eg, if it's cross-origin.
-                if (!event.clientId) return;
-          
-                // Get the client.
-                const client = await self.clients.get(event.clientId);
-                // Exit early if we don't get the client.
-                // Eg, if it closed.
-                if (!client) return;
-          
-                // Send a message to the client.
-                client.postMessage({
-                  type: "STREAM_NOT_FOUND",
-                  id,
-                  start
-                });
-
-                let target = new EventTarget();
-                streamWaitingList[id] = {
-                  target
-                }
-                eventTarget.addEventListener("STREAM_AVAILABLE", async (e)=> {
-                  console.log("STREAM_AVAILABLE: ", e.streamInfo); 
-                  resolve(e.streamInfo);
-                });
-              })()
-            );
-          }
-        })
-      }
-
-      streamInfo = await getStreamInfo();
-        
-      console.log(`Range request: start:${start} end:${end}`);
-
-      if(streamInfo){
-        let fileName = encodeURIComponent(streamInfo.fileName).replace(/['()]/g).replace(/\*/g, '%2A')
-        let fileSize = streamInfo.fileSize;
-        let fileType = streamInfo.fileType;
-
-        let timeOut = streamInfo.timeOut;
-        if(timeOut) clearTimeout(timeOut);
-
-        if(end === "") {
-          if(!streamInfo.twoBytesSent){
-            end = start + 1;
-            streamInfo.twoBytesSent = true;
-          } else {
-            end = start + 65535;
-          }     
-        } else {
-            end = parseInt(end);
-        }
-  
-        if(end >= fileSize){
-          end = fileSize-1;
-        }
-
-        let chunkIndex = Math.floor(start/chunkSize);
-        
-        const waitForResponse = async () => {
-          function responseFromDBResult(result){
-            let responseData, response;
-            if(end < (chunkIndex + 1)* chunkSize -1){
-              responseData = result.dataInBinary.substring(start%chunkSize, end%chunkSize+1)  
-            } else {
-              responseData = result.dataInBinary.substring(start%chunkSize);
-              end = (chunkIndex +1) * chunkSize - 1;
-            }
-            let headers = {
-              'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
-            }      
-            headers['Accept-Ranges'] = 'bytes';
-            headers['Content-Range'] = `bytes ${start}-${end}/${fileSize}`;
-            headers['Content-Length'] = responseData.length;
-            console.log("Content-Range: ", headers['Content-Range']);
-            
-            let responseHeader = {
-              status: 206,
-              statusText: 'OK',
-              headers
-            };
-
-            let responseDataInUint8Arrary = new Uint8Array(responseData.length);
-            for(let i=0; i<responseData.length; i++) {
-              responseDataInUint8Arrary[i] = responseData.charCodeAt(i);
-            }
-            response = new Response(responseDataInUint8Arrary, responseHeader);
-            return response;
-          }
-
-          return new Promise(async (resolve)=>{
-            let numberOfChunks = streamInfo.numberOfChunks;
-            let result = await getChunkFromDB(id, chunkIndex);
-            if(result) {
-              let response = responseFromDBResult(result);
-              let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-              streamInfo.nextChunkIndex = nextChunkIndex;
-              resolve(response);
-            } else {
-              console.log(`chunkIndex: ${chunkIndex} not in DB`);
-              if(chunkIndex !== streamInfo.requestedChunkIndex){
-                console.log(`chunkIndex: ${chunkIndex} becomes next chunk`);
-                
-                if(streamInfo.requestedChunkIndex < 0) {
-                  console.log("service worker onfetch: requestedChunkIndex < 0 ");
-                  let port = streamInfo.port;
-                  port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: chunkIndex}); 
-                  streamInfo.requestedChunkIndex = chunkIndex;
-                  
-                  let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-                  streamInfo.nextChunkIndex = nextChunkIndex;
-                } else {
-                  streamInfo.nextChunkIndex = chunkIndex;
-                }   
-              }
-              
-              let eventTarget = new EventTarget();
-              eventTarget.addEventListener("CHUNK_AVAILABLE", async (e)=> {
-                console.log("CHUNK_AVAILABLE: ", chunkIndex);
-                let result = await getChunkFromDB(id, chunkIndex);
-                let response = responseFromDBResult(result);
-                resolve(response);
-              });
-
-              console.log(`Add eventTarget for chunkIndex: ${chunkIndex}`)
-              
-              if(!streamInfo.chunksInfo[chunkIndex]){
-                streamInfo.chunksInfo[chunkIndex] ={
-                  pendingFetches: [eventTarget],
-                }
-              } else {
-                let pendingFetches = streamInfo.chunksInfo[chunkIndex].pendingFetches;
-                if(pendingFetches) {
-                  pendingFetches.push(eventTarget);
-                } else {
-                  pendingFetches = [eventTarget];
-                }
-                streamInfo.chunksInfo[chunkIndex].pendingFetches = pendingFetches;
-              }
-            }
-            timeOut = setTimeout(()=> {
-              streamInfo.nextChunkIndex = -99998;
-            }, 3000);
-            streamInfo.timeOut = timeOut;
-          });
-          
-        }
-        event.respondWith(waitForResponse());
-      } else {
-       
-      }
-}
     } else {
       streamInfo = streams[id];
       

@@ -1,5 +1,3 @@
-//const domain = 'https://hivqf9prf7.execute-api.us-east-1.amazonaws.com';
-const domain = 'http://localhost:3000';
 window.bsafesFroala ={
     name: "abc",
 }
@@ -54,4 +52,8 @@ export function getBrowserInfo() {
 
 export function arraryBufferToStr(arrayBuffer) {
     return window.bsafesFroala.arraryBufferToStr(arrayBuffer);
+}
+
+export function getEditorConfig() {
+    return window.bsafesFroala.getEditorConfig();
 }
