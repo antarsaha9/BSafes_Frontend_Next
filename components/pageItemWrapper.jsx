@@ -51,6 +51,9 @@ const PageItemWrapper = ({ itemId, children}) => {
               shallow ? 'with' : 'without'
             } shallow routing`
           )
+          
+          dispatch(abort());
+          dispatch(clearPage());
         }
     
         router.events.on('routeChangeStart', handleRouteChange)
