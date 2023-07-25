@@ -1934,6 +1934,16 @@ const uploadAnImage = async (dispatch, state, file) => {
     });
 };
 
+const findAnImageByKey = (images, s3Key) => {
+    if(!images) return null;
+    for(let i=0; i< images.length; i++) {
+        if(images[i].s3Key === s3Key) {
+            return images[i].words;
+        }
+    }
+    return null;
+}
+
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
@@ -1969,6 +1979,8 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
             const images = [];
             for(let i=0; i<state.imagePanels.length; i++) {
                 let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
+                let words = findAnImageByKey(state.itemCopy.images, image.s3Key);
+                image.words = words;
                 images.push(image);
             }
             if (!state.itemCopy) {

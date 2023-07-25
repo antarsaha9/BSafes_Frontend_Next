@@ -91,7 +91,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                 </div>
                 :""
             }	
-            <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} />
+            <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} />
 
         </div>    
     )   

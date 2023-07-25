@@ -19,7 +19,7 @@ import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBina
 import { rotateImage } from '../lib/wnImage';
 
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false}) {
     const debugOn = false;    
     const editorRef = useRef(null);
 
@@ -342,10 +342,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 ""
                 
             }
-            <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
-                <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
-                </div>
-            </Row>
+            { ((mode === 'Writing' || mode === 'Saving') || !(hideIfEmpty && (!content || content.length === 0))) &&
+                <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
+                    <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
+                    </div>
+                </Row>
+            }
             </>:
             <Spinner className={BSafesStyle.screenCenter} animation='border' />}
         </>
