@@ -276,7 +276,7 @@ self.addEventListener("message", async (event)=> {
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
 
-    let id = encodeURI( 'video/' + fileName + Date.now());
+    let id = encodeURI( fileName + Date.now());
     let streamInfo = {
       id,
       fileName,

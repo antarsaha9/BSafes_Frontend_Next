@@ -418,3 +418,10 @@
   overflow-x:auto;
 }
 /* End of Editor */
+
+/*--****** Image Panel *******/
+.imagePanelButton {
+  padding-left: 0px;
+  padding-right:0px;
+}
+/* End of Image Panel */
