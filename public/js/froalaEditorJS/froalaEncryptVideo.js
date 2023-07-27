@@ -732,6 +732,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
     function _videoUploadProgress (e) {
       if (e.lengthComputable) {
         var complete = (e.loaded / e.total * 100 | 0);
+
         _setProgressMessage(editor.language.translate('Uploading'), complete);
       }
     }
@@ -1407,6 +1408,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                             const onUploadProgress = (progressEvent) => {
                               let percentCompleted = 15 + Math.ceil(progressEvent.loaded*85/progressEvent.total);
                               fileUploadProgress = index*(100/numberOfChunks) + percentCompleted/numberOfChunks;
+                              fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
                               console.log( `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
                               console.log( `File upload prgoress: ${fileUploadProgress}`);
                               _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
@@ -1424,13 +1426,15 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
     
                 reader.onloadend = async function(e) {
                     data = reader.result;
-                    binaryData = arraryBufferToStr(data);
+                    binaryData = data;
                     fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                    fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
                     _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
                     console.log(`File upload prgoress: ${fileUploadProgress}`);
                     
-                    encryptedData = await encryptChunkArrayBufferToBinaryStringAsync(data, itemKey);
+                    encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, itemKey);
                     fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                    fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
                     console.log(`File upload prgoress: ${fileUploadProgress}`);
                     _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
 
@@ -1448,7 +1452,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                         reject(error);
                     }
                   };
-                reader.readAsArrayBuffer(blob);
+                reader.readAsBinaryString(blob);
             });
         }
 

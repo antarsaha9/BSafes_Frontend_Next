@@ -15,7 +15,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getEditorConfig } from "../lib/bSafesCommonUI";
 import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
-import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkArrayBufferToBinaryStringAsync } from "../lib/crypto";
+import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
 
@@ -163,7 +163,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
         window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
         window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
-        window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync = encryptChunkArrayBufferToBinaryStringAsyncHook;
+        window.bsafesFroala.encryptChunkBinaryStringToBinaryStringAsync = encryptChunkBinaryStringToBinaryStringAsyncHook;
         window.bsafesFroala.preS3Upload = preS3UploadHook;
         window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
         window.bsafesFroala.postS3Upload = postS3UploadHook;
@@ -221,8 +221,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return encryptLargeBinaryString(binaryString, key);
     }
 
-    const encryptChunkArrayBufferToBinaryStringAsyncHook = (arrayBuffer, key) => {
-        return encryptChunkArrayBufferToBinaryStringAsync(arrayBuffer, key);
+    const encryptChunkBinaryStringToBinaryStringAsyncHook = (arrayBuffer, key) => {
+        return encryptChunkBinaryStringToBinaryStringAsync(arrayBuffer, key);
     }
 
     const preS3UploadHook = () => {

@@ -30,7 +30,7 @@ export default function ItemPath() {
 
     const breadItems = pathItems.map((item, index) => 
         (index!==(pathItems.length-1))?
-        <Breadcrumb.Item key={index} onClick={()=>{router.push(item.link)}} active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
+        <Breadcrumb.Item key={index} href={item.link} active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
         : 
         <Breadcrumb.Item key={index} active={true}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
     );
@@ -50,7 +50,8 @@ export default function ItemPath() {
                     case 't1':
                         pathItemIcon = null;
                         itemTitleText = workspaceName;
-                        pathItemLink = '/team/' + item._id;
+                        const teamId = item._id.slice(0, -4)
+                        pathItemLink = '/team/' + teamId;
                         break;
                     case 'tm':
                         pathItemIcon = "fa fa-users";

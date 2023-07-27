@@ -2060,39 +2060,19 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
     const fileType = file.type;
     const encodedFileName = forge.util.encodeUtf8(file.name);
 	const encryptedFileName = encryptBinaryString(encodedFileName, state.itemKey);
-    let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk, chunkForUpload;
+    let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     
     function sliceEncryptAndUpload(file, chunkIndex) {
-        return new Promise(async (resolve, reject) => {
-            let  encryptedChunk, fileUploadProgress = 0;
+        return new Promise((resolve, reject) => {
+            let reader, offset, data, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
            
-            function encryptAChunk(index) {
-                return new Promise((resolve)=> {
-                    debugLog(debugOn, `encryptAChunk: ${index}`);
-                    let reader, offset, data, encryptedData;
-                    offset = (index) * chunkSize;
-                    reader = new FileReader();
-                    const blob = file.slice(offset, offset + chunkSize);
-
-                    reader.onloadend = async function(e) {
-                        data = reader.result;
-                        if(!data) {
-                            reject("It is not a file.");
-                            return;
-                        }            
-                        encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, state.itemKey);
-                        encryptedFileSize += encryptedData.length;
-                        debugLog(debugOn, `encryptAChunk done: ${index}`);
-                        resolve(encryptedData);
-                    };
-                    reader.readAsBinaryString(blob);
-                });
-            }
-
+            offset = (chunkIndex) * chunkSize;
+            reader = new FileReader();
+            const blob = file.slice(offset, offset + chunkSize);
+            
             function uploadAChunk(index, data) {
                 let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
                 
-                debugLog(debugOn, `uploadAChunk: ${index}`);
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
 	            timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1]
                 
@@ -2138,7 +2118,6 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                         await axios.put(signedURL, Buffer.from(data, 'binary'), config );              
                         if(timer) clearTimeout(timer);
                         dispatch(setAbortController(null));
-                        debugLog(debugOn, `uploadAChunk done: ${index}`);
                         resolve();
                     } catch(error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
@@ -2146,19 +2125,32 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                     }
                 });
             }
-            if(chunkIndex === 0) {
-                encryptedChunk = await encryptAChunk(chunkIndex);
-                resolve(encryptedChunk);
-            } else if(chunkIndex === numberOfChunks) {
-                await uploadAChunk(chunkIndex-1, chunkForUpload);
-                resolve();
-            } else {
-                Promise.all([uploadAChunk(chunkIndex-1, chunkForUpload), encryptAChunk(chunkIndex)]).then(result => {
-                    resolve(result[1]);
-                }).catch(error => {
+
+            reader.onloadend = async function(e) {
+                data = reader.result;
+                if(!data) {
+                    reject("It is not a file.");
+                    return;
+                }
+                fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                dispatch(uploadingAttachment(fileUploadProgress));
+                encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, state.itemKey);
+                fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                dispatch(uploadingAttachment(fileUploadProgress));
+                encryptedFileSize += encryptedData.length;
+                
+                try {   
+                    await uploadAChunk(chunkIndex, encryptedData);
+                    resolve();
+                } catch(error) {
+                    debugLog(debugOn, 'sliceEncryptAndUpload failed: ', error);
+                    dispatch(uploadAChunkFailed({chunkIndex, s3KeyPrefix}));
                     reject(error);
-                }) 
-            }            
+                }
+              };
+            reader.readAsBinaryString(blob);
         });
     }
 
@@ -2227,17 +2219,17 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
         } else {
             startingChunk = 0;
         }  
-        for(i=startingChunk; i<=numberOfChunks; i++){
+        for(i=startingChunk; i<numberOfChunks; i++){
             try {
                 debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
-                chunkForUpload = await sliceEncryptAndUpload(file, i);   
+                await sliceEncryptAndUpload(file, i);   
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
                 reject(error);
                 break;
             }
         }
-        if(i === numberOfChunks + 1){
+        if(i === numberOfChunks){
             debugLog(debugOn, `uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
             try {
                 await doneUploadAnAttachment();

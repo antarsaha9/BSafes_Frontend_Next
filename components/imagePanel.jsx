@@ -86,10 +86,12 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                                     </DropdownButton>
                                     :""
                                 }
-                
-                                <Button id={panelIndex} onClick={handleUpload} variant="link" className="px-1 text-dark btn btn-labeled pull-right">
-                                    <i id={panelIndex} className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
-                                </Button>
+                                { editable?
+                                    <Button id={panelIndex} onClick={handleUpload} variant="link" className="px-1 text-dark btn btn-labeled pull-right">
+                                        <i id={panelIndex} className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
+                                    </Button>
+                                    :""
+                                }
                                 { editable?
                                     <Button variant="link" onClick={handlePenClicked} className="px-1 text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
                                     :""

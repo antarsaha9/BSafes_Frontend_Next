@@ -99,6 +99,11 @@ export default function AttachmentPanel ({panelIndex, panel}) {
                     <Col xs={8} md={9}>
                         <p className='mb-0'>{numberWithCommas(panel.fileSize) + ' bytes'}</p>
                     </Col>
+                    <Col xs={4} md={3}>
+                        { (panel.status === "Uploading" || panel.status === "UploadFailed" || panel.status === "Downloading" || panel.status === "DownloadFailed") &&
+                            <p  className='pull-right'>{(Math.round(panel.progress*100)/100).toFixed(2)} %</p>
+                        }
+                    </Col>
                 </Row>
                 <Row>
                     <Col>

@@ -26,8 +26,8 @@ export function encryptLargeBinaryString(binaryStr, itemKey, itemIV) {
     return window.bsafesFroala.encryptLargeBinaryString(binaryStr, itemKey, itemIV);
 }
 
-export function encryptChunkArrayBufferToBinaryStringAsync(arrayBuffer, key) {
-    return window.bsafesFroala.encryptChunkArrayBufferToBinaryStringAsync(arrayBuffer, key);
+export function encryptChunkBinaryStringToBinaryStringAsync(arrayBuffer, key) {
+    return window.bsafesFroala.encryptChunkBinaryStringToBinaryStringAsync(arrayBuffer, key);
 }
 
 export function preS3Upload() {
