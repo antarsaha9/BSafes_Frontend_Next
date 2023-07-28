@@ -59,7 +59,7 @@ const traverse = async function(dir, result = []) {
                     fileStats.path = encodeURI(fPath);
                     fileStats.sri = sri;
                     result.push(fileStats);
-                    let resourceKey = fileStats.path.split('bsafes_frontend/upload')[1];
+                    let resourceKey = fileStats.path.split('BSafes_Frontend_Next/upload')[1];
                     resourceTable[resourceKey] = {resource: resourceKey, integrity:sri};
                 } else if( ext === 'html') {
                     htmlFiles.push(fileStats);
@@ -80,7 +80,7 @@ function processAFile(file) {
             let firstBlock = blocks[0];
             fs.writeFileSync(newFile, firstBlock);
             for(let i=1; i< blocks.length; i++ ) {
-                let afterLink = blocks[i].split('/>').pop();
+                let afterLink = blocks[i].substring(blocks[i].indexOf('/>'));
                 let partsByHref = blocks[i].split('href="');
                 let beforeHref = partsByHref[0];
                 let href = partsByHref[1].split('"')[0];
@@ -90,7 +90,7 @@ function processAFile(file) {
                     sriStr = ` integrity="${resource.integrity}" crossorigin="anonymous"`;
                 }
                 let afterHref = partsByHref[1].split(href+'"')[1].split('/>')[0];
-                let newBlock = `<link${beforeHref}href="${href}"${afterHref}${sriStr}/>${afterLink}`;
+                let newBlock = `<link${beforeHref}href="${href}"${afterHref}${sriStr}${afterLink}`;
                 fs.appendFileSync(newFile, newBlock);
             }
 
@@ -103,14 +103,17 @@ function processAFile(file) {
             console.log('processJS: ');
             let newFile = file.path; 
             let content = fs.readFileSync(file.path, 'utf8');
-            let parts = content.split('<script id="__NEXT_DATA__"');
-            let majorPart = parts[0];
-            let lastPart = '<script id="__NEXT_DATA__"' + parts.pop();
             
-            let blocks = majorPart.split("<script");
+            let blocks = content.split("<script");
             let firstBlock = blocks[0];
             fs.writeFileSync(newFile, firstBlock);
             for(let i=1; i< blocks.length; i++ ) {
+                if(blocks[i].includes('__NEXT_DATA__'))
+                {
+                    let newBlock = `<script${blocks[i]}`;
+                    fs.appendFileSync(newFile, newBlock);
+                    continue;
+                }
                 let afterScript = blocks[i].split('</script>').pop();
                 let partsBySrc = blocks[i].split('src="');
                 let beforeSrc = partsBySrc[0];
@@ -124,14 +127,15 @@ function processAFile(file) {
                 let newBlock = `<script${beforeSrc}src="${src}"${afterSrc}${sriStr}></script>${afterScript}`;
                 fs.appendFileSync(newFile, newBlock);
             }
-
-            fs.appendFileSync(newFile, lastPart);
             resolve();
         });
     }
 
     return new Promise(async (resolve, reject) => {
         console.log('processAFile: ', file);
+        if(file.file === 'logIn.html') {
+            console.log('debug index.html');
+        }
         try {
             await processJS();
             await processCSS();
