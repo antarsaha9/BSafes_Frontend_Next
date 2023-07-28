@@ -17,7 +17,7 @@ import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createChe
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
     const dispatch = useDispatch();
@@ -139,6 +139,10 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             }
         }
     }
+
+    useEffect(()=> {
+        debugLog(debugOn, `${router.asPath} is loaded`)
+    }, [router.asPath]);
 
     useEffect(() => {
         dispatch(setPreflightReady(false));

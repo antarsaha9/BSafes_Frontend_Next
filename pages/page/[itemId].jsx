@@ -34,6 +34,9 @@ export default function Page() {
         router.push(newLink);
     }
 
+    debugLog(debugOn, "router.query.itemId: ", router.query.itemId);
+
+
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            

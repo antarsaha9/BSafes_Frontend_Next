@@ -12,6 +12,7 @@ import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly,
 import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
+import { de } from "date-fns/locale";
 
 
 const PageItemWrapper = ({ itemId, children}) => {
@@ -43,6 +44,8 @@ const PageItemWrapper = ({ itemId, children}) => {
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
+    debugLog(debugOn, "pageItemId: ", pageItemId);
+  
     useEffect(() => {
         
         const handleRouteChange = (url, { shallow }) => {
@@ -67,7 +70,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     }, []);
 
     useEffect(()=> {
-      if(isLoggedIn && itemId) {
+      if(isLoggedIn && itemId && !pageItemId) {
         debugLog(debugOn, "page wrapper useEffect itemId: ", itemId);
 
         dispatch(initPage());
@@ -89,7 +92,7 @@ const PageItemWrapper = ({ itemId, children}) => {
         }
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoggedIn, itemId]);
+    }, [isLoggedIn, itemId, pageItemId]);
 
     useEffect(()=>{
       if(pageItemId) {
