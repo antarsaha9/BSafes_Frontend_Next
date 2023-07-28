@@ -273,6 +273,8 @@ export default function PageCommons() {
         <AttachmentPanel key={item.queueId} panelIndex={"attachment_" + index} panel={item} />
     )
 
+    const attachmentPanelsNewOnTop = attachmentPanels.reverse();
+
     const handleAttachmentButton = (e) => {
         debugLog(debugOn, "handleAttachmentBtn");
         e.preventDefault();
@@ -602,7 +604,7 @@ export default function PageCommons() {
             </div>
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
-                    { attachmentPanels }
+                    { attachmentPanelsNewOnTop }
                 </Col>
             </Row>
             <br />
