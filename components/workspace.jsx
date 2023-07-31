@@ -30,6 +30,7 @@ export default function Workspace({readyToList = false}) {
     const router = useRouter();
     const dispatch = useDispatch();
     
+    const listingItems = useSelector(state=> state.container.listingItems);
     const workspaceId = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
@@ -146,7 +147,7 @@ export default function Workspace({readyToList = false}) {
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <br />
-            { (activity !== 'Done' && activity !== 'Error') &&
+            { (listingItems || (activity !== 'Done' && activity !== 'Error')) &&
                 <Row className="justify-content-center">
                     <Spinner animation='border' />
                 </Row>

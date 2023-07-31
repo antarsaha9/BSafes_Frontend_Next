@@ -12,7 +12,6 @@ import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly,
 import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
-import { de } from "date-fns/locale";
 
 
 const PageItemWrapper = ({ itemId, children}) => {
@@ -21,6 +20,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const dispatch = useDispatch();
     const router = useRouter();
 
+    const [leaving, setLeaving] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
 
     const accountVersion = useSelector( state => state.auth.accountVersion);
@@ -44,34 +44,12 @@ const PageItemWrapper = ({ itemId, children}) => {
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
+    debugLog(debugOn, "itemId: ", itemId);
+    debugLog(debugOn, "leaving: ", leaving);
     debugLog(debugOn, "pageItemId: ", pageItemId);
   
-    useEffect(() => {
-        
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          
-          dispatch(abort());
-          dispatch(clearPage());
-        }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-        }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(()=> {
-      if(isLoggedIn && itemId && !pageItemId) {
-        debugLog(debugOn, "page wrapper useEffect itemId: ", itemId);
+    const reloadAPage = () => {
+        debugLog(debugOn, "Reload a page: ", itemId);
 
         dispatch(initPage());
         dispatch(setChangingPage(false));
@@ -90,9 +68,50 @@ const PageItemWrapper = ({ itemId, children}) => {
             dispatch(setDiaryContentsPageFirstLoaded(false));
           }
         }
+    }
+
+    useEffect(() => {
+        
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          
+          dispatch(abort());
+          dispatch(clearPage());
+          setLeaving(true);
+        }
+    
+        const handleRouteChangeComplete = () => {
+          debugLog(debugOn, "handleRouteChangeComplete");
+          setLeaving(false);
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(()=>{
+      debugLog("router.query.itemId: ", router.query.itemId);
+    }, [router.query.itemId])
+
+    
+    useEffect(()=> {
+      debugLog(debugOn, `${isLoggedIn}, ${itemId}, ${pageItemId}`);
+      if(isLoggedIn && itemId && !pageItemId && !leaving) {
+        reloadAPage();
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoggedIn, itemId, pageItemId]);
+    }, [isLoggedIn, itemId, pageItemId, leaving]);
 
     useEffect(()=>{
       if(pageItemId) {

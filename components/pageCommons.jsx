@@ -132,9 +132,11 @@ export default function PageCommons() {
             let videoId = element.id;
             let videoControlsElementId = 'videoControls_' + videoId;
             let videoControlsElement = document.getElementById(videoControlsElementId);
-            videoControlsElement.removeAttribute('hidden');
-            let playVideoElement = document.getElementById('playVideo_' + videoId);
-            playVideoElement.onclick = handleVideoClick;
+            if(videoControlsElement) {
+                videoControlsElement.removeAttribute('hidden');
+                let playVideoElement = document.getElementById('playVideo_' + videoId);
+                playVideoElement.onclick = handleVideoClick;
+            }  
         }
     }
 

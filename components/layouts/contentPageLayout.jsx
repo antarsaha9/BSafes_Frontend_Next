@@ -17,7 +17,7 @@ import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createChe
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
     const dispatch = useDispatch();

@@ -13,6 +13,7 @@ const debugOn = true;
 
 const initialState = {
     activity: "Done", // Done, Loading, Searching
+    listingItems: false,
     error: null,
     container:null, // container of current item. Note: For contents page of a container, this is the container. e.g. This is the notebook id for a notebook contents page.
     navigationInSameContainer: false,
@@ -81,6 +82,9 @@ const containerSlice = createSlice({
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
+        setListingItems: (state, action) => {
+            state.listingItems = action.payload;
+        },
         clearContainer: (state, action) => {
             const stateKeys = Object.keys(initialState);
             for(let i=0; i<stateKeys.length; i++) {
@@ -120,7 +124,6 @@ const containerSlice = createSlice({
             state.items = [];
         },
         pageLoaded: (state, action) => {
-            state.activity = "Loading";
             state.total = action.payload.total;
             state.totalNumberOfPages = Math.ceil(action.payload.total/state.itemsPerPage);
             state.pageNumber = action.payload.pageNumber;
@@ -188,7 +191,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
+export const {activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -348,6 +351,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         return new Promise(async (resolve, reject) => {
             let state, pageNumber;
+            dispatch(setListingItems(true));
             dispatch(setMode("listAll"));
             state = getState().container;
             if(!state.container){
@@ -409,6 +413,8 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
             }).catch( error => {
                 debugLog(debugOn, "listItems failed: ", error)
                 reject("listItems failed!");
+            }).finally(()=> {
+                dispatch(setListingItems(false));
             })
         });
     });
