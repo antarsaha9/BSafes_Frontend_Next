@@ -939,14 +939,12 @@
       function _sendRequest () {
 				var imageWidth = this.width;
         var imageHeight = this.height;
-				var imgDOM = this;
 	
 				var $img = $(this);
 
         $img.off('load');
         $img.addClass('fr-uploading');
 
-				var itemId = $('.container').data('itemId');	
         var itemKey = $('.container').data('itemKey');
         var itemIV = $('.container').data('itemIV');
         var s3Key;
@@ -982,7 +980,7 @@
 							totalUploadedSize += data.length;
 
               try {
-                const result = await uploadData(data, signedURL, _uploadProgress);
+                await uploadData(data, signedURL, _uploadProgress);
 
                 $img.addClass('bSafesImage');
                 var id = s3Key + "&" + imageWidth + "x" + imageHeight + "&"+ totalUploadedSize;
@@ -996,41 +994,7 @@
                 console.log(error);
                 fn(error);
               }
-              /*
-              $.ajax({
-                type: 'PUT',
-                url: signedURL,
-                // Content type must much with the parameter you signed your URL with
-                contentType: 'binary/octet-stream',
-                // this flag is important, if not set, it will try to send data as a form
-                processData: false,
-                // the actual data is sent raw
-                data: data,
-                xhr: function() {
-                  var myXhr = $.ajaxSettings.xhr();
-                  if(myXhr.upload){
-                    myXhr.upload.addEventListener('progress', _uploadProgress, false);
-                  }
-                  return myXhr;
-                }
-              })
-              .success(function() {
-                $img.addClass('bSafesImage');
-                var id = s3Key + "&" + imageWidth + "x" + imageHeight + "&"+ totalUploadedSize;
-                $img.attr('id', id);
-                id = $img.attr('id');
-								_setProgressMessage(editor.language.translate('Processing'));
-								$.when(uploadGalleryImgPromise, uploadThumbnailImgPromise).done(function(){
-									fn(null);
-								}).fail(function(){
-									fn('Uploading Gallery or Thumbnail failed');
-								});
-              })
-              .error(function(jqXHR, textStatus, errorThrown) {
-                alert(errorThrown);
-                console.log(errorThrown);
-                fn(errorThrown);
-              });*/
+              
             }
           });
         };
@@ -1089,73 +1053,26 @@
       var $img;
 
       reader.addEventListener('load', function () {
-				var imageData = reader.result;
-				
-				function getOrientation(data) {
-    			var view = new DataView(imageData);
-    			
-					if (view.getUint16(0, false) != 0xFFD8) return -2;
-    			
-					var length = view.byteLength, offset = 2;
-    			while (offset < length) {
-      			var marker = view.getUint16(offset, false);
-     				offset += 2;
-      			if (marker == 0xFFE1) {
-        	
-							if (view.getUint32(offset += 2, false) != 0x45786966) return -1;
-        			
-							var little = view.getUint16(offset += 6, false) == 0x4949;
-        			offset += view.getUint32(offset + 4, little);
-        			var tags = view.getUint16(offset, little);
-        			offset += 2;
-        			for (var i = 0; i < tags; i++)
-          			if (view.getUint16(offset + (i * 12), little) == 0x0112)
-            			return view.getUint16(offset + (i * 12) + 8, little);
-      			} else if ((marker & 0xFF00) != 0xFF00) break;
-      			else offset += view.getUint16(offset, false);
-    			}
-    			return -1;
-  			};				
-	
-				exifOrientation = getOrientation(imageData);
+				imageDataInBinaryString = reader.result;			
+        var link = window.URL.createObjectURL(image);
 
-				var imageDataInUint8Array = new Uint8Array(imageData);
-				var blob = new Blob([imageDataInUint8Array], {
-          type: 'image/*'});
-				console.log('blob', blob.size);
-				// Get local image link.
-        var link = window.URL.createObjectURL(blob);
+	      if (!$image_placeholder) {
+  	      $img = _addImage(link, null, _sendRequest);
+    	  } else {
+        	$image_placeholder.on('load', _sendRequest);
+          $image_placeholder.one('error', function () {
+          $image_placeholder.off('load');
+          $image_placeholder.attr('src', $image_placeholder.data('fr-old-src'));
+            _throwError(CORRUPTED_IMAGE);
+          })
+          editor.edit.on();
+          editor.undo.saveStep();
+          $image_placeholder.data('fr-old-src', $image_placeholder.attr('src'));
+          $image_placeholder.attr('src', link);
+        }
+      });
 
-				rotateImage(link, exifOrientation, function(err, blob, binaryString){
-					if(err) {
-						console.log('Rotation Error');
-						alert(err);
-					}
-					console.log('Rotation done');
-					imageDataInBinaryString = binaryString;
-					link = window.URL.createObjectURL(blob);
-
-	          if (!$image_placeholder) {
-  	          $img = _addImage(link, null, _sendRequest);
-    	      }
-      	    else {
-        	    $image_placeholder.on('load', _sendRequest);
-          	  $image_placeholder.one('error', function () {
-            	  $image_placeholder.off('load');
-             		$image_placeholder.attr('src', $image_placeholder.data('fr-old-src'));
-              	_throwError(CORRUPTED_IMAGE);
-            	})
-            	editor.edit.on();
-            	editor.undo.saveStep();
-            	$image_placeholder.data('fr-old-src', $image_placeholder.attr('src'));
-            	$image_placeholder.attr('src', link);
-          	}
-
-				});
-				return;
-      }, false);
-
-			reader.readAsArrayBuffer(image);
+			reader.readAsBinaryString(image);
 			editor.popups.hide('image.insert');
     }
 
