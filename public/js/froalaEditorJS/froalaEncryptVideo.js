@@ -1254,7 +1254,6 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
     async function upload (videos) {
       const itemId = $('.container').data('itemId');
       const itemKey = $('.container').data('itemKey');
-      const itemIV = $('.container').data('itemIV');			
 
       if (typeof videos != 'undefined' && videos.length > 0) {
         // Check if we should cancel the video upload.
@@ -1290,14 +1289,14 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         }
 
         // BEGIN **** For playing back video from service worker ***
-        async function setupWriter(s3KeyPrefix) {
+        function setupWriter(s3KeyPrefix) {
           console.log("setupWriter");
-          function talkToServiceWorker() {
-              return new Promise(async (resolve, reject)=> {
-                  console.log("talkToServiceWorker");
-                  navigator.serviceWorker.getRegistration("/").then((registration) => {
-                      console.log("registration: ", registration);
-                      if (registration) {
+
+          return new Promise(async (resolve, reject)=> {
+            console.log("talkToServiceWorker");
+            navigator.serviceWorker.getRegistration("/").then((registration) => {
+              console.log("registration: ", registration);
+              if (registration) {
 
                           messageChannel =  new MessageChannel();
           
@@ -1337,22 +1336,15 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                               }
                           };
                           
-                      } else {
-                          console.log("erviceWorker.getRegistration error");
-                          reject("erviceWorker.getRegistration error")
-                      }
-                  });
-              })
-          }
-
-          try {
-            await talkToServiceWorker();
-            return true;
-          } catch(error) {
-            console.log("setupWriter failed: ", error)
-            return false;
-          }   
-
+              } else {
+                console.log("serviceWorker.getRegistration error");
+                reject("serviceWorker.getRegistration error")
+              }
+            }).catch(error => {
+              console.log("serviceWorker.getRegistration error: ", error);
+              reject(error);
+            });
+          })
         }
 
         function writeAChunkToFile(chunkIndex, chunk) {
@@ -1439,11 +1431,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                     _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
 
                     encryptedFileSize += encryptedData.length;
-                    if(0/*Validation*/) {
-                        decryptedData = await decryptChunkBinaryStringToUinit8ArrayAsync(encryptedData, state.itemKey);
-                        isSame = compareArraryBufferAndUnit8Array(data, decryptedData);
-                        console.log(`decryptedData is good for index:${chunkIndex} of ${numberOfChunks}`);
-                    }
+
                     try {   
                         await uploadAChunk(chunkIndex, encryptedData);
                         resolve();
@@ -1464,10 +1452,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           } catch(error) {
               console.log( 'uploadAnAttachment failed: ', error); 
               _setProgressMessage(editor.language.translate('Uploading ...'), i*(100/numberOfChunks));
-              await sleep(3000);
-              i--;
-              //reject(error);
-              //break;
+              break;
           }
         }
 
@@ -1480,7 +1465,9 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           } catch (error) {
             console.log('Could not get videoLink');
           }        
-        }      
+        } else {
+          alert("Upload failed.")
+        }  
       }
     }
 

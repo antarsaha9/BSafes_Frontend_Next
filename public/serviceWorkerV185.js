@@ -103,7 +103,8 @@ function getChunkFromDB(videoId, chunkIndex) {
 
   return new Promise((resolve) => {
     const chunkId = `${videoId}_${chunkIndex}`; 
-
+    let time1, time2;
+    time1 = Date.now();
     const request = streamDB
     .transaction(chunkStoreName)
     .objectStore(chunkStoreName)
@@ -111,6 +112,8 @@ function getChunkFromDB(videoId, chunkIndex) {
 
     request.onsuccess = (e) => {
       //console.log("got chunk: ", e.target.result );
+      time2 = Date.now();
+      console.log("getChunkFromDB takes time: ", time2-time1)
       resolve(e.target.result);
     } 
 
@@ -221,12 +224,12 @@ self.addEventListener('activate', event => {
 
 function findNextChunkToDownload(id, numberOfChunks, from) {
   return new Promise(async (resolve) => {
-    if( (from >= numberOfChunks) || from < 0) {
-      resolve(-99999);
-      return;
+    let fromIndex = from;
+    if( (fromIndex >= numberOfChunks) || from < 0) {
+      fromIndex = 1;
     }
     let i = 0;
-    for(i=from; i<numberOfChunks; i++){
+    for(i=fromIndex; i<numberOfChunks; i++){
       let result = await getChunkFromDB(id, i);
       if(!result) {
         break;
@@ -350,7 +353,11 @@ self.addEventListener("message", async (event)=> {
                   target.dispatchEvent(new Event("CHUNK_AVAILABLE"));
                 })
               }
-
+              if(streamInfo.jumpToChunk) {
+                console.log("jumpToChunk: ", streamInfo.jumpToChunk);
+                streamInfo.nextChunkIndex = streamInfo.jumpToChunk;
+                streamInfo.jumpToChunk = null;
+              }
               console.log(`Service Worker SEND: NEXT_CHUNK nextChunkIndex: ${streamInfo.nextChunkIndex}`)
               port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: streamInfo.nextChunkIndex}); 
               streamInfo.requestedChunkIndex = streamInfo.nextChunkIndex;
@@ -552,7 +559,7 @@ self.addEventListener("fetch", async (event) => {
                 if(result) {
                   let response = responseFromDBResult(result);
                   let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-                  streamInfo.nextChunkIndex = nextChunkIndex;
+                  streamInfo.jumpToChunk = nextChunkIndex;
                   resolve(response);
                 } else {
                   console.log(`chunkIndex: ${chunkIndex} not in DB`);
@@ -568,7 +575,7 @@ self.addEventListener("fetch", async (event) => {
                       let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
                       streamInfo.nextChunkIndex = nextChunkIndex;
                     } else {
-                      streamInfo.nextChunkIndex = chunkIndex;
+                      streamInfo.jumpToChunk = chunkIndex;
                     }   
                   }
                   
