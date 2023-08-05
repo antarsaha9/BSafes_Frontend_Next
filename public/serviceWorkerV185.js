@@ -224,17 +224,20 @@ self.addEventListener('activate', event => {
 
 function findNextChunkToDownload(id, numberOfChunks, from) {
   return new Promise(async (resolve) => {
+    console.log(`findNextChunkToDownload: ${id}, ${numberOfChunks}, ${from}`)
     let fromIndex = from;
     if( (fromIndex >= numberOfChunks) || from < 0) {
       fromIndex = 1;
     }
     let i = 0;
+    console.log('fromIndex: ', fromIndex)
     for(i=fromIndex; i<numberOfChunks; i++){
       let result = await getChunkFromDB(id, i);
       if(!result) {
         break;
       }
     }
+    console.log('i: ', i)
     resolve((i===numberOfChunks)?-99999:i);
   })
 }
@@ -301,8 +304,9 @@ self.addEventListener("message", async (event)=> {
     let browserInfo = event.data.browserInfo;
     let resumeForNewStream = event.data.resumeForNewStream;
     let start = event.data.start;
-    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
     videoChunkSize = event.data.videoChunkSize;
+    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+    
     
     if(fileSize%videoChunkSize) numberOfChunks += 1;
 
@@ -384,8 +388,9 @@ self.addEventListener("message", async (event)=> {
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
-    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
     videoChunkSize = event.data.videoChunkSize;
+    let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+    
     if(fileSize%videoChunkSize) numberOfChunks += 1;
         
     let id = encodeURI( `${timeStamp}_${fileName}`);
@@ -558,8 +563,6 @@ self.addEventListener("fetch", async (event) => {
                 let result = await getChunkFromDB(id, chunkIndex);
                 if(result) {
                   let response = responseFromDBResult(result);
-                  let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, chunkIndex+1)
-                  streamInfo.jumpToChunk = nextChunkIndex;
                   resolve(response);
                 } else {
                   console.log(`chunkIndex: ${chunkIndex} not in DB`);

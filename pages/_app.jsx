@@ -11,7 +11,7 @@ import { useEffect } from 'react';
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV185.js?v190", {
+      navigator.serviceWorker.register("/serviceWorkerV185.js?v192", {
         scope: "/",
       }).then(
           function(registration) {
