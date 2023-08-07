@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import { useRouter } from 'next/router';
 
 const forge = require('node-forge');
@@ -9,6 +9,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Breadcrumb from 'react-bootstrap/Breadcrumb';
+import Dropdown from 'react-bootstrap/Dropdown';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -35,6 +36,17 @@ export default function ItemPath() {
         <Breadcrumb.Item key={index} active={true}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
     );
 
+    const getNewTabItems = () => {
+        let newItems = [];
+        for(let i=pathItems.length-1; i>=0; i--) {
+            let item = pathItems[i];
+            if(item.type === 'u' || item.type === 'p') continue;
+            newItems.push(<Dropdown.Item key={i} href={item.link} target='_blank'>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Dropdown.Item>)
+        }
+        return newItems;
+    }
+    const newTabItems = getNewTabItems();
+    
     useEffect(()=>{
         if(!aborted && itemPath && workspaceKeyReady) {
             debugLog(debugOn, "itemPath && workspaceKeyReady");
@@ -117,6 +129,7 @@ export default function ItemPath() {
                     }         
                 }
                 return {
+                    type: pathItemType,
                     title: itemTitleText,
                     icon: pathItemIcon,
                     link: pathItemLink,
@@ -138,7 +151,17 @@ export default function ItemPath() {
                         </Breadcrumb>
                     </Col>
                     <Col xs={2} sm={1}>
-
+                        <Dropdown align="end" className="justify-content-end pull-right">
+                            <Dropdown.Toggle size='sm' variant="primary" bsPrefix='px-3 py-2'>
+                                <span><i className="fa fa-plus" aria-hidden="true"></i></span>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                                {newTabItems}
+                                <Dropdown.Item href='/teams' target='_blank'><span className='fw-bold'>Teams</span></Dropdown.Item>
+                                <Dropdown.Item href='/safe' target='_blank'><span className='fw-bold'>Personal</span></Dropdown.Item>                
+                            </Dropdown.Menu>
+                        </Dropdown>
+                        
                     </Col>
                 </Row>     
             </Container>
