@@ -108,11 +108,11 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                     <Card.Body className=''>
                         <Row>
                             <Col xs={4}>
-                                {!container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
-                                {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && (container.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
-                                {( container && container.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
-                                {( container && container.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 'Done') && (containerActivity === 'Done')) && !container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
+                                { ((pageActivity === 'Done') && (containerActivity === 'Done')) && container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 'Done') && (containerActivity === 'Done')) && ( pageNumber || (container && (container.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 'Done') && (containerActivity === 'Done')) && ( container && container.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 'Done') && (containerActivity === 'Done')) && (container && container.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
                                 {( pageNumber || 
                                   (container && (
                                   (container.startsWith('n') && !router.asPath.includes('\/contents\/')) || 

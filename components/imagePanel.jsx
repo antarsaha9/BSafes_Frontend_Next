@@ -64,6 +64,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                         :""
                     }
                     {(panel.status === "Uploading" || panel.status === "Downloading")?<ProgressBar now={panel.progress} />:""}  
+                    {( panel.status === "WaitingForUpload" || panel.status === "WaitingForDownload") && <i class="fa fa-picture-o" aria-hidden="true"></i>}
                 </Col>
             </Row>
             <Row>
