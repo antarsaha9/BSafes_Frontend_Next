@@ -32,6 +32,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const displayName = useSelector(state=> state.auth.displayName);
     const nextAuthStep = useSelector( state => state.v1Account.nextAuthStep);
 
+    const workspaceName = useSelector(state => state.container.workspaceName);
+
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
         changePage('/logIn');
@@ -219,7 +221,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         <div>
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
                 <Container fluid>
-                    <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>BSafes</span></Navbar.Brand>
+                    <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>{workspaceName}</span></Navbar.Brand>
                     {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
                         <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
                             <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
