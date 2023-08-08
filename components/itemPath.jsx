@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
+import parse from "date-fns/parse";
+import format from "date-fns/format";
 
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
@@ -40,7 +42,7 @@ export default function ItemPath() {
         let newItems = [];
         for(let i=pathItems.length-1; i>=0; i--) {
             let item = pathItems[i];
-            if(item.type === 'u' || item.type === 'p') continue;
+            if(item.type === 'u' || item.type === 'p' || item.type === 'np' || item.type === 'dp') continue;
             newItems.push(<Dropdown.Item key={i} href={item.link} target='_blank'>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Dropdown.Item>)
         }
         return newItems;
@@ -102,14 +104,22 @@ export default function ItemPath() {
                     case 'dp':
                         pathItemIcon = "fa fa-file-text-o";
                         pathItemLink = '/diary/p/' + item._id;
+                        break;
                     case 't':
                         pathItemIcon = "fa fa-trash";
                         pathItemLink = '/trashBox/' + item._id;
+                        break;
                     default:
                         break;
                 }
 
                 if(pathItemType === 'u' || pathItemType === 't1' || pathItemType === 't' || pathItemType === 'tm' || pathItemType === 'ac' ) {
+                } else if(pathItemType === 'np' ) {
+                    itemTitleText = 'Page: ' + item._id.split(':').pop();
+                } else if(pathItemType === 'dp' ) {
+                    let dateStr = item._id.split(':').pop();
+                    let date = parse(dateStr, 'yyyy-LL-dd', new Date());
+                    itemTitleText = format(date, 'EEEE, LLL. dd, yyyy') ;
                 } else { 
                     if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
                         itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey, forge.util.decode64(item._source.envelopeIV));

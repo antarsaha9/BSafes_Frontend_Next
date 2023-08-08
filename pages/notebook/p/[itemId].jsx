@@ -93,8 +93,8 @@ export default function NotebookPage() {
     const handleGoToFirstItem = async () => {
         try {
             const itemId = await getFirstItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
+            const pageNumber = itemId.split(':').pop();
+            gotoAnotherPage(pageNumber);
         } catch(error) {
             alert("Could not get the first item in the container");
         }
@@ -103,8 +103,8 @@ export default function NotebookPage() {
     const handleGoToLastItem = async () => {
         try {
             const itemId = await getLastItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
+            const pageNumber = itemId.split(':').pop();
+            gotoAnotherPage(pageNumber);
         } catch(error) {
             alert("Could not get the first item in the container");
         }

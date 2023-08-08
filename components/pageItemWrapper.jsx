@@ -20,7 +20,6 @@ const PageItemWrapper = ({ itemId, children}) => {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const [leaving, setLeaving] = useState(false);
     const [containerCleared, setContainerCleared] = useState(false);
 
     const accountVersion = useSelector( state => state.auth.accountVersion);
@@ -37,6 +36,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     const startDateValue = useSelector( state => state.container.startDateValue);
     const [startDate, setStartDate] = useState(new Date(startDateValue));
 
+    const aborted = useSelector(state=>state.page.aborted);
     const pageItemId = useSelector(state => state.page.id);
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const navigationMode = useSelector(state => state.page.navigationMode);
@@ -44,14 +44,13 @@ const PageItemWrapper = ({ itemId, children}) => {
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
+    debugLog(debugOn, "aborted: ", aborted);
     debugLog(debugOn, "itemId: ", itemId);
-    debugLog(debugOn, "leaving: ", leaving);
     debugLog(debugOn, "pageItemId: ", pageItemId);
   
     const reloadAPage = () => {
         debugLog(debugOn, "Reload a page: ", itemId);
 
-        dispatch(initPage());
         dispatch(setChangingPage(false));
 
         dispatch(setWorkspaceKeyReady(false));
@@ -81,12 +80,12 @@ const PageItemWrapper = ({ itemId, children}) => {
           
           dispatch(abort());
           dispatch(clearPage());
-          setLeaving(true);
+          
         }
     
         const handleRouteChangeComplete = () => {
           debugLog(debugOn, "handleRouteChangeComplete");
-          setLeaving(false);
+          dispatch(initPage());
         }
 
         router.events.on('routeChangeStart', handleRouteChange)
@@ -96,22 +95,18 @@ const PageItemWrapper = ({ itemId, children}) => {
         // from the event with the `off` method:
         return () => {
           router.events.off('routeChangeStart', handleRouteChange)
+          router.events.off('routeChangeComplete', handleRouteChangeComplete)
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    useEffect(()=>{
-      debugLog("router.query.itemId: ", router.query.itemId);
-    }, [router.query.itemId])
-
     
     useEffect(()=> {
       debugLog(debugOn, `${isLoggedIn}, ${itemId}, ${pageItemId}`);
-      if(isLoggedIn && itemId && !pageItemId && !leaving) {
+      if(isLoggedIn && itemId && !pageItemId && !aborted) {
         reloadAPage();
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoggedIn, itemId, pageItemId, leaving]);
+    }, [isLoggedIn, itemId, pageItemId, aborted]);
 
     useEffect(()=>{
       if(pageItemId) {

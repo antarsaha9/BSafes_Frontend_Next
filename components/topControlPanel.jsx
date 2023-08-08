@@ -174,19 +174,19 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             <br/>
             <Row>
                 <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
-                    <Card className={`${BSafesStyle.containerControlPanel}`}>
+                    <Card className={`${BSafesStyle.containerSearchPanel}`}>
                         
                         <Form onSubmit={onSearchEntered} className={BSafesStyle.searchBar}>
                             <InputGroup>
-                                <Form.Control ref={searchInputRef} type="text" className={`${BSafesStyle.searchBarInput} text-white display-1`}
+                                <Form.Control ref={searchInputRef} type="text" className={`${BSafesStyle.searchBarInput}  display-1`}
                                     value={searchValue} 
                                     onChange={onSearchValueChanged}
                                 />
                                 <Button variant="link">
-                                    <i id="1" className="fa fa-search fa-lg text-white" aria-hidden="true" onClick={onSearchEntered}></i>
+                                    <i id="1" className="fa fa-search fa-lg text-black" aria-hidden="true" onClick={onSearchEntered}></i>
                                 </Button>
                                 <Button variant="link">
-                                    <i id="1" className="fa fa-times fa-lg text-white" aria-hidden="true" onClick={onCancelSearchClicked}></i>
+                                    <i id="1" className="fa fa-times fa-lg text-black" aria-hidden="true" onClick={onCancelSearchClicked}></i>
                                 </Button>
                             </InputGroup>
                         </Form>

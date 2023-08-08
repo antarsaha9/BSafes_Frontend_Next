@@ -229,6 +229,7 @@ const pageSlice = createSlice({
             const stateKeys = Object.keys(initialState);
             for(let i=0; i<stateKeys.length; i++) {
                 let key = stateKeys[i];
+                if(key === 'aborted') continue;
                 state[key] = initialState[key];
             }
         },
@@ -855,7 +856,10 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if(data.itemId !== state.activeRequest) {
                             debugLog(debugOn, "Aborted");
                             return;
-                        }                            
+                        }    
+                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
+                            result.itemPath.push({_id:data.itemId})
+                        }                 
                         dispatch(itemPathLoaded(result.itemPath));
                     } else {
                         debugLog(debugOn, "woo... failed to get the item path.!", result.status);
