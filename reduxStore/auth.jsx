@@ -4,6 +4,10 @@ const forge = require('node-forge');
 import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { setNextAuthStep, setKeyMeta } from './v1AccountSlice';
+import { cleanContainerSlice } from './containerSlice';
+import { cleanPageSlice } from './pageSlice';
+import { cleanTeamSlice } from './teamSlice';
+import { cleanV1AccountSlice } from './v1AccountSlice';
 
 const debugOn = true;
 
@@ -30,6 +34,13 @@ const authSlice = createSlice({
     name: "auth",
     initialState: initialState,
     reducers: {
+        cleanAuthSlice: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
@@ -75,7 +86,7 @@ const authSlice = createSlice({
     }
 });
 
-export const {activityChanged, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
+export const {cleanAuthSlice, activityChanged, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -194,6 +205,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             localStorage.clear();
             dispatch(loggedOut());
+            dispatch(cleanMemoryThunk());
             PostCall({
                 api:'/memberAPI/logOut'
             }).then( data => {
@@ -281,6 +293,14 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
         localStorage.setItem(intervalId, thisInterval)
         debugLog(debugOn, "Creating new timer: ", thisInterval)
     }
+}
+
+export const cleanMemoryThunk = () => (dispatch, getState) => {
+    dispatch(cleanAuthSlice());
+    dispatch(cleanContainerSlice());
+    dispatch(cleanPageSlice());
+    dispatch(cleanTeamSlice());
+    dispatch(cleanV1AccountSlice());
 }
 
 export const authReducer = authSlice.reducer;

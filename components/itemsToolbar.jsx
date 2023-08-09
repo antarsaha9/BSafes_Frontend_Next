@@ -18,7 +18,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { clearSelected, dropItems, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
-export default function ItemsToolbar(props) {
+export default function ItemsToolbar() {
     const debugOn = true;
     const router = useRouter();
     const dispatch = useDispatch();

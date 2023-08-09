@@ -79,6 +79,13 @@ const containerSlice = createSlice({
     name: "container",
     initialState: initialState,
     reducers: { 
+        cleanContainerSlice: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
@@ -191,7 +198,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
+export const {cleanContainerSlice, activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

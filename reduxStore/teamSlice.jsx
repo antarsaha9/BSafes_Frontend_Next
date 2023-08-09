@@ -27,6 +27,13 @@ const teamSlice = createSlice({
     name: "team",
     initialState: initialState,
     reducers: {
+        cleanTeamSlice: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
@@ -82,7 +89,7 @@ const teamSlice = createSlice({
     }
 })
 
-export const { activityChanged, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
+export const { cleanTeamSlice, activityChanged, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));

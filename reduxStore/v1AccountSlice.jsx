@@ -6,7 +6,7 @@ const argon2 = require('argon2-browser');
 import { debugLog, PostCall } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 
-import { setDisplayName, loggedIn, loggedOut, setAccountVersion } from './auth';
+import { setDisplayName, loggedIn, loggedOut, setAccountVersion, cleanMemoryThunk} from './auth';
 
 const debugOn = true;
 
@@ -23,6 +23,13 @@ const v1AccountSlice = createSlice({
     name: "v1Account",
     initialState: initialState,
     reducers: {
+        cleanV1AccountSlice: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
         activityChanged: (state, action) => {
             state.activity = action.payload;
         },
@@ -47,7 +54,7 @@ const v1AccountSlice = createSlice({
     }
 });
 
-export const { activityChanged, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
+export const { cleanV1AccountSlice, activityChanged, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -269,6 +276,7 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             clearLocalCredentials('v1');
             dispatch(loggedOut());
+            dispatch(cleanMemoryThunk());
             PostCall({
                 api:'/memberAPI/lock'
             }).then( data => {
@@ -295,7 +303,7 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
 
             dispatch(signedOut());
             dispatch(loggedOut());
-
+            dispatch(cleanMemoryThunk());
             PostCall({
                 api:'/memberAPI/signOut'
             }).then( data => {

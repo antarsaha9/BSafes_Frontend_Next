@@ -8,12 +8,13 @@ import Dropdown from 'react-bootstrap/Dropdown'
 
 import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
+import ItemsMovingProgress from '../itemsMovingProgress';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
@@ -98,6 +99,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             } else {
                 if(isLoggedIn) {
                     dispatch(loggedOut());
+                    dispatch(cleanMemoryThunk());
                     if(accountVersion === 'v1') {
                         changePage('/v1/keyEnter')
                     } 
@@ -126,6 +128,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             } else {
                 if(isLoggedIn) {
                     dispatch(loggedOut());
+                    dispatch(cleanMemoryThunk());
                     if(accountVersion === 'v1') {
                         dispatch(signedOut());
                         changePage(`/`);
@@ -261,6 +264,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             </Navbar>
             {showPathRow && <ItemPath />}
             {children}
+            <ItemsMovingProgress />
             <ItemsToolbar />
         </div>
     )
