@@ -557,22 +557,22 @@ export default function PageCommons() {
                   
             }
             <Row className="justify-content-center">
-                <Col md="10">
+                <Col sm="10">
                     <hr />
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col md="10" >
+                <Col sm="10" >
                     <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
-                <Col md="10">
+                <Col sm="10">
                     <hr />
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col className="contenEditorRow"  xs="12" md="10" >
+                <Col className="contenEditorRow"  xs="12" sm="10" >
                     <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
                 </Col> 
             </Row>

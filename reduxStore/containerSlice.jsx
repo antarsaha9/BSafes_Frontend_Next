@@ -38,7 +38,8 @@ const initialState = {
     startDateValue: (new Date()).getTime(),
     diaryContentsPageFirstLoaded: true,
     trashBoxId:null,
-    activities:[]
+    activities:[],
+    movingItemsTask: null
 };
 
 function separateActivities(activities, getTitle) {
@@ -572,6 +573,10 @@ export const dropItems = async (data) => {
             reject("drop items inside failed!");
         })
     });
+}
+
+export const dropItemsThunk = (data) => async (dispatch, getState) => {
+
 }
 
 export const trashItems = async (data) => {
