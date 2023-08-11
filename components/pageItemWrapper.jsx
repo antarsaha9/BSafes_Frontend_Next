@@ -80,7 +80,7 @@ const PageItemWrapper = ({ itemId, children}) => {
           
           dispatch(abort());
           dispatch(clearPage());
-          
+          dispatch(clearItems());
         }
     
         const handleRouteChangeComplete = () => {

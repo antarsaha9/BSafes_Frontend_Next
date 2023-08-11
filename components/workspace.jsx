@@ -20,8 +20,8 @@ import ItemCard from './itemCard'
 import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
-import { createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
-import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
+import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace({readyToList = false}) {
@@ -106,6 +106,36 @@ export default function Workspace({readyToList = false}) {
         else if (derivedSearchMode === 'search')
             dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
+
+    useEffect(() => {
+        
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          
+          dispatch(abort());
+          dispatch(clearPage());
+          dispatch(clearItems());
+        }
+    
+        const handleRouteChangeComplete = () => {
+          debugLog(debugOn, "handleRouteChangeComplete");
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+          router.events.off('routeChangeComplete', handleRouteChangeComplete)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
