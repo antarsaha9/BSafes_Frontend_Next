@@ -195,11 +195,17 @@ const containerSlice = createSlice({
             state.total = action.payload.activities.total;
             state.pageNumber = action.payload.pageNumber;
             state.activities = state.activities.concat(groupedActivities);
+        },
+        setMovingItemsTask: (state, action) => {
+            state.movingItemsTask = action.payload;
+        },
+        completedMovingAnItem: (state, action) => {
+            state.movingItemsTask.completed += 1;
         }
     }
 })
 
-export const {cleanContainerSlice, activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded} = containerSlice.actions;
+export const {cleanContainerSlice, activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -575,8 +581,79 @@ export const dropItems = async (data) => {
     });
 }
 
-export const dropItemsThunk = (data) => async (dispatch, getState) => {
+function dropAnItem(api, payload) {
+    
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "dropAnItem failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "dropAnItem failed: ", error)
+            reject("dropAnItem failed!");
+        })
+    });
 
+}
+
+export const dropItemsThunk = (data) => async (dispatch, getState) => {
+    const action = data.action;
+    const payload = data.payload;
+    const items = payload.items;
+    const numberOfItems = items.length;
+    const targetItemIndex = payload.targetItemIndex;
+
+    let containerItems = getState().container.items;
+    let nextItemPosition = -1;
+    let api;
+    switch(action) {
+        case 'dropItemsBefore':
+            api = '/memberAPI/dropAnItemBefore';
+            nextItemPosition = (targetItemIndex === 0)? -1: containerItems[targetItemIndex-1].position;
+            break;
+        case 'dropItemsAfter':
+            api = '/memberAPI/dropAnItemAfter';
+            nextItemPosition = (targetItemIndex === (containerItems.length -1))? -1: containerItems[targetItemIndex+1].position;
+            break;
+        default: 
+            api = '/memberAPI/dropAnItemInside';
+    }
+
+    dispatch(setMovingItemsTask({
+        numberOfItems,
+        completed: 0,
+    }));
+
+    for(let i=0; i<items.length; i++){
+        const itemPayload = {
+            space: payload.space,
+            targetContainer: payload.targetContainer,
+            item: JSON.stringify(items[i]),
+            targetItem: payload.targetItem,
+            targetPosition: payload.targetPosition,
+            indexInTask: i,
+            numberOfItems,
+            nextItemPosition,
+        }
+        if(action === 'dropItemsInside') {
+            itemPayload.sourceContainersPath = payload.sourceContainersPath;
+            itemPayload.targetContainersPath = payload.targetContainersPath;
+        }
+        try {
+            await dropAnItem(api, itemPayload);
+        } catch (error) {
+            debugLog(debugOn, "dropItemsThunk failed: ", error)
+            break;
+        }
+    }
+    dispatch(setMovingItemsTask(null));
 }
 
 export const trashItems = async (data) => {

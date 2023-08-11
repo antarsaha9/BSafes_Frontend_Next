@@ -38,7 +38,7 @@ export default function NotebookContents() {
     const pageItemId = useSelector( state => state.page.id);
 
     const items = itemsState.map( (item, index) => 
-        <ItemRow key={index} item={item}/>
+        <ItemRow itemIndex={index} key={index} item={item}/>
     );
 
 
@@ -145,15 +145,15 @@ export default function NotebookContents() {
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row>
                                     <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                            <p>Page</p> 
+           	                            <p className="fs-5">Page</p> 
                                     </Col> 
                                     <Col xs={8} sm={8} md={9}>
-              	                        <p>Title</p> 
+              	                        <p className="fs-5">Title</p> 
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col xs={{span:10, offset:1}}>
-                                        <hr className="mt-0 mb-0"/>
+                                        <hr className="mt-1 mb-1"/>
                                     </Col>
                                 </Row>
                                 {items}

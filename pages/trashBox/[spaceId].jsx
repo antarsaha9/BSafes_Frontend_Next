@@ -41,7 +41,7 @@ export default function TrashBox() {
     const items = itemsState.map((item, index) =>
         <Row key={index}>
             <Col lg={{ span: 10, offset: 1 }}>
-                <ItemCard item={item} isOpenable={false} />
+                <ItemCard itemIndex={index} item={item} isOpenable={false} />
             </Col>
         </Row>
     );

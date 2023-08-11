@@ -49,7 +49,7 @@ export default function DiaryContents() {
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
     const items = allItemsInCurrentPage.map( (item, index) => 
-        <ItemRow key={index} item={item} mode={mode}/>
+        <ItemRow itemIndex={index} key={index} item={item} mode={mode}/>
     );
 
     const gotoNextPage = () =>{
@@ -155,15 +155,15 @@ export default function DiaryContents() {
                                 <p className='fs-1 text-center'>{currentMonthYear}</p>
                                 <Row>
                                     <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
-           	                            <p>Day</p> 
+           	                            <p className="fs-5">Day</p> 
                                     </Col> 
                                     <Col xs={8} sm={8} xl={9}>
-              	                        <p>Title</p> 
+              	                        <p className="fs-5">Title</p> 
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col xs={{span:10, offset:1}}>
-                                        <hr className="mt-0 mb-0"/>
+                                        <hr className="mt-1 mb-1"/>
                                     </Col>
                                 </Row>
                                 {items}

@@ -52,7 +52,7 @@ export default function FolderContents() {
     }
 
     const items = itemsState.map((item, index) =>
-        <ItemRow key={index} item={item} onAdd={handleAdd}/>
+        <ItemRow itemIndex={index} key={index} item={item} onAdd={handleAdd}/>
     );
 
     function gotoAnotherPage(anotherPageNumber) {

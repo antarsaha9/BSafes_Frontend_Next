@@ -5,7 +5,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function ItemsMovingProgress() {
     return (
-        <div className={`${BSafesStyle.itemsMovingProgress}`} >
+        <div className={`${BSafesStyle.itemsMovingProgress}`} hidden >
             <CircularProgressbar
                 value={60}
                 text={`1/60`}

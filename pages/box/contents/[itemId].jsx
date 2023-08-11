@@ -53,7 +53,7 @@ export default function BoxContents() {
     const items = itemsState.map((item, index) =>
         <Row key={index}>
             <Col lg={{span:10, offset:1}}>
-                <ItemCard  item={item} onAdd={handleAdd}/>
+                <ItemCard itemIndex={index} item={item} onAdd={handleAdd}/>
             </Col>
         </Row>
     );

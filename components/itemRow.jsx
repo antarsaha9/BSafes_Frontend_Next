@@ -20,9 +20,9 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from '../lib/helper';
 import { getItemLink } from '../lib/bSafesCommonUI';
 
-import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk} from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk} from '../reduxStore/containerSlice';
 
-export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
+export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
     const dispatch = useDispatch();
@@ -124,8 +124,9 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
         const payload = {
             space: workspaceId,
             targetContainer: item.container,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: item.id,
+            targetItemIndex: itemIndex,
             targetPosition: item.position,
         }
 
@@ -137,9 +138,9 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
             default:
         }
         try {
-            await dropItems({action, payload});
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(dropItemsThunk({action, payload}));
+            //handleClearSelected()
+            //listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -159,7 +160,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                     </Row>
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row>
                     
@@ -182,7 +183,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
 
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row> 
                 </div>
@@ -231,7 +232,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
 
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row> 
                     <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />

@@ -15,9 +15,9 @@ import ItemTypeModal from './itemTypeModal'
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getItemLink } from '../lib/bSafesCommonUI';
-import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk } from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk } from '../reduxStore/containerSlice';
 
-export default function ItemCard({item, onAdd, isOpenable=true}) {
+export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -108,13 +108,15 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
             itemsCopy.push(thisItem);
         }
 
-        const sourceContainersPath = currentItemPath.map(ci => ci.id);
-        const targetContainersPath = sourceContainersPath.push(item.id);
+        const sourceContainersPath = currentItemPath.map(ci => ci._id);
+        const targetContainersPath = [...sourceContainersPath];
+        targetContainersPath.push(item.id);
         const payload = {
             space: workspaceId,
             targetContainer: item.container,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: item.id,
+            targetItemIndex: itemIndex,
             targetPosition: item.position,
         }
 
@@ -132,9 +134,9 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
             default:
         }
         try {
-            await dropItems({action, payload});
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(dropItemsThunk({action, payload}));
+            //handleClearSelected()
+            //dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }

@@ -398,9 +398,9 @@ const pageSlice = createSlice({
                 case "top":
                     state.imagePanels.unshift(...newPanels);
                     break;
-                case "bottom":
-                    break;
                 default:
+                    let index = parseInt(action.payload.where.split('_').pop());
+                    state.imagePanels.splice(index+1, 0, ...newPanels);
             }
         },
         uploadingImage: (state, action) => {

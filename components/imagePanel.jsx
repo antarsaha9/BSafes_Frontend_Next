@@ -1,5 +1,5 @@
 import {useRef} from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
@@ -8,34 +8,17 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import Image from 'react-bootstrap/Image'
 
-import BSafesStyle from '../styles/BSafes.module.css'
-
 import Editor from './editor'
 
-
-import { deleteAnImageThunk } from '../reduxStore/pageSlice'
+import { uploadImagesThunk, deleteAnImageThunk } from '../reduxStore/pageSlice'
+import { debugLog } from '../lib/helper';
 
 export default function ImagePanel({panelIndex, panel, onImageClicked, editorMode, onContentChanged, onPenClicked, editable=true}) {
+    const debugOn = false;
     const dispatch = useDispatch();
-    const fileInputRef = useRef(null);
+    const imageFilesInputRef = useRef(null);
 
-    const handleUpload = (event) => {
-        /* 
-        try {
-            let data = await PostCall({
-                api: 'preS3Upload', 
-                body:{}
-            });
-            if(data.status == 'ok') {
-                console.log(data);
-            }
-        } catch (error) {
-            console.log(error);
-        }
-        */
-      console.log("handleUpload:", event.target.id)
-      fileInputRef.current?.click();
-    };   
+    const workspaceKey = useSelector( state => state.container.workspaceKey);
 
     const handleImageClicked = ()=> {
         onImageClicked(panel.queueId);
@@ -52,9 +35,29 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
         }
     }
 
+    const handleImageButton = (e) => {
+        debugLog(debugOn, "handleImageBtn");
+        e.preventDefault();
+        imageFilesInputRef.current.value = null;
+        imageFilesInputRef.current?.click();
+    };
+
+    const handleImageFiles = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleImageFiles: ", e.target.id);
+        const files = e.target.files;
+	    if (files.length) {
+            uploadImages(files, panelIndex);
+        }
+    }
+
+    const uploadImages = (files, where) => {
+        dispatch(uploadImagesThunk({files, where, workspaceKey}));
+    };
+
     return (
         <div>
-            <input ref={fileInputRef} type="file" multiple className="d-none editControl" id="image" />
+            <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*"  className="d-none editControl" id="images" />
             <Row className="">
                 <Col>
                     {(panel.status === 'Uploaded' || panel.status === 'Downloaded' )?
@@ -88,7 +91,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                                     :""
                                 }
                                 { editable?
-                                    <Button id={panelIndex} onClick={handleUpload} variant="link" className="px-1 text-dark btn btn-labeled pull-right">
+                                    <Button id={panelIndex} onClick={handleImageButton} variant="link" className="px-1 text-dark btn btn-labeled pull-right">
                                         <i id={panelIndex} className="fa fa-picture-o fa-lg" aria-hidden="true"></i>    
                                     </Button>
                                     :""
