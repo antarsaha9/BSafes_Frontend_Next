@@ -14,7 +14,7 @@ import ItemTypeModal from './itemTypeModal'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { getItemLink } from '../lib/bSafesCommonUI';
+import { getItemLink, isItemAContainer } from '../lib/bSafesCommonUI';
 import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk } from '../reduxStore/containerSlice';
 
 export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
@@ -104,8 +104,15 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
 
         for(i=0; i<selectedItems.length; i++) {
             let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
+            const itemCopy = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
+            if(isItemAContainer(thisItem.id)){
+                itemCopy.totalItemVersions = thisItem.itemPack.totalItemVersions;
+                itemCopy.totalStorage = thisItem.itemPack.totalStorage;
+            } else {
+                itemCopy.version = thisItem.itemPack.version;
+                itemCopy.totalItemSize = thisItem.itemPack.totalItemSize;
+            }
+            itemsCopy.push(itemCopy);
         }
 
         const sourceContainersPath = currentItemPath.map(ci => ci._id);

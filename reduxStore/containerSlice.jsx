@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
-import {  stringToEncryptedTokens, newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
 import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 
 import { getTeamData } from './teamSlice';
@@ -632,13 +632,14 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
     }));
 
     for(let i=0; i<items.length; i++){
+        const indexInTask=(action==='dropItemsAfter')?(items.length-i-1):i;
         const itemPayload = {
             space: payload.space,
             targetContainer: payload.targetContainer,
-            item: JSON.stringify(items[i]),
+            item: JSON.stringify(items[indexInTask]),
             targetItem: payload.targetItem,
             targetPosition: payload.targetPosition,
-            indexInTask: i,
+            indexInTask,
             numberOfItems,
             nextItemPosition,
         }
