@@ -29,7 +29,6 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
     const [addAction, setAddAction] = useState(null);
 
     const workspaceId = useSelector(state => state.container.workspace);
-    const containerItems = useSelector(state => state.container.items);
     const selectedItems = useSelector(state => state.container.selectedItems);
 
     const currentItemPath = useSelector(state => state.page.itemPath);
@@ -88,10 +87,19 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
     }
 
     const handleCheck = (e) => {
-        if (e.target.checked)
-            dispatch(selectItem(item.id))
-        else
+        if (e.target.checked) {
+            const itemCopy = {id:item.id, container:item.container, position: item.position};
+            if(isItemAContainer(item.id)){
+                itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
+                itemCopy.totalStorage = item.itemPack.totalStorage;
+            } else {
+                itemCopy.version = item.itemPack.version;
+                itemCopy.totalItemSize = item.itemPack.totalItemSize;
+            }
+            dispatch(selectItem(itemCopy));
+        } else {
             dispatch(deselectItem(item.id))
+        }
     }
 
     const handleClearSelected = () => {
@@ -99,21 +107,7 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
     }
 
     const handleDrop = async (action) => {
-        const itemsCopy = [];
-        let i;
-
-        for(i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            const itemCopy = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            if(isItemAContainer(thisItem.id)){
-                itemCopy.totalItemVersions = thisItem.itemPack.totalItemVersions;
-                itemCopy.totalStorage = thisItem.itemPack.totalStorage;
-            } else {
-                itemCopy.version = thisItem.itemPack.version;
-                itemCopy.totalItemSize = thisItem.itemPack.totalItemSize;
-            }
-            itemsCopy.push(itemCopy);
-        }
+        const itemsCopy = selectedItems;
 
         const sourceContainersPath = currentItemPath.map(ci => ci._id);
         const targetContainersPath = [...sourceContainersPath];
@@ -133,10 +127,8 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
             case 'dropItemsAfter':
                 break;
             case 'dropItemsInside':
-                const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
                 payload.sourceContainersPath = JSON.stringify(sourceContainersPath);
                 payload.targetContainersPath = JSON.stringify(targetContainersPath);
-                payload.totalUsage = JSON.stringify(totalUsage);
                 break;
             default:
         }
@@ -198,7 +190,7 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                             </a>}
                             <Form.Group className="me-2" >
-                                <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
+                                <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e.id===item.id)}  onChange={handleCheck}/>
                             </Form.Group>
 
                             {isOpenable && !selectedItems.length &&

@@ -164,7 +164,7 @@ const containerSlice = createSlice({
             state.selectedItems = state.selectedItems.concat([action.payload]);
         },
         deselectItem: (state, action) => {
-            state.selectedItems = state.selectedItems.filter(i => i !== action.payload);
+            state.selectedItems = state.selectedItems.filter(i => i.id !== action.payload);
         },
         clearSelected: (state) => {
             state.selectedItems = [];
@@ -632,7 +632,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
     }));
 
     for(let i=0; i<items.length; i++){
-        const indexInTask=(action==='dropItemsAfter')?(items.length-i-1):i;
+        const indexInTask=((action==='dropItemsAfter') || (action==='dropItemsInside'))?(items.length-i-1):i;
         const itemPayload = {
             space: payload.space,
             targetContainer: payload.targetContainer,

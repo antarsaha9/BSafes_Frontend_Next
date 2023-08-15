@@ -15,7 +15,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItems, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItemsThunk, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar() {
@@ -63,26 +63,20 @@ export default function ItemsToolbar() {
     }
     
     const handleDrop = async () => {
-        const itemsCopy = [];
-        for(let i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
-        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const itemsCopy = selectedItems;
+        
         const payload = {
             space: workspaceId,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: containerPath[containerPath.length - 1].id,
             sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
-            targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id)),
-            totalUsage: JSON.stringify(totalUsage),
+            targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id))
         }
         try {
-            await dropItems({action:'dropItemsInside', payload});
+            dispatch(dropItemsThunk({action:'dropItemsInside', payload}));
             setShowMoveModal(false);
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            //handleClearSelected()
+            //dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
