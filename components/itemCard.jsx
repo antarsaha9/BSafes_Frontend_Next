@@ -14,7 +14,7 @@ import ItemTypeModal from './itemTypeModal'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { getItemLink, isItemAContainer } from '../lib/bSafesCommonUI';
+import { getItemLink } from '../lib/bSafesCommonUI';
 import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk } from '../reduxStore/containerSlice';
 
 export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
@@ -88,14 +88,7 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
 
     const handleCheck = (e) => {
         if (e.target.checked) {
-            const itemCopy = {id:item.id, container:item.container, position: item.position};
-            if(isItemAContainer(item.id)){
-                itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
-                itemCopy.totalStorage = item.itemPack.totalStorage;
-            } else {
-                itemCopy.version = item.itemPack.version;
-                itemCopy.totalItemSize = item.itemPack.totalItemSize;
-            }
+            const itemCopy = JSON.parse(JSON.stringify(item));
             dispatch(selectItem(itemCopy));
         } else {
             dispatch(deselectItem(item.id))
@@ -134,8 +127,7 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
         }
         try {
             dispatch(dropItemsThunk({action, payload}));
-            //handleClearSelected()
-            //dispatch(listItemsThunk({ pageNumber: 1 }));
+
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }

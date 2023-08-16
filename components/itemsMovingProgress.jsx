@@ -1,14 +1,19 @@
+import { useSelector } from "react-redux";
 import { CircularProgressbar, buildStyles} from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function ItemsMovingProgress() {
+    const movingItemsTask = useSelector(state=>state.container.movingItemsTask);
+
     return (
-        <div className={`${BSafesStyle.itemsMovingProgress}`} hidden >
+
+        <div className={`${BSafesStyle.itemsMovingProgress}`} >
+            { movingItemsTask &&
             <CircularProgressbar
                 value={60}
-                text={`1/60`}
+                text={`${movingItemsTask.completed}/${movingItemsTask.numberOfItems}`}
                 background
                 backgroundPadding={6}
                 styles={buildStyles({
@@ -18,6 +23,8 @@ export default function ItemsMovingProgress() {
                     trailColor: "transparent"
                 })}
             />
+            }
         </div>
+
     )
 }

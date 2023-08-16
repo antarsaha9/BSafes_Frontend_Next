@@ -101,10 +101,12 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
     }
 
     const handleCheck = (e) => {
-        if (e.target.checked)
-            dispatch(selectItem(item.id))
-        else
+        if (e.target.checked) {
+            const itemCopy = JSON.parse(JSON.stringify(item));
+            dispatch(selectItem(itemCopy));
+        } else {
             dispatch(deselectItem(item.id))
+        }
     }
     
     const handleClearSelected = () => {
@@ -112,14 +114,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
     }
 
     const handleDrop = async (action) => {
-        const itemsCopy = [];
-        let i;
-
-        for(i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
+        const itemsCopy = selectedItems;
 
         const payload = {
             space: workspaceId,
@@ -139,8 +134,6 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
         }
         try {
             dispatch(dropItemsThunk({action, payload}));
-            //handleClearSelected()
-            //listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -200,7 +193,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
                                 <Form.Group className="me-2" >
-                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
+                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e.id===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
                                 { !(selectedItems.length) &&
                                 <Dropdown align="end" className="justify-content-end">

@@ -15,7 +15,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItemsThunk, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItemsThunk, trashItems, listContainersThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar() {
@@ -23,6 +23,7 @@ export default function ItemsToolbar() {
     const router = useRouter();
     const dispatch = useDispatch();
 
+    const [boxOnly, setBoxOnly] = useState(false);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [showTrashModal, setShowTrashModal] = useState(false);
     const [trashConfirmation, setTrashConfirmation] = useState('');
@@ -32,7 +33,10 @@ export default function ItemsToolbar() {
     const workspaceId = useSelector(state => state.container.workspace);
     const container = useSelector( state => state.container.container );
     const containerItems = useSelector(state => state.container.items);
-    const containerList = useSelector(state => state.container.containerList);
+    const containersList = useSelector(state => state.container.containersList);
+    const containersPerPage = useSelector(state=>state.container.containersPerPage);
+    const containersPageNumber = useSelector(state => state.container.containersPageNumber);
+    const containersTotal = useSelector(state=>state.container.containersTotal);
 
     const currentItemPath = useSelector(state => state.page.itemPath);
     
@@ -46,7 +50,15 @@ export default function ItemsToolbar() {
     
     const handleMove = () => {
         setShowMoveModal(true);
-        dispatch(listContainerThunk({ container: workspaceId }));
+        const result = selectedItems.filter((i)=>  i.itemPack.type !== 'P');
+        let thisBoxOnly = false;
+        if(result.length > 0) thisBoxOnly=true;
+        setBoxOnly(thisBoxOnly);
+        dispatch(listContainersThunk({ container: workspaceId, boxOnly:thisBoxOnly, pageNumber:1 }));
+    }
+
+    const handleMore = () => {
+        dispatch(listContainersThunk({ container: containerPath[containerPath.length-1].id, boxOnly:boxOnly, pageNumber:containersPageNumber+1 }));
     }
 
     const onContainerClick = (container) => {
@@ -59,7 +71,7 @@ export default function ItemsToolbar() {
                 title: container.title,
                 id: container.id
             }])
-        dispatch(listContainerThunk({ container: container.id }))
+        dispatch(listContainersThunk({ container: container.id, boxOnly, pageNumber:1 }));
     }
     
     const handleDrop = async () => {
@@ -175,12 +187,12 @@ export default function ItemsToolbar() {
                 <Modal.Body>
                     <Breadcrumb>
                         {containerPath && containerPath.map((cp, index) => {
-                            return (<Breadcrumb.Item key={cp.title + index} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
+                            return (<Breadcrumb.Item key={cp.title + index} active={index===containerPath.length-1} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
                         })}
                     </Breadcrumb>
                     <ListGroup>
                         { true &&
-                            containerList.flatMap(container => {
+                            containersList.flatMap(container => {
                                 let icon = '';
                                 if (selectedItems.find(i => i === container.id))
                                     return [];
@@ -198,6 +210,13 @@ export default function ItemsToolbar() {
                             })
                         }
                     </ListGroup>
+                    { containersTotal> (containersPageNumber*containersPerPage) &&
+                        <div className='text-center'>
+                            <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
+                                More
+                            </Button>
+                        </div>
+                    }
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="primary" size="sm" onClick={handleDrop}>

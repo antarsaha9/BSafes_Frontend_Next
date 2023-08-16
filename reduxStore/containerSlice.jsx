@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
-import { newResultItem, formatTimeDisplay } from '../lib/bSafesCommonUI';
+import { newResultItem, formatTimeDisplay, isItemAContainer } from '../lib/bSafesCommonUI';
 import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 
 import { getTeamData } from './teamSlice';
@@ -32,9 +32,10 @@ const initialState = {
     items:[],
     newItem: null,
     selectedItems: [],
-    containersPerPage: 20,
+    containersPerPage: 1,
     containersPageNumber: 1,
-    containerList: [],
+    containersTotal:0,
+    containersList: [],
     startDateValue: (new Date()).getTime(),
     diaryContentsPageFirstLoaded: true,
     trashBoxId:null,
@@ -170,11 +171,18 @@ const containerSlice = createSlice({
             state.selectedItems = [];
         },
         containersLoaded: (state, action) => {
+            state.containersTotal = action.payload.total;
+            state.containersPageNumber = action.payload.pageNumber;
             const containers = action.payload.hits;
-            state.containerList = containers.map(c => {
+            const newContainersList = containers.map(c => {
                 const {title, container, id} = newResultItem(c, state.workspaceKey);
                 return {title: title.replace(/<\/?[^>]+(>|$)/g, ""), container, id};
             });
+            if(action.payload.pageNumber === 1){
+                state.containersList = newContainersList;
+            } else {
+                state.containersList = state.containersList.concat(newContainersList);
+            }     
         },
         setStartDateValue:  (state, action) => {
             state.startDateValue = action.payload;
@@ -201,11 +209,34 @@ const containerSlice = createSlice({
         },
         completedMovingAnItem: (state, action) => {
             state.movingItemsTask.completed += 1;
+            state.items = state.items.filter(i=> i.id !== action.payload.id);
+        },
+        insertAnItemBefore: (state, action) => {
+            const targetItem = action.payload.targetItem;
+            const newItems=[];
+            for(let i=state.items.length-1; i>=0; i--){
+                newItems.unshift(state.items[i]);
+                if(state.items[i].id === targetItem) {
+                    newItems.unshift(action.payload.item);
+                }
+            }
+            state.items = newItems;
+        },
+        insertAnItemAfter: (state, action) => {
+            const targetItem = action.payload.targetItem;
+            const newItems=[];
+            for(let i=0; i<state.items.length; i++){
+                newItems.push(state.items[i]);
+                if(state.items[i].id === targetItem) {
+                    newItems.push(action.payload.item);
+                }
+            }
+            state.items = newItems;
         }
     }
 })
 
-export const {cleanContainerSlice, activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem} = containerSlice.actions;
+export const {cleanContainerSlice, activityChanged, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityChanged(type));
@@ -434,15 +465,17 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const listContainerThunk = (data) => async (dispatch, getState) => {
+export const listContainersThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, "Loading", () => {
         const state = getState().container;
-        return new Promise(async (resolve, reject) => {        
+        return new Promise(async (resolve, reject) => {
+            const pageNumber = data.pageNumber;        
             PostCall({
                 api:'/memberAPI/listContainers',
                 body:{
                     container: data.container,
-                    from: (state.containersPageNumber - 1) * state.containersPerPage,
+                    boxOnly: data.boxOnly,
+                    from: (pageNumber - 1) * state.containersPerPage,
                     size: state.containersPerPage
                 }
             }).then( data => {
@@ -450,7 +483,7 @@ export const listContainerThunk = (data) => async (dispatch, getState) => {
                 if(data.status === 'ok') {                                  
                     const total = data.hits.total;
                     const hits = data.hits.hits;
-                    dispatch(containersLoaded({total, hits}));
+                    dispatch(containersLoaded({total, pageNumber, hits}));
                     resolve();
                 } else {
                     debugLog(debugOn, "list container failed: ", data.error);
@@ -633,10 +666,19 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
 
     for(let i=0; i<items.length; i++){
         const indexInTask=((action==='dropItemsAfter') || (action==='dropItemsInside'))?(items.length-i-1):i;
+        let item = items[indexInTask];
+        let itemCopy = {id:item.id, container:item.container, position: item.position, type:item.itemPack.type};
+        if(isItemAContainer(item.id)){
+            itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
+            itemCopy.totalStorage = item.itemPack.totalStorage;
+        } else {
+            itemCopy.version = item.itemPack.version;
+            itemCopy.totalItemSize = item.itemPack.totalItemSize;
+        }
         const itemPayload = {
             space: payload.space,
             targetContainer: payload.targetContainer,
-            item: JSON.stringify(items[indexInTask]),
+            item: JSON.stringify(itemCopy),
             targetItem: payload.targetItem,
             targetPosition: payload.targetPosition,
             indexInTask,
@@ -649,6 +691,17 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
         }
         try {
             await dropAnItem(api, itemPayload);
+            dispatch(deselectItem(item.id));
+            dispatch(completedMovingAnItem(item));
+            switch(action) {
+                case 'dropItemsBefore':
+                    dispatch(insertAnItemBefore({targetItem: payload.targetItem, item}));
+                    break;
+                case 'dropItemsAfter':
+                    dispatch(insertAnItemAfter({targetItem: payload.targetItem, item}));
+                    break;
+                default: 
+            }
         } catch (error) {
             debugLog(debugOn, "dropItemsThunk failed: ", error)
             break;
