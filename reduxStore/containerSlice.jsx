@@ -32,7 +32,7 @@ const initialState = {
     items:[],
     newItem: null,
     selectedItems: [],
-    containersPerPage: 1,
+    containersPerPage: 20,
     containersPageNumber: 1,
     containersTotal:0,
     containersList: [],

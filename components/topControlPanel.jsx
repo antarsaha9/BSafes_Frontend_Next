@@ -97,7 +97,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
 
     return (
     <>  
-        { (((pageActivity !== 'Done' && pageActivity !== 'Error') || (containerActivity !== 'Done' && containerActivity !== 'Error'))) &&
+        { (((pageActivity !== 0) || (containerActivity !== 'Done' && containerActivity !== 'Error'))) &&
                         
             <Spinner className={BSafesStyle.screenCenter} animation='border' />    
                           

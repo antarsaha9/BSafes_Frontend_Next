@@ -16,11 +16,13 @@ import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
+
+import { pageActivity } from "../lib/activities";
 import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -54,7 +56,7 @@ export default function PageCommons() {
 
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
-
+    
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
 
@@ -197,7 +199,7 @@ export default function PageCommons() {
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === "Done")} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
 
     const handleWrite = () =>{
@@ -346,7 +348,7 @@ export default function PageCommons() {
     }, [pageItemId])
 
     useEffect(() => {
-        if(activity === "Done") {
+        if(activity === 0) {
             if(editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -551,7 +553,7 @@ export default function PageCommons() {
 
     return (
         <>
-            { (((activity !== 'Done' && activity !== 'Error'))) &&
+            { (activity!==0) &&
                         
                 <Spinner className={BSafesStyle.screenCenter} animation='border' />    
                   
@@ -563,7 +565,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col sm="10" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
@@ -573,7 +575,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
                 </Col> 
             </Row>
             <br />
@@ -611,7 +613,7 @@ export default function PageCommons() {
             </Row>
             <br />
             {photoSwipeGallery()}
-            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
         </>
     )

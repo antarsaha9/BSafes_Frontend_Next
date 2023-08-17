@@ -7,7 +7,8 @@ const axios = require('axios');
 import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, compareArraryBufferAndUnit8Array, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
+import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
+import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId, getEditorConfig } from '../lib/bSafesCommonUI';
 import { downScaleImage, rotateImage } from '../lib/wnImage';
 
@@ -15,7 +16,9 @@ const debugOn = true;
 
 const initialState = {
     aborted: false,
-    activity: "Done",  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
+    activity: 0,  //"Done", "Error", "Loading", "Decrypting", "Saving", "UploadingImages", "LoadingVersionsHistory", "LoadingPageComments"
+    activityErrors: 0,
+    activityErrorMessages: {},
     changingPage: false,
     activeRequest: null,
     error: null,
@@ -253,6 +256,22 @@ const pageSlice = createSlice({
         activityChanged: (state, action) => {
             if(state.aborted ) return;
             state.activity = action.payload;
+        },
+        activityStart: (state, action) => {
+            if(state.aborted ) return;
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            if(state.aborted ) return;
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            if(state.aborted ) return;
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         setActiveRequest: (state, action) => {
             state.activeRequest = action.payload;
@@ -594,16 +613,20 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityChanged, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityChanged, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+
 
 const newActivity = async (dispatch, type, activity) => {
-    dispatch(activityChanged(type));
+    dispatch(activityStart(type));
     try {
         await activity();
-        dispatch(activityChanged("Done"));
+        dispatch(activityDone(type));
     } catch(error) {
-        if(error === "Aborted") return;
-        dispatch(activityChanged("Error"));
+        if(error === "Aborted") {
+            dispatch(activityDone(type));
+            return;
+        } 
+        dispatch(activityError({type, error}));
     }
 }
 
@@ -710,7 +733,7 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "Loading", () => {
+    newActivity(dispatch, pageActivity.GetPageItem, () => {
         
         if(data.itemId.startsWith('np')) {
             dispatch(setPageNumber(parseInt(data.itemId.split(':').pop())));
@@ -883,7 +906,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState().page; 
-    newActivity(dispatch, "Decrypting", () => {
+    newActivity(dispatch, pageActivity.DecryptPageItem, () => {
         const itemId = data.itemId;
         
         const startDownloadingImages = async () => {
@@ -970,7 +993,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
 }
 
 export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "LoadingVersionsHistory", () => {
+    newActivity(dispatch, pageActivity.GetVersionsHistory, () => {
         return new Promise(async (resolve, reject) => {
             const state = getState().page;
             PostCall({
@@ -1395,7 +1418,7 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
 }
 
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
-    newActivity(dispatch, "Saving", () => {
+    newActivity(dispatch, pageActivity.SaveTags, () => {
         return new Promise(async (resolve, reject) => {
             let auth, state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
             auth = getState().auth;
@@ -1460,7 +1483,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
 }
 
 export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
-    newActivity(dispatch, "Saving", () => {
+    newActivity(dispatch, pageActivity.SaveTitle, () => {
         return new Promise(async (resolve, reject) => {
             let auth, state, titleText, encodedTitle, encryptedTitle, titleTokens, itemKey, keyEnvelope, newPageData, updatedState;
             auth = getState().auth;
@@ -1641,7 +1664,7 @@ function preProcessEditorContentBeforeSaving(content) {
 };
 
 export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
-    newActivity(dispatch, "Saving", () => {
+    newActivity(dispatch, pageActivity.SaveContent, () => {
         return new Promise(async (resolve, reject) => {
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;;
             state = getState().page;
@@ -1923,11 +1946,11 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     state = getState().page;
     workspaceKey = data.workspaceKey;
     
-    if(state.activity === "UploadingImages") {
+    if(state.activity & pageActivity.UploadImages) {
         dispatch(addUploadImages({files:data.files, where:data.where}));
         return;
     } 
-    newActivity(dispatch, "UploadingImages",  () => {
+    newActivity(dispatch, pageActivity.UploadImages,  () => {
         return new Promise(async (resolve, reject) => {
             dispatch(addUploadImages({files:data.files, where:data.where}));
             state = getState().page;
@@ -1997,7 +2020,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
 }
 
 export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "DeletingAnImage",  () => {
+    newActivity(dispatch, pageActivity.DeleteAnImage,  () => {
         return new Promise(async (resolve, reject) => {
             let state, newImages, imagePanels, itemCopy;
             state = getState().page;
@@ -2230,11 +2253,11 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     state = getState().page;
     workspaceKey = data.workspaceKey;
     
-    if(state.activity === "UploadingAttachments") {
+    if(state.activity & pageActivity.UploadAttachments) {
         dispatch(addUploadAttachments({files:data.files}));
         return;
     } 
-    newActivity(dispatch, "UploadingAttachments",  () => {
+    newActivity(dispatch, pageActivity.UploadAttachments,  () => {
         return new Promise(async (resolve, reject) => {
             dispatch(addUploadAttachments({files:data.files}));
             state = getState().page;
@@ -2470,44 +2493,37 @@ export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) =>
 
     state = getState().page;
     itemId = state.id;
-    if(state.activity === "Downloadingttachments"/*state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex*/) {
+    if(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         dispatch(addDownloadAttachment({... data.panel}));
         return;
     } 
-    newActivity(dispatch, "Downloadingttachments",  () => {
-        return new Promise(async (resolve, reject) => {
-            if(data.panel) {
-                dispatch(addDownloadAttachment({... data.panel}));
-            }
 
+    if(data.panel) {
+        dispatch(addDownloadAttachment({... data.panel}));
+    }
+
+    state = getState().page;
+    while(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex){
+        if(state.aborted) 
+        {
+            debugLog(debugOn, "abort: ", state.aborted);
+            break;
+        }
+        console.log("======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
+        attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
+        try {
+            await downloadAnAttachment(dispatch, state, attachment, itemId);
+            dispatch(attachmentDownloaded(attachment));
             state = getState().page;
-            while(state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex){
-                if(state.aborted) 
-                {
-                    debugLog(debugOn, "abort: ", state.aborted);
-                    break;
-                }
-                console.log("======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
-                attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
-                try {
-                    await downloadAnAttachment(dispatch, state, attachment, itemId);
-                    dispatch(attachmentDownloaded(attachment));
-                    state = getState().page;
-                } catch(error) {
-                    debugLog(debugOn, 'downloadAnAttachmentThunk failed: ', error);
-                    reject(error);
-                    break;
-                }
-            }
-            if(state.attachmentsDownloadQueue.length === state.attachmentsDownloadIndex) {
-                resolve();
-            }
-        });
-    });
+        } catch(error) {
+            debugLog(debugOn, 'downloadAnAttachmentThunk failed: ', error);
+            break;
+        }
+    }
 }
 
 export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "DeletingAnAttachment",  () => {
+    newActivity(dispatch, pageActivity.DeleteAnAttachment,  () => {
         return new Promise(async (resolve, reject) => {
             let state, newAttachments, attachmentPanels, itemCopy;
             state = getState().page;
@@ -2537,7 +2553,7 @@ export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
 }
 
 export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "Saving", () => {
+    newActivity(dispatch, pageActivity.SaveImageWords, () => {
         return new Promise(async (resolve, reject) => {
             let state, encodedContent, encryptedContent, itemCopy, imagePanels;
             const content = data.content;
@@ -2578,7 +2594,7 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
 }
 
 export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "LoadingPageComments", () => {
+    newActivity(dispatch, pageActivity.LoadComments, () => {
         let state, yourName, hits, comments,content, encryptedContent, binaryContent, encodedContent, payload ;
         return new Promise(async (resolve, reject) => {
             state = getState().page;
@@ -2648,7 +2664,7 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
 
 
 export const saveCommentThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "Saving", () => {
+    newActivity(dispatch, pageActivity.SaveComment, () => {
         return new Promise(async (resolve, reject) => {
             let state, content, encodedComment, encryptedComment, itemId, commentIndex, commentId;
             state = getState().page;
