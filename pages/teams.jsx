@@ -7,7 +7,6 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Card from 'react-bootstrap/Card';
-import Spinner from 'react-bootstrap/Spinner';
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import AddATeamButton from '../components/addATeamButton';
@@ -30,7 +29,6 @@ export default function Teams() {
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const publicKeyPem = useSelector(state => state.auth.publicKey);
 
-    const activity = useSelector(state => state.team.activity);
     const teams = useSelector(state => state.team.teams);
     const pageNumber = useSelector(state => state.team.pageNumber);
     const itemsPerPage = useSelector(state => state.team.itemsPerPage);
@@ -84,12 +82,6 @@ export default function Teams() {
             <ContentPageLayout> 
     
                 <Container fluid>
-
-                    { (((activity !== 'Done' && activity !== 'Error'))) &&
-                        
-                        <Spinner className={BSafesStyle.screenCenter} animation='border' />    
-                  
-                    }
                     <Row>
 				        <Col sm={{span:10, offset:1}} md={{span:8, offset:2}}>
 					        <Card>

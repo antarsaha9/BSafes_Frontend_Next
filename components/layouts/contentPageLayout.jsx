@@ -6,6 +6,8 @@ import Navbar from 'react-bootstrap/Navbar'
 import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 
+import { Blocks } from  'react-loader-spinner';
+
 import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
@@ -24,6 +26,12 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const dispatch = useDispatch();
 
     const [nextRoute, setNextRoute] = useState(null);
+    
+    const authActivity = useSelector( state => state.auth.activity);
+    const v1AccountActivity = useSelector (state => state.v1Account.activity);
+    const teamsActivity = useSelector (state => state.team.activity);
+    const containerActivity = useSelector( state => state.container.activity);
+    const pageActivity = useSelector( state => state.page.activity );
     
     const preflightReady = useSelector( state=>state.auth.preflightReady);
     const localSessionState = useSelector( state => state.auth.localSessionState);
@@ -75,8 +83,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const localSessionStateChanged = () => {
         debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
-        if(!preflightReady) return;
-        if(localSessionState.sessionExists) {
+
+        if( preflightReady && localSessionState.sessionExists) {
             if(localSessionState.unlocked) {
                 if(isLoggedIn) {
                     const path = router.asPath;
@@ -117,7 +125,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     return;
                 }
             }
-        } else {
+        } else if(!localSessionState.sessionExists){
             if(localSessionState.unlocked) {
                 debugLog(debugOn, "Error: It should never happen");
                 if(isLoggedIn) {
@@ -125,7 +133,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                 } else {
                     return;
                 }
-            } else {
+            } else if(preflightReady){
                 if(isLoggedIn) {
                     dispatch(loggedOut());
                     dispatch(cleanMemoryThunk());
@@ -141,6 +149,11 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                         changePage('/');
                     } 
                 }
+            } else {
+                const path = router.asPath;
+                if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
+                    changePage('/');
+                } 
             }
         }
     }
@@ -219,9 +232,22 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             if(path !== nextPage) changePage(nextPage);
         }
     }, [nextAuthStep])
+    //<Spinner className={BSafesStyle.screenCenter} animation='border' />    
     
     return (
         <div>
+            { ( (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
+                <div className={BSafesStyle.screenCenter}>
+                    <Blocks
+                        visible={true}
+                        height="80"
+                        width="80"
+                        ariaLabel="blocks-loading"
+                        wrapperStyle={{}}
+                        wrapperClass="blocks-wrapper"
+                    />
+                </div> 
+            }
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
                 <Container fluid>
                     <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>{workspaceName}</span></Navbar.Brand>

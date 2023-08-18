@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
-import Spinner from 'react-bootstrap/Spinner';
 
 import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
@@ -17,7 +16,6 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { pageActivity } from "../lib/activities";
 import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
@@ -553,11 +551,6 @@ export default function PageCommons() {
 
     return (
         <>
-            { (activity!==0) &&
-                        
-                <Spinner className={BSafesStyle.screenCenter} animation='border' />    
-                  
-            }
             <Row className="justify-content-center">
                 <Col sm="10">
                     <hr />

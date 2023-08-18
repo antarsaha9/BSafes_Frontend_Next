@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
-import Spinner from "react-bootstrap/Spinner";
 
 import jquery from "jquery"
 
@@ -328,7 +327,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return getEditorConfig();
     }
     return (
-        <>{scriptsLoaded?
+        <>
+        {scriptsLoaded?
             <>
             {  (showPen)&&(editable)?
                 
@@ -348,8 +348,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     </div>
                 </Row>
             }
-            </>:
-            <Spinner className={BSafesStyle.screenCenter} animation='border' />}
+            </>:""
+        }
         </>
     );
 }

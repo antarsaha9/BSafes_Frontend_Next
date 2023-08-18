@@ -9,7 +9,6 @@ import Col from 'react-bootstrap/Col'
 import ListGroup from 'react-bootstrap/ListGroup';
 import Collapse from 'react-bootstrap/Collapse';
 import Button from 'react-bootstrap/Button';
-import Spinner from 'react-bootstrap/Spinner';
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout'
 
@@ -117,11 +116,6 @@ export default function Activities(props) {
                             <h1 className="text-center display-5">Activities</h1>
                         </Col>
                     </Row>
-                    { (activity !== 0) &&
-                        <Row className="justify-content-center">
-                            <Spinner animation='border' />
-                        </Row>
-                    }
                     <Row className="justify-content-center">
                         <Col lg={8}>
                             <ListGroup>

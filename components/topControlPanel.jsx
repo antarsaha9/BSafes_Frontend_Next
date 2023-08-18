@@ -10,7 +10,6 @@ import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Card from 'react-bootstrap/Card'
 import Form from 'react-bootstrap/Form'
 import Dropdown from 'react-bootstrap/Dropdown'
-import Spinner from 'react-bootstrap/Spinner';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -97,11 +96,6 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
 
     return (
     <>  
-        { (((pageActivity !== 0) || (containerActivity !== 0))) &&
-                        
-            <Spinner className={BSafesStyle.screenCenter} animation='border' />    
-                          
-        }
         <Row>
             <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
                 <Card className={`${BSafesStyle.containerControlPanel}`}>

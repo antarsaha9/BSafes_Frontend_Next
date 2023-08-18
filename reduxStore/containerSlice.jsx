@@ -91,21 +91,15 @@ const containerSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
-        activityChanged: (state, action) => {
-            state.activity = action.payload;
-        },
         activityStart: (state, action) => {
-            if(state.aborted ) return;
             state.activityErrors &= ~action.payload;
             state.activityErrorMessages[action.payload]='';
             state.activity |= action.payload;
         },
         activityDone: (state, action) => {
-            if(state.aborted ) return;
             state.activity &= ~action.payload;
         },
         activityError: (state, action) => {
-            if(state.aborted ) return;
             state.activity &= ~action.payload.type;
             state.activityErrors |= action.payload.type;
             state.activityErrorMessages[action.payload.type] = action.payload.error;
@@ -255,7 +249,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {cleanContainerSlice, activityChanged, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter} = containerSlice.actions;
+export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

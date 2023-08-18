@@ -5,13 +5,16 @@ const argon2 = require('argon2-browser');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
+import { v1AccountActivity } from '../lib/activities';
 
 import { setDisplayName, loggedIn, loggedOut, setAccountVersion, cleanMemoryThunk} from './auth';
 
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",
+    activity: 0,  
+    activityErrors: 0,
+    activityErrorMessages: {},
     nickname: "",
     masterId: "",
     displayMasterId: "",
@@ -30,8 +33,18 @@ const v1AccountSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
-        activityChanged: (state, action) => {
-            state.activity = action.payload;
+        activityStart: (state, action) => {
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         nicknameResolved: (state, action) => {
             state.nickname = action.payload.nickname;
@@ -54,23 +67,22 @@ const v1AccountSlice = createSlice({
     }
 });
 
-export const { cleanV1AccountSlice, activityChanged, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
+export const { cleanV1AccountSlice, activityStart, activityDone, activityError, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
-    dispatch(activityChanged(type));
+    dispatch(activityStart(type));
     try {
         await activity();
-        dispatch(activityChanged("Done"));
+        dispatch(activityDone(type));
     } catch(error) {
-        if(error === "Aborted") return;
-        dispatch(activityChanged(error));
+        dispatch(activityError({type, error}));
     }
 }
 
 export const v1AccountReducer = v1AccountSlice.reducer;
 
 export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "NicknameSignIn", () => {
+    newActivity(dispatch, v1AccountActivity.NicknameSignIn, () => {
         return new Promise(async (resolve, reject) => {
             const nickname = data.nickname;
             PostCall({
@@ -97,7 +109,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
 }
 
 export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "AuthenticateManagedMember", () => {
+    newActivity(dispatch, v1AccountActivity.AuthenticateManagedMember, () => {
         return new Promise(async (resolve, reject) => {
             const masterId = data.masterId;
             const memberName = data.memberName;
@@ -138,7 +150,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
 }
 
 export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "VerifyMFA", () => {
+    newActivity(dispatch, v1AccountActivity.VerifyMFA, () => {
         return new Promise(async (resolve, reject) => {
             const token = data.MFAToken;
 
@@ -172,7 +184,7 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "VerifyKeyHash", () => {
+    newActivity(dispatch, v1AccountActivity.VerifyKeyHash, () => {
         return new Promise(async (resolve, reject) => {
             const credentials = {
                 secret:{},
@@ -272,7 +284,7 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const lockAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "Lock", () => {
+    newActivity(dispatch, v1AccountActivity.Lock, () => {
         return new Promise(async (resolve, reject) => {
             clearLocalCredentials('v1');
             dispatch(loggedOut());
@@ -297,34 +309,28 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "SignOut", () => {
+    newActivity(dispatch, v1AccountActivity.SignOut, () => {
         return new Promise(async (resolve, reject) => {
-            const nickname = getState().v1Account.nickname;
-
+            
             dispatch(signedOut());
             dispatch(loggedOut());
-            dispatch(cleanMemoryThunk());
+
             PostCall({
                 api:'/memberAPI/signOut'
             }).then( data => {
-                localStorage.clear();
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to signout.")
                     reject('SignOutFailed');
                     return;
                 }    
-                /*
-                const nextStep = {
-                    step: 'SignIn',
-                    nickname
-                }
-                localStorage.setItem("authState", "SignIn");*/
                 dispatch(setNextAuthStep(null));
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "lock failed: ", error)
                 reject('LockFailed');
             }) 
+            localStorage.clear();
+            dispatch(cleanMemoryThunk());
         })
     })
 }

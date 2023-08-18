@@ -10,7 +10,6 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
-import Spinner from 'react-bootstrap/Spinner';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -30,7 +29,6 @@ export default function Workspace({readyToList = false}) {
     const router = useRouter();
     const dispatch = useDispatch();
     
-    const listingItems = useSelector(state=> state.container.listingItems);
     const workspaceId = useSelector( state => state.container.workspace);
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
@@ -38,7 +36,6 @@ export default function Workspace({readyToList = false}) {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
     const container = useSelector( state => state.container.container);
     const mode = useSelector( state => state.container.mode);
-    const activity = useSelector( state => state.container.activity);
 
     const [searchValue, setSearchValue] = useState("");
 
@@ -177,11 +174,6 @@ export default function Workspace({readyToList = false}) {
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <br />
-            { (listingItems || (activity !== 0)) &&
-                <Row className="justify-content-center">
-                    <Spinner animation='border' />
-                </Row>
-            }
             <br />
             { mode ==='search' &&
             <>

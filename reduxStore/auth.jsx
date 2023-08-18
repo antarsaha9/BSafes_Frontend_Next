@@ -3,6 +3,8 @@ const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { authActivity } from '../lib/activities';
+
 import { setNextAuthStep, setKeyMeta } from './v1AccountSlice';
 import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
@@ -12,7 +14,9 @@ import { cleanV1AccountSlice } from './v1AccountSlice';
 const debugOn = true;
 
 const initialState = {
-    activity: "Done",
+    activity: 0,  
+    activityErrors: 0,
+    activityErrorMessages: {},
     error: null,
     contextId:null,
     preflightReady: false,
@@ -41,8 +45,18 @@ const authSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
-        activityChanged: (state, action) => {
-            state.activity = action.payload;
+        activityStart: (state, action) => {
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         setContextId:(state, action) => {
             state.contextId = action.payload;
@@ -86,50 +100,50 @@ const authSlice = createSlice({
     }
 });
 
-export const {cleanAuthSlice, activityChanged, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
-    dispatch(activityChanged(type));
+    dispatch(activityStart(type));
     try {
         await activity();
-        dispatch(activityChanged("Done"));
+        dispatch(activityDone(type));
     } catch(error) {
-        if(error === "Aborted") return;
-        dispatch(activityChanged("Error"));
+        dispatch(activityError({type, error}));
     }
 }
-
 export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
-
-    const credentials = await calculateCredentials(data.nickname, data.keyPassword);
+    newActivity(dispatch, authActivity.KeySetup, () => {
+        return new Promise(async (resolve, reject) => {
+            const credentials = await calculateCredentials(data.nickname, data.keyPassword);
     
-    if(credentials) {
-        debugLog(debugOn, "credentials: ", credentials);
+            if(credentials) {
+                debugLog(debugOn, "credentials: ", credentials);
 
-        PostCall({
-            api:'/keySetup',
-            body: credentials.keyPack,
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                localStorage.setItem("authToken", data.authToken);
-                credentials.memberId = data.memberId;
-                credentials.displayName = data.displayName;
-                saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                PostCall({
+                    api:'/keySetup',
+                    body: credentials.keyPack,
+                }).then( data => {
+                    debugLog(debugOn, data);
+                    if(data.status === 'ok') {
+                        localStorage.setItem("authToken", data.authToken);
+                        credentials.memberId = data.memberId;
+                        credentials.displayName = data.displayName;
+                        saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                 
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-            } else {
-                debugLog(debugOn, "woo... failed to create an account:", data.error);
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                    } else {
+                        debugLog(debugOn, "woo... failed to create an account:", data.error);
+                    }
+                }).catch( error => {
+                    debugLog(debugOn, "woo... failed to create an account.")
+                })
             }
-        }).catch( error => {
-            debugLog(debugOn, "woo... failed to create an account.")
-        })
-    }
-
+        });
+    });
 }
 
 export const logInAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "LoggingIn", () => {
+    newActivity(dispatch, authActivity.LogIn, () => {
         return new Promise(async (resolve, reject) => {
             const credentials = await calculateCredentials(data.nickname, data.keyPassword, true);
             if(credentials) {
@@ -201,7 +215,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "LoggingOut", () => {
+    newActivity(dispatch, authActivity.LogOut, () => {
         return new Promise(async (resolve, reject) => {
             localStorage.clear();
             dispatch(loggedOut());
@@ -226,45 +240,47 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 }
 
 export const preflightAsyncThunk = () => async (dispatch, getState) => {
-    await new Promise(resolve => {
-        const auth = getState().auth;
-        dispatch(setNextAuthStep(null));
-        PostCall({
-            api:'/memberAPI/preflight'
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                if(data.nextStep) {
-                    if(data.nextStep.keyMeta){
-                        dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
-                        dispatch(setKeyMeta(data.nextStep.keyMeta));
-                    }
-                    if(data.idleTimeout) {
-                        if(data.accountVersion === 'v1'){
-                            clearLocalCredentials('v1');
-                        } else {
-                            localStorage.clear();
-                            dispatch(loggedOut());
-                            
+    newActivity(dispatch, authActivity.Preflight, () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(setNextAuthStep(null));
+            PostCall({
+                api:'/memberAPI/preflight'
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    if(data.nextStep) {
+                        if(data.nextStep.keyMeta){
+                            dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
+                            dispatch(setKeyMeta(data.nextStep.keyMeta));
                         }
-                        dispatch(setNextAuthStep(data.nextStep))
-                    } 
-                } else {
-                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
-                }
-            } else { 
-                if(data.error === 'SessionNotExisted'){
-                    localStorage.clear();
-                    dispatch(loggedOut);
-                }
-            } 
-            dispatch(setPreflightReady(true));
-        }).catch( error => {
-            debugLog(debugOn, "woo... preflight failed.")
-        })
-
-    });
-    
+                        if(data.idleTimeout) {
+                            if(data.accountVersion === 'v1'){
+                                clearLocalCredentials('v1');
+                            } else {
+                                localStorage.clear();
+                                dispatch(loggedOut());
+                            
+                            }
+                            dispatch(setNextAuthStep(data.nextStep))
+                        } 
+                    } else {
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                    }
+                } else { 
+                    if(data.error === 'SessionNotExisted'){
+                        localStorage.clear();
+                        dispatch(loggedOut);
+                    }
+                } 
+                dispatch(setPreflightReady(true));
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "woo... preflight failed.");
+                dispatch(setPreflightReady(true));
+                reject(error);
+            })
+        });
+    });  
 }
 
 export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
@@ -286,7 +302,6 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     if(!checkSessionStateInterval) {
         const thisInterval = setInterval(()=>{
             //debugLog(debugOn, "Check session state");.
-            const auth = getState().auth;
             const state = checkLocalSession();
             dispatch(setLocalSessionState(state));
         }, 1000);
@@ -297,10 +312,10 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
 
 export const cleanMemoryThunk = () => (dispatch, getState) => {
     dispatch(cleanAuthSlice());
+    dispatch(cleanV1AccountSlice());
     dispatch(cleanContainerSlice());
     dispatch(cleanPageSlice());
     dispatch(cleanTeamSlice());
-    dispatch(cleanV1AccountSlice());
 }
 
 export const authReducer = authSlice.reducer;

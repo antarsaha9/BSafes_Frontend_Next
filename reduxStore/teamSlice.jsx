@@ -4,11 +4,14 @@ const forge = require('node-forge');
 
 import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, ECBEncryptBinaryString, ECBDecryptBinaryString } from '../lib/crypto';
 import { debugLog, PostCall } from '../lib/helper'
+import { teamsActivity } from '../lib/activities';
 
 const debugOn = true;
 
 const initialState = {
-    activity: "Done", // Done, Loading, Searching
+    activity: 0,  
+    activityErrors: 0,
+    activityErrorMessages: {},
     activityResult:null,
     error: null,
     teams: [],
@@ -34,8 +37,18 @@ const teamSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
-        activityChanged: (state, action) => {
-            state.activity = action.payload;
+        activityStart: (state, action) => {
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         setActivityResult: (state, action) => {
             state.activityResult = action.payload;
@@ -89,16 +102,16 @@ const teamSlice = createSlice({
     }
 })
 
-export const { cleanTeamSlice, activityChanged, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
+export const { cleanTeamSlice, activityStart, activityDone, activityError, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
-    dispatch(activityChanged(type));
+    dispatch(activityStart(type));
     dispatch(setActivityResult(null));
     try {
         await activity();
-        dispatch(activityChanged("Done"));
-    } catch (error) {
-        dispatch(activityChanged("Error"));
+        dispatch(activityDone(type));
+    } catch(error) {
+        dispatch(activityError({type, error}));
     }
 }
 
@@ -127,7 +140,7 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
         });
     }
     
-    newActivity(dispatch, "Loading", () => {
+    newActivity(dispatch, teamsActivity.ListTeams , () => {
         return new Promise(async (resolve, reject) => {
             let i, state, auth, hits=[], decryptedTeam, team, privateKeyFromPem, encodedTeamName, teamName, cachedTeamName, pageNumber;
             state = getState().team;
@@ -296,7 +309,7 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
 }
 
 export const createANewTeamThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "CreatingANewTeam", () => {
+    newActivity(dispatch, teamsActivity.CreateANewTeam, () => {
         return new Promise(async (resolve, reject) => {
             const auth = getState().auth;
             const teamName = data.title;
@@ -382,7 +395,7 @@ export const createANewTeamThunk = (data) => async (dispatch, getState) => {
 }
 
 export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "searchingForAMember", () => {
+    newActivity(dispatch, teamsActivity.SearchForAMember, () => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/findMemberById',
@@ -407,7 +420,7 @@ export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
 
 export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
     debugLog(debugOn, 'listTeamMembersThunk');
-    newActivity(dispatch, "listingTeamMembers", () => {
+    newActivity(dispatch, teamsActivity.ListTeamMembers, () => {
         return new Promise(async (resolve, reject) => {
             const teamId = data.teamId;
             let state = getState().team;
@@ -434,7 +447,7 @@ export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
 }
 
 export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "addingAMemberToTeam", () => {
+    newActivity(dispatch, teamsActivity.AddAMemberToTeam, () => {
         return new Promise(async (resolve, reject) => {
             let pki, teamId, teamKey,teamName, publicKeyFromPem, encodedTeamKey, encodedTeamName, encryptedTeamKey, encryptedTeamName, teamMember;
             const member = data.member;
@@ -486,7 +499,7 @@ export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
 }
 
 export const deleteATeamMemberThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, "addingAMemberToTeam", () => {
+    newActivity(dispatch, teamsActivity.DeleteATeamMember, () => {
         return new Promise(async (resolve, reject) => {
             const member = data.member;
             const teamId = member.teamId;
