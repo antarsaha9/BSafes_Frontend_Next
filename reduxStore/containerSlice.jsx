@@ -661,8 +661,8 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                 numberOfItems,
                 completed: 0,
             }));
-            let result;
-            for(let i=0; i<items.length; i++){
+            let i, result;
+            for(i=0; i<items.length; i++){
                 const indexInTask=((action==='dropItemsAfter') || (action==='dropItemsInside'))?(items.length-i-1):i;
                 let item = items[indexInTask];
                 let itemCopy = {id:item.id, container:item.container, position: item.position, type:item.itemPack.type};
