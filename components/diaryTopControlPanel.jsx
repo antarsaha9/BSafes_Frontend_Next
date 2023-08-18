@@ -62,7 +62,7 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
 
     return (
         <>
-            { (((pageActivity !== 'Done' && pageActivity !== 'Error') || (containerActivity !== 'Done' && containerActivity !== 'Error'))) &&
+            { (((pageActivity !== 0 ) || (containerActivity !== 0))) &&
                         
                 <Spinner className={BSafesStyle.screenCenter} animation='border' />    
                                       

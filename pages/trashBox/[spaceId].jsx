@@ -12,7 +12,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemCard from "../../components/itemCard";
 
-import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItems, initContainer, listItemsThunk, restoreItemsFromTrash, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
+import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItemsThunk, initContainer, listItemsThunk, restoreItemsFromTrashThunk, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
 import { abort, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
@@ -53,7 +53,7 @@ export default function TrashBox() {
             selectedItems: items,
         }
         try {
-            await restoreItemsFromTrash({ payload });
+            dispatch(restoreItemsFromTrashThunk({ payload }));
             dispatch(clearSelected());
             dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch(error) {
@@ -68,7 +68,7 @@ export default function TrashBox() {
             selectedItems: items,
         }
         try {
-            await emptyTrashBoxItems({ payload });
+            dispatch(emptyTrashBoxItems({ payload }));
             dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch(error) {
             debugLog(debugOn, 'handleEmpty failed: ', error)

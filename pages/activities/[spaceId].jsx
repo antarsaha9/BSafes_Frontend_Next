@@ -117,7 +117,7 @@ export default function Activities(props) {
                             <h1 className="text-center display-5">Activities</h1>
                         </Col>
                     </Row>
-                    { (activity !== 'Done' && activity !== 'Error') &&
+                    { (activity !== 0) &&
                         <Row className="justify-content-center">
                             <Spinner animation='border' />
                         </Row>
@@ -130,7 +130,7 @@ export default function Activities(props) {
                         </Col>
                     </Row>
                     <br />
-                    { (activity === 'Done' ) &&
+                    { (activity === 0 ) &&
                         <Row className="justify-content-center">
                             <Button variant="link" onClick={moreActivities}>More</Button>
                         </Row>}

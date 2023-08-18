@@ -15,7 +15,7 @@ import InputGroup from "react-bootstrap/InputGroup";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItemsThunk, trashItems, listContainersThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItemsThunk, trashItemsThunk, listContainersThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar() {
@@ -120,7 +120,7 @@ export default function ItemsToolbar() {
             totalUsage: JSON.stringify(totalUsage),
         }
         try {
-            await trashItems({payload});
+            dispatch(trashItemsThunk({payload}));
             setShowTrashModal(false);
             setTrashConfirmation('');
             handleClearSelected()

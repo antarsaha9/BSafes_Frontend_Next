@@ -177,7 +177,7 @@ export default function Workspace({readyToList = false}) {
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
             <br />
-            { (listingItems || (activity !== 'Done' && activity !== 'Error')) &&
+            { (listingItems || (activity !== 0)) &&
                 <Row className="justify-content-center">
                     <Spinner animation='border' />
                 </Row>

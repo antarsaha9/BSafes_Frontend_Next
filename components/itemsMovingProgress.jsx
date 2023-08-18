@@ -8,23 +8,27 @@ export default function ItemsMovingProgress() {
     const movingItemsTask = useSelector(state=>state.container.movingItemsTask);
 
     return (
-
-        <div className={`${BSafesStyle.itemsMovingProgress}`} >
-            { movingItemsTask &&
-            <CircularProgressbar
-                value={60}
-                text={`${movingItemsTask.completed}/${movingItemsTask.numberOfItems}`}
-                background
-                backgroundPadding={6}
-                styles={buildStyles({
-                    backgroundColor: "rgba(0, 0, 0, 0.5)",
-                    textColor: "#fff",
-                    pathColor: "#fff",
-                    trailColor: "transparent"
-                })}
-            />
-            }
-        </div>
+        <>
+        { movingItemsTask &&
+            <div className={`${BSafesStyle.itemsMovingProgress}`} >
+            
+                <CircularProgressbar
+                    value={60}
+                    text={`${movingItemsTask.completed}/${movingItemsTask.numberOfItems}`}
+                    background
+                    backgroundPadding={6}
+                    styles={buildStyles({
+                        backgroundColor: "rgba(0, 0, 0, 0.5)",
+                        textColor: "#fff",
+                        pathColor: "#fff",
+                        trailColor: "transparent"
+                    })}
+                />
+    
+            </div>
+        }
+        </>
+        
 
     )
 }
