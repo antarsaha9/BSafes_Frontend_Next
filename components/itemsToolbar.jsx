@@ -106,14 +106,14 @@ export default function ItemsToolbar() {
         let itemContainer = container;
         const itemsCopy = [];
         for(let i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
+            let thisItem = containerItems.find(ele => ele.id === selectedItems[i].id);
             thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
             itemsCopy.push(thisItem);
         }
         if(itemContainer === 'root') itemContainer = workspaceId; 
         const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
         const payload = {
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetSpace: workspaceId,
             originalContainer: itemContainer,
             sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
@@ -123,8 +123,8 @@ export default function ItemsToolbar() {
             dispatch(trashItemsThunk({payload}));
             setShowTrashModal(false);
             setTrashConfirmation('');
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            // handleClearSelected()
+            // dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Trashing items failed.")
         }

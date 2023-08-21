@@ -712,24 +712,36 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
 
 export const trashItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.TrashItems, () => {
-        const api = '/memberAPI/trashItems' ;
+        const api = '/memberAPI/trashItems';
         const payload = data.payload;
+        const { items } = payload;
         return new Promise(async (resolve, reject) => {
-            PostCall({
-                api,
-                body: payload
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {
-                    resolve();
-                } else {
-                    debugLog(debugOn, "trashItems failed: ", data.error);
-                    reject(data.error);
-                }
-            }).catch( error => {
-                debugLog(debugOn, "trashItems failed: ", error)
-                reject("trashItems failed!");
-            })
+            dispatch(setMovingItemsTask({
+                numberOfItems: payload.items.length,
+                completed: 0,
+            }));
+            for (const item of items) {
+                const task = PostCall({
+                    api,
+                    body: { ...payload, items: JSON.stringify([item]) }
+                });
+                task.then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        dispatch(deselectItem(item.id));
+                        dispatch(completedMovingAnItem(item));
+                    } else {
+                        debugLog(debugOn, "trashItems failed: ", data.error);
+                        reject(data.error);
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "trashItems failed: ", error)
+                    reject("trashItems failed!");
+                });
+                await task;
+            }
+            resolve();
+            dispatch(setMovingItemsTask(null));
         });
     });
 }
@@ -766,64 +778,87 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
 
 export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.EmptyTrashBoxItems, () => {
-        const api = '/memberAPI/emptyTrashBoxItems' ;
+        const api = '/memberAPI/emptyTrashBoxItems';
         const payload = data.payload;
-        payload.selectedItems = payload.selectedItems.map(item=>({
-            id:item.id,
-            container:item.container,
-            position:item.position
-        }));
-        payload.selectedItems = JSON.stringify(payload.selectedItems);
         return new Promise(async (resolve, reject) => {
-            PostCall({
-                api,
-                body: payload
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {
-                    resolve();
-                } else {
-                    debugLog(debugOn, "emptyTrashBoxItems failed: ", data.error);
-                    reject(data.error);
-                }
-            }).catch( error => {
-                debugLog(debugOn, "emptyTrashBoxItems failed: ", error)
-                reject("emptyTrashBoxItems failed!");
-            })
+            dispatch(setMovingItemsTask({
+                numberOfItems: payload.selectedItems.length,
+                completed: 0,
+            }));
+            for (const item of payload.selectedItems) {
+                const task = PostCall({
+                    api,
+                    body: {
+                        ...payload,
+                        selectedItems: JSON.stringify([{
+                            id: item.id,
+                            container: item.container,
+                            position: item.position
+                        }])
+                    }
+                });
+                task.then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        dispatch(deselectItem(item.id));
+                        dispatch(completedMovingAnItem(item));
+                    } else {
+                        debugLog(debugOn, "emptyTrashBoxItems failed: ", data.error);
+                        reject(data.error);
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "emptyTrashBoxItems failed: ", error)
+                    reject("emptyTrashBoxItems failed!");
+                });
+                await task;
+            }
+            resolve();
+            dispatch(setMovingItemsTask(null));
         });
     });
 }
 
 
-export const restoreItemsFromTrashThunk = async (data) => {
+export const restoreItemsFromTrashThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.RestoreItemsFromTrash, () => {
-    const api = '/memberAPI/restoreItemsFromTrash' ;
-    const payload = data.payload;
-    payload.selectedItems = payload.selectedItems.map(item=>({
-        id:item.id,
-        container:item.container,
-        position:item.position,
-        originalContainer:item.itemPack.originalContainer,
-        originalPosition:item.itemPack.originalPosition,
-    }));
-    payload.selectedItems = JSON.stringify(payload.selectedItems);
-    return new Promise(async (resolve, reject) => {
-        PostCall({
-            api,
-            body: payload
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                resolve();
-            } else {
-                debugLog(debugOn, "restoreItemsFromTrash failed: ", data.error);
-                reject(data.error);
+        const api = '/memberAPI/restoreItemsFromTrash';
+        const payload = data.payload;
+        return new Promise(async (resolve, reject) => {
+            dispatch(setMovingItemsTask({
+                numberOfItems: payload.selectedItems.length,
+                completed: 0,
+            }));
+            for (const item of payload.selectedItems) {
+                const task = PostCall({
+                    api,
+                    body: {
+                        ...payload, selectedItems: JSON.stringify([{
+                            id: item.id,
+                            container: item.container,
+                            position: item.position,
+                            originalContainer: item.itemPack.originalContainer,
+                            originalPosition: item.itemPack.originalPosition,
+                        }])
+                    }
+                });
+                task.then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        dispatch(deselectItem(item.id));
+                        dispatch(completedMovingAnItem(item));
+                    } else {
+                        debugLog(debugOn, "restoreItemsFromTrash failed: ", data.error);
+                        reject(data.error);
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
+                    reject("restoreItemsFromTrash failed!");
+                });
+                await task;
             }
-        }).catch( error => {
-            debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
-            reject("restoreItemsFromTrash failed!");
-        })
-    });
+            resolve();
+            dispatch(setMovingItemsTask(null));
+        });
     });
 }
 

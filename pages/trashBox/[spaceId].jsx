@@ -54,8 +54,8 @@ export default function TrashBox() {
         }
         try {
             dispatch(restoreItemsFromTrashThunk({ payload }));
-            dispatch(clearSelected());
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            // dispatch(clearSelected());
+            // dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch(error) {
             debugLog(debugOn, 'handleRestore failed: ', error)
         }
@@ -68,8 +68,8 @@ export default function TrashBox() {
             selectedItems: items,
         }
         try {
-            dispatch(emptyTrashBoxItems({ payload }));
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(emptyTrashBoxItemsThunk({ payload }));
+            // dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch(error) {
             debugLog(debugOn, 'handleEmpty failed: ', error)
         }
@@ -80,14 +80,14 @@ export default function TrashBox() {
     }
 
     const handleEmptySelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
+        const items = itemsState.filter(i => selectedItems.find(si => si.id === i.id));
         handleEmpty(items);
     }
     const handleRestoreAll = () => {
         handleRestore(itemsState)
     }
     const handleRestoreSelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
+        const items = itemsState.filter(i => selectedItems.find(si => si.id === i.id));
         handleRestore(items)
     }
 
