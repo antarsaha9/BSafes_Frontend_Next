@@ -55,11 +55,9 @@ export default function ItemTopRows() {
     }, [tagsState])
 
     useEffect(() => {
-        if(activity === "Done") {
+        if(activity === 0) {
             if (showTagsConfirmButton) setShowTagsConfirmButton(false);
-        } else if (activity === "Error") {
-
-        }
+        } 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 

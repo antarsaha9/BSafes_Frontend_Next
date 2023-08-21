@@ -371,10 +371,16 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
 
       editor.events.trigger(replaced ? 'video.replaced' : 'video.inserted', [$video]);
     }
+  
+    const bSafesVideSnapShots = {};
 
     function _loadedCallback (s3Key) {
       var $video = $(this);
+      var video = this;
 
+      console.log("_loadedCallback...");
+      console.log("bSafesVideSnapShots", bSafesVideSnapShots);
+      
       editor.popups.hide('video.insert');
 
       $video.removeClass('fr-uploading');
@@ -387,11 +393,8 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
       _editVideo($video.parent());
 
       editor.events.trigger('video.loaded', [$video.parent()]);
-      
+      this.play();
       async function getVideoSnapshot() {
-        let video = $video[0];
-        await video.play();
-        video.pause();
 
         let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
         let canvas = $canvas[0];
@@ -428,7 +431,10 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         }
 
         const takeAShot = () => {
+          if(bSafesVideSnapShots[s3Key]) return;
           console.log("takeAShot...");
+          console.log("bSafesVideSnapShots", bSafesVideSnapShots);
+          
           context.fillRect(0,0,myWidth,myHeight);
           context.drawImage(video,0,0,myWidth,myHeight);
           let imageData = context.getImageData(0,0,myWidth, myHeight);
@@ -444,7 +450,9 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           }
           if(isBlank) {
             setTimeout(takeAShot, 1000);
+            console.log("Blank snapshot");
           } else {
+
             canvas.toBlob((blob) => {
               const reader = new FileReader();
 
@@ -456,7 +464,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
               
 
               reader.readAsBinaryString(blob);
-     
+              bSafesVideSnapShots[s3Key] = true;
             });
           }
         }
