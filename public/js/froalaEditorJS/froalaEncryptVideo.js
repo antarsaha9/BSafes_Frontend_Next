@@ -379,6 +379,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
       var video = this;
 
       console.log("_loadedCallback...");
+      console.log("video: ", video);
       console.log("bSafesVideSnapShots", bSafesVideSnapShots);
       
       editor.popups.hide('video.insert');
@@ -393,13 +394,28 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
       _editVideo($video.parent());
 
       editor.events.trigger('video.loaded', [$video.parent()]);
-      this.play();
+      
+      console.log('editor.helpers.isIOS(): ', editor.helpers.isIOS());
+      if(editor.helpers.isIOS()){
+        video.addEventListener("loadeddata", (event) => {
+          console.log(
+            "video loadeddata",
+          );
+          video.play();
+          getVideoSnapshot();    
+        });
+      } else {
+        video.play();
+        getVideoSnapshot(); 
+      }
+
       async function getVideoSnapshot() {
 
         let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
         let canvas = $canvas[0];
         $canvas.insertAfter('body');
         let ratio = video.videoWidth/video.videoHeight;
+        console.log('videoWidth, videoHeight: ', video.videoWidth, video.videoHeight);
         let myWidth = 640; 
         let myHeight = parseInt(myWidth/ratio,10);
         canvas.width = myWidth;
@@ -437,6 +453,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           
           context.fillRect(0,0,myWidth,myHeight);
           context.drawImage(video,0,0,myWidth,myHeight);
+          console.log('myWidth, myHeight', myWidth, myHeight);
           let imageData = context.getImageData(0,0,myWidth, myHeight);
           let isBlank = true;
           for (let i=0; i< imageData.data.length; i++) {
@@ -457,7 +474,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
               const reader = new FileReader();
 
               reader.onload = () => {
-                console.log(reader.result);
+                //console.log(reader.result);
                 
                 uploadSnapshot(reader.result);
               };
@@ -472,7 +489,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         setTimeout(takeAShot, 100); 
       }
 
-      getVideoSnapshot();
+      
     }
 
     /**
@@ -766,7 +783,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
       }
 
       // Create video object and set the load event.
-      var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
+      var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video playsinline autoplay src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
       $video.toggleClass('fr-draggable', editor.opts.videoMove);
 			
       $video.find('video').addClass('bSafesVideo');		
@@ -803,10 +820,12 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
       editor.selection.clear();
 
       if ($video.find('video').get(0).readyState > $video.find('video').get(0).HAVE_FUTURE_DATA || editor.helpers.isIOS()) {
+        console.log('readyState: ', $video.find('video').get(0).readyState);
         loadCallback.call($video.find('video').get(0), s3Key);
       }
       else {
         const loadCallbackWithS3Key = () => {
+          console.log('loadCallbackWithS3Key');
           loadCallback.call($video.find('video').get(0), s3Key);
         }
         $video.find('video').on('canplaythrough load', 
