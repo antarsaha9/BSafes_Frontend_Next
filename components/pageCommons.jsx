@@ -5,6 +5,8 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
+import { Blocks } from  'react-loader-spinner';
+
 import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
@@ -16,7 +18,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -47,6 +49,7 @@ export default function PageCommons() {
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
 
+    const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
 
     const imageFilesInputRef = useRef(null);
@@ -84,13 +87,16 @@ export default function PageCommons() {
     }
 
     const handleVideoClick = (e) => {
-        const videoId = e.target.id.replace('playVideo_',"");
-        const progressElement = document.getElementById('progress_' + videoId);
-        progressElement.removeAttribute('hidden');
-        const progressBarElement = progressElement.querySelector('.progress-bar');
-        progressBarElement.style.width = '0%';
-        const videoControlsElement = document.getElementById('videoControls_' + videoId);
-        videoControlsElement.setAttribute('hidden', true)
+        let playVideoElement = e.target;
+        if(e.target.tagName === 'I') {
+            playVideoElement = e.target.parentNode;
+        }
+        const videoId = playVideoElement.id.replace('playVideoCenter_',"");
+        const containerElement = playVideoElement.parentNode;
+        playVideoElement.remove();
+        
+        let spinnerElement = createSpinnerForImage(videoId);
+        containerElement.appendChild(spinnerElement);
         const id =  videoId;
         const idParts = id.split('&');
         if(idParts[0] === 'chunks') {
@@ -106,6 +112,30 @@ export default function PageCommons() {
         }
         
     }; 
+
+    function createSpinnerForImage(imageId) {
+        let spinnerElement = spinnerRef.current.cloneNode(true);
+        spinnerElement.id = 'spinner_' + imageId;
+        spinnerElement.style.position = 'absolute';
+        spinnerElement.style.textAlign = 'center';
+        spinnerElement.removeAttribute('hidden');
+        return spinnerElement;
+    }
+
+    function createPlayVideoButton(image) {        
+        let playVideoCenterElement = document.createElement('div');
+        let playVideoId = 'playVideoCenter_' + image.id;
+        let playVideoButtonId = 'playVideoButton_' + image.id;
+        playVideoCenterElement.id = playVideoId;
+        playVideoCenterElement.style.position = 'absolute';
+        playVideoCenterElement.style.width = '100px';
+        playVideoCenterElement.style.borderRadius = '10px';
+        playVideoCenterElement.style.textAlign = 'center';
+        playVideoCenterElement.style.background = 'white';
+        playVideoCenterElement.style.opacity = '0.5';
+        playVideoCenterElement.innerHTML = `<i class="fa fa-play-circle-o fa-4x text-danger" id=${playVideoButtonId} aria-hidden="true"></i>`;
+        return playVideoCenterElement;
+    }
 
     function beforeWritingContent() {
         const progressDIVs = document.getElementsByClassName('progress');
@@ -367,8 +397,14 @@ export default function PageCommons() {
     }, [contentEditorContent]);
 
     useEffect(()=> {
-        let image, imageElement, progressElement, progressBarElement;
+        let image, imageElement, containerElement;
         let i = contentImagesDisplayIndex;
+        
+        const videoControlsElements = document.querySelectorAll(".videoControls");
+            videoControlsElements.forEach((item) => {
+            item.remove();
+        }); 
+
         if(i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
             imageElement = document.getElementById(image.id);
@@ -376,60 +412,48 @@ export default function PageCommons() {
                 dispatch(updateContentImagesDisplayIndex(i+1));
                 return;
             }
-            if(image.status === "Downloading") {
-                
-                progressElement = document.getElementById('progress_' + image.id);
-                
-                if(!progressElement) {
-                    progressElement = document.createElement('div');
-                    progressElement.className = 'progress';
-                    progressElement.id = 'progress_' + image.id;
-                    progressElement.style.width = '250px';
-                    progressElement.style.margin = 'auto';
-                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                    imageElement.after(progressElement);
+
+            if(!imageElement.parentNode.classList.contains('bsafesMediaContainer')){
+                containerElement = document.createElement('div');
+                containerElement.className = 'bsafesMediaContainer';
+                containerElement.style.display = 'flex';
+                containerElement.style.alignItems = 'center';
+                containerElement.style.justifyContent = 'center';
+                let imageElementClone = imageElement.cloneNode(true);
+                containerElement.appendChild(imageElementClone);
+                imageElement.replaceWith(containerElement);
+                imageElement = imageElementClone;
+                let spinnerElement = createSpinnerForImage(image.id);
+                containerElement.appendChild(spinnerElement);
+            } else {
+                containerElement = imageElement.parentNode;
+                let spinnerElement =  document.getElementById('spinner_' + image.id);
+                if(!spinnerElement) {
+                    let spinnerElement = createSpinnerForImage(image.id);
+                    containerElement.appendChild(spinnerElement);
                 }
-                progressElement.removeAttribute('hidden');
-                progressBarElement = document.getElementById('progressBar_' + image.id);
-                if(progressBarElement) progressBarElement.style.width = image.progress + '%';
-                
+            }
+            if(image.status === "Downloading") {
+  
                 return;
             } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
-
-                progressElement = document.getElementById('progress_' + image.id);
-                progressElement.setAttribute('hidden', true);
-                
+             
+                let spinnerElement =  document.getElementById('spinner_' + image.id);
+                if(spinnerElement) spinnerElement.remove();
                 if(image.status === "Downloaded") {
                     imageElement.src = image.src;
-                    if(imageElement.classList.contains('bSafesDownloadVideo')){
-                        let videoId = image.id;
-                        let videoControlsElementId, videoControlsElement = null, playVideoElement = null;
-        
-                        videoControlsElementId = 'videoControls_' + videoId;
-                        videoControlsElement = document.getElementById('playVideo_' + videoId)
-                        
-                        if(!videoControlsElement) {
-                            
-                            let playVideoId = 'playVideo_' + videoId;
-        
-                            videoControlsElement = document.createElement('div');
-                            videoControlsElement.className = 'videoControls';
-                            videoControlsElement.classList.add('text-center') 
-                            videoControlsElement.id = videoControlsElementId;
-                            videoControlsElement.style.width = '250px';
-                            videoControlsElement.style.margin = 'auto';
-            
-                            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
-                            progressElement.after(videoControlsElement);
-                            playVideoElement = document.getElementById('playVideo_' + videoId)
-                        } else {
-                            playVideoElement = document.getElementById('playVideo_' + videoId)
-                        }
-
-                        playVideoElement.onclick = handleVideoClick;
-                    }
                 }
+                if(imageElement.classList.contains('bSafesDownloadVideo')){
+                    let playVideoCenterElement = null;
+                    playVideoCenterElement = document.getElementById('playVideoCenter_' + image.id)
+                    
+                    if(!playVideoCenterElement) {
+                        playVideoCenterElement = createPlayVideoButton(image);
+                        containerElement.appendChild(playVideoCenterElement);
 
+                    } 
+                    playVideoCenterElement.onclick = handleVideoClick;
+                }
                 dispatch(updateContentImagesDisplayIndex(i+1));
             } 
             
@@ -438,22 +462,18 @@ export default function PageCommons() {
     }, [contentImagesDownloadQueue]);
 
     useEffect(()=> {
-        let video, videoElement, videoElementClone, contentVideoContainer, progressElement, progressBarElement;
+        let video, videoElement;
         
         for(let i=0; i< contentVideosDownloadQueue.length; i++) {
             video = contentVideosDownloadQueue[i];
             const videoId = video.id;
             videoElement = document.getElementById(videoId);
-            const progressElementId = 'progress_' + videoId;
 
             if(video.status === "Downloading") {                    
-                let progressBarElement = document.getElementById('progressBar_' + videoId);
-                progressBarElement.style.width = video.progress + '%';
 
             } else if((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
-                let progressElement = document.getElementById(progressElementId);
-                progressElement.setAttribute('hidden', true);
-
+                let spinnerElement = document.getElementById('spinner_' + videoId);
+                if(spinnerElement) spinnerElement.remove();
                 if(!videoElement.classList.contains('fr-video')){
                     const videoSpan = document.createElement('span'); 
                 
@@ -473,7 +493,11 @@ export default function PageCommons() {
                     newVideoElement.id = videoId;
                     newVideoElement.src = video.src;
                     newVideoElement.style = videoElement.style;
-                
+                    
+                    newVideoElement.addEventListener("loadeddata", (event) => {
+                        newVideoElement.play();  
+                    });
+
 	                if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
 	                if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
 	                if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
@@ -482,6 +506,7 @@ export default function PageCommons() {
 
                     videoSpan.appendChild(newVideoElement);
                     videoElement.replaceWith(videoSpan);
+                    dispatch(playingContentVideo({itemId: pageItemId, indexInQueue: i}));
                 }
                 
             }
@@ -608,6 +633,16 @@ export default function PageCommons() {
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
             <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+            <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
+                <Blocks
+                    visible={true}
+                    height="80"
+                    width="80"
+                    ariaLabel="blocks-loading"
+                    wrapperStyle={{}}
+                    wrapperClass="blocks-wrapper"
+                />
+            </div> 
         </>
     )
 }

@@ -385,6 +385,14 @@ const pageSlice = createSlice({
             video.status = "DownloadedFromServiceWorker";
             video.src = action.payload.link;
         },
+        playingContentVideo: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return;
+            const indexInQueue = action.payload.indexInQueue;
+            const video = state.contentVideosDownloadQueue[indexInQueue];
+            if(!video) return;
+            video.status = "playingContentVideo";
+        },
         contentVideoDownloaded: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
@@ -609,7 +617,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1548,6 +1556,20 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
 function preProcessEditorContentBeforeSaving(content) {
     var tempElement = document.createElement("div");
     tempElement.innerHTML = content;
+    //Remove all spinners, progress elements, videoControls
+    const spinners = tempElement.querySelectorAll(".bsafesMediaSpinner");
+    spinners.forEach((item) => {
+        item.remove();
+    });
+    const progressElements = tempElement.querySelectorAll(".progress");
+    progressElements.forEach((item) => {
+        item.remove();
+    }); 
+    const videoControlsElements = tempElement.querySelectorAll(".videoControls");
+    videoControlsElements.forEach((item) => {
+        item.remove();
+    }); 
+
     const images = tempElement.querySelectorAll(".bSafesImage");
     let s3ObjectsInContent = [];
 	let totalS3ObjectsSize = 0;
@@ -1562,9 +1584,10 @@ function preProcessEditorContentBeforeSaving(content) {
             size: size
         });
         totalS3ObjectsSize += size;
-        const placeholder = 'https://via.placeholder.com/' + dimension;
+        const placeholder = `https://placehold.co/${dimension}?text=Image`;
         item.src = placeholder;
 
+if(0) {
         //Check if progress bar exists. If not, add one.
         let progressElementId = 'progress_' + id;
         let progressBarId = 'progressBar_' + id;
@@ -1579,7 +1602,7 @@ function preProcessEditorContentBeforeSaving(content) {
             progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
             item.after(progressElement);
         }
-
+}
 
     });
 
@@ -1605,9 +1628,11 @@ function preProcessEditorContentBeforeSaving(content) {
     
         videoImg.id = videoId;
         videoImg.style = videoStyle;
-        const placeholder = 'https://via.placeholder.com/' + `640x480`;
+        const placeholder = 'https://placehold.co/600x400?text=Video';
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
+
+        if(0) {
 
         //Check if progress bar exists. If not, add one.
         let progressElementId = 'progress_' + videoId;
@@ -1636,6 +1661,7 @@ function preProcessEditorContentBeforeSaving(content) {
             videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
             progressElement.after(videoControlsElement);
         }
+}
     });
 
     const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');

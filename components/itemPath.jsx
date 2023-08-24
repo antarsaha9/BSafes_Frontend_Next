@@ -121,22 +121,26 @@ export default function ItemPath() {
                     let date = parse(dateStr, 'yyyy-LL-dd', new Date());
                     itemTitleText = format(date, 'EEEE, LLL. dd, yyyy') ;
                 } else { 
-                    if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
-                        itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey, forge.util.decode64(item._source.envelopeIV));
-                        itemIV = decryptBinaryString(forge.util.decode64(item._source.ivEnvelope), workspaceKey, forge.util.decode64(item._source.ivEnvelopeIV));
-                    } else { 
-                        itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey);
+                    try {
+                        if (item._source.envelopeIV && item._source.ivEnvelope && item._source.ivEnvelopeIV) { // legacy CBC-mode
+                            itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey, forge.util.decode64(item._source.envelopeIV));
+                            itemIV = decryptBinaryString(forge.util.decode64(item._source.ivEnvelope), workspaceKey, forge.util.decode64(item._source.ivEnvelopeIV));
+                        } else { 
+                            itemKey = decryptBinaryString(forge.util.decode64(item._source.keyEnvelope), workspaceKey);
+                        }   
+                        if(item._source.title) {
+                            encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey, itemIV);
+                            title = forge.util.decodeUtf8(encodedTitle);
+                            title = DOMPurify.sanitize(title);
+                            temp = document.createElement('span');
+                            temp.innerHTML = title;
+                            itemTitleText = temp.textContent || temp.innerText;
+                        } else {
+                            itemTitleText = '';
+                        }      
+                    } catch(error) {
+                        itemTitleText = 'Error!';
                     }   
-                    if(item._source.title) {
-                        encodedTitle = decryptBinaryString(forge.util.decode64(item._source.title), itemKey, itemIV);
-                        title = forge.util.decodeUtf8(encodedTitle);
-                        title = DOMPurify.sanitize(title);
-                        temp = document.createElement('span');
-                        temp.innerHTML = title;
-                        itemTitleText = temp.textContent || temp.innerText;
-                    } else {
-                        itemTitleText = '';
-                    }         
                 }
                 return {
                     type: pathItemType,
