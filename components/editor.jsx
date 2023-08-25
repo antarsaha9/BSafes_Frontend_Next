@@ -18,7 +18,7 @@ import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBina
 import { rotateImage } from '../lib/wnImage';
 
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null}) {
     const debugOn = false;    
     const editorRef = useRef(null);
 
@@ -96,6 +96,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             debugLog(debugOn, "setEditorOn")
             setEditorOn(true);
         }
+        if(writingModeReady) writingModeReady();
     }
 
     const saving = () => {
@@ -111,6 +112,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
             setEditorOn(false);  
+            if(readOnlyModeReady) readOnlyModeReady();
         }
     }
 
@@ -148,7 +150,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             await ic.Photoswipe;
             await ic.Others;
 
-            setScriptsLoaded(true)
+            setScriptsLoaded(true);
+
         });
     },[]);
 

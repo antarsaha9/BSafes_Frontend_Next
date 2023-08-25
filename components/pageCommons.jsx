@@ -20,6 +20,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
+import { pl } from "date-fns/locale";
 
 export default function PageCommons() {
     const debugOn = true;
@@ -42,6 +43,7 @@ export default function PageCommons() {
 
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
+    const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
 
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
 
@@ -115,6 +117,7 @@ export default function PageCommons() {
 
     function createSpinnerForImage(imageId) {
         let spinnerElement = spinnerRef.current.cloneNode(true);
+        spinnerElement.className = 'bsafesImageSpinner';
         spinnerElement.id = 'spinner_' + imageId;
         spinnerElement.style.position = 'absolute';
         spinnerElement.style.textAlign = 'center';
@@ -126,6 +129,7 @@ export default function PageCommons() {
         let playVideoCenterElement = document.createElement('div');
         let playVideoId = 'playVideoCenter_' + image.id;
         let playVideoButtonId = 'playVideoButton_' + image.id;
+        playVideoCenterElement.className = 'bsafesPlayVideo';
         playVideoCenterElement.id = playVideoId;
         playVideoCenterElement.style.position = 'absolute';
         playVideoCenterElement.style.width = '100px';
@@ -138,17 +142,15 @@ export default function PageCommons() {
     }
 
     function beforeWritingContent() {
-        const progressDIVs = document.getElementsByClassName('progress');
-        for(let i=0; i< progressDIVs.length; i++){
-            let element= progressDIVs[i];
-            element.setAttribute('hidden', true);
-        }
+        const spinners = document.querySelectorAll('.bsafesImageSpinner');
+        spinners.forEach((spinner) => {
+            spinner.remove();
+        });
         
-        const videoControlDIVs = document.getElementsByClassName('videoControls');
-        for(let i=0; i<videoControlDIVs.length; i++){
-            let element = videoControlDIVs[i];
-            element.setAttribute('hidden', true);
-        }
+        const playVideos = document.querySelectorAll('.bsafesPlayVideo');
+        playVideos.forEach((playVideo) => {
+            playVideo.remove();
+        });
         
         let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
         setcontentEditorContentWithImagesAndVideos(contentByDOM);
@@ -156,18 +158,7 @@ export default function PageCommons() {
     }
 
     function afterContentReadOnly() {
-        const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
-        for(let i=0; i<bSafesDownloadVideoImages.length; i++){
-            let element = bSafesDownloadVideoImages[i];
-            let videoId = element.id;
-            let videoControlsElementId = 'videoControls_' + videoId;
-            let videoControlsElement = document.getElementById(videoControlsElementId);
-            if(videoControlsElement) {
-                videoControlsElement.removeAttribute('hidden');
-                let playVideoElement = document.getElementById('playVideo_' + videoId);
-                playVideoElement.onclick = handleVideoClick;
-            }  
-        }
+        
     }
 
     const handlePenClicked = (editorId) => {
@@ -366,6 +357,22 @@ export default function PageCommons() {
             }
         }
     };
+
+    const handleContentWritingModeReady = (e) => {
+        return;
+    }
+
+    const handleContentReadOnlyModeReady = (e) => {
+        const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
+        for(let i=0; i<bSafesDownloadVideoImages.length; i++){
+            let image = bSafesDownloadVideoImages[i];
+            let containerElement = image.parentNode;
+            let playVideoElement = createPlayVideoButton(image);
+            containerElement.appendChild(playVideoElement);
+            playVideoElement.onclick = handleVideoClick;
+        }
+        return;
+    }
     
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
@@ -447,12 +454,12 @@ export default function PageCommons() {
                     let playVideoCenterElement = null;
                     playVideoCenterElement = document.getElementById('playVideoCenter_' + image.id)
                     
-                    if(!playVideoCenterElement) {
+                    if(!playVideoCenterElement && contentEditorMode === 'ReadOnly') {
                         playVideoCenterElement = createPlayVideoButton(image);
                         containerElement.appendChild(playVideoCenterElement);
 
                     } 
-                    playVideoCenterElement.onclick = handleVideoClick;
+                    if(contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
                 }
                 dispatch(updateContentImagesDisplayIndex(i+1));
             } 
@@ -593,7 +600,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady}/>
                 </Col> 
             </Row>
             <br />
@@ -632,7 +639,9 @@ export default function PageCommons() {
             <br />
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
-            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+            {   true &&
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && contentImagesAllDisplayed)}/>
+            }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
                 <Blocks
                     visible={true}
