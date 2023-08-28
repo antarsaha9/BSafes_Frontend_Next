@@ -87,8 +87,6 @@ export default function ItemsToolbar() {
         try {
             dispatch(dropItemsThunk({action:'dropItemsInside', payload}));
             setShowMoveModal(false);
-            //handleClearSelected()
-            //dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -104,27 +102,19 @@ export default function ItemsToolbar() {
 
     const handleTrash = async () => {
         let itemContainer = container;
-        const itemsCopy = [];
-        for(let i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
         if(itemContainer === 'root') itemContainer = workspaceId; 
-        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const itemsCopy = selectedItems;
+
         const payload = {
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetSpace: workspaceId,
             originalContainer: itemContainer,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
-            totalUsage: JSON.stringify(totalUsage),
+            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id))
         }
         try {
             dispatch(trashItemsThunk({payload}));
             setShowTrashModal(false);
             setTrashConfirmation('');
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Trashing items failed.")
         }

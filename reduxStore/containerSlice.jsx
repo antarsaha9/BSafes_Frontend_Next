@@ -710,26 +710,73 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+function trashAnItem(api, payload) {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "trashAnItem failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "trashAnItem failed: ", error)
+            reject("trashAnItem failed!");
+        })
+    });
+
+}
+
 export const trashItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.TrashItems, () => {
-        const api = '/memberAPI/trashItems' ;
+        const api = '/memberAPI/trashAnItem' ;
         const payload = data.payload;
+        const { items } = payload;
         return new Promise(async (resolve, reject) => {
-            PostCall({
-                api,
-                body: payload
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {
-                    resolve();
+            dispatch(setMovingItemsTask({
+                numberOfItems: payload.items.length,
+                completed: 0,
+            }));
+            let result = null;
+            for (let i=items.length-1; i>=0; i-- ) {
+                let item = items[i];
+                let itemCopy = {id:item.id, container:item.container, type:item.itemPack.type, position: item.position};
+                if(isItemAContainer(item.id)){
+                    itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
+                    itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {
-                    debugLog(debugOn, "trashItems failed: ", data.error);
-                    reject(data.error);
+                    itemCopy.version = item.itemPack.version;
+                    itemCopy.totalItemSize = item.itemPack.totalItemSize;
                 }
-            }).catch( error => {
-                debugLog(debugOn, "trashItems failed: ", error)
-                reject("trashItems failed!");
-            })
+                const itemPayload = {
+                    item: JSON.stringify(itemCopy),
+                    targetSpace: payload.targetSpace,
+                    originalContainer: payload.originalContainer,
+                    sourceContainersPath: payload.sourceContainersPath
+                }
+
+                try {
+                    await trashAnItem(api, itemPayload);
+                    dispatch(deselectItem(item.id));
+                    dispatch(completedMovingAnItem(item));
+                } catch (error) {
+                    debugLog(debugOn, "dropItemsThunk failed: ", error)
+                    result == error;
+                    break;
+                }
+
+            }
+
+            dispatch(setMovingItemsTask(null));
+            if(!result) {
+                resolve();
+            } else {
+                reject(result);
+            }
         });
     });
 }
