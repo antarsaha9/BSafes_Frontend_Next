@@ -728,7 +728,6 @@ function trashAnItem(api, payload) {
             reject("trashAnItem failed!");
         })
     });
-
 }
 
 export const trashItemsThunk = (data) => async (dispatch, getState) => {
@@ -841,19 +840,7 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-
-export const restoreItemsFromTrashThunk = async (data) => {
-    newActivity(dispatch, containerActivity.RestoreItemsFromTrash, () => {
-    const api = '/memberAPI/restoreItemsFromTrash' ;
-    const payload = data.payload;
-    payload.selectedItems = payload.selectedItems.map(item=>({
-        id:item.id,
-        container:item.container,
-        position:item.position,
-        originalContainer:item.itemPack.originalContainer,
-        originalPosition:item.itemPack.originalPosition,
-    }));
-    payload.selectedItems = JSON.stringify(payload.selectedItems);
+function restoreAnItemFromTrash(api, payload) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api,
@@ -863,14 +850,69 @@ export const restoreItemsFromTrashThunk = async (data) => {
             if(data.status === 'ok') {
                 resolve();
             } else {
-                debugLog(debugOn, "restoreItemsFromTrash failed: ", data.error);
+                debugLog(debugOn, "restoreAnItemFromTrash failed: ", data.error);
                 reject(data.error);
             }
         }).catch( error => {
-            debugLog(debugOn, "restoreItemsFromTrash failed: ", error)
-            reject("restoreItemsFromTrash failed!");
+            debugLog(debugOn, "restoreAnItemFromTrash failed: ", error)
+            reject("restoreAnItemFromTrash failed!");
         })
     });
+}
+
+export const restoreItemsFromTrashThunk = async (data) => {
+    newActivity(dispatch, containerActivity.RestoreItemsFromTrash, () => {
+        const api = '/memberAPI/restoreAnItemFromTrash' ;
+        const payload = data.payload;
+        const items  = payload.selectedItems;
+
+        return new Promise(async (resolve, reject) => {
+            dispatch(setMovingItemsTask({
+                numberOfItems: items.length,
+                completed: 0,
+            }));
+
+            let result = null;
+            for (let i=items.length-1; i>=0; i-- ) {
+                let item = items[i];
+                let itemCopy = {
+                    id:item.id, 
+                    container:item.container, 
+                    type:item.itemPack.type, 
+                    position: item.position, 
+                    originalContainer:item.itemPack.originalContainer, 
+                    originalPosition:item.itemPack.originalPosition
+                };
+                if(isItemAContainer(item.id)){
+                    itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
+                    itemCopy.totalStorage = item.itemPack.totalStorage;
+                } else {
+                    itemCopy.version = item.itemPack.version;
+                    itemCopy.totalItemSize = item.itemPack.totalItemSize;
+                }
+                const itemPayload = {
+                    item: JSON.stringify(itemCopy),
+                    teamSpace: payload.teamSpace,
+                    trashBoxId: payload.trashBoxId
+                }
+
+                try {
+                    await restoreAnItemFromTrash(api, itemPayload);
+                    dispatch(deselectItem(item.id));
+                    dispatch(completedMovingAnItem(item));
+                } catch (error) {
+                    debugLog(debugOn, "restoreItemsFromTrashThunk failed: ", error)
+                    result == error;
+                    break;
+                }
+            }
+            dispatch(setMovingItemsTask(null));
+            if(!result) {
+                resolve();
+            } else {
+                reject(result);
+            }
+        });
     });
 }
 
