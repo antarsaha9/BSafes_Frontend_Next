@@ -51,14 +51,8 @@ export default function TrashBox() {
             teamSpace: workspaceId,
             trashBoxId: trashBoxId,
             selectedItems: items,
-        }
-        try {
-            dispatch(restoreItemsFromTrashThunk({ payload }));
-            dispatch(clearSelected());
-            dispatch(listItemsThunk({ pageNumber: 1 }));
-        } catch(error) {
-            debugLog(debugOn, 'handleRestore failed: ', error)
-        }
+        }        
+        dispatch(restoreItemsFromTrashThunk({ payload }));     
     }
 
     const handleEmpty = async (items) => {
@@ -67,12 +61,7 @@ export default function TrashBox() {
             trashBoxId: trashBoxId,
             selectedItems: items,
         }
-        try {
-            dispatch(emptyTrashBoxItems({ payload }));
-            dispatch(listItemsThunk({ pageNumber: 1 }));
-        } catch(error) {
-            debugLog(debugOn, 'handleEmpty failed: ', error)
-        }
+        dispatch(emptyTrashBoxItemsThunk({ payload }));
     }
 
     const handleEmptyAll = () => {
@@ -80,15 +69,13 @@ export default function TrashBox() {
     }
 
     const handleEmptySelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
-        handleEmpty(items);
+        handleEmpty(selectedItems);
     }
     const handleRestoreAll = () => {
         handleRestore(itemsState)
     }
     const handleRestoreSelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
-        handleRestore(items)
+        handleRestore(selectedItems)
     }
 
     useEffect(() => {

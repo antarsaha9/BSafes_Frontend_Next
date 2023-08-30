@@ -810,32 +810,75 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+function emptyATrashBoxItem(api, payload) {
+    return new Promise(async (resolve, reject) => {
+        PostCall({
+            api,
+            body: payload
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "emptyATrashBoxItem failed: ", data.error);
+                reject(data.error);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "emptyATrashBoxItem failed: ", error)
+            reject("emptyATrashBoxItem failed!");
+        })
+    });
+}
+
 export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.EmptyTrashBoxItems, () => {
-        const api = '/memberAPI/emptyTrashBoxItems' ;
+        const api = '/memberAPI/emptyATrashBoxItem' ;
         const payload = data.payload;
-        payload.selectedItems = payload.selectedItems.map(item=>({
-            id:item.id,
-            container:item.container,
-            position:item.position
-        }));
-        payload.selectedItems = JSON.stringify(payload.selectedItems);
+        const items  = payload.selectedItems;
+        
         return new Promise(async (resolve, reject) => {
-            PostCall({
-                api,
-                body: payload
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {
-                    resolve();
+            dispatch(setMovingItemsTask({
+                numberOfItems: items.length,
+                completed: 0,
+            }));
+
+            let result = null;
+            for (let i=items.length-1; i>=0; i-- ) {
+                let item = items[i];
+                let itemCopy = {
+                    id:item.id, 
+                    container:item.container, 
+                    position: item.position
+                };
+                if(isItemAContainer(item.id)){
+                    itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
+                    itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {
-                    debugLog(debugOn, "emptyTrashBoxItems failed: ", data.error);
-                    reject(data.error);
+                    itemCopy.version = item.itemPack.version;
+                    itemCopy.totalItemSize = item.itemPack.totalItemSize;
                 }
-            }).catch( error => {
-                debugLog(debugOn, "emptyTrashBoxItems failed: ", error)
-                reject("emptyTrashBoxItems failed!");
-            })
+                const itemPayload = {
+                    item: JSON.stringify(itemCopy),
+                    teamSpace: payload.teamSpace,
+                    trashBoxId: payload.trashBoxId
+                }
+
+                try {
+                    await emptyATrashBoxItem(api, itemPayload);
+                    dispatch(deselectItem(item.id));
+                    dispatch(completedMovingAnItem(item));
+                } catch (error) {
+                    debugLog(debugOn, "emptyTrashBoxItemsThunk failed: ", error)
+                    result == error;
+                    break;
+                }
+            }
+            dispatch(setMovingItemsTask(null));
+            if(!result) {
+                resolve();
+            } else {
+                reject(result);
+            }
         });
     });
 }
@@ -860,7 +903,7 @@ function restoreAnItemFromTrash(api, payload) {
     });
 }
 
-export const restoreItemsFromTrashThunk = async (data) => {
+export const restoreItemsFromTrashThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.RestoreItemsFromTrash, () => {
         const api = '/memberAPI/restoreAnItemFromTrash' ;
         const payload = data.payload;
@@ -878,7 +921,6 @@ export const restoreItemsFromTrashThunk = async (data) => {
                 let itemCopy = {
                     id:item.id, 
                     container:item.container, 
-                    type:item.itemPack.type, 
                     position: item.position, 
                     originalContainer:item.itemPack.originalContainer, 
                     originalPosition:item.itemPack.originalPosition
