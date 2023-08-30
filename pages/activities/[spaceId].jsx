@@ -15,7 +15,7 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout'
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { initWorkspaceThunk, initContainer, changeContainerOnly, setWorkspaceKeyReady, clearActivities, listActivitiesThunk } from '../../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
+import { abort, initPage, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
 
 import { debugLog } from '../../lib/helper';
 import { getItemLink } from '../../lib/bSafesCommonUI';
@@ -54,12 +54,18 @@ export default function Activities(props) {
           dispatch(abort());
         }
     
+        const handleRouteChangeComplete = () => {
+            debugLog(debugOn, "handleRouteChangeComplete");
+            dispatch(initPage());
+        }
+
         router.events.on('routeChangeStart', handleRouteChange)
-    
+        router.events.on('routeChangeComplete', handleRouteChangeComplete);
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
+            router.events.off('routeChangeStart', handleRouteChange)
+            router.events.off('routeChangeComplete', handleRouteChangeComplete);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -84,7 +90,7 @@ export default function Activities(props) {
                     if(accountVersion === 'v1') {
                         teamId = spaceId.substring(0, spaceId.length - 4);
                     } else {
-                         teamId = spaceId;
+                        teamId = spaceId;
                     }
                     dispatch(initWorkspaceThunk({teamId, container:'root'}));
                 }     

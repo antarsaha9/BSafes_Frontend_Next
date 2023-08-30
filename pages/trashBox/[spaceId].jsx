@@ -13,7 +13,7 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemCard from "../../components/itemCard";
 
 import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItemsThunk, initContainer, listItemsThunk, restoreItemsFromTrashThunk, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
+import { abort, initPage, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI"
@@ -26,6 +26,7 @@ export default function TrashBox() {
     const [space, setSpace] = useState(null);
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -87,12 +88,18 @@ export default function TrashBox() {
             dispatch(abort());
         }
 
-        router.events.on('routeChangeStart', handleRouteChange)
+        const handleRouteChangeComplete = () => {
+            debugLog(debugOn, "handleRouteChangeComplete");
+            dispatch(initPage());
+        }
 
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete);
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
             router.events.off('routeChangeStart', handleRouteChange)
+            router.events.off('routeChangeComplete', handleRouteChangeComplete);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
@@ -123,7 +130,13 @@ export default function TrashBox() {
                 dispatch(initContainer({container:'Unknown', workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
                 dispatch(setWorkspaceKeyReady(true));
             } else {
-                dispatch(initWorkspaceThunk({teamId:space, container: 'Unknown'}));          
+                let teamId;
+                if(accountVersion === 'v1') {
+                    teamId = space.substring(0, space.length - 4);
+                } else {
+                    teamId = space;
+                }
+                dispatch(initWorkspaceThunk({teamId, container: 'Unknown'}));          
             }
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps

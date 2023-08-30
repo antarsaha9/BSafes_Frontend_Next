@@ -15,8 +15,8 @@ import ContentPageLayout from '../../components/layouts/contentPageLayout'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
-import { initWorkspaceThunk, changeContainerOnly, setWorkspaceKeyReady } from '../../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from '../../reduxStore/pageSlice';
+import { initWorkspaceThunk, changeContainerOnly, setWorkspaceKeyReady, clearItems } from '../../reduxStore/containerSlice';
+import { abort, clearPage, initPage, itemPathLoaded } from '../../reduxStore/pageSlice';
 import { setMemberSearchValue, clearMemberSearchResult, findMemberByIdThunk, addAMemberToTeamThunk, listTeamMembersThunk, deleteATeamMemberThunk} from '../../reduxStore/teamSlice';
 import { debugLog } from '../../lib/helper';
 
@@ -29,6 +29,7 @@ export default function TeamMembers(props) {
     const [readyToList, setReadyToList] = useState(false);
     const [addingMember, setAddingMember] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const loggedIn = useSelector(state => state.auth.isLoggedIn);
     const workspaceId = useSelector( state => state.container.workspace );
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
@@ -87,14 +88,22 @@ export default function TeamMembers(props) {
             } shallow routing`
           )
           dispatch(abort());
+          dispatch(clearPage());
+          dispatch(clearItems());
         }
     
-        router.events.on('routeChangeStart', handleRouteChange)
-    
+        const handleRouteChangeComplete = () => {
+            debugLog(debugOn, "handleRouteChangeComplete");
+            dispatch(initPage());
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange);
+        router.events.on('routeChangeComplete', handleRouteChangeComplete);
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
+          router.events.off('routeChangeStart', handleRouteChange);
+          router.events.off('routeChangeComplete', handleRouteChangeComplete);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -106,13 +115,18 @@ export default function TeamMembers(props) {
 
     useEffect(()=>{
         if(loggedIn && !workspaceKeyReady && router.query.teamId) {
-            const teamId = router.query.teamId;
+            let teamId = router.query.teamId;
             
             if(router.query.teamId === workspaceId) {
-              dispatch(changeContainerOnly({container: 'root'}))
-              dispatch(setWorkspaceKeyReady(true));
+                dispatch(changeContainerOnly({container: 'root'}))
+                dispatch(setWorkspaceKeyReady(true));
             } else {
-              dispatch(initWorkspaceThunk({teamId, container:'root'}));
+                teamId;
+                if(accountVersion === 'v1') {
+                    teamId = teamId.substring(0, teamId.length - 4);
+                } 
+                
+                dispatch(initWorkspaceThunk({teamId, container:'root'}));
             }     
             setReadyToList(true);   
         }

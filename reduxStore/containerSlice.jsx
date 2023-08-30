@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
-import { newResultItem, formatTimeDisplay, isItemAContainer } from '../lib/bSafesCommonUI';
+import { newResultItem, formatTimeDisplay, isItemABoxOrFolder } from '../lib/bSafesCommonUI';
 import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 import { containerActivity } from '../lib/activities';
 
@@ -660,7 +660,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                 const indexInTask=((action==='dropItemsAfter') || (action==='dropItemsInside'))?(items.length-i-1):i;
                 let item = items[indexInTask];
                 let itemCopy = {id:item.id, container:item.container, position: item.position, type:item.itemPack.type};
-                if(isItemAContainer(item.id)){
+                if(isItemABoxOrFolder(item.id)){
                     itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
                     itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {
@@ -744,7 +744,7 @@ export const trashItemsThunk = (data) => async (dispatch, getState) => {
             for (let i=items.length-1; i>=0; i-- ) {
                 let item = items[i];
                 let itemCopy = {id:item.id, container:item.container, type:item.itemPack.type, position: item.position};
-                if(isItemAContainer(item.id)){
+                if(isItemABoxOrFolder(item.id)){
                     itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
                     itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {
@@ -850,7 +850,7 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
                     container:item.container, 
                     position: item.position
                 };
-                if(isItemAContainer(item.id)){
+                if(isItemABoxOrFolder(item.id)){
                     itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
                     itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {
@@ -925,7 +925,7 @@ export const restoreItemsFromTrashThunk = (data) => async (dispatch, getState) =
                     originalContainer:item.itemPack.originalContainer, 
                     originalPosition:item.itemPack.originalPosition
                 };
-                if(isItemAContainer(item.id)){
+                if(isItemABoxOrFolder(item.id)){
                     itemCopy.totalItemVersions = item.itemPack.totalItemVersions;
                     itemCopy.totalStorage = item.itemPack.totalStorage;
                 } else {

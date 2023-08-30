@@ -250,7 +250,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             }
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
                 <Container fluid>
-                    <Navbar.Brand href="/"><span className={BSafesStyle.navbarTeamName}>{workspaceName}</span></Navbar.Brand>
+                    <Navbar.Brand><span className={BSafesStyle.navbarTeamName}>{workspaceName}</span></Navbar.Brand>
                     {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
                         <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
                             <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
