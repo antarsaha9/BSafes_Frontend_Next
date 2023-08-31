@@ -15,7 +15,7 @@ import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
+import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
 export default function ItemTopRows() {
     const dispatch = useDispatch();
@@ -26,6 +26,7 @@ export default function ItemTopRows() {
 
     const activity = useSelector( state => state.page.activity);
     const tagsState = useSelector(state => state.page.tags);
+    const itemCopy  = useSelector( state => state.page.itemCopy);
 
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
@@ -46,8 +47,9 @@ export default function ItemTopRows() {
     }
 
     const openVersionsHistoryModal = () => {
-        setVersionsHistoryModalOpened(true)
-        dispatch(getItemVersionsHistoryThunk());
+        setVersionsHistoryModalOpened(true);
+        dispatch(clearItemVersions());
+        dispatch(getItemVersionsHistoryThunk({page:1}));
     }
 
     useEffect(()=>{
@@ -66,10 +68,10 @@ export default function ItemTopRows() {
             <Row>
                 <Col>
                     <div className="pull-right">
-                        <span>v.1</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
-                        <Button variant="link" className="text-dark" >
+                        <span>{itemCopy && `v.${itemCopy.version}`}</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
+                        { false && <Button variant="link" className="text-dark" >
 		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
-		        	    </Button>
+		        	    </Button>}
                     </div>
                 </Col>     
             </Row>
@@ -94,8 +96,17 @@ export default function ItemTopRows() {
 }
 
 function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
+    const dispatch = useDispatch();
+    
     const itemVersions = useSelector(state => state.page.itemVersions);
-
+    const totalVersions = useSelector(state => state.page.totalVersions);
+    const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
+    const versionsPerPage = useSelector(state => state.page.versionsPerPage);
+    
+    const handleMore = (e) => {
+        dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
+    }
+    
     return (
         <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
             <ModalHeader closeButton>
@@ -111,6 +122,13 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
                 {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
                     <a href="#" onClick={handleMoreVersionClick}>More ...</a>
                 </div>} */}
+                { totalVersions> (versionsPageNumber*versionsPerPage) &&
+                    <div className='text-center'>
+                        <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
+                            More
+                        </Button>
+                    </div>
+                }
             </ModalBody>
         </Modal>
     )
@@ -122,14 +140,19 @@ function ItemVersionCard({id,updatedBy,updatedTime,updatedText,updatedTimeStamp,
         <ListGroup.Item key={id}>
             <Row>
                 <Col xs={3}><h4>v.{version}</h4></Col>
-                <Col xs={9}><h4 className="pull-right">{updatedText}</h4></Col>
+                <Col xs={8}><h5 className="pull-right px-2">{updatedText}</h5></Col>
+                <Col xs={1}>
+                    <a className={BSafesStyle.externalLink} target="_blank" href={'/'} rel="noopener noreferrer">
+                        <i className="me-2 fa fa-external-link mt-1  text-dark pull-right" aria-hidden="true"></i>
+                    </a>
+                </Col>
             </Row>
             <Row>
-                <Col xs={6}><h6>{updatedBy}</h6></Col>
-                <Col xs={6}><h6 className="pull-right">{updatedTime}</h6></Col>
+                <Col xs={6}><p>{updatedBy}</p></Col>
+                <Col xs={6}><p className="pull-right">{updatedTime}</p></Col>
             </Row>
             <Row>
-                <Col xs={12}><h6 className="pull-right">{updatedTimeStamp}</h6></Col>
+                <Col xs={12}><p className="pull-right">{updatedTimeStamp}</p></Col>
             </Row>
         </ListGroup.Item>
     )

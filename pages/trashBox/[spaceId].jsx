@@ -11,12 +11,12 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemCard from "../../components/itemCard";
+import PaginationControl from "../../components/paginationControl";
 
 import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItemsThunk, initContainer, listItemsThunk, restoreItemsFromTrashThunk, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
 import { abort, initPage, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI"
 
 export default function TrashBox() {
     const debugOn = true;
@@ -33,9 +33,11 @@ export default function TrashBox() {
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const workspaceId = useSelector( state => state.container.workspace );
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const itemsState = useSelector(state => state.container.items);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
     const selectedItems = useSelector(state => state.container.selectedItems);
     const trashBoxId = useSelector(state => state.container.trashBoxId);
 
@@ -78,7 +80,9 @@ export default function TrashBox() {
     const handleRestoreSelected = () => {
         handleRestore(selectedItems)
     }
-
+    const listItems = ({ pageNumber = 1}) => {
+        dispatch(listItemsThunk({ pageNumber }));
+    }
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
             console.log(
@@ -185,15 +189,28 @@ export default function TrashBox() {
                                         </Col>
                                     </Row>
                                 </div>
-                                {/* <Row className="justify-content-center">
-                                    <AddAnItemButton addAnItem={addAnItem} />
-                                </Row>
-                                <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} /> */}
+    
                                 <br />
                                 <br />
 
                                 {items}
-
+                                {(true) &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({pageNumber:page})
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

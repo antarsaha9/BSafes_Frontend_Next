@@ -58,6 +58,9 @@ const initialState = {
     xhr: null,
     writer: null,
     itemVersions:[],
+    totalVersions:0,
+    versionsPerPage: 2,
+    versionsPageNumber:0,
     newCommentEditorMode: 'ReadOnly',
     comments:[]
 }
@@ -331,8 +334,13 @@ const pageSlice = createSlice({
             }
             state.decrypttionRequired = false;
         },
+        clearItemVersions: (state, action) => {
+            state.itemVersions = [];
+        },
         itemVersionsFetched: (state, action) => {
-            state.itemVersions.push(...action.payload);
+            state.versionsPageNumber = action.payload.page;
+            state.totalVersions = action.payload.total;
+            state.itemVersions.push(...action.payload.modifiedHits);
         },
         downloadingContentImage: (state, action) => {
             if(state.aborted ) return;
@@ -617,7 +625,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1004,8 +1012,8 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                 api: '/memberAPI/getItemVersionsHistory',
                 body: {
                     itemId: state.id,
-                    size: 20,
-                    from: 0,
+                    size: state.versionsPerPage,
+                    from: (data.page-1)*state.versionsPerPage,
                 },
             }).then(result => {
                 debugLog(debugOn, result);
@@ -1025,8 +1033,8 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                             }
                             return payload;
                         });
-                        dispatch(itemVersionsFetched(modifiedHits));
-
+                        dispatch(itemVersionsFetched({page:data.page, total: result.hits.total, modifiedHits}));
+                        resolve();
                     } else {
                         reject("woo... failed to get a item version history!");
                     }

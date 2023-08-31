@@ -143,12 +143,17 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
         <>
             {item.id.startsWith('np') && 
                 <div>
-                    <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
-                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+                    <Row>
+                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: item.itemPack.pageNumber}} />
                         </Col> 
-                        <Col xs={8} sm={8} md={9}>
+                        <Col xs={7} sm={7} md={8} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
+                        </Col>
+                        <Col xs={1} >
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                            </a>
                         </Col>
                     </Row>
                     <Row>
@@ -161,17 +166,22 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
             }
             {item.id.startsWith('dp') &&                
                 <div>                  
-                    <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked} style={{ cursor: 'pointer' }}>
-                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
+                    <Row className={BSafesStyle.contentsItemRow}>
+                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             { mode==='listAll'?
                                 <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
                                 :
                                 <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'yyyy-LL-dd')}} />
                             }   
                             </Col> 
-                        <Col xs={7} sm={8} xl={9}>
+                        <Col xs={6} sm={7} xl={8} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
-                        </Col>             
+                        </Col>      
+                        <Col xs={1} >
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                            </a>
+                        </Col>
                     </Row>
 
                     <Row>
