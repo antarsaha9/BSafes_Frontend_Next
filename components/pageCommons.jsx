@@ -33,6 +33,7 @@ export default function PageCommons() {
     const activity = useSelector( state => state.page.activity);
 
     const pageItemId = useSelector(state => state.page.id);
+    const oldVersion = useSelector(state=>state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
@@ -590,7 +591,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col sm="10" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) } />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
@@ -600,37 +601,41 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady}/>
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady}/>
                 </Col> 
             </Row>
             <br />
             <br />
-            <div className="images">
-                <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
-                <Row>
-                    <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
-                        <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                            <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
-                        </Button>
-                    </Col>
-                </Row>	
-            </div>
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="images">
+                    <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
+                    <Row>
+                        <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                            <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>	
+                </div>
+            }
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" lg="8" >
                     {imagePanels}
                 </Col>
             </Row>
             <br />
-            <div className="attachments">
-                <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
-                <Row>
-                    <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
-                        <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                            <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
-                        </Button>
-                    </Col>
-                </Row>    	
-            </div>
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="attachments">
+                    <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
+                    <Row>
+                        <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                            <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>    	
+                </div>
+            }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
                     { attachmentPanelsNewOnTop }
@@ -638,9 +643,9 @@ export default function PageCommons() {
             </Row>
             <br />
             {photoSwipeGallery()}
-            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
+            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
             {   true &&
-                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && contentImagesAllDisplayed)}/>
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
             }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
                 <Blocks

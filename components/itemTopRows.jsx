@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -17,6 +18,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
+import { getItemLink } from "../lib/bSafesCommonUI";
 export default function ItemTopRows() {
     const dispatch = useDispatch();
 
@@ -24,6 +26,7 @@ export default function ItemTopRows() {
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
+    const oldVersion = useSelector(state=>state.page.oldVersion);
     const activity = useSelector( state => state.page.activity);
     const tagsState = useSelector(state => state.page.tags);
     const itemCopy  = useSelector( state => state.page.itemCopy);
@@ -81,7 +84,11 @@ export default function ItemTopRows() {
                     <label className="pull-right"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
                 <Col xs="10">
-                    <TagsInput value={tags} onChange={handleChange} />
+                    {oldVersion?
+                        <TagsInput value={tags} onChange={handleChange} disabled/>
+                        :
+                        <TagsInput value={tags} onChange={handleChange} />
+                    }
                 </Col>
             </Row>
             {showTagsConfirmButton && <Row>
@@ -97,7 +104,7 @@ export default function ItemTopRows() {
 
 function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
     const dispatch = useDispatch();
-    
+
     const itemVersions = useSelector(state => state.page.itemVersions);
     const totalVersions = useSelector(state => state.page.totalVersions);
     const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
@@ -134,24 +141,31 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
     )
 }
 
-function ItemVersionCard({id,updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
+function ItemVersionCard({id, container, updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
+    const router = useRouter();
+    const item = {id, container};
+    const link = getItemLink(item) + `?version=${version}`;
+    
+    const rowClicked = () => {    
+        router.push(link);    
+    }
 
     return (
         <ListGroup.Item key={id}>
             <Row>
-                <Col xs={3}><h4>v.{version}</h4></Col>
-                <Col xs={8}><h5 className="pull-right px-2">{updatedText}</h5></Col>
+                <Col xs={3} onClick={rowClicked} style={{ cursor: 'pointer' }}><h4>v.{version}</h4></Col>
+                <Col xs={8} onClick={rowClicked} style={{ cursor: 'pointer' }}><h5 className="pull-right px-2">{updatedText}</h5></Col>
                 <Col xs={1}>
-                    <a className={BSafesStyle.externalLink} target="_blank" href={'/'} rel="noopener noreferrer">
+                    <a className={BSafesStyle.externalLink} target="_blank" href={link} rel="noopener noreferrer">
                         <i className="me-2 fa fa-external-link mt-1  text-dark pull-right" aria-hidden="true"></i>
                     </a>
                 </Col>
             </Row>
-            <Row>
+            <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
                 <Col xs={6}><p>{updatedBy}</p></Col>
                 <Col xs={6}><p className="pull-right">{updatedTime}</p></Col>
             </Row>
-            <Row>
+            <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
                 <Col xs={12}><p className="pull-right">{updatedTimeStamp}</p></Col>
             </Row>
         </ListGroup.Item>

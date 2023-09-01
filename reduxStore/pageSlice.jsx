@@ -27,6 +27,7 @@ const initialState = {
     itemCopy: null,
     itemPath:null,
     id: null,
+    oldVersion: false,
     style: null,
     space: null,
     container: null,
@@ -291,6 +292,9 @@ const pageSlice = createSlice({
             if(state.aborted ) return;
             if(action.payload.item.id !== state.activeRequest) return;
             dataFetchedFunc(state, action);
+        },
+        setOldVersion: (state, action) => {
+            state.oldVersion = true;
         },
         contentDecrypted: (state, action) => {
             if(state.aborted ) return;
@@ -625,7 +629,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -783,9 +787,15 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
             let state;
             dispatch(setActiveRequest(data.itemId));
             debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
+            
+            const payload = {itemId: data.itemId};
+            if(data.version) {
+                payload.oldVersion = data.version;
+                dispatch(setOldVersion());
+            }
             PostCall({
                 api:'/memberAPI/getPageItem',
-                body: {itemId: data.itemId},
+                body: payload,
             }).then( async result => {
                 debugLog(debugOn, result);
                 state = getState().page;
@@ -1008,6 +1018,7 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
     newActivity(dispatch, pageActivity.GetVersionsHistory, () => {
         return new Promise(async (resolve, reject) => {
             const state = getState().page;
+            const pageItemId = state.id;
             PostCall({
                 api: '/memberAPI/getItemVersionsHistory',
                 body: {
@@ -1023,13 +1034,13 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                         const modifiedHits = hits.map(hit => {
                             const updatedTime = formatTimeDisplay(hit._source.createdTime);
                             const payload = {
-                                id: hit._source.version,
+                                id: pageItemId,
                                 version: hit._source.version,
+                                container: hit._source.container,
                                 updatedText: hit._source.version === 1 ? "Creation" : "Updated " + hit._source.update,
                                 updatedBy: DOMPurify.sanitize(hit._source.displayName ? hit._source.displayName : hit._source.updatedBy),
                                 updatedTime,
                                 updatedTimeStamp: updatedTime.charAt(updatedTime.length - 1) === 'o' ? timeToString(hit._source.createdTime) : ''
-
                             }
                             return payload;
                         });

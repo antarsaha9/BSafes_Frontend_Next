@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
+import { useSearchParams } from 'next/navigation'
+
 import Container from 'react-bootstrap/Container'
 
 import format from "date-fns/format";
@@ -19,6 +21,7 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     const dispatch = useDispatch();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [containerCleared, setContainerCleared] = useState(false);
 
@@ -110,8 +113,14 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     useEffect(()=>{
       if(pageItemId) {
+          const version = searchParams.get('version');
+    
           debugLog(debugOn, "Dispatch getPageItemThunk ...");
-          dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
+          const payload = { itemId: pageItemId, navigationInSameContainer };
+          if(version) {
+            payload.version = parseInt(version);
+          } 
+          dispatch(getPageItemThunk(payload));
       }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pageItemId]);
