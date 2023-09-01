@@ -21,6 +21,7 @@ import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from ".
 import { getItemLink } from "../lib/bSafesCommonUI";
 export default function ItemTopRows() {
     const dispatch = useDispatch();
+    const router = useRouter();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
@@ -53,6 +54,11 @@ export default function ItemTopRows() {
         setVersionsHistoryModalOpened(true);
         dispatch(clearItemVersions());
         dispatch(getItemVersionsHistoryThunk({page:1}));
+    }
+
+    const handleLinkChanged = (link) => {
+        router.push(link);
+        setVersionsHistoryModalOpened(false);
     }
 
     useEffect(()=>{
@@ -97,14 +103,15 @@ export default function ItemTopRows() {
                     <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
             </Row>}
-            <VersionsHistoryModal versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
+            <VersionsHistoryModal onLinkChanged={handleLinkChanged} versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
         </Container>
     )
 }
 
-function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
-    const dispatch = useDispatch();
+function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, closeVersionsHistoryModal }) {
 
+    const dispatch = useDispatch();
+    
     const itemVersions = useSelector(state => state.page.itemVersions);
     const totalVersions = useSelector(state => state.page.totalVersions);
     const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
@@ -114,6 +121,14 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
         dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
     }
     
+    const handleVersionSelected = (link) => {
+        onLinkChanged(link);
+    }
+
+    const itemVersionCards = itemVersions.map((itemVersion, index) => 
+        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index===0}/>
+    )
+
     return (
         <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
             <ModalHeader closeButton>
@@ -123,12 +138,7 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
                 </ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <ListGroup>
-                    {itemVersions?.map(ItemVersionCard)}
-                </ListGroup>
-                {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
-                    <a href="#" onClick={handleMoreVersionClick}>More ...</a>
-                </div>} */}
+                {itemVersionCards}
                 { totalVersions> (versionsPageNumber*versionsPerPage) &&
                     <div className='text-center'>
                         <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
@@ -141,13 +151,59 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
     )
 }
 
-function ItemVersionCard({id, container, updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
-    const router = useRouter();
-    const item = {id, container};
-    const link = getItemLink(item) + `?version=${version}`;
+
+if(0) {
+    function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
+        const dispatch = useDispatch();
     
+        const itemVersions = useSelector(state => state.page.itemVersions);
+        const totalVersions = useSelector(state => state.page.totalVersions);
+        const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
+        const versionsPerPage = useSelector(state => state.page.versionsPerPage);
+        
+        const handleMore = (e) => {
+            dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
+        }
+        
+        return (
+            <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
+                <ModalHeader closeButton>
+                    <ModalTitle>
+                        <h4>Versions</h4>
+                        <Button variant="link" href="#" size="sm">Go to top</Button>
+                    </ModalTitle>
+                </ModalHeader>
+                <ModalBody>
+                    <ListGroup>
+                        {itemVersions?.map(ItemVersionCard)}
+                    </ListGroup>
+                    {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
+                        <a href="#" onClick={handleMoreVersionClick}>More ...</a>
+                    </div>} */}
+                    { totalVersions> (versionsPageNumber*versionsPerPage) &&
+                        <div className='text-center'>
+                            <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
+                                More
+                            </Button>
+                        </div>
+                    }
+                </ModalBody>
+            </Modal>
+        )
+    }
+}
+
+
+function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion}) {
+    
+    const item = {id, container};
+    
+    let link = getItemLink(item);
+    if(!latestVersion) {
+        link += `?version=${version}`;
+    }
     const rowClicked = () => {    
-        router.push(link);    
+        onVersionSelected(link);   
     }
 
     return (

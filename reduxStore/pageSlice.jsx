@@ -60,7 +60,7 @@ const initialState = {
     writer: null,
     itemVersions:[],
     totalVersions:0,
-    versionsPerPage: 2,
+    versionsPerPage: 20,
     versionsPageNumber:0,
     newCommentEditorMode: 'ReadOnly',
     comments:[]

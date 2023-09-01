@@ -24,7 +24,7 @@ import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace({readyToList = false}) {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
     const dispatch = useDispatch();
