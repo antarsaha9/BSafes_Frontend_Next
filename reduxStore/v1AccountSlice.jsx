@@ -288,6 +288,7 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             clearLocalCredentials('v1');
             dispatch(loggedOut());
+            localStorage.setItem("authState", null);
             dispatch(cleanMemoryThunk());
             PostCall({
                 api:'/memberAPI/lock'

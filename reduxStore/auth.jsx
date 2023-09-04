@@ -70,9 +70,10 @@ const authSlice = createSlice({
         setDisplayName: (state, action) => {
             state.displayName = action.payload;
         },
-        loggedIn: (state, action) => {
-            state.isLoggedIn = true;
+        loggedIn: (state, action) => {   
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            if(!credentials) return;
+            state.isLoggedIn = true;
             state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
@@ -239,16 +240,19 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const preflightAsyncThunk = () => async (dispatch, getState) => {
+export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.Preflight, () => {
         return new Promise(async (resolve, reject) => {
             dispatch(setNextAuthStep(null));
-            PostCall({
+            const params = {
                 api:'/memberAPI/preflight'
-            }).then( data => {
+            };
+            if(data && data.action) params.body= {action: data.action};
+            PostCall(params).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {
                     if(data.nextStep) {
+                        localStorage.setItem("authState", data.nextStep.step);
                         if(data.nextStep.keyMeta){
                             dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
                             dispatch(setKeyMeta(data.nextStep.keyMeta));

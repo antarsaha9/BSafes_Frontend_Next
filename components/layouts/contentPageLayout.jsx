@@ -121,6 +121,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                             changePage('/v1/keyEnter');
                             break;
                         default:
+                            dispatch(setPreflightReady(false));
+                            dispatch(preflightAsyncThunk({action:'KeyRequired'}));
                     }
                     return;
                 }
