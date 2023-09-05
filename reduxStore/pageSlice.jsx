@@ -1406,12 +1406,14 @@ function createADiaryPage(data) {
     });
 }
 
-function createANewPage(dispatch, state, newPageData, updatedState) {
+function createANewPage(dispatch, getState, pageState, newPageData, updatedState) {
     return new Promise(async (resolve, reject) => {
         let item;
-        if (state.container.substring(0, 1) === 'f') {
+        const workspace = getState().container.workspace;
+        newPageData.space = workspace;
+        if (pageState.container.substring(0, 1) === 'f') {
 
-        } else if (state.container.substring(0, 1) === 'n') {
+        } else if (pageState.container.substring(0, 1) === 'n') {
 
             try {
                 item = await createANotebookPage(newPageData);
@@ -1424,7 +1426,7 @@ function createANewPage(dispatch, state, newPageData, updatedState) {
                 debugLog(debugOn, "createANotebookPage failed: ", error);
                 reject(error);
             }
-        } else if (state.container.substring(0, 1) === 'd') {
+        } else if (pageState.container.substring(0, 1) === 'd') {
             try {
                 item = await createADiaryPage(newPageData);
                 dispatch(newItemCreated({
@@ -1473,7 +1475,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                             tags
                         }
 
-                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
                         reject(error);
@@ -1540,7 +1542,7 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                             titleText
                         }
 
-                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
                         reject(error);
@@ -1783,7 +1785,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                             content
                         }
 
-                        await createANewPage(dispatch, state, newPageData, updatedState);
+                        await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
                         reject(error);
@@ -1972,7 +1974,7 @@ const uploadAnImage = async (dispatch, state, file) => {
     });
 };
 
-const findAnImageByKey = (images, s3Key) => {
+const findImageWordsByKey = (images, s3Key) => {
     if(!images) return null;
     for(let i=0; i< images.length; i++) {
         if(images[i].s3Key === s3Key) {
@@ -2017,7 +2019,8 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
             const images = [];
             for(let i=0; i<state.imagePanels.length; i++) {
                 let image = {s3Key: state.imagePanels[i].s3Key, size: state.imagePanels[i].size};
-                let words = findAnImageByKey(state.itemCopy.images, image.s3Key);
+                let words = null;
+                if(state.itemCopy) words = findImageWordsByKey(state.itemCopy.images, image.s3Key);
                 image.words = words;
                 images.push(image);
             }
@@ -2035,7 +2038,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                         itemKey
                     }
 
-                    await createANewPage(dispatch, state, newPageData, updatedState);
+                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
                     resolve();
                 } catch(error) {
                     reject(error);
@@ -2090,7 +2093,7 @@ export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
+const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey) => {
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
@@ -2221,7 +2224,7 @@ const uploadAnAttachment = (dispatch, state, attachment, workspaceKey) => {
                     let updatedState = {
                     };
 
-                    await createANewPage(dispatch, state, newPageData, updatedState);
+                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
                     resolve();
                 } catch(error) {
                     reject(error);
@@ -2316,7 +2319,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                 console.log("======================= Uploading file: ", `index: ${state.attachmentsUploadIndex} name: ${state.attachmentsUploadQueue[state.attachmentsUploadIndex].file.name}`)
                 attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
                 try {
-                    uploadResult = await uploadAnAttachment(dispatch, state, attachment, workspaceKey);
+                    uploadResult = await uploadAnAttachment(dispatch, getState, state, attachment, workspaceKey);
                     dispatch(attachmentUploaded(uploadResult));
                     state = getState().page;
                 } catch(error) {
