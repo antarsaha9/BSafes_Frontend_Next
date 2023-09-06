@@ -433,6 +433,12 @@
   font-size: 1.1rem;
 }
 
+.titleEditorRow {
+  min-height:36px;
+  overflow-x:auto;
+  font-size: 1.1rem;
+}
+
 /* End of Editor */
 
 /*--****** Image Panel *******/

@@ -86,8 +86,8 @@ export default function ItemTopRows() {
             </Row>
 
             <Row>
-                <Col xs="1">
-                    <label className="pull-right"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                <Col xs="1" className="px-0">
+                    <label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
                 <Col xs="10">
                     {oldVersion?
@@ -150,49 +150,6 @@ function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, close
         </Modal>
     )
 }
-
-
-if(0) {
-    function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
-        const dispatch = useDispatch();
-    
-        const itemVersions = useSelector(state => state.page.itemVersions);
-        const totalVersions = useSelector(state => state.page.totalVersions);
-        const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
-        const versionsPerPage = useSelector(state => state.page.versionsPerPage);
-        
-        const handleMore = (e) => {
-            dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
-        }
-        
-        return (
-            <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
-                <ModalHeader closeButton>
-                    <ModalTitle>
-                        <h4>Versions</h4>
-                        <Button variant="link" href="#" size="sm">Go to top</Button>
-                    </ModalTitle>
-                </ModalHeader>
-                <ModalBody>
-                    <ListGroup>
-                        {itemVersions?.map(ItemVersionCard)}
-                    </ListGroup>
-                    {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
-                        <a href="#" onClick={handleMoreVersionClick}>More ...</a>
-                    </div>} */}
-                    { totalVersions> (versionsPageNumber*versionsPerPage) &&
-                        <div className='text-center'>
-                            <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
-                                More
-                            </Button>
-                        </div>
-                    }
-                </ModalBody>
-            </Modal>
-        )
-    }
-}
-
 
 function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion}) {
     

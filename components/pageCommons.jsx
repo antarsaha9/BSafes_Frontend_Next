@@ -20,7 +20,6 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
-import { pl } from "date-fns/locale";
 
 export default function PageCommons() {
     const debugOn = true;
@@ -36,6 +35,7 @@ export default function PageCommons() {
     const oldVersion = useSelector(state=>state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
+    const titleText = useSelector(state => state.page.titleText);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);

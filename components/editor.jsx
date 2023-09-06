@@ -54,10 +54,11 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 $(editorRef.current).html(content);
                 froalaOptions = {
                     key: froalaKey,
-                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo'],
+                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    //toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         'Georgia,serif': 'Georgia', 'Impact,Charcoal,sans-serif': 'Impact',
@@ -336,17 +337,20 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             {  (showPen)&&(editable)?
                 
                 <Row>
-                    <Col>
-                        <Button variant="link" className="text-dark pull-right" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                    <Col xs={6}>
+                        {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
+                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Content</h6>}
+                    </Col>
+                    <Col xs={6}>
+                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
                     </Col>
                 </Row>
-                
                 :
                 ""
                 
             }
             { ((mode === 'Writing' || mode === 'Saving') || !(hideIfEmpty && (!content || content.length === 0))) &&
-                <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
+                <Row className={`${(editorId ==='title')?BSafesStyle.titleEditorRow:BSafesStyle.editorRow} fr-element fr-view`}>
                     <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
                     </div>
                 </Row>
