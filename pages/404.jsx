@@ -8,8 +8,8 @@ export default function Custom404() {
   useEffect(() => {
     console.log("404: ", window.location.pathname )
    if (pathRegex.test(window.location.pathname)) {
-      console.log("redirect => ", window.location.pathname);
-      Router.replace(window.location.pathname); // Redirect to the right page...
+      console.log("redirect => ", window.location.pathname + window.location.search);
+      Router.replace(window.location.pathname + window.location.search); // Redirect to the right page...
     } else {
       setIsNotFound(true);
     }
