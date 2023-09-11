@@ -93,6 +93,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
         }
         $(editorRef.current).froalaEditor(froalaOptions);
+        editorRef.current.style.overflowX = null;
         if(!editorOn){
             debugLog(debugOn, "setEditorOn")
             setEditorOn(true);
@@ -112,6 +113,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         if(editorOn) {        
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
+            editorRef.current.style.overflowX = 'auto';
             setEditorOn(false);  
             if(readOnlyModeReady) readOnlyModeReady();
         }
@@ -351,7 +353,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             }
             { ((mode === 'Writing' || mode === 'Saving') || !(hideIfEmpty && (!content || content.length === 0))) &&
                 <Row className={`${(editorId ==='title')?BSafesStyle.titleEditorRow:BSafesStyle.editorRow} fr-element fr-view`}>
-                    <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
+                    <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}} style={{overflowX:'auto'}}>
                     </div>
                 </Row>
             }

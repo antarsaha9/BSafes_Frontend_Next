@@ -1662,16 +1662,16 @@ form-data@^4.0.0:
     combined-stream "^1.0.8"
     mime-types "^2.1.12"
 
-"froala-editor@github:froala/wysiwyg-editor#v2.6.5":
+"froala-editor@github:froala/wysiwyg-editor#v2.9.8":
   version "2.6.5"
   resolved "git+ssh://git@github.com/froala/wysiwyg-editor.git#b7c357290f6dcd3043e13f5688dc6701aa35c4bd"
   dependencies:
     font-awesome ">=4.4.0"
     jquery ">=1.11.0"
 
-"froala-editor2.9.8@github:froala/wysiwyg-editor#v2.9.8":
-  version "2.9.8"
-  resolved "git+ssh://git@github.com/froala/wysiwyg-editor.git#5759b5e76c350eed27d72859052ea43411049054"
+"froala-editor2.6.5@github:froala/wysiwyg-editor#v2.6.5":
+  version "2.6.5"
+  resolved "git+ssh://git@github.com/froala/wysiwyg-editor.git#b7c357290f6dcd3043e13f5688dc6701aa35c4bd"
   dependencies:
     font-awesome ">=4.4.0"
     jquery ">=1.11.0"
@@ -2714,11 +2714,6 @@ react-redux@*, "react-redux@^7.2.1 || ^8.0.2", react-redux@^8.0.2:
     hoist-non-react-statics "^3.3.2"
     react-is "^18.0.0"
     use-sync-external-store "^1.0.0"
-
-react-spinners@^0.13.8:
-  version "0.13.8"
-  resolved "https://registry.npmjs.org/react-spinners/-/react-spinners-0.13.8.tgz"
-  integrity sha512-3e+k56lUkPj0vb5NDXPVFAOkPC//XyhKPJjvcGjyMNPWsBKpplfeyialP74G7H7+It7KzhtET+MvGqbKgAqpZA==
 
 react-tagsinput-special@^1.6.0:
   version "1.6.0"
