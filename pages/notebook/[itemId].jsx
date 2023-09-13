@@ -37,6 +37,7 @@ export default function Notebook() {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector( state => state.page.activity);
+    const activityErrors = useSelector( state => state.page.activityErrors);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
@@ -111,16 +112,14 @@ export default function Notebook() {
     }
 
     useEffect(() => {
-        if(activity === "Done") {
-            if(editingEditorId) {
+        if(activity === 0) {
+            if((activityErrors === 0) && editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
-            }
-        } else if (activity === "Error") {
-            if(editingEditorId) {
+            } else if(editingEditorId) {
                 setEditingEditorMode("Writing");
             }
-        }
+        } 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
@@ -141,7 +140,7 @@ export default function Notebook() {
                                     <br />
                                     <Row className="justify-content-center">
                                         <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
                                         </Col> 
                                     </Row>
                                     <br />
