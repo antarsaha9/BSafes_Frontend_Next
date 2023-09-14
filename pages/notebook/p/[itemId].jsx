@@ -92,7 +92,7 @@ export default function NotebookPage() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             const pageNumber = itemId.split(':').pop();
             gotoAnotherPage(pageNumber);
         } catch(error) {
@@ -102,7 +102,7 @@ export default function NotebookPage() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             const pageNumber = itemId.split(':').pop();
             gotoAnotherPage(pageNumber);
         } catch(error) {

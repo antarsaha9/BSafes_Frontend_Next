@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
@@ -27,6 +26,7 @@ import { getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI"
 export default function FolderPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
+    const dispatch = useDispatch();
 
     const router = useRouter();
     
@@ -54,7 +54,7 @@ export default function FolderPage() {
         switch (anotherPageNumber) {
             case '-1':
                 try{
-                    result = await gotoAnotherFolderPage('getPreviousFolderPage', container, position);
+                    result = await gotoAnotherFolderPage('getPreviousFolderPage', container, position, dispatch);
                     if (result === 'EndOfFolder') {
                         nextPageId = `/folder/contents/${container}`; 
                     } else {
@@ -66,7 +66,7 @@ export default function FolderPage() {
                 break;
             case '+1':
                 try{
-                    result = await gotoAnotherFolderPage('getNextFolderPage', container, position);
+                    result = await gotoAnotherFolderPage('getNextFolderPage', container, position, dispatch);
                     if (result === 'EndOfFolder') {
                         alert('End of folder');
                     } else {
@@ -110,7 +110,7 @@ export default function FolderPage() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);
@@ -122,7 +122,7 @@ export default function FolderPage() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);

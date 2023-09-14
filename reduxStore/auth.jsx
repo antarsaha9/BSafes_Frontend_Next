@@ -123,6 +123,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                 PostCall({
                     api:'/keySetup',
                     body: credentials.keyPack,
+                    dispatch
                 }).then( data => {
                     debugLog(debugOn, data);
                     if(data.status === 'ok') {
@@ -132,11 +133,14 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                         saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                 
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                        resolve();
                     } else {
                         debugLog(debugOn, "woo... failed to create an account:", data.error);
+                        reject();
                     }
                 }).catch( error => {
                     debugLog(debugOn, "woo... failed to create an account.")
+                    reject(error);
                 })
             }
         });
@@ -153,6 +157,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                 PostCall({
                     api:'/logIn',
                     body: credentials.keyPack,
+                    dispatch
                 }).then( data => {
                     debugLog(debugOn, data);
                     if(data.status !== 'ok') {
@@ -185,6 +190,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         PostCall({
                             api:'/memberAPI/verifyChallenge',
                             body: { signature },
+                            dispatch
                         }).then( data => {
                             if(data.status == "ok") {
                                 debugLog(debugOn, "Logged in.");
@@ -222,7 +228,8 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
             dispatch(loggedOut());
             dispatch(cleanMemoryThunk());
             PostCall({
-                api:'/memberAPI/logOut'
+                api:'/memberAPI/logOut',
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {
@@ -245,7 +252,8 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             dispatch(setNextAuthStep(null));
             const params = {
-                api:'/memberAPI/preflight'
+                api:'/memberAPI/preflight',
+                dispatch
             };
             if(data && data.action) params.body= {action: data.action};
             PostCall(params).then( data => {

@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { createWrapper } from 'next-redux-wrapper'
 
+import accountSlice, {accountReducer} from './accountSlice';
 import scriptsSlice, { scriptsReducer } from './scriptsSlice';
 import stylesheetsSlice, { stylesheetsReducer } from './stylesheetsSlice';
 import authSlice, {authReducer} from './auth';
@@ -8,6 +9,7 @@ import containerSlice, {containerReducer} from './containerSlice';
 import pageSlice, {pageReducer} from './pageSlice';
 import teamSlice, {teamReducer} from './teamSlice';
 import v1AccountSlice, { v1AccountReducer } from './v1AccountSlice';
+
 
 const reduxStore = configureStore({
     reducer: {
@@ -17,7 +19,8 @@ const reduxStore = configureStore({
         [containerSlice.name]: containerReducer,
         [pageSlice.name]: pageReducer,
         [teamSlice.name]: teamReducer,
-        [v1AccountSlice.name]: v1AccountReducer
+        [v1AccountSlice.name]: v1AccountReducer,
+        [accountSlice.name]:accountReducer
     },
     devTools: true,
     middleware: (getDefaultMiddleware) =>

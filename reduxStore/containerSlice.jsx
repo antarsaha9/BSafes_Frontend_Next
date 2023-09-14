@@ -319,7 +319,8 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
             addActionOptions.space = workspace;
             PostCall({
                 api:'/memberAPI/' + addAction,
-                body: addActionOptions
+                body: addActionOptions,
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {
@@ -456,7 +457,8 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
 
             PostCall({
                 api:'/memberAPI/listItems',
-                body
+                body,
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -490,7 +492,8 @@ export const listContainersThunk = (data) => async (dispatch, getState) => {
                     boxOnly: data.boxOnly,
                     from: (pageNumber - 1) * state.containersPerPage,
                     size: state.containersPerPage
-                }
+                },
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -533,7 +536,8 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
             }
             PostCall({
                 api:'/memberAPI/search',
-                body
+                body,
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -553,13 +557,14 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const getFirstItemInContainer = async (container) => {
+export const getFirstItemInContainer = async (container, dispatch) => {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api:'/memberAPI/getFirstItemInContainer',
             body: {
                 container
-            }
+            },
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {                                  
@@ -579,13 +584,14 @@ export const getFirstItemInContainer = async (container) => {
     });
 }
 
-export const getLastItemInContainer = async (container) => {
+export const getLastItemInContainer = async (container, dispatch) => {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api:'/memberAPI/getLastItemInContainer',
             body: {
                 container
-            }
+            },
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {                                  
@@ -595,22 +601,23 @@ export const getLastItemInContainer = async (container) => {
                 }
                 resolve(itemId);
             } else {
-                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                debugLog(debugOn, "getLastItemInContainer failed: ", data.error);
                 reject(data.error);
             }
         }).catch( error => {
-            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
-            reject("getFirstItemInContainer failed!");
+            debugLog(debugOn, "getLastItemInContainer failed: ", error)
+            reject("getLastItemInContainer failed!");
         })
     });
 }
 
-function dropAnItem(api, payload) {
+function dropAnItem(api, payload, dispatch) {
     
     return new Promise(async (resolve, reject) => {
         PostCall({
             api,
-            body: payload
+            body: payload,
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -683,7 +690,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                     itemPayload.targetContainersPath = payload.targetContainersPath;
                 }
                 try {
-                    await dropAnItem(api, itemPayload);
+                    await dropAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     dispatch(completedMovingAnItem(item));
                     switch(action) {
@@ -711,11 +718,12 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-function trashAnItem(api, payload) {
+function trashAnItem(api, payload, dispatch) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api,
-            body: payload
+            body: payload,
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -760,7 +768,7 @@ export const trashItemsThunk = (data) => async (dispatch, getState) => {
                 }
 
                 try {
-                    await trashAnItem(api, itemPayload);
+                    await trashAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
@@ -790,7 +798,8 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
                 api:'/memberAPI/getTrashBox',
                 body:{
                     teamSpace:state.workspace
-                }
+                },
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -811,11 +820,12 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-function emptyATrashBoxItem(api, payload) {
+function emptyATrashBoxItem(api, payload, dispatch) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api,
-            body: payload
+            body: payload,
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -865,7 +875,7 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
                 }
 
                 try {
-                    await emptyATrashBoxItem(api, itemPayload);
+                    await emptyATrashBoxItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
@@ -884,11 +894,12 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-function restoreAnItemFromTrash(api, payload) {
+function restoreAnItemFromTrash(api, payload, dispatch) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api,
-            body: payload
+            body: payload,
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -940,7 +951,7 @@ export const restoreItemsFromTrashThunk = (data) => async (dispatch, getState) =
                 }
 
                 try {
-                    await restoreAnItemFromTrash(api, itemPayload);
+                    await restoreAnItemFromTrash(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
@@ -971,7 +982,8 @@ export const listActivitiesThunk = (data) => async (dispatch, getState) => {
                     space: state.workspace,
                     size: state.itemsPerPage,
                     from: (pageNumber - 1) * state.itemsPerPage,
-                }
+                },
+                dispatch
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {

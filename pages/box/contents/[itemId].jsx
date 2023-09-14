@@ -86,7 +86,7 @@ export default function BoxContents() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/${itemId}`;
                 router.push(newLink);
@@ -98,7 +98,7 @@ export default function BoxContents() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/${itemId}`;
                 router.push(newLink);

@@ -104,7 +104,7 @@ export default function NotebookContents() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/notebook/p/${itemId}`;
             router.push(newLink);
         } catch(error) {
@@ -114,7 +114,7 @@ export default function NotebookContents() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/notebook/p/${itemId}`;
             router.push(newLink);
         } catch(error) {

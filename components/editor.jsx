@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -20,6 +20,8 @@ import { rotateImage } from '../lib/wnImage';
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null}) {
     const debugOn = false;    
+    const dispatch = useDispatch();
+
     const editorRef = useRef(null);
 
     const expandedKey = useSelector( state => state.auth.expandedKey);
@@ -186,7 +188,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const bSafesPreflightHook = (fn) => {
         debugLog(debugOn, "bSafesPreflight");
         PostCall({
-            api:'/memberAPI/preflight'
+            api:'/memberAPI/preflight',
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -234,6 +237,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return new Promise( async (resolve, reject) => {
             PostCall({
                 api:'/memberAPI/preS3Upload',
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {  
@@ -262,7 +266,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                   itemId,
                   chunkIndex: chunkIndex.toString(),
                   timeStamp: timeStamp
-              }
+              },
+              dispatch
             }).then( data => {
               debugLog(debugOn, data);
               if(data.status === 'ok') {   
@@ -286,7 +291,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             s3Object.keyEnvelope = forge.util.encode64(s3Object.keyEnvelope);
             PostCall({
                 api:'/memberAPI/postS3Upload',
-                body: s3Object
+                body: s3Object,
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  

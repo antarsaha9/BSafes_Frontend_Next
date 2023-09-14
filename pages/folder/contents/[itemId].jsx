@@ -83,7 +83,7 @@ export default function FolderContents() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);
@@ -95,7 +95,7 @@ export default function FolderContents() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);

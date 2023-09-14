@@ -88,6 +88,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
             PostCall({
                 api:'/nicknameSignIn',
                 body: {nickname},
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
@@ -124,6 +125,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                     username,
                     password
                 },
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
@@ -159,6 +161,7 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
                 body: {
                     token
                 },
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
@@ -220,6 +223,7 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
                 body: {
                     keyHash
                 },
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 
@@ -253,6 +257,7 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
                     PostCall({
                         api:'/memberAPI/verifyV1Challenge',
                         body: { signature },
+                        dispatch
                     }).then( data => {
                         if(data.status == "ok") {  
                             credentials.memberId = data.memberId;
@@ -291,7 +296,8 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
             localStorage.setItem("authState", null);
             dispatch(cleanMemoryThunk());
             PostCall({
-                api:'/memberAPI/lock'
+                api:'/memberAPI/lock',
+                dispatch
             }).then( data => {
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to lock.")
@@ -317,7 +323,8 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
             dispatch(loggedOut());
 
             PostCall({
-                api:'/memberAPI/signOut'
+                api:'/memberAPI/signOut',
+                dispatch
             }).then( data => {
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to signout.")

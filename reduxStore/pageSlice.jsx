@@ -698,7 +698,7 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
 
             try {
                 dispatch(downloadingContentImage({itemId, progress:5}));    
-                const signedURL = await preS3Download(state.id, s3Key);
+                const signedURL = await preS3Download(state.id, s3Key, dispatch);
                 dispatch(downloadingContentImage({itemId, progress:10}));
 
                 const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);                          
@@ -766,6 +766,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 PostCall({
                     api:'/memberAPI/getPageItem',
                     body: {itemId: containerId},
+                    dispatch
                 }).then( result => {
                     if(result.status === 'ok') {    
                         debugLog(debugOn, "getContainerData: ", result);
@@ -796,6 +797,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
             PostCall({
                 api:'/memberAPI/getPageItem',
                 body: payload,
+                dispatch
             }).then( async result => {
                 debugLog(debugOn, result);
                 state = getState().page;
@@ -901,6 +903,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 PostCall({
                     api:'/memberAPI/getItemPath',
                     body: {itemId},
+                    dispatch
                 }).then( result => {
                     debugLog(debugOn, result);
                     if(result.status === 'ok') {    
@@ -940,7 +943,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
 
                     try {
                         dispatch(downloadingImage({itemId, progress:5}));
-                        const signedURL = await preS3Download(state.id, s3Key);
+                        const signedURL = await preS3Download(state.id, s3Key, dispatch);
                         dispatch(downloadingImage({itemId, progress:10}));
                         const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);                          
                         debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
@@ -1026,6 +1029,7 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                     size: state.versionsPerPage,
                     from: (data.page-1)*state.versionsPerPage,
                 },
+                dispatch
             }).then(result => {
                 debugLog(debugOn, result);
                 if (result.status === 'ok') {
@@ -1234,7 +1238,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                     debugLog(debugOn, "downloadDecryptAndAssemble", chunkIndex);
                     return new Promise(async (resolve, reject) => {
                         try {
-                            let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false);
+                            let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false, dispatch);
                             let response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex*100/numberOfChunks, 1/numberOfChunks, indexInVideoDownloadQueue);                          
                             debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                             if(state.activeRequest !== itemId) {
@@ -1271,7 +1275,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
 
                 try {
                     dispatch(downloadingContentVideo({itemId, progress:5}));
-                    const signedURL = await preS3Download(state.id, s3Key);
+                    const signedURL = await preS3Download(state.id, s3Key, dispatch);
                     dispatch(downloadingContentVideo({itemId, progress:10}));
                     const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentVideo)                          
                     debugLog(debugOn, "downloadAVideo completed. Length: ", response.byteLength);
@@ -1313,7 +1317,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
     });
 }
 
-async function createNewItemVersion(itemCopy) {
+async function createNewItemVersion(itemCopy, dispatch) {
     return new Promise( (resolve, reject) => {
         itemCopy.version = itemCopy.version + 1;
         debugLog(debugOn, "item copy version: ", itemCopy.version);
@@ -1323,7 +1327,8 @@ async function createNewItemVersion(itemCopy) {
             body: {
                 itemId: itemCopy.id,
                 itemVersion: JSON.stringify(itemCopy)
-            }
+            },
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -1341,10 +1346,10 @@ async function createNewItemVersion(itemCopy) {
 };
 
 
-function createNewItemVersionForPage(itemCopy) {
+function createNewItemVersionForPage(itemCopy, dispatch) {
     return new Promise(async (resolve, reject) => {
         try {
-            const data = await createNewItemVersion(itemCopy);
+            const data = await createNewItemVersion(itemCopy, dispatch);
             if (data.status === 'ok') {
                 const usage = JSON.parse(data.usage);
                 itemCopy.usage = usage;
@@ -1360,11 +1365,12 @@ function createNewItemVersionForPage(itemCopy) {
     })
 };
 
-function createANotebookPage(data) {
+function createANotebookPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api:'/memberAPI/createANotebookPage',
-            body: data
+            body: data,
+            dispatch
         }).then( result => {
             debugLog(debugOn, result);
 
@@ -1383,11 +1389,12 @@ function createANotebookPage(data) {
     });
 }
 
-function createADiaryPage(data) {
+function createADiaryPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
         PostCall({
             api:'/memberAPI/createADiaryPage',
-            body: data
+            body: data,
+            dispatch
         }).then( result => {
             debugLog(debugOn, result);
 
@@ -1416,7 +1423,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         } else if (pageState.container.substring(0, 1) === 'n') {
 
             try {
-                item = await createANotebookPage(newPageData);
+                item = await createANotebookPage(newPageData, dispatch);
                 dispatch(newItemCreated({
                     ...updatedState,
                     itemCopy: item
@@ -1428,7 +1435,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
             }
         } else if (pageState.container.substring(0, 1) === 'd') {
             try {
-                item = await createADiaryPage(newPageData);
+                item = await createADiaryPage(newPageData, dispatch);
                 dispatch(newItemCreated({
                     ...updatedState,
                     itemCopy: item
@@ -1493,7 +1500,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     itemCopy.tagsTokens = tagsTokens;
                     itemCopy.update = "tags";
             
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy,
                         tags
@@ -1558,7 +1565,7 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                     itemCopy.titleTokens = titleTokens;
                     itemCopy.update = "title";
             
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy,
                         title,
@@ -1722,7 +1729,8 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                             api:'/memberAPI/preS3Upload',
                             body:{
                                 type: 'content'
-                            }
+                            },
+                            dispatch
                         }).then( data => {
                             debugLog(debugOn, data);
                             if(data.status === 'ok') {  
@@ -1803,7 +1811,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
 	                itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
             
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy,
                         content
@@ -1855,6 +1863,7 @@ const uploadAnImage = async (dispatch, state, file) => {
                         return new Promise( async (resolve, reject) => {
                             PostCall({
                                 api:'/memberAPI/preS3Upload',
+                                dispatch
                             }).then( data => {
                                 debugLog(debugOn, data);
                                 if(data.status === 'ok') {  
@@ -2050,7 +2059,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 try {
                     itemCopy.images = images;
                     itemCopy.update = "images";    
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy
                     }));
@@ -2076,7 +2085,7 @@ export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
                 
                 itemCopy.images = newImages;
                 itemCopy.update = "images";    
-                await createNewItemVersionForPage(itemCopy);
+                await createNewItemVersionForPage(itemCopy, dispatch);
                 
                 imagePanels = state.imagePanels.filter((panel)=> {
                     return data.panel.s3Key !== panel.s3Key; 
@@ -2145,7 +2154,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
 
                 return new Promise(async (resolve, reject) => {
                     try {
-                        result = await preS3ChunkUpload(state.id, index, timeStamp);
+                        result = await preS3ChunkUpload(state.id, index, timeStamp, dispatch);
                         fileUploadProgress = index*(100/numberOfChunks) + 15/numberOfChunks;
                         debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
                         dispatch(uploadingAttachment(fileUploadProgress));
@@ -2248,7 +2257,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                 try {
                     itemCopy.attachments = newAttachments;
                     itemCopy.update = "attachments";    
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy
                     }));
@@ -2460,7 +2469,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
                 try {
-                    result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired);
+                    result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
                     const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex*100/numberOfChunks, 1/numberOfChunks);                          
                     debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                     if(state.activeRequest !== itemId) {
@@ -2579,7 +2588,7 @@ export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
                 
                 itemCopy.attachments = newAttachments;
                 itemCopy.update = "attachments";    
-                await createNewItemVersionForPage(itemCopy);
+                await createNewItemVersionForPage(itemCopy, dispatch);
                 
                 attachmentPanels = state.attachmentPanels.filter((panel)=> {
                     return data.panel.s3KeyPrefix !== panel.s3KeyPrefix; 
@@ -2622,7 +2631,7 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
                     }
                     imagePanels[index].words = content;
                     
-                    await createNewItemVersionForPage(itemCopy);
+                    await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy,
                         imagePanels
@@ -2650,6 +2659,7 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                     size: 10,
                     from: 0,
                 },
+                dispatch
             }).then(result => {
                 debugLog(debugOn, result);
                 state = getState().page;
@@ -2727,7 +2737,8 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                             body: {
                                 itemId,
                                 content: encryptedComment,
-                            }
+                            },
+                            dispatch
                         }).then(function (data) {
                             if (data.status === 'ok') {
                                 const payload = {
@@ -2754,7 +2765,8 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                                 itemId,
                                 commentId: commentId,
                                 content: encryptedComment,
-                            }
+                            },
+                            dispatch
                         }).then(function (data) {
                             if (data.status === 'ok') {                               
                                 dispatch(commentUpdated({commentIndex, content, lastUpdateTime: data.lastUpdateTime}));
