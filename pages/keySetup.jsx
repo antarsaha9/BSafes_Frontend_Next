@@ -41,7 +41,7 @@ export default function KeySetup() {
     }
 
     return (
-        <ContentPageLayout> 
+        <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>

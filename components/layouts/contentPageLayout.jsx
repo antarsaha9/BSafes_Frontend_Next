@@ -27,6 +27,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const [nextRoute, setNextRoute] = useState(null);
     
+    const accountActivity = useSelector( state => state.account.activity);
     const authActivity = useSelector( state => state.auth.activity);
     const v1AccountActivity = useSelector (state => state.v1Account.activity);
     const teamsActivity = useSelector (state => state.team.activity);
@@ -147,13 +148,13 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     }
                 } else {
                     const path = router.asPath;
-                    if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
+                    if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
                         changePage('/');
                     } 
                 }
             } else {
                 const path = router.asPath;
-                if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (!path.startsWith('/n/')))) {
+                if((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
                     changePage('/');
                 } 
             }
@@ -238,7 +239,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     
     return (
         <div>
-            { ( (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
+            { ( (accountActivity !==0 ) || (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
                 <div className={BSafesStyle.screenCenter}>
                     <Blocks
                         visible={true}
