@@ -328,7 +328,7 @@ export default function PageCommons() {
     }
 
     const handleDrag = (e) => {
-        debugLog(debugOn, "handleDrag");
+        debugLog(debugOn, "handleDrag", e.type);
         e.preventDefault();
         e.stopPropagation();
         if (e.type === "dragenter" || e.type === "dragover") {      
@@ -349,12 +349,20 @@ export default function PageCommons() {
           // handleFiles(e.dataTransfer.files);
             if(e.target.id === 'images') {
                 const imageType = /image.*/;
-                const file = e.dataTransfer.files[0];
-                if (!file.type.match(imageType)) {
-                    debugLog(debugOn, "Not an image.");
+                const images = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(imageType)) {
+                        debugLog(debugOn, "Not an image.");
+                    }
+                    else images.push(file);
                 }
-            } else {
-
+                uploadImages(images, 'top');
+            } else if (e.target.id === 'attachments') {
+                const attachments = [];
+                for(const file of e.dataTransfer.files) {
+                    attachments.push(file);
+                }
+                uploadAttachments(attachments, 'top');
             }
         }
     };
