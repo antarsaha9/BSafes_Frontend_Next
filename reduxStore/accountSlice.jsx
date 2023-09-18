@@ -14,10 +14,10 @@ const accountSlice = createSlice({
     name: "account",
     initialState: initialState,
     reducers: {
-        apiCall: (state, action) => {
+        showApiActivity: (state, action) => {
             state.activity |= accountActivity.apiCall;
         },
-        apiEnd: (state, action) => {
+        hideApiActivity: (state, action) => {
             state.activity &= ~accountActivity.apiCall;
         },
         incrementAPICount: (state, action) => {
@@ -26,7 +26,7 @@ const accountSlice = createSlice({
     }
 });
 
-export const {apiCall, apiEnd, incrementAPICount}  = accountSlice.actions;
+export const {showApiActivity, hideApiActivity, incrementAPICount}  = accountSlice.actions;
 
 export const accountReducer = accountSlice.reducer;
 
