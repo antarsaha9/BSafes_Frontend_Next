@@ -77,6 +77,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const checkIfPublicOrAuthPages = (path) => {
         return (path === '/' || 
             path === '/logIn' ||
+            path === '/keySetup' ||
             path.startsWith('/n/') ||
             path.startsWith('/v1/' ||
             path.startsWith('/v3'))); 
