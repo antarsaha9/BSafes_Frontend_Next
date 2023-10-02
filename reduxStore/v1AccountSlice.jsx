@@ -103,7 +103,7 @@ export const nicknameSignInAsyncThunk = (data) => async (dispatch, getState) => 
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "nicknameSignIn failed: ", error)
-                reject("NicknameSignInError");
+                reject("Failed to sign in with nickname.");
             })
         });s
     })
@@ -129,8 +129,8 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
-                    debugLog(debugOn, "woo... failed to login.")
-                    reject('InvalidMember');
+                    debugLog(debugOn, "Failed to authenticate.")
+                    reject('Failed to authenticate.');
                     return;
                 }    
                 
@@ -145,7 +145,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "AuthenticateManagedMember failed: ", error)
-                reject('InvalidMember');
+                reject('Failed to authenticate.');
             })
         });
     });
@@ -166,7 +166,7 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, data);
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to verify MFA.")
-                    reject('InvalidMFA');
+                    reject('Failed to verify MFA.');
                     return;
                 }    
                 localStorage.setItem("MFAPassed", 'true');
@@ -180,7 +180,7 @@ export const verifyMFAAsyncThunk = (data) => async (dispatch, getState) => {
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "verifyMFAToken failed: ", error)
-                reject('InvalidMFA');
+                reject('Failed to verify MFA.');
             })
         })
     });
@@ -229,7 +229,7 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
                 
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to verify keyHash.")
-                    reject('InvalidKeyHash');
+                    reject('Failed to verify key hash.');
                     return;
                 }    
                 
@@ -270,18 +270,18 @@ export const verifyKeyHashAsyncThunk = (data) => async (dispatch, getState) => {
                             resolve();
                         } else {
                             debugLog(debugOn, "woo... failed to verify challenge: ", data.error);
-                            reject("FailedChallenge");
+                            reject("Challenge failed.");
                         }
                     }).catch( error => {
                         debugLog(debugOn, "woo... failed to verify challenge.");
-                        reject("FailedChallenge");
+                        reject("Challenge failed.");
                     })
                 } 
                     
                 verifyV1Challenge();
             }).catch( error => {
                 debugLog(debugOn, "verifyKeyHash failed: ", error)
-                reject('InvalidKeyHash');
+                reject('Failed to verify key hash.');
             })
         });
     });
@@ -301,7 +301,7 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
             }).then( data => {
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to lock.")
-                    reject('LockFailed');
+                    reject('Failed to lock.');
                     return;
                 }    
                 localStorage.setItem("authState", data.nextStep.step);
@@ -309,7 +309,7 @@ export const lockAsyncThunk = (data) => async (dispatch, getState) => {
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "lock failed: ", error)
-                reject('LockFailed');
+                reject('Failed to lock.');
             }) 
         })
     })
@@ -328,14 +328,14 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
             }).then( data => {
                 if(data.status !== 'ok') {
                     debugLog(debugOn, "woo... failed to signout.")
-                    reject('SignOutFailed');
+                    reject('Failed to sign out.');
                     return;
                 }    
                 dispatch(setNextAuthStep(null));
                 resolve();
             }).catch( error => {
                 debugLog(debugOn, "lock failed: ", error)
-                reject('LockFailed');
+                reject('Failed to sign out.');
             }) 
             localStorage.clear();
             dispatch(cleanMemoryThunk());

@@ -774,11 +774,11 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             resolve(result.item);
                         } else {
                             debugLog(debugOn, "woo... failed to get the container data!", data.error);
-                            reject("woo... failed to get the container data!");
+                            reject("Failed to get the container data.");
                         }
                     } else {
                         debugLog(debugOn, "woo... failed to get the container data!", data.error);
-                        reject("woo... failed to get the container data!");
+                        reject("Failed to get the container data.");
                     }
                 });
             });
@@ -878,19 +878,19 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                     reject("Aborted");
                                 }
                             } catch(error) {
-                                reject("woo... failed to get the container data!");
+                                reject("Failed to get the container data!");
                             }
                         } else {
-                            reject("woo... failed to get a page item!!!");
+                            reject("Failed to get a page item!!!");
                         }
                     }
                 } else {
                     debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
-                    reject("woo... failed to get a page item!");
+                    reject("Failed to get a page item.");
                 }
             }).catch( error => {
                 debugLog(debugOn, "woo... failed to get a page item:", error)
-                reject("woo... failed to get a page item!");
+                reject("Failed to get a page item.");
             })
 
             function getItemPath() {
@@ -978,7 +978,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
 
                     } catch(error) {
                         debugLog(debugOn, 'downloadFromS3 error: ', error)
-                        reject(error);
+                        reject("Failed to download an image.");
                     }
                 });
             }
@@ -1051,15 +1051,15 @@ export const getItemVersionsHistoryThunk = (data) => async (dispatch, getState) 
                         dispatch(itemVersionsFetched({page:data.page, total: result.hits.total, modifiedHits}));
                         resolve();
                     } else {
-                        reject("woo... failed to get a item version history!");
+                        reject("Failed to get the item version history!");
                     }
                 } else {
                     debugLog(debugOn, "woo... failed to get a item version history!", data.error);
-                    reject("woo... failed to get a item version history!");
+                    reject("Failed to get the item version history!");
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... failed to get a item version history.", error)
-                reject("woo... failed to get a item version history!");
+                reject("Failed to get the item version history!");
             })
         });
     });
@@ -1260,7 +1260,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
                         } catch(error) {
                             debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
                             writeAChunkToFileFailed(chunkIndex);
-                            reject(error);
+                            reject("downloadDecryptAndAssemble error.");
                         }
                     });
                 }
@@ -1296,7 +1296,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
 
                 } catch(error) {
                     debugLog(debugOn, 'downloadFromS3 error: ', error)
-                    reject(error);
+                    reject("Failed to download and decrypt a video chunk.");
                 }
             }
         });
@@ -1311,7 +1311,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
             await downloadAVideo(video, indexInVideoDownloadQueue);
             resolve();
         } catch(error) {
-            reject();
+            reject("Failed to download a video.");
         }
         
     });
@@ -1336,11 +1336,11 @@ async function createNewItemVersion(itemCopy, dispatch) {
                 resolve(data)
             } else {
                 debugLog(debugOn, `createNewItemVersion failed: `, data.error)
-                reject(data.error);
+                reject("Failed to create a new item version.");
             } 
         }).catch( error => {
             debugLog(debugOn,  `createNewItemVersion failed.`)
-            reject(error);
+            reject("Failed to create a new item version.");
         })
     });
 };
@@ -1379,11 +1379,11 @@ function createANotebookPage(data, dispatch) {
                     resolve(result.item);
                 } else {
                     debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                    reject("woo... failed to create a notebook page!");
+                    reject("Failed to create a notebook page!");
                 }
             } else {
                 debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                reject("woo... failed to create a notebook page!");
+                reject("Failed to create a notebook page!");
             }
         });
     });
@@ -1403,11 +1403,11 @@ function createADiaryPage(data, dispatch) {
                     resolve(result.item);
                 } else {
                     debugLog(debugOn, "woo... failed to create a diary page!", data.error);
-                    reject("woo... failed to create a diary page!");
+                    reject("Failed to create a diary page!");
                 }
             } else {
                 debugLog(debugOn, "woo... failed to create a diary page!", data.error);
-                reject("woo... failed to create a diary page!");
+                reject("Failed to create a diary page!");
             }
         });
     });
@@ -1431,7 +1431,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
                 resolve();
             } catch (error) {
                 debugLog(debugOn, "createANotebookPage failed: ", error);
-                reject(error);
+                reject("Failed to create a notebook page.");
             }
         } else if (pageState.container.substring(0, 1) === 'd') {
             try {
@@ -1443,7 +1443,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
                 resolve();
             } catch (error) {
                 debugLog(debugOn, "createADiaryPage failed: ", error);
-                reject(error);
+                reject("Failed to create a diary page.");
             }       
         }
     });
@@ -1485,7 +1485,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
-                        reject(error);
+                        reject("Failed to create a new page with tags.");
                     }       
 
                 } else {
@@ -1508,7 +1508,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     resolve();
                 }
             } catch (error) {
-                reject();
+                reject("Failed to save tags.");
             }
         });
     })
@@ -1552,7 +1552,7 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
-                        reject(error);
+                        reject("Failed to create a new page with title.");
                     }   
                 } else {
                     encryptedTitle = encryptBinaryString(encodedTitle, state.itemKey);
@@ -1574,7 +1574,7 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                     resolve();
                 }
             } catch (error) {
-                reject();
+                reject("Failed to save title.");
             }
 
         });
@@ -1739,11 +1739,11 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                                 resolve();
                             } else {
                                 debugLog(debugOn, "preS3Upload failed: ", data.error);
-                                reject(data.error);
+                                reject("preS3Upload error.");
                             }
                         }).catch( error => {
                             debugLog(debugOn, "preS3Upload failed: ", error)
-                            reject("preS3Upload failed:!");
+                            reject("preS3Upload error.");
                         })
                     });
                 };
@@ -1763,7 +1763,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                         resolve(); 
                     } catch (error) {
                         debugLog(debugOn, "uploadContentToS3 failed: ", error);
-                        reject(error);
+                        reject("uploadContentToS3 error.");
                     }
                 }); 
             }
@@ -1796,7 +1796,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch(error) {
-                        reject(error);
+                        reject("Failed to create a new page with content.");
                     }   
                 } else {
                     encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
@@ -1820,7 +1820,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                 }
             } catch (error) {
                 alert('error');
-                reject();
+                reject("Failed to save content.");
             }
 
         });
@@ -1841,7 +1841,7 @@ const uploadAnImage = async (dispatch, state, file) => {
                 resolve(encryptedStr);
             } catch(error) {
                 debugLog(debugOn, "_downScaleImage failed: ", error);
-                reject(error);
+                reject("_downScaleImage error.");
             }                   
         });
     };
@@ -1874,11 +1874,11 @@ const uploadAnImage = async (dispatch, state, file) => {
                                     resolve();
                                 } else {
                                     debugLog(debugOn, "preS3Upload failed: ", data.error);
-                                    reject(data.error);
+                                    reject("preS3Upload error.");
                                 }
                             }).catch( error => {
                                 debugLog(debugOn, "preS3Upload failed: ", error)
-                                reject("preS3Upload failed:!");
+                                reject("preS3Upload error.");
                             })
                         });
                     };
@@ -1939,7 +1939,7 @@ const uploadAnImage = async (dispatch, state, file) => {
             
                     } catch(error) {
                         debugLog(debugOn, 'uploadImagesToS3 error: ', error)
-                        reject(error);
+                        reject("uploadImagesToS3 error.");
                     }
                 });
             };
@@ -1956,7 +1956,7 @@ const uploadAnImage = async (dispatch, state, file) => {
 
             } catch(error) {
                 debugLog(debugOn, 'uploadImagesToS3 error: ', error);
-                reject(error);
+                reject("uploadImagesToS3 error.");
             }      
         };
 
@@ -1974,7 +1974,7 @@ const uploadAnImage = async (dispatch, state, file) => {
 
             } catch(error) {
                 debugLog(debugOn, 'rotateImage error:', error)
-                reject(error);
+                reject("rotateImage error.");
             }
 
         });
@@ -2050,7 +2050,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                     await createANewPage(dispatch, getState, state, newPageData, updatedState);
                     resolve();
                 } catch(error) {
-                    reject(error);
+                    reject("Failed to create a new page with images.");
                 } 
             } else {
                 let itemCopy = {
@@ -2065,7 +2065,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                     }));
                     resolve();
                 } catch (error) {
-                    reject(error);
+                    reject("Failed to save images.");
                 }
             }
         });
@@ -2096,7 +2096,7 @@ export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
                 }));
                 resolve();
             } catch (error) {
-                reject(error);
+                reject("Failed to delete images.");
             }
         });
     });
@@ -2192,7 +2192,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                         resolve();
                     } catch(error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
-                        reject(error);
+                        reject("uploadAChunk error.");
                     }
                 });
             }
@@ -2206,7 +2206,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                 Promise.all([uploadAChunk(chunkIndex-1, chunkForUpload), encryptAChunk(chunkIndex)]).then(result => {
                     resolve(result[1]);
                 }).catch(error => {
-                    reject(error);
+                    reject("uploadAChunk error.");
                 }) 
             }            
         });
@@ -2236,7 +2236,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                     await createANewPage(dispatch, getState, state, newPageData, updatedState);
                     resolve();
                 } catch(error) {
-                    reject(error);
+                    reject("Failed to create a new page with attachment.");
                 } 
             } else {
                 let itemCopy = {
@@ -2263,7 +2263,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                     }));
                     resolve();
                 } catch (error) {
-                    reject(error);
+                    reject("Failed to add an attachment.");
                 }
             }
         })
@@ -2283,7 +2283,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                 chunkForUpload = await sliceEncryptAndUpload(file, i);   
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
-                reject(error);
+                reject("sliceEncryptAndUpload error.");
                 break;
             }
         }
@@ -2294,7 +2294,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                 resolve({fileType, fileSize, s3KeyPrefix, size:encryptedFileSize});
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
-                reject(error);
+                reject("doneUploadAnAttachment error.");
             }
             
         }       
@@ -2333,7 +2333,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                     state = getState().page;
                 } catch(error) {
                     debugLog(debugOn, 'uploadAttachmentsThunk failed: ', error);
-                    reject(error);
+                    reject("Failed to upload attachments.");
                     break;
                 }
             }
@@ -2391,12 +2391,12 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                             
                         } else {
                             debugLog(debugOn, "s");
-                            reject("erviceWorker.getRegistration error")
+                            reject("serviceWorker.getRegistration error")
                         }
                     });
                 }).catch((error) => {
                     debugLog(debugOn, "serviceWorker.getRegistration error: ", error);
-                    reject(error);
+                    reject("serviceWorker.getRegistration error.");
                 });
             }
 
@@ -2489,7 +2489,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 } catch(error) {
                     debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);             
                     writeAChunkToFileFailed(chunkIndex);
-                    reject(error);
+                    reject("Failed to write a chunk to file.");
                 }
             });
         }
@@ -2508,7 +2508,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
             if(!(await setupWriter())){
                 dispatch(setupWriterFailed());
-                reject();
+                reject("Failed to setup the writer.");
                 return;
             };
 
@@ -2520,7 +2520,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 await downloadDecryptAndAssemble(i);          
             } catch(error) {
                 debugLog(debugOn, "downloadAnAttachment failed: ", error);
-                reject(error);
+                reject("downloadDecryptAndAssemble error.");
                 break;
             }
         }
@@ -2599,7 +2599,7 @@ export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
                 }));
                 resolve();
             } catch (error) {
-                reject(error);
+                reject("Failed to delete an attachment.");
             }
         });
     });
@@ -2639,7 +2639,7 @@ export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 }
             } catch (error) {
-                reject();
+                reject("Failed to save image words.");
             }
 
         });
@@ -2702,15 +2702,15 @@ export const getPageCommentsThunk = (data) => async (dispatch, getState) => {
                         dispatch(pageCommentsFetched({itemId:data.itemId, comments}));
                         resolve();
                     } else {
-                        reject("woo... failed to get a page comments!");
+                        reject("Failed to get a page comments!");
                     }
                 } else {
                     debugLog(debugOn, "woo... failed to get a page comments!", data.error);
-                    reject("woo... failed to get a page comments!");
+                    reject("Failed to get a page comments!");
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... failed to get a page comments.", error)
-                reject("woo... failed to get a page comments!");
+                reject("Failed to get a page comments!");
             }) 
         });
     });
@@ -2752,7 +2752,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                                 dispatch(newCommentAdded(payload));
                                 resolve();
                             } else {
-                                reject();
+                                reject("Failed to add new comment.");
                             }
                         })
                     } else {
@@ -2772,13 +2772,13 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
                                 dispatch(commentUpdated({commentIndex, content, lastUpdateTime: data.lastUpdateTime}));
                                 resolve();
                             } else {
-                                reject();
+                                reject("Failed to update a comment.");
                             }
                         })
                     }
                 }
             } catch (error) {
-                reject();
+                reject("Failed to save a comment.");
             }
 
         });

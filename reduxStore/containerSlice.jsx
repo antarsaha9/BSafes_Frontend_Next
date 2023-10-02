@@ -329,11 +329,11 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
                     resolve()
                 } else {
                     debugLog(debugOn, `${addAction} failed: `, data.error)
-                    reject(data.error);
+                    reject("Failed to create a new item.");
                 } 
             }).catch( error => {
                 debugLog(debugOn,  `${addAction} failed.`)
-                reject(error);
+                reject("Failed to create a new item.");
             })
          });
     });
@@ -400,7 +400,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
                 resolve();
             } catch(error) {
                 debugLog(debugOn, "initWorkspaceThunk failed: ", error);
-                reject(error);
+                reject("Failed to initialize workspace.");
             }
         });
     });
@@ -468,11 +468,11 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);
-                    reject(data.error);
+                    reject("Failed to list items.");
                 }
             }).catch( error => {
                 debugLog(debugOn, "listItems failed: ", error)
-                reject("listItems failed!");
+                reject("Failed to list items.");
             }).finally(()=> {
                 dispatch(setListingItems(false));
             })
@@ -503,11 +503,11 @@ export const listContainersThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "list container failed: ", data.error);
-                    reject(data.error);
+                    reject("Failed to list containers.");
                 }
             }).catch( error => {
                 debugLog(debugOn, "list container failed: ", error)
-                reject("list container failed!");
+                reject("Failed to list containers.");
             })
         });
     });
@@ -547,11 +547,11 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "search failed: ", data.error);
-                    reject(data.error);
+                    reject("Failed to search items.");
                 }
             }).catch( error => {
                 debugLog(debugOn, "search failed: ", error)
-                reject("listItems failed!");
+                reject("Failed to search items.");
             })
         });
     });
@@ -575,11 +575,11 @@ export const getFirstItemInContainer = async (container, dispatch) => {
                 resolve(itemId);
             } else {
                 debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
-                reject(data.error);
+                reject("Failed to get first item.");
             }
         }).catch( error => {
             debugLog(debugOn, "getFirstItemInContainer failed: ", error)
-            reject("getFirstItemInContainer failed!");
+            reject("Failed to get first item.");
         })
     });
 }
@@ -602,11 +602,11 @@ export const getLastItemInContainer = async (container, dispatch) => {
                 resolve(itemId);
             } else {
                 debugLog(debugOn, "getLastItemInContainer failed: ", data.error);
-                reject(data.error);
+                reject("Failed to get last item.");
             }
         }).catch( error => {
             debugLog(debugOn, "getLastItemInContainer failed: ", error)
-            reject("getLastItemInContainer failed!");
+            reject("Failed to get last item");
         })
     });
 }
@@ -624,11 +624,11 @@ function dropAnItem(api, payload, dispatch) {
                 resolve();
             } else {
                 debugLog(debugOn, "dropAnItem failed: ", data.error);
-                reject(data.error);
+                reject("Failed to drop an item.");
             }
         }).catch( error => {
             debugLog(debugOn, "dropAnItem failed: ", error)
-            reject("dropAnItem failed!");
+            reject("Failed to drop an item.");
         })
     });
 
@@ -704,7 +704,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                     }
                 } catch (error) {
                     debugLog(debugOn, "dropItemsThunk failed: ", error)
-                    result == error;
+                    result == "Failed to drop items.";
                     break;
                 }
             }
@@ -730,11 +730,11 @@ function trashAnItem(api, payload, dispatch) {
                 resolve();
             } else {
                 debugLog(debugOn, "trashAnItem failed: ", data.error);
-                reject(data.error);
+                reject("Failed to trash an item.");
             }
         }).catch( error => {
             debugLog(debugOn, "trashAnItem failed: ", error)
-            reject("trashAnItem failed!");
+            reject("Failed to trash an item.");
         })
     });
 }
@@ -772,8 +772,8 @@ export const trashItemsThunk = (data) => async (dispatch, getState) => {
                     dispatch(deselectItem(item.id));
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
-                    debugLog(debugOn, "dropItemsThunk failed: ", error)
-                    result == error;
+                    debugLog(debugOn, "trashItemsThunk failed: ", error)
+                    result == "Failed to trash items.";
                     break;
                 }
 
@@ -810,11 +810,11 @@ export const getTrashBoxThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "getTrashBox failed: ", data.error);
-                    reject(data.error);
+                    reject("Failed to get trash box.");
                 }
             }).catch( error => {
                 debugLog(debugOn, "getTrashBox failed: ", error)
-                reject("getTrashBox failed!");
+                reject("Failed to get trash box.");
             })
         });
     });
@@ -832,11 +832,11 @@ function emptyATrashBoxItem(api, payload, dispatch) {
                 resolve();
             } else {
                 debugLog(debugOn, "emptyATrashBoxItem failed: ", data.error);
-                reject(data.error);
+                reject("Failed to empty a trash box item.");
             }
         }).catch( error => {
             debugLog(debugOn, "emptyATrashBoxItem failed: ", error)
-            reject("emptyATrashBoxItem failed!");
+            reject("Failed to empty a trash box item.");
         })
     });
 }
@@ -880,7 +880,7 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
                     debugLog(debugOn, "emptyTrashBoxItemsThunk failed: ", error)
-                    result == error;
+                    result == "Failed to empty trash box items.";
                     break;
                 }
             }
@@ -888,7 +888,7 @@ export const emptyTrashBoxItemsThunk = (data) => async (dispatch, getState) => {
             if(!result) {
                 resolve();
             } else {
-                reject(result);
+                reject("Failed to empty trash box items.");
             }
         });
     });
@@ -906,11 +906,11 @@ function restoreAnItemFromTrash(api, payload, dispatch) {
                 resolve();
             } else {
                 debugLog(debugOn, "restoreAnItemFromTrash failed: ", data.error);
-                reject(data.error);
+                reject("Failed to restore an item from trash.");
             }
         }).catch( error => {
             debugLog(debugOn, "restoreAnItemFromTrash failed: ", error)
-            reject("restoreAnItemFromTrash failed!");
+            reject("Failed to restore an item from trash.");
         })
     });
 }
@@ -956,7 +956,7 @@ export const restoreItemsFromTrashThunk = (data) => async (dispatch, getState) =
                     dispatch(completedMovingAnItem(item));
                 } catch (error) {
                     debugLog(debugOn, "restoreItemsFromTrashThunk failed: ", error)
-                    result == error;
+                    result = "Failed to restore items from trash";
                     break;
                 }
             }
@@ -991,11 +991,11 @@ export const listActivitiesThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "listActivities failed: ", data.error);
-                    reject(data.error);
+                    reject("Failed to list activities.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "listActivities failed: ", error)
-                reject("listActivities failed!");
+                reject("Failed to list activities.");
             })
         });
     });

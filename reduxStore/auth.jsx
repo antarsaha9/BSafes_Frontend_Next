@@ -136,11 +136,11 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                         resolve();
                     } else {
                         debugLog(debugOn, "woo... failed to create an account:", data.error);
-                        reject();
+                        reject("Failed to create an account.");
                     }
                 }).catch( error => {
                     debugLog(debugOn, "woo... failed to create an account.")
-                    reject(error);
+                    reject("Failed to create an account.");
                 })
             }
         });
@@ -162,7 +162,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, data);
                     if(data.status !== 'ok') {
                         debugLog(debugOn, "woo... failed to login.")
-                        reject();
+                        reject("Failed to login.");
                         return;
                     }
 
@@ -192,6 +192,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                             body: { signature },
                             dispatch
                         }).then( data => {
+
                             if(data.status == "ok") {
                                 debugLog(debugOn, "Logged in.");
                                 credentials.memberId = data.memberId;
@@ -202,11 +203,11 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                                 resolve();
                             } else {
                                 debugLog(debugOn, "Error: ", data.error);
-                                reject(error);
+                                reject("Failed to verify challenge.");
                             }
                         }).catch( error => {
                             debugLog(debugOn, "woo... failed to verify challenge.");
-                            reject(error);
+                            reject("Failed to verify challenge.");
                         })
                     } 
                         
@@ -214,7 +215,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
     
                 }).catch( error => {
                     debugLog(debugOn, "woo... failed to login.")
-                    reject(error);
+                    reject("Failed to login.");
                 })
             }
         })
@@ -236,11 +237,11 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... failed to log out: ", data.error)
-                    reject();
+                    reject("Failed to log out.");
                 } 
             }).catch( error => {
                 debugLog(debugOn, "woo... failed to log out.")
-                reject();
+                reject("Failed to log out.");
             })
             
         });
@@ -289,7 +290,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
             }).catch( error => {
                 debugLog(debugOn, "woo... preflight failed.");
                 dispatch(setPreflightReady(true));
-                reject(error);
+                reject("Preflight failed.");
             })
         });
     });  

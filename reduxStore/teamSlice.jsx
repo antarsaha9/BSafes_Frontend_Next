@@ -130,11 +130,11 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     debugLog(debugOn, "cacheTeamNameForTeamMember failed: ", data.error);
-                    reject(data.error);
+                    reject("cacheTeamNameForTeamMember error.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "cacheTeamNameForTeamMember failed: ", error)
-                reject("cacheTeamNameForTeamMember failed!");
+                reject("cacheTeamNameForTeamMember error.");
             })
 
         });
@@ -211,12 +211,12 @@ export const listTeamsThunk = (data) => async (dispatch, getState) => {
                     dispatch(teamsLoaded({ pageNumber ,total: data.hits.total, hits }));
                     resolve();
                 } else {
-                    debugLog(debugOn, "listItems failed: ", data.error);
-                    reject(data.error);
+                    debugLog(debugOn, "listTeams error.", data.error);
+                    reject("Failed to list teams.");
                 }
             }).catch(error => {
-                debugLog(debugOn, "listItems failed: ", error)
-                reject("listItems failed!");
+                debugLog(debugOn, "listTeams failed: ", error)
+                reject("Failed to list teams.");
             })
         });
     });
@@ -235,11 +235,11 @@ export const getTeamData = (teamId) => {
                 resolve(team);
             } else {
                 debugLog(debugOn, "getTeamData failed: ", data.error);
-                reject(data.error);
+                reject("Failed to get team data.");
             }
         }).catch(error => {
             debugLog(debugOn, "getTeamData failed: ", error)
-            reject("getTeamData failed!");
+            reject("getTeamData error.");
         })
     });
 }
@@ -298,11 +298,11 @@ export function createANewTeam(teamName, addAction, targetTeam, targetPosition, 
                     resolve(result.team);
                 } else {
                     debugLog(debugOn, "woo... failed to create a team!", result.error);
-                    reject("woo... failed to create a team!");
+                    reject("Failed to create a team.");
                 }
             } else {
                 debugLog(debugOn, "woo... failed to create a team!", result.error);
-                reject("woo... failed to create a team!");
+                reject("Failed to create a team.");
             }
       });
     });
@@ -382,11 +382,11 @@ export const createANewTeamThunk = (data) => async (dispatch, getState) => {
                         resolve(result.team);
                     } else {
                         debugLog(debugOn, "woo... failed to create a team!", result.error);
-                        reject("woo... failed to create a team!");
+                        reject("Failed to create a new team.");
                     }
                 } else {
                     debugLog(debugOn, "woo... failed to create a team!", result.error);
-                    reject("woo... failed to create a team!");
+                    reject("Failed to create a team.");
                 }
             });
 
@@ -408,11 +408,11 @@ export const findMemberByIdThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     dispatch(setMemberSearchResult({}));
-                    reject(data.error);
+                    reject("Failed to find a member by ID.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "findMemberById failed: ", error)
-                reject("findMemberById failed!");
+                reject("Failed to find a member by ID.");
             })
         });
     });
@@ -436,11 +436,11 @@ export const listTeamMembersThunk = (data) => async (dispatch, getState) => {
                     dispatch(setTeamMembers(data.hits));
                     resolve();
                 } else {
-                    reject(data.error);
+                    reject("Failed to list team members.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "listTeamMembers failed: ", error)
-                reject("listTeamMembers failed!");
+                reject("Failed to list team members.");
             })
         })
     })
@@ -487,11 +487,11 @@ export const addAMemberToTeamThunk = (data) => async (dispatch, getState) => {
                 } else {
                     dispatch(setActivityResult(data.error));
                     dispatch(setMemberSearchValue(''));
-                    reject(data.error);
+                    reject("Failed to add a team member.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "addAMemberToTeamThunk failed: ", error)
-                reject("error");
+                reject("Failed to add a team member.");
             })
 
         });
@@ -517,11 +517,11 @@ export const deleteATeamMemberThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } else {
                     
-                    reject(data.error);
+                    reject("Failed to delete a team member.");
                 }
             }).catch(error => {
                 debugLog(debugOn, "deleteATeamMemberThunk failed: ", error)
-                reject("error");
+                reject("Failed to delete a team member.");
             })
             
         })
