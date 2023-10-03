@@ -19,6 +19,7 @@ const initialState = {
     activityErrorMessages: {},
     error: null,
     contextId:null,
+    challengeState: false,
     preflightReady: false,
     localSessionState: null,
     MFAPassed: false,
@@ -61,6 +62,9 @@ const authSlice = createSlice({
         setContextId:(state, action) => {
             state.contextId = action.payload;
         },
+        setChallengeState: (state, action) => {
+            state.challengeState = action.payload;
+        },
         setPreflightReady: (state, action) => {
             state.preflightReady = action.payload;
         },
@@ -101,7 +105,7 @@ const authSlice = createSlice({
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -165,7 +169,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         reject("Failed to login.");
                         return;
                     }
-
+                    dispatch(setChallengeState(true));
                     localStorage.setItem("authToken", data.authToken);
 
                     credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
@@ -200,6 +204,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                                 saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                                 
                                 dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                                debugLog(debugOn, "loggedIn dispatched.");
                                 resolve();
                             } else {
                                 debugLog(debugOn, "Error: ", data.error);
@@ -208,7 +213,11 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         }).catch( error => {
                             debugLog(debugOn, "woo... failed to verify challenge.");
                             reject("Failed to verify challenge.");
+                        }).finally(()=>{
+                            dispatch(setChallengeState(false));
+                            debugLog(debugOn, "setChallengeState(false)");
                         })
+                        
                     } 
                         
                     verifyChallenge();
@@ -251,6 +260,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.Preflight, () => {
         return new Promise(async (resolve, reject) => {
+            if(getState().auth.challengeState) return;
             dispatch(setNextAuthStep(null));
             const params = {
                 api:'/memberAPI/preflight',
