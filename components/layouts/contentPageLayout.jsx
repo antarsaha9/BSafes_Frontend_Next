@@ -6,7 +6,10 @@ import Navbar from 'react-bootstrap/Navbar'
 import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 
+
 import { Blocks } from  'react-loader-spinner';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
@@ -27,6 +30,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const [nextRoute, setNextRoute] = useState(null);
     
+    const accountState = useSelector( state => state.account.accountState);
     const accountActivity = useSelector( state => state.account.activity);
     const authActivity = useSelector( state => state.auth.activity);
     const v1AccountActivity = useSelector (state => state.v1Account.activity);
@@ -191,6 +195,21 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     useEffect(()=> {
         if(preflightReady) {
             dispatch(createCheckSessionIntervalThunk());
+            const notify = () => {
+                toast('🦄 Wow so easy! ' + accountState, {
+                    position: "top-right",
+                    autoClose: false,
+                    hideProgressBar: true,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    theme: "light",
+                    toastId: 'customId'
+                    });
+              } 
+            //notify();
+            setTimeout(notify, 500);
         }
     }, [preflightReady]);
 
@@ -238,6 +257,15 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     }, [nextAuthStep])
     //<Spinner className={BSafesStyle.screenCenter} animation='border' />    
     
+    useEffect(()=> {
+        if(preflightReady && accountState) {
+            
+        }
+    }, [preflightReady, accountState])
+    
+    
+
+
     return (
         <div>
             { ( (accountActivity !==0 ) || (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
@@ -289,9 +317,21 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                             </Dropdown.Menu>
                         }
                     </Dropdown>}
-                </Container>
-                
+                </Container>        
             </Navbar>
+            <div>
+        
+        <ToastContainer
+position="top-right"
+autoClose={false}
+newestOnTop={false}
+closeOnClick
+rtl={false}
+pauseOnFocusLoss
+draggable
+theme="light"
+/>
+      </div>
             {showPathRow && <ItemPath />}
             {children}
             <ItemsMovingProgress />

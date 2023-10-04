@@ -5,11 +5,11 @@ import { debugLog, PostCall } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
-import { setNextAuthStep, setKeyMeta } from './v1AccountSlice';
+import { cleanAccountSlice, setAccountState } from './accountSlice';
+import { cleanV1AccountSlice, setNextAuthStep, setKeyMeta } from './v1AccountSlice';
 import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
 import { cleanTeamSlice } from './teamSlice';
-import { cleanV1AccountSlice } from './v1AccountSlice';
 
 const debugOn = true;
 
@@ -288,6 +288,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                         } 
                     } else {
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                        dispatch(setAccountState(data.accountState));
                     }
                 } else { 
                     if(data.error === 'SessionNotExisted'){
@@ -334,11 +335,12 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
 }
 
 export const cleanMemoryThunk = () => (dispatch, getState) => {
+    dispatch(cleanAccountSlice());
     dispatch(cleanAuthSlice());
-    dispatch(cleanV1AccountSlice());
     dispatch(cleanContainerSlice());
     dispatch(cleanPageSlice());
     dispatch(cleanTeamSlice());
+    dispatch(cleanV1AccountSlice());
 }
 
 export const authReducer = authSlice.reducer;
