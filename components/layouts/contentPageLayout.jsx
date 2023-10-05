@@ -322,15 +322,15 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             <div>
         
         <ToastContainer
-position="top-right"
-autoClose={false}
-newestOnTop={false}
-closeOnClick
-rtl={false}
-pauseOnFocusLoss
-draggable
-theme="light"
-/>
+            position="top-right"
+            autoClose={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            theme="light"
+        />
       </div>
             {showPathRow && <ItemPath />}
             {children}
