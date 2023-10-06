@@ -1,14 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import { debugLog } from '../lib/helper'
+import { debugLog, PostCall } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
 const debugOn = true;
 
 const initialState = {
-    apiCount: 0,
-    activity: 0,
+    activity: 0,  
+    activityErrors: 0,
+    activityErrorMessages: {},
     accountState: null,
+    apiCount: 0,
+    braintreeClientToken: null
 }
 
 const accountSlice = createSlice({
@@ -22,6 +25,19 @@ const accountSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        activityStart: (state, action) => {
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
+        },
         showApiActivity: (state, action) => {
             state.activity |= accountActivity.apiCall;
         },
@@ -33,11 +49,70 @@ const accountSlice = createSlice({
         },
         setAccountState: (state, action) => {
             state.accountState = action.payload;
-        }
+        },
+        clientTokenLoaded: (state, action) => {
+            state.braintreeClientToken = action.payload.clientToken;
+        },
     }
 });
 
-export const {cleanAccountSlice, showApiActivity, hideApiActivity, incrementAPICount, setAccountState}  = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded}  = accountSlice.actions;
+
+const newActivity = async (dispatch, type, activity) => {
+    dispatch(activityStart(type));
+    try {
+        await activity();
+        dispatch(activityDone(type));
+    } catch(error) {
+        dispatch(activityError({type, error}));
+    }
+}
+
+export const getPaymentClientTokenThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.getBraintreeClientToken, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getBraintreeClientToken',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(clientTokenLoaded({ clientToken: data.clientToken }));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getPaymentClientTokenThunk failed: ", data.error);
+                    reject("getPaymentClientTokenThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getPaymentClientTokenThunk failed: ", error)
+                reject("getPaymentClientTokenThunk failed!");
+            })
+        });
+    });
+}
+
+export const payThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.pay, () => {
+        return new Promise(async (resolve, reject) => {
+        PostCall({
+            api: '/memberAPI/pay',
+            body: {
+                paymentMethodNonce: data.paymentMethodNonce
+            }
+        }).then(async data => {
+            debugLog(debugOn, data);
+            if (data.status === 'ok') {
+                resolve();
+            } else {
+                debugLog(debugOn, "payThunk failed: ", data.error);
+                reject("payThunk failed.");
+            }
+        }).catch(error => {
+            debugLog(debugOn, "subscribe failed: ", error)
+            reject("payThunk failed!");
+        })
+        });
+    });
+}
 
 export const accountReducer = accountSlice.reducer;
 

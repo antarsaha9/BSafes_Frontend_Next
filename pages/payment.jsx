@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
@@ -9,9 +9,14 @@ import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 import Spinner from 'react-bootstrap/Spinner';
 
-import { debugLog } from '../lib/helper'
-
 import ContentPageLayout from '../components/layouts/contentPageLayout';
+
+const dropin = require('braintree-web-drop-in');
+
+import { getPaymentClientTokenThunk, payThunk } from '../reduxStore/accountSlice';
+
+import { debugLog } from '../lib/helper'
+import { access } from 'fs';
 
 export default function Payment() {
     const debugOn = false;
@@ -19,10 +24,37 @@ export default function Payment() {
     const dispatch = useDispatch();
 
     const [plan, setPlan] = useState('payYearly');
+    const braintreeInstanceRef = useRef(null);
 
+    const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const braintreeClientToken = useSelector(state => state.account.braintreeClientToken)
     const changePlan = (e) => {
         setPlan(e.target.value);
     }
+    
+    const handlePay = (e)=>[
+        braintreeInstanceRef.current.requestPaymentMethod().then((payload) => {
+            debugLog(debugOn, 'Payment method nonce:', payload.nonce)
+            dispatch(payThunk({paymentMethodNonce: payload.nonce}))
+        })
+    ]
+
+    useEffect(()=>{
+        if(isLoggedIn) {
+            dispatch(getPaymentClientTokenThunk());
+        }
+    }, [isLoggedIn])
+
+    useEffect(()=>{
+        if(braintreeClientToken) {
+            dropin.create({
+                authorization: braintreeClientToken,
+                container: '#dropin-container',
+            }).then(res => {
+                braintreeInstanceRef.current = res;
+            })
+        }
+    }, [braintreeClientToken])
 
     return (
         <ContentPageLayout> 
@@ -62,6 +94,12 @@ export default function Payment() {
                             </Form.Group>
                         </Form>
                         <hr />
+                    </Col>
+                </Row>
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <div id="dropin-container"></div>
+                        <Button className='pull-right' onClick={handlePay}>Pay</Button>
                     </Col>
                 </Row>
             </Container>
