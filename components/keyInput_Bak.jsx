@@ -149,7 +149,7 @@ export default function KeyInput({onKeyChanged}) {
 
     useEffect(()=>{
         inputRef.current.setSelectionRange(cursor, cursor); 
-    }, [cursor])
+    })
 
     useEffect(()=> {
         onKeyChanged(masterKeyState);

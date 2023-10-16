@@ -52,14 +52,14 @@ export default function KeySetup() {
                                 <Form.Label>Nickname</Form.Label>
                                 <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Plase choose a nickname' />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="keyPassword">
+                            <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
                                 <KeyInput onKeyChanged={keyPasswordChanged}/>
                                 <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="ConfirmkeyPassword">
+                            <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
                                 <Form.Label>Please retype to confirm</Form.Label>
                                 <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>
