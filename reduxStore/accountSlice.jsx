@@ -68,6 +68,28 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
+export const getInvoiceThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.getInvoice, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getInvoice',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "getInvoiceThunk ok. ");
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getInvoiceThunk failed: ", data.error);
+                    reject("getInvoiceThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getInvoiceThunk failed: ", error)
+                reject("getInvoiceThunk failed!");
+            })
+        });
+    });
+}
+
 export const getPaymentClientTokenThunk = () => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.getBraintreeClientToken, () => {
         return new Promise(async (resolve, reject) => {
@@ -114,6 +136,27 @@ export const payThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const getTransactionsThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.getTransactions, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getTransactions',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "getTransactionsThunk ok. ");
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getTransactionsThunk failed: ", data.error);
+                    reject("getTransactionsThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getTransactionsThunk failed: ", error)
+                reject("getTransactionsThunk failed!");
+            })
+        });
+    });
+}
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

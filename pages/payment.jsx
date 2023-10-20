@@ -13,10 +13,9 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 
 const dropin = require('braintree-web-drop-in');
 
-import { getPaymentClientTokenThunk, payThunk } from '../reduxStore/accountSlice';
+import { getInvoiceThunk, getPaymentClientTokenThunk, payThunk, getTransactionsThunk } from '../reduxStore/accountSlice';
 
 import { debugLog } from '../lib/helper'
-import { access } from 'fs';
 
 export default function Payment() {
     const debugOn = false;
@@ -41,7 +40,9 @@ export default function Payment() {
 
     useEffect(()=>{
         if(isLoggedIn) {
+            dispatch(getInvoiceThunk());
             dispatch(getPaymentClientTokenThunk());
+            dispatch(getTransactionsThunk());
         }
     }, [isLoggedIn])
 
@@ -60,7 +61,13 @@ export default function Payment() {
         <ContentPageLayout> 
             <Container>
                 <br />
-                <br />     
+                <br />
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <h1>Invoice</h1>     
+                        <hr />
+                    </Col>                  
+                </Row>
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <h1>Payment</h1>     
@@ -101,6 +108,13 @@ export default function Payment() {
                         <div id="dropin-container"></div>
                         <Button className='pull-right' onClick={handlePay}>Pay</Button>
                     </Col>
+                </Row>
+
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <h1>Transactions</h1>     
+                        <hr />
+                    </Col>                  
                 </Row>
             </Container>
         </ContentPageLayout>
