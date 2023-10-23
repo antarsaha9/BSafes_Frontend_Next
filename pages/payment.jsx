@@ -7,11 +7,14 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
-import Spinner from 'react-bootstrap/Spinner';
+import Table from 'react-bootstrap/Table'
+
+import format from "date-fns/format";
+const dropin = require('braintree-web-drop-in');
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 
-const dropin = require('braintree-web-drop-in');
+
 
 import { getInvoiceThunk, getPaymentClientTokenThunk, payThunk, getTransactionsThunk } from '../reduxStore/accountSlice';
 
@@ -24,6 +27,19 @@ export default function Payment() {
 
     const [plan, setPlan] = useState('payYearly');
     const braintreeInstanceRef = useRef(null);
+
+    const storageUsage = useSelector(state=>state.account.storageUsage);
+    const monthlyPrice = useSelector(state=>state.account.monthlyPrice);
+    let dues = useSelector(state=>state.account.dues);
+    const planOptions = useSelector(state=>state.account.planOptions);
+
+    const dueItems = (dues.length !==0 ) && dues.toReversed().map((item, i)=> 
+        <tr key={i}>
+            <td>{format(new Date(item.newDueTime), 'MM/dd/yyyy')}</td>
+            <td>{item.totoalStorage50GB}</td>
+            <td>${item.monthlyPrice}</td>
+        </tr>
+    )
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const braintreeClientToken = useSelector(state => state.account.braintreeClientToken)
@@ -64,7 +80,21 @@ export default function Payment() {
                 <br />
                 <Row>
                     <Col sm={{span:8, offset:2}}>
-                        <h1>Invoice</h1>     
+                        <h1>Invoice</h1>
+                        <p>Your current storage usage is {(storageUsage/1000000000).toFixed(3)} GB</p>
+                        <h5>Dues:</h5>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Storage</th>
+                                    <th>Due(USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dueItems}
+                            </tbody>
+                        </Table>
                         <hr />
                     </Col>                  
                 </Row>
@@ -87,7 +117,7 @@ export default function Payment() {
                                     onChange = {changePlan}
                                     checked={plan==='payMonthly'}
                                 />
-                                <p>2.95 USD for 50GB storage</p>
+                                {planOptions && `$${planOptions.monthly.totalDues} USD. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
                                 <hr />
                                 <Form.Check
                                     type='radio'
@@ -97,7 +127,7 @@ export default function Payment() {
                                     onChange = {changePlan}
                                     checked={plan==='payYearly'}
                                 />
-                                <p>29.50 USD for 50GB Storage</p>
+                                {planOptions && `$${planOptions.yearly.totalDues} USD. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
                             </Form.Group>
                         </Form>
                         <hr />

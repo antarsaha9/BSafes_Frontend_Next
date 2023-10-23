@@ -11,7 +11,11 @@ const initialState = {
     activityErrorMessages: {},
     accountState: null,
     apiCount: 0,
-    braintreeClientToken: null
+    braintreeClientToken: null,
+    storageUsage: 0,
+    monthlyPrice: 0,
+    dues: [],
+    planOptions: null
 }
 
 const accountSlice = createSlice({
@@ -53,10 +57,16 @@ const accountSlice = createSlice({
         clientTokenLoaded: (state, action) => {
             state.braintreeClientToken = action.payload.clientToken;
         },
+        invoiceLoaded: (state, action) => {
+            state.storageUsage = action.payload.storageUsage;
+            state.monthlyPrice = action.payload.monthlyPrice;
+            state.dues = action.payload.dues;
+            state.planOptions = action.payload.planOptions;
+        }
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded}  = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -77,6 +87,7 @@ export const getInvoiceThunk = () => async (dispatch, getState) => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
                     debugLog(debugOn, "getInvoiceThunk ok. ");
+                    dispatch(invoiceLoaded(data.invoice));
                     resolve();
                 } else {
                     debugLog(debugOn, "getInvoiceThunk failed: ", data.error);
