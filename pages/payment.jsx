@@ -29,14 +29,25 @@ export default function Payment() {
     const braintreeInstanceRef = useRef(null);
 
     const storageUsage = useSelector(state=>state.account.storageUsage);
+    const totoalStorage50GBRequired = useSelector(state=>state.account.totoalStorage50GBRequired);
     const monthlyPrice = useSelector(state=>state.account.monthlyPrice);
     let dues = useSelector(state=>state.account.dues);
     const planOptions = useSelector(state=>state.account.planOptions);
-
+    
+    let monthlyDuesDuration, yearlyDuesDuration, storageRequired;
+    if(planOptions){
+        if(planOptions.monthly.firstDue === planOptions.monthly.lastDue){
+            monthlyDuesDuration = format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy');
+        } else {
+            monthlyDuesDuration = `${format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.monthly.lastDue), 'MM/dd/yyyy')}`
+        }
+        yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.yearly.lastDue), 'MM/dd/yyyy')}`
+    }
+    
     const dueItems = (dues.length !==0 ) && dues.toReversed().map((item, i)=> 
         <tr key={i}>
             <td>{format(new Date(item.newDueTime), 'MM/dd/yyyy')}</td>
-            <td>{item.totoalStorage50GB}</td>
+            <td>{item.totoalStorage50GBRequired}</td>
             <td>${item.monthlyPrice}</td>
         </tr>
     )
@@ -81,13 +92,14 @@ export default function Payment() {
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <h1>Invoice</h1>
-                        <p>Your current storage usage is {(storageUsage/1000000000).toFixed(3)} GB</p>
+                        <p>Your current storage usage is {(storageUsage/1000000000).toFixed(3)} GB. </p>
+                        <p> {totoalStorage50GBRequired}GB storage is required.</p>
                         <h5>Dues:</h5>
                         <Table>
                             <thead>
                                 <tr>
                                     <th>Date</th>
-                                    <th>Storage</th>
+                                    <th>Storage(GB)</th>
                                     <th>Due(USD)</th>
                                 </tr>
                             </thead>
@@ -117,7 +129,7 @@ export default function Payment() {
                                     onChange = {changePlan}
                                     checked={plan==='payMonthly'}
                                 />
-                                {planOptions && `$${planOptions.monthly.totalDues} USD. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
+                                {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
                                 <hr />
                                 <Form.Check
                                     type='radio'
@@ -127,7 +139,7 @@ export default function Payment() {
                                     onChange = {changePlan}
                                     checked={plan==='payYearly'}
                                 />
-                                {planOptions && `$${planOptions.yearly.totalDues} USD. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
+                                {planOptions && `$${planOptions.yearly.totalDues} USD. For ${yearlyDuesDuration}. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
                             </Form.Group>
                         </Form>
                         <hr />
