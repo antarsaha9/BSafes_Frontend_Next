@@ -16,7 +16,8 @@ const initialState = {
     totoalStorage50GBRequired: 0,
     monthlyPrice: 0,
     dues: [],
-    planOptions: null
+    planOptions: null,
+    transactions: []
 }
 
 const accountSlice = createSlice({
@@ -64,11 +65,16 @@ const accountSlice = createSlice({
             state.monthlyPrice = action.payload.monthlyPrice;
             state.dues = action.payload.dues;
             state.planOptions = action.payload.planOptions;
+        },
+        transactionsLoaded: (state, action) => {
+            state.transactions = action.payload.hits.map((transaction, i)=>{
+                return transaction._source;
+            })
         }
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded} = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -159,6 +165,8 @@ export const getTransactionsThunk = () => async (dispatch, getState) => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
                     debugLog(debugOn, "getTransactionsThunk ok. ");
+                    const hits = data.hits.hits;
+                    dispatch(transactionsLoaded({hits}))
                     resolve();
                 } else {
                     debugLog(debugOn, "getTransactionsThunk failed: ", data.error);

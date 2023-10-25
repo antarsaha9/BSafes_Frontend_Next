@@ -31,9 +31,10 @@ export default function Payment() {
     const storageUsage = useSelector(state=>state.account.storageUsage);
     const totoalStorage50GBRequired = useSelector(state=>state.account.totoalStorage50GBRequired);
     const monthlyPrice = useSelector(state=>state.account.monthlyPrice);
-    let dues = useSelector(state=>state.account.dues);
+    const dues = useSelector(state=>state.account.dues);
     const planOptions = useSelector(state=>state.account.planOptions);
-    
+    const transactions = useSelector(state=>state.account.transactions);
+
     let monthlyDuesDuration, yearlyDuesDuration, storageRequired;
     if(planOptions){
         if(planOptions.monthly.firstDue === planOptions.monthly.lastDue){
@@ -49,6 +50,15 @@ export default function Payment() {
             <td>{format(new Date(item.newDueTime), 'MM/dd/yyyy')}</td>
             <td>{item.totoalStorage50GBRequired}</td>
             <td>${item.monthlyPrice}</td>
+        </tr>
+    )
+
+    const transactionItems = (transactions.length !==0) && transactions.map((item, i)=>
+        <tr key={i}>
+            <td>{format(new Date(item.time), 'MM/dd/yyyy')}</td>
+            <td>{item.totalDues}</td>
+            <td>{item.plan}</td>
+            <td>{item.firstDue===item.lastDue?format(new Date(item.firstDue), 'MM/dd/yyyy'):`${format(new Date(item.firstDue), 'MM/dd/yyyy')} - ${format(new Date(item.lastDue), 'MM/dd/yyyy')}`}</td>
         </tr>
     )
 
@@ -91,9 +101,10 @@ export default function Payment() {
                 <br />
                 <Row>
                     <Col sm={{span:8, offset:2}}>
+                        <hr />
                         <h1>Invoice</h1>
                         <p>Your current storage usage is {(storageUsage/1000000000).toFixed(3)} GB. </p>
-                        <p> {totoalStorage50GBRequired}GB storage is required.</p>
+                        <p> {totoalStorage50GBRequired}GB storage is required, ${monthlyPrice} USD per month.</p>
                         <h5>Dues:</h5>
                         <Table>
                             <thead>
@@ -113,7 +124,6 @@ export default function Payment() {
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <h1>Payment</h1>     
-                        <hr />
                     </Col>                  
                 </Row>
                 
@@ -121,15 +131,6 @@ export default function Payment() {
                     <Col sm={{span:8, offset:2}}>
                         <Form>  
                             <Form.Group controlId='plan'>
-                                <Form.Check
-                                    type='radio'
-                                    id='payMonthly'
-                                    label='Pay Monthly'
-                                    value='monthly'  
-                                    onChange = {changePlan}
-                                    checked={plan==='monthly'}
-                                />
-                                {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
                                 <hr />
                                 <Form.Check
                                     type='radio'
@@ -140,9 +141,20 @@ export default function Payment() {
                                     checked={plan==='yearly'}
                                 />
                                 {planOptions && `$${planOptions.yearly.totalDues} USD. For ${yearlyDuesDuration}. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
+                                <hr />
+                                <Form.Check
+                                    type='radio'
+                                    id='payMonthly'
+                                    label='Pay Monthly'
+                                    value='monthly'  
+                                    onChange = {changePlan}
+                                    checked={plan==='monthly'}
+                                />
+                                {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
+                                <hr />
                             </Form.Group>
                         </Form>
-                        <hr />
+                        
                     </Col>
                 </Row>
                 <Row>
@@ -154,8 +166,21 @@ export default function Payment() {
 
                 <Row>
                     <Col sm={{span:8, offset:2}}>
-                        <h1>Transactions</h1>     
                         <hr />
+                        <h1>Transactions</h1>     
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Plan</th>
+                                    <th>Paid Duration</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {transactionItems}
+                            </tbody>
+                        </Table>
                     </Col>                  
                 </Row>
             </Container>
