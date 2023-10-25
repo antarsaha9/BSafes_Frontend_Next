@@ -131,6 +131,7 @@ export const payThunk = (data) => async (dispatch, getState) => {
         PostCall({
             api: '/memberAPI/pay',
             body: {
+                plan: data.plan,
                 paymentMethodNonce: data.paymentMethodNonce
             }
         }).then(async data => {

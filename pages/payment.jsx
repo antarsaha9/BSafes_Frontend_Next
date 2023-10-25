@@ -25,7 +25,7 @@ export default function Payment() {
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const [plan, setPlan] = useState('payYearly');
+    const [plan, setPlan] = useState('yearly');
     const braintreeInstanceRef = useRef(null);
 
     const storageUsage = useSelector(state=>state.account.storageUsage);
@@ -61,7 +61,7 @@ export default function Payment() {
     const handlePay = (e)=>[
         braintreeInstanceRef.current.requestPaymentMethod().then((payload) => {
             debugLog(debugOn, 'Payment method nonce:', payload.nonce)
-            dispatch(payThunk({paymentMethodNonce: payload.nonce}))
+            dispatch(payThunk({plan, paymentMethodNonce: payload.nonce}))
         })
     ]
 
@@ -125,9 +125,9 @@ export default function Payment() {
                                     type='radio'
                                     id='payMonthly'
                                     label='Pay Monthly'
-                                    value='payMonthly'  
+                                    value='monthly'  
                                     onChange = {changePlan}
-                                    checked={plan==='payMonthly'}
+                                    checked={plan==='monthly'}
                                 />
                                 {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
                                 <hr />
@@ -135,9 +135,9 @@ export default function Payment() {
                                     type='radio'
                                     id='payYearly'
                                     label='Pay Yearly, get 2 months free.'
-                                    value='payYearly'
+                                    value='yearly'
                                     onChange = {changePlan}
-                                    checked={plan==='payYearly'}
+                                    checked={plan==='yearly'}
                                 />
                                 {planOptions && `$${planOptions.yearly.totalDues} USD. For ${yearlyDuesDuration}. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
                             </Form.Group>
