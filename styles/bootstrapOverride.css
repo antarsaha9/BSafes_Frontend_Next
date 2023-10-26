@@ -1,0 +1,14 @@
+pre {
+    display: block;
+    padding: 13px;
+    margin-top: 0 0 13.5px;
+    line-height: 1.6;
+    word-break: break-all;
+    color:#212121;
+    margin-bottom: 1rem;
+    overflow: auto;
+    font-size: 0.875em;
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+    border-radius: 3px;
+  }
