@@ -56,7 +56,7 @@ export default function Payment() {
     const transactionItems = (transactions.length !==0) && transactions.map((item, i)=>
         <tr key={i}>
             <td>{format(new Date(item.time), 'MM/dd/yyyy')}</td>
-            <td>{item.totalDues}</td>
+            <td>${item.totalDues}</td>
             <td>{item.plan}</td>
             <td>{item.firstDue===item.lastDue?format(new Date(item.firstDue), 'MM/dd/yyyy'):`${format(new Date(item.firstDue), 'MM/dd/yyyy')} - ${format(new Date(item.lastDue), 'MM/dd/yyyy')}`}</td>
         </tr>
