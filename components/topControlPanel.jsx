@@ -126,7 +126,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                         }
                                     </Form.Group>
                                 }
-                                { ( (container && (container.startsWith('f') || container.startsWith('b')))) && 
+                                { ( (container && ( container.startsWith('u') || container.startsWith('t') || container.startsWith('f') || container.startsWith('b')))) && 
                                     <ButtonGroup className='pull-right'>  
                                         { container.startsWith('f') &&  
                                         <>       
@@ -156,7 +156,6 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                         }
                                     </ButtonGroup>
                                 }
-                                {container && (container.startsWith('t') || container.startsWith('u')) && <Button variant='link' size='sm' className='text-white pull-right'><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                         </Row>
                     </Card.Body>

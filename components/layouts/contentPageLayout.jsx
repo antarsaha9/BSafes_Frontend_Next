@@ -48,6 +48,9 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
+    const payment = (e) => {
+        router.push('/payment');
+    }
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
         changePage('/logIn');
@@ -291,7 +294,10 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                             <Dropdown.Menu>
                             
                                 { isLoggedIn? 
+                                    <>
+                                    <Dropdown.Item onClick={payment}>Payment</Dropdown.Item>
                                     <Dropdown.Item onClick={logOut}>Log out</Dropdown.Item>
+                                    </>
                                     :
                                     <Dropdown.Item onClick={logIn}>Log In</Dropdown.Item>
                                 }

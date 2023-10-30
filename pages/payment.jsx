@@ -30,10 +30,18 @@ export default function Payment() {
 
     const storageUsage = useSelector(state=>state.account.storageUsage);
     const totoalStorage50GBRequired = useSelector(state=>state.account.totoalStorage50GBRequired);
+    const nextDueTime = useSelector(state=>state.account.nextDueTime);
     const monthlyPrice = useSelector(state=>state.account.monthlyPrice);
     const dues = useSelector(state=>state.account.dues);
     const planOptions = useSelector(state=>state.account.planOptions);
     const transactions = useSelector(state=>state.account.transactions);
+
+    let storageUsageString;
+    if(storageUsage < 1000000) {
+        storageUsageString = (storageUsage/(1000000)).toFixed(3) + ' MB';
+    } else {
+        storageUsageString = (storageUsage/(1000000000)).toFixed(3) + ' GB';
+    }
 
     let monthlyDuesDuration, yearlyDuesDuration, storageRequired;
     if(planOptions){
@@ -101,10 +109,18 @@ export default function Payment() {
                 <br />
                 <Row>
                     <Col sm={{span:8, offset:2}}>
+                        <p>Your current storage usage is {storageUsageString}. </p>
+                        <p> {totoalStorage50GBRequired}GB storage is required, ${monthlyPrice} USD per month.</p>
+                        {(dues.length === 0) &&
+                            <p>Next due date is {format(new Date(nextDueTime), 'MM/dd/yyyy')}</p>
+                        }
+                    </Col>
+                </Row>
+                {(dues.length !== 0) && 
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
                         <hr />
                         <h1>Invoice</h1>
-                        <p>Your current storage usage is {(storageUsage/1000000000).toFixed(3)} GB. </p>
-                        <p> {totoalStorage50GBRequired}GB storage is required, ${monthlyPrice} USD per month.</p>
                         <h5>Dues:</h5>
                         <Table>
                             <thead>
@@ -121,6 +137,8 @@ export default function Payment() {
                         <hr />
                     </Col>                  
                 </Row>
+                }
+                {(dues.length !== 0) && <>
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <h1>Payment</h1>     
@@ -163,7 +181,7 @@ export default function Payment() {
                         <Button className='pull-right' onClick={handlePay}>Pay</Button>
                     </Col>
                 </Row>
-
+                </>}
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <hr />
@@ -177,10 +195,17 @@ export default function Payment() {
                                     <th>Paid Duration</th>
                                 </tr>
                             </thead>
+                            {(transactions.length !== 0) &&
                             <tbody>
-                                {transactionItems}
+                                {
+                                    transactionItems
+                                }
                             </tbody>
+                            }
                         </Table>
+                        {(transactions.length === 0) &&
+                            <p>Empty</p>
+                        }
                     </Col>                  
                 </Row>
             </Container>

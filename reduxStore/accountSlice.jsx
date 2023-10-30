@@ -14,6 +14,7 @@ const initialState = {
     braintreeClientToken: null,
     storageUsage: 0,
     totoalStorage50GBRequired: 0,
+    nextDueTime:null,
     monthlyPrice: 0,
     dues: [],
     planOptions: null,
@@ -62,6 +63,7 @@ const accountSlice = createSlice({
         invoiceLoaded: (state, action) => {
             state.storageUsage = action.payload.storageUsage;
             state.totoalStorage50GBRequired = action.payload.totoalStorage50GBRequired;
+            state.nextDueTime = action.payload.nextDueTime;
             state.monthlyPrice = action.payload.monthlyPrice;
             state.dues = action.payload.dues;
             state.planOptions = action.payload.planOptions;
