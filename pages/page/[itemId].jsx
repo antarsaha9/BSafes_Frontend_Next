@@ -34,30 +34,14 @@ export default function Page() {
         router.push(newLink);
     }
 
-    const handleAdd = (type, action, target, position) => {
-        debugLog(debugOn, `${type} ${action} ${target} ${position}`);
-        addAnItem(type, action, target, position );
-    }
-
-    const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
-    
-        setSelectedItemType(itemType);
-        setAddAction(addAction);
-        setTargetItem(targetItem);
-        setTargetPosition(targetPosition);
-        setShowNewItemModal(true);
-        
-    }
-
     debugLog(debugOn, "router.query.itemId: ", router.query.itemId);
-
 
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
                 <PageItemWrapper itemId={router.query.itemId}> 
                     <br />
-                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onAdd={handleAdd} ></TopControlPanel>
+                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                     <br />  
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />

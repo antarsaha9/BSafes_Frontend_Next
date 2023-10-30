@@ -155,7 +155,7 @@ export default function FolderPage() {
         setShowNewItemModal(false);
 
 
-        const item = await createANewItem(title, containerInWorkspaces, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
+        const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
         const link = getItemLink(item);
 
         router.push(link);

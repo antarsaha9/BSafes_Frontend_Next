@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, forwardRef } from "react";
 import { useRouter } from "next/router";
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -12,26 +12,41 @@ import Form from 'react-bootstrap/Form'
 import Dropdown from 'react-bootstrap/Dropdown'
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import NewItemModal from "./newItemModal";
 
 import { debugLog } from "../lib/helper";
+import { createANewItemThunk, clearNewItem } from "../reduxStore/containerSlice";
+import { getItemLink } from "../lib/bSafesCommonUI";
 
 
 export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onAdd=null, onSubmitSearch=null, onCancelSearch=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
+    const dispatch = useDispatch();
     const pageNumberInputRef = useRef(null);
     const searchInputRef = useRef(null);
     const router = useRouter();
     
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
+
+    const [selectedItemType, setSelectedItemType] = useState(null);
+    const [addAction, setAddAction] = useState(null);
+    const [targetItem, setTargetItem] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
+    const [showNewItemModal, setShowNewItemModal] = useState(false);
+
     const pageActivity = useSelector( state => state.page.activity );
     const pageItemId = useSelector( state => state.page.id);
     const position = useSelector( state => state.page.position);
 
     const containerActivity = useSelector( state => state.container.activity);
     const container = useSelector( state => state.container.container);
-    const mode = useSelector( state => state.container.mode);
+    const newItem = useSelector( state => state.container.newItem);
+    const containerInWorkspace = useSelector(state => state.container.container);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     function plusButton({ children, onClick }, ref) {
         return (
@@ -59,7 +74,20 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     }
 
     const handleAddClicked = (action) => {       
-        onAdd('Page', action, pageItemId, position);
+        setSelectedItemType('Page');
+        setAddAction(action);
+        setTargetItem(pageItemId);
+        setTargetPosition(position);
+        setShowNewItemModal(true);
+    }
+
+    const handleClose = () => setShowNewItemModal(false);
+
+    const handleCreateANewItem = async (titleStr) => {
+        debugLog(debugOn, "createANewItem", titleStr);
+        setShowNewItemModal(false);
+
+        dispatch(createANewItemThunk({titleStr, currentContainer:containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}))
     }
 
     const onShowSearchBarClicked = (e) => {
@@ -93,6 +121,14 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             searchInputRef.current.focus();
         }
     }, [showSearchBar])
+
+    useEffect(()=> {
+        if(newItem) {
+            const link = getItemLink(newItem, true);
+            dispatch(clearNewItem());
+            router.push(link);
+        }
+    }, [newItem]);
 
     return (
     <>  
@@ -188,6 +224,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             </Row>
         </>
         }
+        <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
     </>                            
     )
 }

@@ -115,7 +115,7 @@ export default function BoxContents() {
         setShowNewItemModal(false);
 
         dispatch(createANewItemThunk({titleStr, currentContainer:containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}))
-        //const item = await createANewItem(title, containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
+    
     }
 
     const handleSubmitSearch = (value) => {
