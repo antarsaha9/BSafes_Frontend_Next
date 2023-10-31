@@ -19,7 +19,7 @@ import { createANewItemThunk, clearNewItem } from "../reduxStore/containerSlice"
 import { getItemLink } from "../lib/bSafesCommonUI";
 
 
-export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onAdd=null, onSubmitSearch=null, onCancelSearch=null}) {
+export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onSubmitSearch=null, onCancelSearch=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const dispatch = useDispatch();
