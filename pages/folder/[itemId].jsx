@@ -16,12 +16,13 @@ import ItemTopRows from "../../components/itemTopRows";
 import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
+import TurningPageControls from "../../components/turningPageControls";
 
-import { } from "../../reduxStore/containerSlice";
-import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { setNavigationInSameContainer } from "../../reduxStore/containerSlice";
+import { saveTitleThunk, setChangingPage } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink, getAnotherItem} from "../../lib/bSafesCommonUI";
 
 export default function Folder() {
     const debugOn = false;
@@ -29,8 +30,12 @@ export default function Folder() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const pageItemId = useSelector( state => state.page.id);
-    const container = useSelector( state => state.page.container);
+    const [endOfContainer, setEndOfContainer] = useState(false);
+
+    const changingPage = useSelector(state => state.page.changingPage);
+    const pageItemId = useSelector(state => state.page.id);
+    const container = useSelector(state => state.page.container);
+    const position = useSelector(state => state.page.position);
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
 
@@ -43,6 +48,77 @@ export default function Folder() {
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
+
+    async function gotoAnotherItem(anotherItemNumber) {
+        debugLog(debugOn, `gotoAnotherItem ${changingPage} ${pageItemId} ${container} ${position}`);
+        if(changingPage || !(pageItemId || !container || !position)) return;
+        setChangingPage(true);
+        let anotherItemId, anotherItemLink = null;
+        
+        const getAnotherItemLink = (itemId) => {
+            const itemType = itemId.split(':')[0];
+            let itemLink;
+            switch(itemType) {
+                case 'b':
+                    itemLink = '/box/' + itemId;
+                    break;
+                case 'f':
+                    itemLink = '/folder/' + itemId;
+                    break;
+                case 'p':
+                    itemLink = '/page/' + itemId;
+                    break;
+                default:
+            }
+            return itemLink;
+        }
+
+        switch (anotherItemNumber) {
+            case '-1':
+                try{
+                    anotherItemId = await getAnotherItem('getPreviousItem', container, position, dispatch);
+                    if (anotherItemId === 'EndOfContainer') {
+                        setEndOfContainer(true);
+                    } else {
+                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                    }
+                } catch(error) {
+
+                }
+                break;
+            case '+1':
+                try{
+                    anotherItemId = await getAnotherItem('getNextItem', container, position, dispatch);
+                    if (anotherItemId === 'EndOfContainer') {
+                        setEndOfContainer(true);
+                    } else {
+                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                    }
+                } catch(error) {
+
+                }
+                break;
+            default:
+        }
+        debugLog(debugOn, "setNavigationInSameContainer ...");
+
+        setNavigationInSameContainer(true);
+        if (anotherItemLink) {
+            router.push(anotherItemLink);
+        } else {
+            setChangingPage(false);
+        }
+    }
+
+    const gotoNextItem = () => {
+        debugLog(debugOn, "Next item ");
+        gotoAnotherItem('+1');
+    }
+
+    const gotoPreviousItem = () => {
+        debugLog(debugOn, "Previous item ");
+        gotoAnotherItem('-1');
+    }
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
@@ -141,6 +217,7 @@ export default function Folder() {
                                     <ItemTopRows />
                                     <br />
                                     <br />
+                                    <TurningPageControls cover={true} onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={()=>setEndOfContainer(false)}/>
                                     <Row className="justify-content-center">
                                         <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
                                             <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />

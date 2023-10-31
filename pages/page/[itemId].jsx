@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -24,6 +25,8 @@ export default function Page() {
 
     const router = useRouter();
     const dispatch = useDispatch();
+
+    const [endOfContainer, setEndOfContainer] = useState(false);
 
     const changingPage = useSelector(state => state.page.changingPage);
     const pageItemId = useSelector(state => state.page.id);
@@ -72,7 +75,7 @@ export default function Page() {
                 try{
                     anotherItemId = await getAnotherItem('getPreviousItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
-                        alert('End of container!');
+                        setEndOfContainer(true);
                     } else {
                         anotherItemLink = getAnotherItemLink(anotherItemId); 
                     }
@@ -84,7 +87,7 @@ export default function Page() {
                 try{
                     anotherItemId = await getAnotherItem('getNextItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
-                        alert('End of container!');
+                        setEndOfContainer(true);
                     } else {
                         anotherItemLink = getAnotherItemLink(anotherItemId); 
                     }
@@ -128,7 +131,7 @@ export default function Page() {
                         <ItemTopRows />
                         <PageCommons />
                     </div>
-                    <TurningPageControls onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} />
+                    <TurningPageControls onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={()=>setEndOfContainer(false)}/>
                 </PageItemWrapper>           
             </ContentPageLayout>
             <Scripts />
