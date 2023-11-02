@@ -15,8 +15,8 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import NewItemModal from "./newItemModal";
 
 import { debugLog } from "../lib/helper";
-import { createANewItemThunk, clearNewItem } from "../reduxStore/containerSlice";
-import { getItemLink } from "../lib/bSafesCommonUI";
+import { createANewItemThunk, clearNewItem, selectItem} from "../reduxStore/containerSlice";
+import { getItemLink, isItemAContainer } from "../lib/bSafesCommonUI";
 
 
 export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onSubmitSearch=null, onCancelSearch=null}) {
@@ -38,10 +38,12 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
 
     const pageActivity = useSelector( state => state.page.activity );
     const pageItemId = useSelector( state => state.page.id);
+    const container = useSelector( state => state.page.container);
     const position = useSelector( state => state.page.position);
+    const title = useSelector( state=> state.page.title);
+    const itemCopy = useSelector( state=>state.page.itemCopy);
 
     const containerActivity = useSelector( state => state.container.activity);
-    const container = useSelector( state => state.container.container);
     const newItem = useSelector( state => state.container.newItem);
     const containerInWorkspace = useSelector(state => state.container.container);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
@@ -111,6 +113,19 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
         onCancelSearch();
     }
 
+    const onMore = (e) => {
+        const item = {id:pageItemId, container, position, title, itemPack:{type: itemCopy.type} }
+        if(isItemAContainer(pageItemId)){
+            item.itemPack.totalItemVersions = itemCopy.totalItemVersions;
+            item.itemPack.totalStorage = itemCopy.totalStorage;
+        } else {
+            item.itemPack.version = itemCopy.version;
+            item.itemPack.totalItemSize = itemCopy.usage.totalItemSize;
+        }
+        item.fromTopControlPanel = true;
+        dispatch(selectItem(item));
+    }
+
     useEffect(()=>{
         if(!pageNumberInputRef.current ) return;
         pageNumberInputRef.current.value = pageNumber;
@@ -138,20 +153,20 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                     <Card.Body className=''>
                         <Row>
                             <Col xs={4}>
-                                { ((pageActivity === 0) && (containerActivity === 0)) && !container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
-                                { ((pageActivity === 0) && (containerActivity === 0)) && container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                { ((pageActivity === 0) && (containerActivity === 0)) && ( pageNumber || (container && (container.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
-                                { ((pageActivity === 0) && (containerActivity === 0)) && ( container && container.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
-                                { ((pageActivity === 0) && (containerActivity === 0)) && (container && container.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && !containerInWorkspace && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
+                                { ((pageActivity === 0) && (containerActivity === 0)) && containerInWorkspace && (containerInWorkspace.startsWith('u') || containerInWorkspace.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && ( pageNumber || (containerInWorkspace && (containerInWorkspace.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && ( containerInWorkspace && containerInWorkspace.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && (containerInWorkspace && containerInWorkspace.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
                                 {( pageNumber || 
-                                  (container && (
-                                  (container.startsWith('n') && !router.asPath.includes('\/contents\/')) || 
-                                  (container.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
-                                  (container.startsWith('b') && !router.asPath.includes('\/contents\/')) 
+                                  (containerInWorkspace && (
+                                  (containerInWorkspace.startsWith('n') && !router.asPath.includes('\/contents\/')) || 
+                                  (containerInWorkspace.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
+                                  (containerInWorkspace.startsWith('b') && !router.asPath.includes('\/contents\/')) 
                                   ))) && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                             <Col xs={8}>
-                                { ( pageNumber || (container && container.startsWith('n'))) && 
+                                { ( pageNumber || (containerInWorkspace && containerInWorkspace.startsWith('n'))) && 
                                     <Form.Group className='pull-right'>                
                                         <Form.Control ref={pageNumberInputRef} type="text" defaultValue={pageNumber?pageNumber:''} className={`${BSafesStyle.pageNavigationPart} ${BSafesStyle.pageNumberInput} pt-0 pb-0`} />                    
                                         <Button variant='link' size='sm' className='text-white' id="gotoPageBtn" onClick={pageNumberChanged}><i className="fa fa-arrow-right fa-lg" aria-hidden="true"></i></Button>
@@ -162,9 +177,9 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                         }
                                     </Form.Group>
                                 }
-                                { ( (container && ( container.startsWith('u') || container.startsWith('t') || container.startsWith('f') || container.startsWith('b')))) && 
+                                { ( (containerInWorkspace && ( containerInWorkspace.startsWith('u') || containerInWorkspace.startsWith('t') || containerInWorkspace.startsWith('f') || containerInWorkspace.startsWith('b')))) && 
                                     <ButtonGroup className='pull-right'>  
-                                        { container.startsWith('f') &&  
+                                        { containerInWorkspace.startsWith('f') &&  
                                         <>       
 										    <Button variant='link' size='sm' className='text-white' id="gotoFirstItemBtn" onClick={onGotoFirstItem}><i className="fa fa-step-backward fa-lg" aria-hidden="true"></i></Button>
 										    <Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn" onClick={onGotoLastItem}><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>
@@ -182,7 +197,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                                     <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
                                                 </Dropdown.Menu>
                                             </Dropdown>
-                                            <Button variant='link' size='sm' className='text-white'><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
+                                            <Button variant='link' size='sm' className='text-white' onClick={onMore}><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
                                         </>
                                         }
                                         { router.asPath.includes('\/contents\/') && !showSearchBar &&

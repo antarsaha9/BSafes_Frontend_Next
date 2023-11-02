@@ -9,6 +9,7 @@ import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, s
 import { containerActivity } from '../lib/activities';
 
 import { getTeamData } from './teamSlice';
+import { getItemPathThunk } from './pageSlice';
 
 const debugOn = true;
 
@@ -638,6 +639,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.DropItems, () => {
         return new Promise(async (resolve, reject) => {
             const action = data.action;
+            const fromTopControlPanel = data.fromTopControlPanel;
             const payload = data.payload;
             const items = payload.items;
             const numberOfItems = items.length;
@@ -664,6 +666,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                 completed: 0,
             }));
             let i, result;
+            
             for(i=0; i<items.length; i++){
                 const indexInTask=((action==='dropItemsAfter') || (action==='dropItemsInside'))?(items.length-i-1):i;
                 let item = items[indexInTask];
@@ -692,15 +695,19 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                 try {
                     await dropAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
-                    dispatch(completedMovingAnItem(item));
-                    switch(action) {
-                        case 'dropItemsBefore':
-                            dispatch(insertAnItemBefore({targetItem: payload.targetItem, item}));
-                            break;
-                        case 'dropItemsAfter':
-                            dispatch(insertAnItemAfter({targetItem: payload.targetItem, item}));
-                            break;
-                        default: 
+                    if(fromTopControlPanel) {
+                        dispatch(getItemPathThunk({itemId:item.id}));
+                    } else {
+                        dispatch(completedMovingAnItem(item));
+                        switch(action) {
+                            case 'dropItemsBefore':
+                                dispatch(insertAnItemBefore({targetItem: payload.targetItem, item}));
+                                break;
+                            case 'dropItemsAfter':
+                                dispatch(insertAnItemAfter({targetItem: payload.targetItem, item}));
+                                break;
+                            default: 
+                        }
                     }
                 } catch (error) {
                     debugLog(debugOn, "dropItemsThunk failed: ", error)
@@ -742,6 +749,7 @@ function trashAnItem(api, payload, dispatch) {
 export const trashItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.TrashItems, () => {
         const api = '/memberAPI/trashAnItem' ;
+        const fromTopControlPanel = data.fromTopControlPanel;
         const payload = data.payload;
         const { items } = payload;
         return new Promise(async (resolve, reject) => {
@@ -770,7 +778,11 @@ export const trashItemsThunk = (data) => async (dispatch, getState) => {
                 try {
                     await trashAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
-                    dispatch(completedMovingAnItem(item));
+                    if(fromTopControlPanel) {
+
+                    } else {
+                        dispatch(completedMovingAnItem(item));
+                    }
                 } catch (error) {
                     debugLog(debugOn, "trashItemsThunk failed: ", error)
                     result == "Failed to trash items.";

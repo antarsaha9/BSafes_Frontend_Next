@@ -748,6 +748,42 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
     }
 }
 
+function getItemPath(id, dispatch, getState) {
+    return new Promise(async (resolve, reject) => {
+        let itemId, state;
+        if(id.startsWith('np') || id.startsWith('dp')) {
+            itemId = getBookIdFromPage(id);
+        } else {
+            itemId = id;
+        }
+        PostCall({
+            api:'/memberAPI/getItemPath',
+            body: {itemId},
+            dispatch
+        }).then( result => {
+            debugLog(debugOn, result);
+            if(result.status === 'ok') {    
+                state = getState().page;
+                if(id !== state.activeRequest) {
+                    debugLog(debugOn, "Aborted");
+                    return;
+                }    
+                if(id.startsWith('np') || id.startsWith('dp')) {
+                    result.itemPath.push({_id:id})
+                }                 
+                dispatch(itemPathLoaded(result.itemPath));
+                resolve();
+            } else {
+                reject(error);
+                debugLog(debugOn, "woo... failed to get the item path.!", result.status);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "woo... failed to get the item path.", error)
+            reject(error);
+        })
+    });
+}
+
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.GetPageItem, () => {
         
@@ -893,39 +929,22 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 reject("Failed to get a page item.");
             })
 
-            function getItemPath() {
-                let itemId;
-                if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
-                    itemId = getBookIdFromPage(data.itemId);
-                } else {
-                    itemId = data.itemId;
-                }
-                PostCall({
-                    api:'/memberAPI/getItemPath',
-                    body: {itemId},
-                    dispatch
-                }).then( result => {
-                    debugLog(debugOn, result);
-                    if(result.status === 'ok') {    
-                        state = getState().page;
-                        if(data.itemId !== state.activeRequest) {
-                            debugLog(debugOn, "Aborted");
-                            return;
-                        }    
-                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
-                            result.itemPath.push({_id:data.itemId})
-                        }                 
-                        dispatch(itemPathLoaded(result.itemPath));
-                    } else {
-                        debugLog(debugOn, "woo... failed to get the item path.!", result.status);
-                    }
-                }).catch( error => {
-                    debugLog(debugOn, "woo... failed to get the item path.", error)
-                })
-            }
-            getItemPath();
+            await getItemPath(data.itemId, dispatch, getState);
         });
     });
+}
+
+export const getItemPathThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.GetItemPath, ()=> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                await getItemPath(data.itemId, dispatch, getState)
+                resolve();
+            } catch(error) {
+                reject();
+            }
+        });
+    })
 }
 
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {

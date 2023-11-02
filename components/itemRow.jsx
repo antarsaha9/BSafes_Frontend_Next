@@ -20,7 +20,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from '../lib/helper';
 import { getItemLink } from '../lib/bSafesCommonUI';
 
-import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk} from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, dropItemsThunk} from '../reduxStore/containerSlice';
 
 export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
@@ -30,11 +30,8 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
 
-    const workspaceId = useSelector(state => state.container.workspace);
-    const containerItems = useSelector(state => state.container.items);
+    const workspaceId = useSelector(state => state.container.workspace);   
     const selectedItems = useSelector(state => state.container.selectedItems);
-
-    const currentItemPath = useSelector(state => state.page.itemPath);
 
     const handleClose = () => setShow(false);
 
@@ -107,10 +104,6 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
         } else {
             dispatch(deselectItem(item.id))
         }
-    }
-    
-    const handleClearSelected = () => {
-        dispatch(clearSelected());
     }
 
     const handleDrop = async (action) => {
