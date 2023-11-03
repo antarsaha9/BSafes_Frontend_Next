@@ -44,7 +44,9 @@ const initialState = {
     diaryContentsPageFirstLoaded: true,
     trashBoxId:null,
     activities:[],
-    movingItemsTask: null
+    movingItemsTask: null,
+    reloadAPage: false,
+    itemTrashed: false,
 };
 
 function separateActivities(activities, getTitle) {
@@ -246,11 +248,20 @@ const containerSlice = createSlice({
                 }
             }
             state.items = newItems;
-        }
+        },
+        setReloadAPage: (state, action) => {
+            state.reloadAPage = true;
+        },
+        clearReoloadAPage: (state, action) => {
+            state.reloadAPage = false;
+        },
+        setItemTrashed: (state, action) => {
+            state.itemTrashed = action.payload;
+        },
     }
 })
 
-export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter} = containerSlice.actions;
+export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -680,8 +691,8 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                 }
                 const itemPayload = {
                     space: payload.space,
-                    targetContainer: payload.targetContainer,
                     item: JSON.stringify(itemCopy),
+                    targetContainer: payload.targetContainer,
                     targetItem: payload.targetItem,
                     targetPosition: payload.targetPosition,
                     indexInTask,
@@ -696,7 +707,7 @@ export const dropItemsThunk = (data) => async (dispatch, getState) => {
                     await dropAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     if(fromTopControlPanel) {
-                        dispatch(getItemPathThunk({itemId:item.id}));
+                        dispatch(setReloadAPage());
                     } else {
                         dispatch(completedMovingAnItem(item));
                         switch(action) {
@@ -779,7 +790,7 @@ export const trashItemsThunk = (data) => async (dispatch, getState) => {
                     await trashAnItem(api, itemPayload, dispatch);
                     dispatch(deselectItem(item.id));
                     if(fromTopControlPanel) {
-
+                        dispatch(setItemTrashed(true));
                     } else {
                         dispatch(completedMovingAnItem(item));
                     }

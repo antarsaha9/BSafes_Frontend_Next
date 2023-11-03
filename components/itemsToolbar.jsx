@@ -112,7 +112,7 @@ export default function ItemsToolbar() {
         let sourceContainerPath = JSON.parse(JSON.stringify(currentItemPath));
         let fromTopControlPanel = false;
         if(itemsCopy.length === 1 && itemsCopy[0].fromTopControlPanel) {
-            let fromTopControlPanel = true;
+            fromTopControlPanel = true;
             sourceContainerPath.splice(-1);
         }
         const payload = {

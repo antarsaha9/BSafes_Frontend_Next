@@ -15,7 +15,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import NewItemModal from "./newItemModal";
 
 import { debugLog } from "../lib/helper";
-import { createANewItemThunk, clearNewItem, selectItem} from "../reduxStore/containerSlice";
+import { createANewItemThunk, clearNewItem, selectItem, clearReoloadAPage, setItemTrashed} from "../reduxStore/containerSlice";
 import { getItemLink, isItemAContainer } from "../lib/bSafesCommonUI";
 
 
@@ -44,11 +44,14 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     const itemCopy = useSelector( state=>state.page.itemCopy);
 
     const containerActivity = useSelector( state => state.container.activity);
+    const workspaceId = useSelector( state=>state.container.workspace);
     const newItem = useSelector( state => state.container.newItem);
     const containerInWorkspace = useSelector(state => state.container.container);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const reloadAPage = useSelector(state=>state.container.reloadAPage);
+    const itemTrashed = useSelector(state=>state.container.itemTrashed);
 
     function plusButton({ children, onClick }, ref) {
         return (
@@ -144,6 +147,21 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             router.push(link);
         }
     }, [newItem]);
+
+    useEffect(()=> {
+        if(reloadAPage) {
+            dispatch(clearReoloadAPage());
+            router.reload();
+        }
+    }, [reloadAPage]);
+
+    useEffect(()=>{
+        if(itemTrashed){
+            dispatch(setItemTrashed(false));
+            const trashBoxPath = '/trashBox/' + workspaceId;
+            router.push(trashBoxPath);
+        }
+    }, [itemTrashed]);
 
     return (
     <>  
