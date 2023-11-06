@@ -215,6 +215,10 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                                     <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
                                                 </Dropdown.Menu>
                                             </Dropdown>
+                                        </>
+                                        }
+                                        {  !router.asPath.includes('\/contents\/') && pageItemId && (pageItemId.startsWith('p') || pageItemId.startsWith('b') || pageItemId.startsWith('f')) &&
+                                        <>
                                             <Button variant='link' size='sm' className='text-white' onClick={onMore}><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
                                         </>
                                         }

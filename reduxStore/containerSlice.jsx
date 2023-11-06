@@ -194,10 +194,26 @@ const containerSlice = createSlice({
                 const {title, container, id} = newResultItem(c, state.workspaceKey);
                 return {title: title.replace(/<\/?[^>]+(>|$)/g, ""), container, id};
             });
+            const filteredContainersList = [];
+            
+            function isItemSelected(itemId) {
+                for(let i=0; i<state.selectedItems.length; i++){
+                    if(itemId === state.selectedItems[i].id) {
+                        return true;
+                    } 
+                }
+                return false;
+            }
+
+            for(let i=0; i< newContainersList.length ; i++){
+                const item = newContainersList[i];
+                if(isItemSelected(item.id)) continue;
+                filteredContainersList.push(item);
+            }
             if(action.payload.pageNumber === 1){
-                state.containersList = newContainersList;
+                state.containersList = filteredContainersList;
             } else {
-                state.containersList = state.containersList.concat(newContainersList);
+                state.containersList = state.containersList.concat(filteredContainersList);
             }     
         },
         setStartDateValue:  (state, action) => {
