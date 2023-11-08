@@ -339,24 +339,35 @@ export default function PageCommons() {
     }
 
     const handleDrop = function(e) {
-        debugLog(debugOn, "handleDrop");
+        debugLog(debugOn, "handleDrop: ", e.target.id);
         e.preventDefault();
         e.stopPropagation();
         setDragActive(e,false);
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            debugLog(debugOn, "handleDrop, at least one file.");
           // at least one file has been dropped so do something
           // handleFiles(e.dataTransfer.files);
             if(e.target.id === 'images') {
                 const imageType = /image.*/;
-                const file = e.dataTransfer.files[0];
-                if (!file.type.match(imageType)) {
-                    debugLog(debugOn, "Not an image.");
+                const images = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(imageType)) {
+                        debugLog(debugOn, "Not an image.");
+                    }
+                    else images.push(file);
                 }
-            } else {
-
+                uploadImages(images, 'top');
+            } else if (e.target.id === 'attachments') {
+                debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
+                const attachments = [];
+                for(const file of e.dataTransfer.files) {
+                    attachments.push(file);
+                }
+                uploadAttachments(attachments);
             }
         }
+        setDragActive(e,false);
     };
 
     const handleContentWritingModeReady = (e) => {
@@ -610,9 +621,9 @@ export default function PageCommons() {
                 <div className="images">
                     <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                     <Row>
-                        <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
-                            <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                        <Col id="images" onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                            <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
                         </Col>
                     </Row>	
@@ -628,9 +639,9 @@ export default function PageCommons() {
                 <div className="attachments">
                     <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                     <Row>
-                        <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
-                            <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                            <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
                         </Col>
                     </Row>    	

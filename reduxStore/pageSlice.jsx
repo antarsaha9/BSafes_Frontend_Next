@@ -1321,7 +1321,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         });
     }
 
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
 
         state = getState().page;
         debugLog(debugOn, `downloadContentVideoThunk: index:${indexInVideoDownloadQueue}, length: ${state.contentVideosDownloadQueue.length}`);
