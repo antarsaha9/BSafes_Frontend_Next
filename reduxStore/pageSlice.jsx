@@ -63,7 +63,8 @@ const initialState = {
     versionsPerPage: 20,
     versionsPageNumber:0,
     newCommentEditorMode: 'ReadOnly',
-    comments:[]
+    comments:[],
+    S3SignedUrlForContentUpload: null
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -522,7 +523,7 @@ const pageSlice = createSlice({
                 newPanels.push(newPanel);
             }
 
-            state.attachmentPanels = state.attachmentPanels.concat(newPanels);
+            state.attachmentPanels = newPanels.concat(state.attachmentPanels); 
         
         },
         setAbortController: (state, action) => {
@@ -626,10 +627,13 @@ const pageSlice = createSlice({
             comment.content = action.payload.content;
             comment.lastUpdateTime = action.payload.lastUpdateTime;
         },
+        setS3SignedUrlForContentUpload: (state, action) => {
+            state.S3SignedUrlForContentUpload = action.payload;
+        }
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1732,43 +1736,88 @@ if(0) {
 	};
 };
 
-export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
+const getS3SignedUrlForContentUpload = (dispatch) => {
+    return new Promise( async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/preS3Upload',
+            body:{
+                type: 'content'
+            },
+            dispatch
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {  
+                const s3Key = data.s3Key;
+                const signedURL = data.signedURL;                                 
+                resolve({s3Key, signedURL, expiration:Date.now()+3000*1000});
+            } else {
+                debugLog(debugOn, "preS3Upload failed: ", data.error);
+                reject("preS3Upload error.");
+            }
+        }).catch( error => {
+            debugLog(debugOn, "preS3Upload failed: ", error)
+            reject("preS3Upload error.");
+        })
+    });
+};
+
+export const getS3SignedUrlForContentUploadThunk = (data) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        try{
+            dispatch(setS3SignedUrlForContentUpload(null));
+            const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+            dispatch(setS3SignedUrlForContentUpload(signedURLData));
+            resolve();
+        } catch {
+            reject();
+        }
+    });
+}
+
+export const saveDraftThunk = (data) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        const content = data.content;
+
+        let state, encodedContent;
+        state = getState().page;
+        const result = preProcessEditorContentBeforeSaving(content);
+        
+        try {
+            encodedContent = forge.util.encodeUtf8(result.content);
+            const draftId = 'Draft-' + state.id;
+            localStorage.setItem(draftId, encodedContent);
+            resolve();
+        } catch (error) {
+            alert('error');
+            reject("Failed to save draft.");
+        }
+
+    });
+}
+
+export const saveContentThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.SaveContent, () => {
         return new Promise(async (resolve, reject) => {
-            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;;
+            const content = data.content;
+            const workspaceKey = data.workspaceKey;
+
+            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;
             state = getState().page;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
 	        const s3ObjectsSize = result.s3ObjectsSize;
             
             function uploadContentToS3(data){
-                const preContentS3Upload = () => {
-                    return new Promise( async (resolve, reject) => {
-                        PostCall({
-                            api:'/memberAPI/preS3Upload',
-                            body:{
-                                type: 'content'
-                            },
-                            dispatch
-                        }).then( data => {
-                            debugLog(debugOn, data);
-                            if(data.status === 'ok') {  
-                                s3Key = data.s3Key;
-                                signedURL = data.signedURL;                                 
-                                resolve();
-                            } else {
-                                debugLog(debugOn, "preS3Upload failed: ", data.error);
-                                reject("preS3Upload error.");
-                            }
-                        }).catch( error => {
-                            debugLog(debugOn, "preS3Upload failed: ", error)
-                            reject("preS3Upload error.");
-                        })
-                    });
-                };
+                
                 return new Promise( async (resolve, reject) => {
                     try {
-                        await preContentS3Upload();
+                        let signedURLData = state.S3SignedUrlForContentUpload;
+                        if(Date.now() > signedURLData.expiration) {
+                            signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+                        }
+                        s3Key = signedURLData.s3Key;
+                        signedURL = signedURLData.signedURL;
+
                         const config = {
                             onUploadProgress: async (progressEvent) => {
                                 let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
@@ -1778,6 +1827,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
+                        dispatch(setS3SignedUrlForContentUpload(null));
                         await axios.put(signedURL, Buffer.from(data, 'binary'), config); 
                         resolve(); 
                     } catch (error) {
@@ -1789,7 +1839,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
 
             try {
                 encodedContent = forge.util.encodeUtf8(result.content);
-            
+                
                 if (!state.itemCopy) {
                     try {
                         itemKey = setupNewItemKey();

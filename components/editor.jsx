@@ -18,12 +18,12 @@ import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBina
 import { rotateImage } from '../lib/wnImage';
 
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null}) {
     const debugOn = false;    
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);
-
+    const [draftInterval, setDraftInterval] = useState(null);
     const expandedKey = useSelector( state => state.auth.expandedKey);
     const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
     const itemId = useSelector( state => state.page.id);
@@ -77,6 +77,13 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     },
                     fontFamilySelection: false
                 };
+                const interval = setInterval(()=>{
+                    debugLog(debugOn, "Saving draft ...");
+                    let content = $(editorRef.current).froalaEditor('html.get');
+                    debugLog(debugOn, "editor content: ", content );
+                    onDraftSampled(content);
+                }, 1000);
+                setDraftInterval(interval);
                 break;
             default:
                 froalaOptions = {
@@ -116,6 +123,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
             editorRef.current.style.overflowX = 'auto';
+            clearInterval(draftInterval);
+            setDraftInterval(null);
             setEditorOn(false);  
             if(readOnlyModeReady) readOnlyModeReady();
         }
