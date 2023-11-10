@@ -40,6 +40,7 @@ export default function PageCommons() {
     const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
     
     const [editingEditorId, setEditingEditorId] = useState(null);
+    const [readyForSaving, setReadyForSaving] = useState(false);
 
     const S3SignedUrlForContentUpload = useSelector( state => state.page.S3SignedUrlForContentUpload);
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
@@ -178,9 +179,11 @@ export default function PageCommons() {
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
+        let thisReadyForSaving = true;
         if(editorId === 'content'){
             beforeWritingContent();
             setEditingEditorId("content");
+            thisReadyForSaving = false;
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
@@ -192,6 +195,7 @@ export default function PageCommons() {
             dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
             setEditingEditorId(editorId);
         }
+        setReadyForSaving(thisReadyForSaving);
     }
     
     const handleContentChanged = (editorId, content) => {
@@ -280,6 +284,7 @@ export default function PageCommons() {
         debugLog(debugOn, "handleSave");
         setEditingEditorMode("Saving"); 
         dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleCancel = () => {
@@ -291,6 +296,7 @@ export default function PageCommons() {
             dispatch(loadOriginalContentThunk());
         }
         dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleImageButton = (e) => {
@@ -681,7 +687,7 @@ export default function PageCommons() {
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
             {   true &&
-                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={S3SignedUrlForContentUpload !== null} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
             }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
                 <Blocks
