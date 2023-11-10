@@ -18,7 +18,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -49,6 +49,7 @@ export default function PageCommons() {
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
+    const draftLoaded = useSelector(state=>state.page.draftLoaded);
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
@@ -163,6 +164,14 @@ export default function PageCommons() {
         dispatch(saveDraftThunk({content}))
     }
 
+    const handleDraftClicked = () => {
+        dispatch(loadDraftThunk());
+    }
+
+    const handleDraftDelete = () => {
+        dispatch(clearDraft());
+    }
+
     function afterContentReadOnly() {
         
     }
@@ -270,6 +279,7 @@ export default function PageCommons() {
     const handleSave = () => {
         debugLog(debugOn, "handleSave");
         setEditingEditorMode("Saving"); 
+        dispatch(setDraftLoaded(false));
     }
 
     const handleCancel = () => {
@@ -277,7 +287,10 @@ export default function PageCommons() {
         dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
-
+        if(draftLoaded) {
+            dispatch(loadOriginalContentThunk());
+        }
+        dispatch(setDraftLoaded(false));
     }
 
     const handleImageButton = (e) => {
@@ -547,6 +560,13 @@ export default function PageCommons() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
 
+    useEffect(()=>{
+        if(contentImagesAllDisplayed && draftLoaded) {
+            beforeWritingContent();
+            setEditingEditorId("content");
+        }
+    }, [contentImagesAllDisplayed])
+
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
@@ -617,7 +637,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample}/>
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete}/>
                 </Col> 
             </Row>
             <br />

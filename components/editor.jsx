@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
 
 import jquery from "jquery"
 
@@ -18,22 +19,25 @@ import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBina
 import { rotateImage } from '../lib/wnImage';
 
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null}) {
-    const debugOn = false;    
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
+    const debugOn = true;    
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);
     const [draftInterval, setDraftInterval] = useState(null);
+    const [intervalState, setIntervalState] = useState(null);
     const expandedKey = useSelector( state => state.auth.expandedKey);
     const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
     const itemId = useSelector( state => state.page.id);
     const itemKey = useSelector( state => state.page.itemKey);
     const itemIV = useSelector( state => state.page.itemIV);
+    const draft = useSelector( state=>state.page.draft);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
    
     const [ editorOn, setEditorOn ] = useState(false);
     const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
+    const [ originalContent, setOriginalContent] = useState(null);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
     
@@ -77,13 +81,6 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     },
                     fontFamilySelection: false
                 };
-                const interval = setInterval(()=>{
-                    debugLog(debugOn, "Saving draft ...");
-                    let content = $(editorRef.current).froalaEditor('html.get');
-                    debugLog(debugOn, "editor content: ", content );
-                    onDraftSampled(content);
-                }, 1000);
-                setDraftInterval(interval);
                 break;
             default:
                 froalaOptions = {
@@ -101,7 +98,13 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 };
 
         }
+        
         $(editorRef.current).froalaEditor(froalaOptions);
+        if(editorId === 'content'){
+            const contentSample = $(editorRef.current).froalaEditor('html.get');
+            setOriginalContent(contentSample);
+        }
+          
         editorRef.current.style.overflowX = null;
         if(!editorOn){
             debugLog(debugOn, "setEditorOn")
@@ -123,8 +126,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
             editorRef.current.style.overflowX = 'auto';
-            clearInterval(draftInterval);
-            setDraftInterval(null);
+            if(draftInterval){
+                clearInterval(draftInterval);
+                setDraftInterval(null);
+                setIntervalState(null);
+            }
+            setOriginalContent(null);
             setEditorOn(false);  
             if(readOnlyModeReady) readOnlyModeReady();
         }
@@ -189,6 +196,40 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.getEditorConfig = getEditorConfigHook;
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
+
+    useEffect(()=> {
+        if( originalContent !== null){
+            if(editorId === 'content'){
+                setIntervalState('Start');
+            }
+        }
+    }, [originalContent])
+
+    useEffect(()=> {
+        let content;
+        debugLog(debugOn, 'interval state:', intervalState);
+        switch(intervalState) {
+            case 'Start': 
+                const interval = setInterval(()=>{
+                    debugLog(debugOn, "Saving draft ...");
+                    content = $(editorRef.current).froalaEditor('html.get');
+                    //debugLog(debugOn, "editor content: ", content );
+                    if(content !== originalContent) {
+                        debugLog(debugOn, 'Content changed');
+                        onDraftSampled(content);
+                        setOriginalContent(content);
+                        setIntervalState('Stop');
+                    }  
+                }, 1000);
+                setDraftInterval(interval);
+                break;
+            case 'Stop':
+                clearInterval(draftInterval);
+                setDraftInterval(null);
+                break;
+            default:
+        }
+    }, [intervalState])
 
     const handlePenClicked = () => {
         onPenClicked(editorId);
@@ -360,6 +401,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     </Col>
                     <Col xs={6}>
                         <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                        {(editorId==='content' && draft !== null) &&
+                            <ButtonGroup className='pull-right mx-3' size="sm">
+                                <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
+                                <Button variant="danger" onClick={onDraftDelete}>X</Button>
+                            </ButtonGroup>
+                        }
                     </Col>
                 </Row>
                 :

@@ -64,7 +64,10 @@ const initialState = {
     versionsPageNumber:0,
     newCommentEditorMode: 'ReadOnly',
     comments:[],
-    S3SignedUrlForContentUpload: null
+    S3SignedUrlForContentUpload: null,
+    draft:null,
+    draftLoaded: false,
+    originalContent: null,
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -629,11 +632,43 @@ const pageSlice = createSlice({
         },
         setS3SignedUrlForContentUpload: (state, action) => {
             state.S3SignedUrlForContentUpload = action.payload;
+        },
+        setDraft: (state, action) => {
+            state.draft = action.payload;
+        },
+        clearDraft:(state, action) => {
+            state.draft = null;
+            const draftId = 'Draft-' + state.id;
+            localStorage.removeItem(draftId);
+        },
+        draftLoaded: (state, action) => {
+            state.originalContent = state.content;
+            state.content = state.draft;
+            state.draftLoaded = true;
+            state.draft = null;
+            const draftId = 'Draft-' + state.id;
+            localStorage.removeItem(draftId);
+            state.contentImagesDownloadQueue = [];
+            state.contentImagedDownloadIndex = 0;
+            state.contentImagesDisplayIndex = 0;
+            state.contentVideosDownloadQueue = 0;
+            findMediasInContent(state, state.content);
+        },
+        setDraftLoaded: (state, action) => {
+            state.draftLoaded = action.payload;
+        },
+        loadOriginalContent: (state, action) => {
+            state.content = state.originalContent;
+            state.contentImagesDownloadQueue = [];
+            state.contentImagedDownloadIndex = 0;
+            state.contentImagesDisplayIndex = 0;
+            state.contentVideosDownloadQueue = 0;
+            findMediasInContent(state, state.content);
         }
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -924,6 +959,12 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             reject("Failed to get a page item!!!");
                         }
                     }
+                    const draftId = 'Draft-' + data.itemId;
+                    const draft = localStorage.getItem(draftId);
+                    if(draft) {
+                        dispatch(setDraft(draft));
+                    }
+
                 } else {
                     debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
                     reject("Failed to get a page item.");
@@ -1627,7 +1668,7 @@ function preProcessEditorContentBeforeSaving(content) {
     images.forEach((item) => {
         const id = item.id;
         const idParts = id.split('&');
-        const s3Key = idParts[0];
+        const s3Key = idParts[0].split('/').pop();
         const dimension = idParts[1];
         const size = parseInt(idParts[2]);
         s3ObjectsInContent.push({
@@ -1637,24 +1678,6 @@ function preProcessEditorContentBeforeSaving(content) {
         totalS3ObjectsSize += size;
         const placeholder = `https://placehold.co/${dimension}?text=Image`;
         item.src = placeholder;
-
-if(0) {
-        //Check if progress bar exists. If not, add one.
-        let progressElementId = 'progress_' + id;
-        let progressBarId = 'progressBar_' + id;
-        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
-        if(!progressElement){
-            progressElement = document.createElement('div');
-            progressElement.className = 'progress';
-            progressElement.id = progressElementId;
-            progressElement.style.width = '250px';
-            progressElement.style.margin = 'auto';
-            progressElement.setAttribute('hidden', true);
-            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
-            item.after(progressElement);
-        }
-}
-
     });
 
     images.forEach((item) => { // Clean up any bSafes status class
@@ -1662,7 +1685,20 @@ if(0) {
 	    item.classList.remove('bSafesDownloading');
 	});
 
+    const videoImages = tempElement.querySelectorAll(".bSafesDownloadVideo");
+    videoImages.forEach((item) => {
+                
+        const placeholder = 'https://placehold.co/600x400?text=Video';
+        item.src = placeholder;
+    });
+
+    videoImages.forEach((item) => { // Clean up any bSafes status class
+	    item.classList.remove('bSafesDisplayed');
+	    item.classList.remove('bSafesDownloading');
+	});
+
     const videos = tempElement.querySelectorAll('.fr-video');
+
     videos.forEach((item) => {
         const video = item.getElementsByTagName('video')[0];
 
@@ -1679,49 +1715,18 @@ if(0) {
     
         videoImg.id = videoId;
         videoImg.style = videoStyle;
+
         const placeholder = 'https://placehold.co/600x400?text=Video';
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
-
-        if(0) {
-
-        //Check if progress bar exists. If not, add one.
-        let progressElementId = 'progress_' + videoId;
-        let progressBarId = 'progressBar_' + videoId;
-        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
-        if(!progressElement){
-            progressElement = document.createElement('div');
-            progressElement.className = 'progress';
-            progressElement.id = progressElementId;
-            progressElement.style.width = '250px';
-            progressElement.style.margin = 'auto';
-            progressElement.setAttribute('hidden', true);
-            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
-            videoImg.after(progressElement);
-
-            let videoControlsElementId = 'videoControls_' + videoId;
-            let playVideoId = 'playVideo_' + videoId;
-        
-            let videoControlsElement = document.createElement('div');
-            videoControlsElement.className = 'videoControls';
-            videoControlsElement.classList.add('text-center') 
-            videoControlsElement.id = videoControlsElementId;
-            videoControlsElement.style.width = '250px';
-            videoControlsElement.style.margin = 'auto';
-            
-            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
-            progressElement.after(videoControlsElement);
-        }
-}
     });
 
     const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');
     videoImgs.forEach((item) => {
         const id = item.id;
         const idParts = id.split('&');
-	    const s3Key = idParts[0];
-	    const size = parseInt(idParts[1]);
-
+        const s3Key = idParts[idParts.length-3].split('/').pop();
+        const size = parseInt(idParts[idParts.length-1]);
         s3ObjectsInContent.push({
             s3Key: s3Key,
             size: size
@@ -1786,6 +1791,7 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
             encodedContent = forge.util.encodeUtf8(result.content);
             const draftId = 'Draft-' + state.id;
             localStorage.setItem(draftId, encodedContent);
+            dispatch(setDraft(encodedContent));
             resolve();
         } catch (error) {
             alert('error');
@@ -1793,6 +1799,22 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
         }
 
     });
+}
+
+export const loadDraftThunk = (data) => async (dispatch, getState) => {
+    dispatch(draftLoaded());
+    const state = getState().page;
+    if(state.contentImagesDownloadQueue.length) {
+        startDownloadingContentImages(state.id, dispatch, getState);
+    }  
+}
+
+export const loadOriginalContentThunk = (data) => async (dispatch, getState) => {
+    dispatch(loadOriginalContent());
+    const state = getState().page;
+    if(state.contentImagesDownloadQueue.length) {
+        startDownloadingContentImages(state.id, dispatch, getState);
+    }  
 }
 
 export const saveContentThunk = (data) => async (dispatch, getState) => {
@@ -1863,6 +1885,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         }
 
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                        dispatch(clearDraft());
                         resolve();
                     } catch(error) {
                         reject("Failed to create a new page with content.");
@@ -1885,6 +1908,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         itemCopy,
                         content
                     }));
+                    dispatch(clearDraft());
                     resolve();
                 }
             } catch (error) {
