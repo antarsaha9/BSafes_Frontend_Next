@@ -103,12 +103,12 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     }
                     return;
                 } else {
-                    if(accountVersion === 'v1'){
-                        changePage('/teams');
-                    } else {
-                        changePage('/safe');
-                    }
-                    return;
+                    // if(accountVersion === 'v1'){
+                    //     changePage('/teams');
+                    // } else {
+                    //     changePage('/safe');
+                    // }
+                    // return;
                 }
             } else {
                 if(isLoggedIn) {

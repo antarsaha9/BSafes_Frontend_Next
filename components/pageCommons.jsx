@@ -18,8 +18,9 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, setVideoWordsMode, saveImageWordsThunk, saveVideoWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, uploadVideoThunk, downloadVideoThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
+import VideoPanel from "./videoPanel";
 
 export default function PageCommons() {
     const debugOn = true;
@@ -50,6 +51,7 @@ export default function PageCommons() {
 
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
+    const videoPanelsState = useSelector(state => state.page.videoPanels);
     const comments = useSelector(state => state.page.comments);
 
     const spinnerRef = useRef(null);
@@ -60,7 +62,8 @@ export default function PageCommons() {
 
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
-    
+    const videoFilesInputRef = useRef(null);
+
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
 
@@ -87,6 +90,22 @@ export default function PageCommons() {
         };
         const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
         gallery.init();
+    }
+
+    const onVideoClicked = (queueId) => {
+        debugLog(debugOn, "onVideoClicked: ", queueId);
+        for (const thisPanel of videoPanelsState) {
+            if(thisPanel.queueId === queueId) {
+                const id = queueId;
+                const s3Key = thisPanel.s3KeyPrefix;
+                const chunks = thisPanel.numberOfChunks-1;
+                const fileName = thisPanel.fileName;
+                const fileType = thisPanel.fileType;
+                const fileSize = thisPanel.fileSize;
+                dispatch(downloadVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+                break;
+            }
+        }
     }
 
     const handleVideoClick = (e) => {
@@ -177,6 +196,10 @@ export default function PageCommons() {
         } else if(editorId.startsWith("comment_")) {
             dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
             setEditingEditorId(editorId);
+        } else if(editorId.startsWith("video_")) {
+            const videoIndex = parseInt(editorId.split("_")[1]);
+            dispatch(setVideoWordsMode({index: videoIndex, mode: "Writing"}));
+            setEditingEditorId(editorId);
         }
     }
     
@@ -205,6 +228,15 @@ export default function PageCommons() {
                 dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}));
                 setEditingEditorId(null);
             }
+        } else if(editingEditorId.startsWith("video_")){
+            const videoIndex = parseInt(editingEditorId.split("_")[1]);
+            console.log(content, videoPanelsState[videoIndex].words)
+            if(content !== videoPanelsState[videoIndex].words) {
+                dispatch(saveVideoWordsThunk({index: videoIndex, content: content}));
+            } else {
+                dispatch(setVideoWordsMode({index: videoIndex, mode: "ReadOnly"}));
+                setEditingEditorId(null);
+            }
         } else if(editingEditorId.startsWith("comment_")){
             if(editingEditorId !== 'comment_New') {
                 let index = parseInt(editingEditorId.split('_')[1]);
@@ -220,6 +252,10 @@ export default function PageCommons() {
 
     const imagePanels = imagePanelsState.map((item, index) =>
         <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+    )
+
+    const videoPanels = videoPanelsState.map((item, index) =>
+        <VideoPanel key={item.queueId} panelIndex={"video_" + index} panel={item} onVideoClicked={onVideoClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
 
     const handleWrite = () =>{
@@ -243,6 +279,16 @@ export default function PageCommons() {
                         case "Saving":
                         case "ReadOnly":
                             dispatch(setImageWordsMode({index: imageIndex, mode}))
+                            break;
+                        default:
+                    }
+                    
+                } else if(editingEditorId.startsWith("video_")){
+                    const videoIndex = parseInt(editingEditorId.split("_")[1]);
+                    switch(mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setVideoWordsMode({index: videoIndex, mode}))
                             break;
                         default:
                     }
@@ -279,6 +325,20 @@ export default function PageCommons() {
         imageFilesInputRef.current.value = null;
         imageFilesInputRef.current?.click();
     };
+
+    const handleVideoButton = (e) => {
+        debugLog(debugOn, "handleImageBtn");
+        e.preventDefault();
+        videoFilesInputRef.current.value = null;
+        videoFilesInputRef.current?.click();
+    };
+    const handleVideoFiles = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleVideoFiles: ", e.target.id);
+        const files = e.target.files;
+        console.log(files);
+        dispatch(uploadVideoThunk({files, workspaceKey}));
+    }
     
     const uploadImages = (files, where) => {
         dispatch(uploadImagesThunk({files, where, workspaceKey}));
@@ -621,6 +681,24 @@ export default function PageCommons() {
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" lg="8" >
                     {imagePanels}
+                </Col>
+            </Row>
+            <br />
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="videos">
+                    <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" multiple accept="video/*" className="d-none editControl" id="videos" />
+                    <Row>
+                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center`}>
+                            <Button id="1" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="1" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>	
+                </div>
+            }
+            <Row className="justify-content-center">
+                <Col xs="12" md="8" >
+                    { videoPanels }
                 </Col>
             </Row>
             <br />

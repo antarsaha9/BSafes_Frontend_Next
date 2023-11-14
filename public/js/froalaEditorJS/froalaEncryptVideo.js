@@ -1484,7 +1484,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         }
 
         if(i === numberOfChunks){
-          console.log(`uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
+          console.log(`uploadAnAttachment done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
           try {
             let videoLink = videoLinkFromServiceWorker;//window.URL.createObjectURL(video);
             let s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
