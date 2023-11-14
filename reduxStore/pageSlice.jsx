@@ -2941,7 +2941,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
     })
 }
 
-export const uploadVideoThunk = (data) => async (dispatch, getState) =>{
+export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
     let state, workspaceKey, itemKey, video, uploadResult, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
@@ -2983,7 +2983,7 @@ export const uploadVideoThunk = (data) => async (dispatch, getState) =>{
 
                     state = getState().page;
                 } catch(error) {
-                    debugLog(debugOn, 'uploadVideoThunk failed: ', error);
+                    debugLog(debugOn, 'uploadVideosThunk failed: ', error);
                     reject("Failed to upload Video.");
                     break;
                 }

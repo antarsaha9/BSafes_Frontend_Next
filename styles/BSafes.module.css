@@ -417,6 +417,18 @@
   margin-bottom: 10px;
 }
 
+.videosDragDropZone {
+  border: 2px dashed #e4e1e1;
+  background-color: lavender;
+  margin-bottom: 10px;
+}
+
+.videosDragDropZoneActive {
+  border: 2px dashed #e4e1e1;
+  background-color: white;
+  margin-bottom: 10px;
+}
+
 .attachmentsDragDropZone {
   border: 2px dashed #e4e1e1;
   background-color: blanchedalmond;

@@ -18,7 +18,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk, uploadVideoThunk, downloadVideoThunk, setVideoWordsMode, saveVideoWordsThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk, uploadVideosThunk, downloadVideoThunk, setVideoWordsMode, saveVideoWordsThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 import VideoPanel from "./videoPanel";
 
@@ -63,6 +63,7 @@ export default function PageCommons() {
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
     const videoFilesInputRef = useRef(null);
+    const [videosDragActive, setVideosDragActive] = useState(false);
 
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
@@ -363,11 +364,15 @@ export default function PageCommons() {
         debugLog(debugOn, "handleVideoFiles: ", e.target.id);
         const files = e.target.files;
         console.log(files);
-        dispatch(uploadVideoThunk({files, workspaceKey}));
+        dispatch(uploadVideosThunk({files, workspaceKey}));
     }
     
     const uploadImages = (files, where) => {
         dispatch(uploadImagesThunk({files, where, workspaceKey}));
+    };
+    
+    const uploadVideos = (files, where) => {
+        dispatch(uploadVideosThunk({files, where, workspaceKey}));
     };
 
     const handleImageFiles = (e) => {
@@ -406,6 +411,8 @@ export default function PageCommons() {
     const setDragActive = (e, active) => {
         if(e.target.id === "images") {
             setImagesDragActive(active);
+        } else if(e.target.id === "videos") {
+            setVideosDragActive(active);
         } else {
             setAttachmentsDragActive(active);
         }
@@ -442,6 +449,16 @@ export default function PageCommons() {
                     else images.push(file);
                 }
                 uploadImages(images, 'top');
+            } else if(e.target.id === 'videos') {
+                const videoType = /video.*/;
+                const videos = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(videoType)) {
+                        debugLog(debugOn, "Not an video.");
+                    }
+                    else videos.push(file);
+                }
+                uploadVideos(videos, 'top');
             } else if (e.target.id === 'attachments') {
                 debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
                 const attachments = [];
@@ -730,7 +747,7 @@ export default function PageCommons() {
                 <div className="videos">
                     <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" multiple accept="video/*" className="d-none editControl" id="videos" />
                     <Row>
-                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center`}>
+                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${videosDragActive?BSafesStyle.videosDragDropZoneActive:BSafesStyle.videosDragDropZone}`}>
                             <Button id="1" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
                                 <h4><i id="1" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
