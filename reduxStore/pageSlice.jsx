@@ -68,7 +68,11 @@ const initialState = {
     versionsPerPage: 20,
     versionsPageNumber:0,
     newCommentEditorMode: 'ReadOnly',
-    comments:[]
+    comments:[],
+    S3SignedUrlForContentUpload: null,
+    draft:null,
+    draftLoaded: false,
+    originalContent: null,
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -660,7 +664,7 @@ const pageSlice = createSlice({
                 newPanels.push(newPanel);
             }
 
-            state.attachmentPanels = state.attachmentPanels.concat(newPanels);
+            state.attachmentPanels = newPanels.concat(state.attachmentPanels); 
         
         },
         setAbortController: (state, action) => {
@@ -764,10 +768,45 @@ const pageSlice = createSlice({
             comment.content = action.payload.content;
             comment.lastUpdateTime = action.payload.lastUpdateTime;
         },
+        setS3SignedUrlForContentUpload: (state, action) => {
+            state.S3SignedUrlForContentUpload = action.payload;
+        },
+        setDraft: (state, action) => {
+            state.draft = action.payload;
+        },
+        clearDraft:(state, action) => {
+            state.draft = null;
+            const draftId = 'Draft-' + state.id;
+            localStorage.removeItem(draftId);
+        },
+        draftLoaded: (state, action) => {
+            state.originalContent = state.content;
+            state.content = state.draft;
+            state.draftLoaded = true;
+            state.draft = null;
+            const draftId = 'Draft-' + state.id;
+            localStorage.removeItem(draftId);
+            state.contentImagesDownloadQueue = [];
+            state.contentImagedDownloadIndex = 0;
+            state.contentImagesDisplayIndex = 0;
+            state.contentVideosDownloadQueue = 0;
+            findMediasInContent(state, state.content);
+        },
+        setDraftLoaded: (state, action) => {
+            state.draftLoaded = action.payload;
+        },
+        loadOriginalContent: (state, action) => {
+            state.content = state.originalContent;
+            state.contentImagesDownloadQueue = [];
+            state.contentImagedDownloadIndex = 0;
+            state.contentImagesDisplayIndex = 0;
+            state.contentVideosDownloadQueue = 0;
+            findMediasInContent(state, state.content);
+        }
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, addUploadVideos, setAbortController, uploadingAttachment, uploadingVideo, stopUploadingAnAttachment, attachmentUploaded, videoUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setVideoWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, downloadVideo, downloadingVideo, videoDownloaded, videoFromServiceWorker, imageDownloadFailed} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, downloadVideo, downloadingVideo, videoDownloaded, imageDownloadFailed, addUploadVideos, uploadingVideo, setVideoWordsMode, videoUploaded, videoFromServiceWorker} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -884,6 +923,42 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
         }
         state = getState().page; 
     }
+}
+
+function getItemPath(id, dispatch, getState) {
+    return new Promise(async (resolve, reject) => {
+        let itemId, state;
+        if(id.startsWith('np') || id.startsWith('dp')) {
+            itemId = getBookIdFromPage(id);
+        } else {
+            itemId = id;
+        }
+        PostCall({
+            api:'/memberAPI/getItemPath',
+            body: {itemId},
+            dispatch
+        }).then( result => {
+            debugLog(debugOn, result);
+            if(result.status === 'ok') {    
+                state = getState().page;
+                if(id !== state.activeRequest) {
+                    debugLog(debugOn, "Aborted");
+                    return;
+                }    
+                if(id.startsWith('np') || id.startsWith('dp')) {
+                    result.itemPath.push({_id:id})
+                }                 
+                dispatch(itemPathLoaded(result.itemPath));
+                resolve();
+            } else {
+                reject(error);
+                debugLog(debugOn, "woo... failed to get the item path.!", result.status);
+            }
+        }).catch( error => {
+            debugLog(debugOn, "woo... failed to get the item path.", error)
+            reject(error);
+        })
+    });
 }
 
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
@@ -1022,6 +1097,12 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             reject("Failed to get a page item!!!");
                         }
                     }
+                    const draftId = 'Draft-' + data.itemId;
+                    const draft = localStorage.getItem(draftId);
+                    if(draft) {
+                        dispatch(setDraft(draft));
+                    }
+
                 } else {
                     debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
                     reject("Failed to get a page item.");
@@ -1031,39 +1112,22 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 reject("Failed to get a page item.");
             })
 
-            function getItemPath() {
-                let itemId;
-                if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
-                    itemId = getBookIdFromPage(data.itemId);
-                } else {
-                    itemId = data.itemId;
-                }
-                PostCall({
-                    api:'/memberAPI/getItemPath',
-                    body: {itemId},
-                    dispatch
-                }).then( result => {
-                    debugLog(debugOn, result);
-                    if(result.status === 'ok') {    
-                        state = getState().page;
-                        if(data.itemId !== state.activeRequest) {
-                            debugLog(debugOn, "Aborted");
-                            return;
-                        }    
-                        if(data.itemId.startsWith('np') || data.itemId.startsWith('dp')) {
-                            result.itemPath.push({_id:data.itemId})
-                        }                 
-                        dispatch(itemPathLoaded(result.itemPath));
-                    } else {
-                        debugLog(debugOn, "woo... failed to get the item path.!", result.status);
-                    }
-                }).catch( error => {
-                    debugLog(debugOn, "woo... failed to get the item path.", error)
-                })
-            }
-            getItemPath();
+            await getItemPath(data.itemId, dispatch, getState);
         });
     });
+}
+
+export const getItemPathThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.GetItemPath, ()=> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                await getItemPath(data.itemId, dispatch, getState)
+                resolve();
+            } catch(error) {
+                reject();
+            }
+        });
+    })
 }
 
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
@@ -1441,7 +1505,7 @@ export const downloadContentVideoThunk = (data) => async (dispatch, getState) =>
         });
     }
 
-    return new Promise(async (resolve) => {
+    return new Promise(async (resolve, reject) => {
 
         state = getState().page;
         debugLog(debugOn, `downloadContentVideoThunk: index:${indexInVideoDownloadQueue}, length: ${state.contentVideosDownloadQueue.length}`);
@@ -1996,7 +2060,7 @@ function preProcessEditorContentBeforeSaving(content) {
     images.forEach((item) => {
         const id = item.id;
         const idParts = id.split('&');
-        const s3Key = idParts[0];
+        const s3Key = idParts[0].split('/').pop();
         const dimension = idParts[1];
         const size = parseInt(idParts[2]);
         s3ObjectsInContent.push({
@@ -2006,24 +2070,6 @@ function preProcessEditorContentBeforeSaving(content) {
         totalS3ObjectsSize += size;
         const placeholder = `https://placehold.co/${dimension}?text=Image`;
         item.src = placeholder;
-
-if(0) {
-        //Check if progress bar exists. If not, add one.
-        let progressElementId = 'progress_' + id;
-        let progressBarId = 'progressBar_' + id;
-        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
-        if(!progressElement){
-            progressElement = document.createElement('div');
-            progressElement.className = 'progress';
-            progressElement.id = progressElementId;
-            progressElement.style.width = '250px';
-            progressElement.style.margin = 'auto';
-            progressElement.setAttribute('hidden', true);
-            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
-            item.after(progressElement);
-        }
-}
-
     });
 
     images.forEach((item) => { // Clean up any bSafes status class
@@ -2031,7 +2077,20 @@ if(0) {
 	    item.classList.remove('bSafesDownloading');
 	});
 
+    const videoImages = tempElement.querySelectorAll(".bSafesDownloadVideo");
+    videoImages.forEach((item) => {
+                
+        const placeholder = 'https://placehold.co/600x400?text=Video';
+        item.src = placeholder;
+    });
+
+    videoImages.forEach((item) => { // Clean up any bSafes status class
+	    item.classList.remove('bSafesDisplayed');
+	    item.classList.remove('bSafesDownloading');
+	});
+
     const videos = tempElement.querySelectorAll('.fr-video');
+
     videos.forEach((item) => {
         const video = item.getElementsByTagName('video')[0];
 
@@ -2048,49 +2107,18 @@ if(0) {
     
         videoImg.id = videoId;
         videoImg.style = videoStyle;
+
         const placeholder = 'https://placehold.co/600x400?text=Video';
         videoImg.src = placeholder;
         item.replaceWith(videoImg);
-
-        if(0) {
-
-        //Check if progress bar exists. If not, add one.
-        let progressElementId = 'progress_' + videoId;
-        let progressBarId = 'progressBar_' + videoId;
-        let progressElement = findAnElementByClassAndId(tempElement, '.progress', progressElementId);
-        if(!progressElement){
-            progressElement = document.createElement('div');
-            progressElement.className = 'progress';
-            progressElement.id = progressElementId;
-            progressElement.style.width = '250px';
-            progressElement.style.margin = 'auto';
-            progressElement.setAttribute('hidden', true);
-            progressElement.innerHTML = `<div class="progress-bar" id="${progressBarId}" style="width: 0%;"></div>`;
-            videoImg.after(progressElement);
-
-            let videoControlsElementId = 'videoControls_' + videoId;
-            let playVideoId = 'playVideo_' + videoId;
-        
-            let videoControlsElement = document.createElement('div');
-            videoControlsElement.className = 'videoControls';
-            videoControlsElement.classList.add('text-center') 
-            videoControlsElement.id = videoControlsElementId;
-            videoControlsElement.style.width = '250px';
-            videoControlsElement.style.margin = 'auto';
-            
-            videoControlsElement.innerHTML = `<i class="fa fa-play-circle-o fa-2x" id=${playVideoId} aria-hidden="true"></i>`;
-            progressElement.after(videoControlsElement);
-        }
-}
     });
 
     const videoImgs = tempElement.querySelectorAll('.bSafesDownloadVideo');
     videoImgs.forEach((item) => {
         const id = item.id;
         const idParts = id.split('&');
-	    const s3Key = idParts[0];
-	    const size = parseInt(idParts[1]);
-
+        const s3Key = idParts[idParts.length-3].split('/').pop();
+        const size = parseInt(idParts[idParts.length-1]);
         s3ObjectsInContent.push({
             s3Key: s3Key,
             size: size
@@ -2105,43 +2133,105 @@ if(0) {
 	};
 };
 
-export const saveContentThunk = (content, workspaceKey) => async (dispatch, getState) => {
+const getS3SignedUrlForContentUpload = (dispatch) => {
+    return new Promise( async (resolve, reject) => {
+        PostCall({
+            api:'/memberAPI/preS3Upload',
+            body:{
+                type: 'content'
+            },
+            dispatch
+        }).then( data => {
+            debugLog(debugOn, data);
+            if(data.status === 'ok') {  
+                const s3Key = data.s3Key;
+                const signedURL = data.signedURL;                                 
+                resolve({s3Key, signedURL, expiration:Date.now()+3000*1000});
+            } else {
+                debugLog(debugOn, "preS3Upload failed: ", data.error);
+                reject("preS3Upload error.");
+            }
+        }).catch( error => {
+            debugLog(debugOn, "preS3Upload failed: ", error)
+            reject("preS3Upload error.");
+        })
+    });
+};
+
+export const getS3SignedUrlForContentUploadThunk = (data) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        try{
+            dispatch(setS3SignedUrlForContentUpload(null));
+            const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+            dispatch(setS3SignedUrlForContentUpload(signedURLData));
+            resolve();
+        } catch {
+            reject();
+        }
+    });
+}
+
+export const saveDraftThunk = (data) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        const content = data.content;
+
+        let state, encodedContent;
+        state = getState().page;
+        const result = preProcessEditorContentBeforeSaving(content);
+        
+        try {
+            encodedContent = forge.util.encodeUtf8(result.content);
+            const draftId = 'Draft-' + state.id;
+            localStorage.setItem(draftId, encodedContent);
+            dispatch(setDraft(encodedContent));
+            resolve();
+        } catch (error) {
+            alert('error');
+            reject("Failed to save draft.");
+        }
+
+    });
+}
+
+export const loadDraftThunk = (data) => async (dispatch, getState) => {
+    dispatch(draftLoaded());
+    const state = getState().page;
+    if(state.contentImagesDownloadQueue.length) {
+        startDownloadingContentImages(state.id, dispatch, getState);
+    }  
+}
+
+export const loadOriginalContentThunk = (data) => async (dispatch, getState) => {
+    dispatch(loadOriginalContent());
+    const state = getState().page;
+    if(state.contentImagesDownloadQueue.length) {
+        startDownloadingContentImages(state.id, dispatch, getState);
+    }  
+}
+
+export const saveContentThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.SaveContent, () => {
         return new Promise(async (resolve, reject) => {
-            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;;
+            const content = data.content;
+            const workspaceKey = data.workspaceKey;
+
+            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;
             state = getState().page;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
 	        const s3ObjectsSize = result.s3ObjectsSize;
             
             function uploadContentToS3(data){
-                const preContentS3Upload = () => {
-                    return new Promise( async (resolve, reject) => {
-                        PostCall({
-                            api:'/memberAPI/preS3Upload',
-                            body:{
-                                type: 'content'
-                            },
-                            dispatch
-                        }).then( data => {
-                            debugLog(debugOn, data);
-                            if(data.status === 'ok') {  
-                                s3Key = data.s3Key;
-                                signedURL = data.signedURL;                                 
-                                resolve();
-                            } else {
-                                debugLog(debugOn, "preS3Upload failed: ", data.error);
-                                reject("preS3Upload error.");
-                            }
-                        }).catch( error => {
-                            debugLog(debugOn, "preS3Upload failed: ", error)
-                            reject("preS3Upload error.");
-                        })
-                    });
-                };
+                
                 return new Promise( async (resolve, reject) => {
                     try {
-                        await preContentS3Upload();
+                        let signedURLData = state.S3SignedUrlForContentUpload;
+                        if(Date.now() > signedURLData.expiration) {
+                            signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+                        }
+                        s3Key = signedURLData.s3Key;
+                        signedURL = signedURLData.signedURL;
+
                         const config = {
                             onUploadProgress: async (progressEvent) => {
                                 let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
@@ -2151,6 +2241,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
+                        dispatch(setS3SignedUrlForContentUpload(null));
                         await axios.put(signedURL, Buffer.from(data, 'binary'), config); 
                         resolve(); 
                     } catch (error) {
@@ -2162,7 +2253,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
 
             try {
                 encodedContent = forge.util.encodeUtf8(result.content);
-            
+                
                 if (!state.itemCopy) {
                     try {
                         itemKey = setupNewItemKey();
@@ -2186,6 +2277,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                         }
 
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                        dispatch(clearDraft());
                         resolve();
                     } catch(error) {
                         reject("Failed to create a new page with content.");
@@ -2208,6 +2300,7 @@ export const saveContentThunk = (content, workspaceKey) => async (dispatch, getS
                         itemCopy,
                         content
                     }));
+                    dispatch(clearDraft());
                     resolve();
                 }
             } catch (error) {

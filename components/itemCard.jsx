@@ -95,10 +95,6 @@ export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
         }
     }
 
-    const handleClearSelected = () => {
-        dispatch(clearSelected());
-    }
-
     const handleDrop = async (action) => {
         const itemsCopy = selectedItems;
 

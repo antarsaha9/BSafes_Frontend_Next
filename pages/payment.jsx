@@ -7,24 +7,68 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
-import Spinner from 'react-bootstrap/Spinner';
+import Table from 'react-bootstrap/Table'
+
+import format from "date-fns/format";
+const dropin = require('braintree-web-drop-in');
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 
-const dropin = require('braintree-web-drop-in');
 
-import { getPaymentClientTokenThunk, payThunk } from '../reduxStore/accountSlice';
+
+import { getInvoiceThunk, getPaymentClientTokenThunk, payThunk, getTransactionsThunk } from '../reduxStore/accountSlice';
 
 import { debugLog } from '../lib/helper'
-import { access } from 'fs';
 
 export default function Payment() {
     const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const [plan, setPlan] = useState('payYearly');
+    const [plan, setPlan] = useState('yearly');
     const braintreeInstanceRef = useRef(null);
+
+    const storageUsage = useSelector(state=>state.account.storageUsage);
+    const totoalStorage50GBRequired = useSelector(state=>state.account.totoalStorage50GBRequired);
+    const nextDueTime = useSelector(state=>state.account.nextDueTime);
+    const monthlyPrice = useSelector(state=>state.account.monthlyPrice);
+    const dues = useSelector(state=>state.account.dues);
+    const planOptions = useSelector(state=>state.account.planOptions);
+    const transactions = useSelector(state=>state.account.transactions);
+
+    let storageUsageString;
+    if(storageUsage < 1000000) {
+        storageUsageString = (storageUsage/(1000000)).toFixed(3) + ' MB';
+    } else {
+        storageUsageString = (storageUsage/(1000000000)).toFixed(3) + ' GB';
+    }
+
+    let monthlyDuesDuration, yearlyDuesDuration, storageRequired;
+    if(planOptions){
+        if(planOptions.monthly.firstDue === planOptions.monthly.lastDue){
+            monthlyDuesDuration = format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy');
+        } else {
+            monthlyDuesDuration = `${format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.monthly.lastDue), 'MM/dd/yyyy')}`
+        }
+        yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.yearly.lastDue), 'MM/dd/yyyy')}`
+    }
+    
+    const dueItems = (dues.length !==0 ) && dues.toReversed().map((item, i)=> 
+        <tr key={i}>
+            <td>{format(new Date(item.newDueTime), 'MM/dd/yyyy')}</td>
+            <td>{item.totoalStorage50GBRequired}</td>
+            <td>${item.monthlyPrice}</td>
+        </tr>
+    )
+
+    const transactionItems = (transactions.length !==0) && transactions.map((item, i)=>
+        <tr key={i}>
+            <td>{format(new Date(item.time), 'MM/dd/yyyy')}</td>
+            <td>${item.totalDues}</td>
+            <td>{item.plan}</td>
+            <td>{item.firstDue===item.lastDue?format(new Date(item.firstDue), 'MM/dd/yyyy'):`${format(new Date(item.firstDue), 'MM/dd/yyyy')} - ${format(new Date(item.lastDue), 'MM/dd/yyyy')}`}</td>
+        </tr>
+    )
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const braintreeClientToken = useSelector(state => state.account.braintreeClientToken)
@@ -35,13 +79,15 @@ export default function Payment() {
     const handlePay = (e)=>[
         braintreeInstanceRef.current.requestPaymentMethod().then((payload) => {
             debugLog(debugOn, 'Payment method nonce:', payload.nonce)
-            dispatch(payThunk({paymentMethodNonce: payload.nonce}))
+            dispatch(payThunk({plan, paymentMethodNonce: payload.nonce}))
         })
     ]
 
     useEffect(()=>{
         if(isLoggedIn) {
+            dispatch(getInvoiceThunk());
             dispatch(getPaymentClientTokenThunk());
+            dispatch(getTransactionsThunk());
         }
     }, [isLoggedIn])
 
@@ -60,11 +106,42 @@ export default function Payment() {
         <ContentPageLayout> 
             <Container>
                 <br />
-                <br />     
+                <br />
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <p>Your current storage usage is {storageUsageString}. </p>
+                        <p> {totoalStorage50GBRequired}GB storage is required, ${monthlyPrice} USD per month.</p>
+                        {(dues.length === 0) &&
+                            <p>Next due date is {format(new Date(nextDueTime), 'MM/dd/yyyy')}</p>
+                        }
+                    </Col>
+                </Row>
+                {(dues.length !== 0) && 
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <hr />
+                        <h1>Invoice</h1>
+                        <h5>Dues:</h5>
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Storage(GB)</th>
+                                    <th>Due(USD)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {dueItems}
+                            </tbody>
+                        </Table>
+                        <hr />
+                    </Col>                  
+                </Row>
+                }
+                {(dues.length !== 0) && <>
                 <Row>
                     <Col sm={{span:8, offset:2}}>
                         <h1>Payment</h1>     
-                        <hr />
                     </Col>                  
                 </Row>
                 
@@ -72,28 +149,30 @@ export default function Payment() {
                     <Col sm={{span:8, offset:2}}>
                         <Form>  
                             <Form.Group controlId='plan'>
-                                <Form.Check
-                                    type='radio'
-                                    id='payMonthly'
-                                    label='Pay Monthly'
-                                    value='payMonthly'  
-                                    onChange = {changePlan}
-                                    checked={plan==='payMonthly'}
-                                />
-                                <p>2.95 USD for 50GB storage</p>
                                 <hr />
                                 <Form.Check
                                     type='radio'
                                     id='payYearly'
                                     label='Pay Yearly, get 2 months free.'
-                                    value='payYearly'
+                                    value='yearly'
                                     onChange = {changePlan}
-                                    checked={plan==='payYearly'}
+                                    checked={plan==='yearly'}
                                 />
-                                <p>29.50 USD for 50GB Storage</p>
+                                {planOptions && `$${planOptions.yearly.totalDues} USD. For ${yearlyDuesDuration}. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
+                                <hr />
+                                <Form.Check
+                                    type='radio'
+                                    id='payMonthly'
+                                    label='Pay Monthly'
+                                    value='monthly'  
+                                    onChange = {changePlan}
+                                    checked={plan==='monthly'}
+                                />
+                                {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
+                                <hr />
                             </Form.Group>
                         </Form>
-                        <hr />
+                        
                     </Col>
                 </Row>
                 <Row>
@@ -101,6 +180,33 @@ export default function Payment() {
                         <div id="dropin-container"></div>
                         <Button className='pull-right' onClick={handlePay}>Pay</Button>
                     </Col>
+                </Row>
+                </>}
+                <Row>
+                    <Col sm={{span:8, offset:2}}>
+                        <hr />
+                        <h1>Transactions</h1>     
+                        <Table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Plan</th>
+                                    <th>Paid Duration</th>
+                                </tr>
+                            </thead>
+                            {(transactions.length !== 0) &&
+                            <tbody>
+                                {
+                                    transactionItems
+                                }
+                            </tbody>
+                            }
+                        </Table>
+                        {(transactions.length === 0) &&
+                            <p>Empty</p>
+                        }
+                    </Col>                  
                 </Row>
             </Container>
         </ContentPageLayout>

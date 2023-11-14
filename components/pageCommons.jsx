@@ -18,7 +18,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, setVideoWordsMode, saveImageWordsThunk, saveVideoWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, uploadVideoThunk, downloadVideoThunk } from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk, uploadVideoThunk, downloadVideoThunk, setVideoWordsMode, saveVideoWordsThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 import VideoPanel from "./videoPanel";
 
@@ -36,23 +36,23 @@ export default function PageCommons() {
     const oldVersion = useSelector(state=>state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
-    const titleText = useSelector(state => state.page.titleText);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
     
     const [editingEditorId, setEditingEditorId] = useState(null);
+    const [readyForSaving, setReadyForSaving] = useState(false);
 
+    const S3SignedUrlForContentUpload = useSelector( state => state.page.S3SignedUrlForContentUpload);
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
     const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
-
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
-
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const videoPanelsState = useSelector(state => state.page.videoPanels);
     const comments = useSelector(state => state.page.comments);
+    const draftLoaded = useSelector(state=>state.page.draftLoaded);
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
@@ -174,7 +174,22 @@ export default function PageCommons() {
         
         let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
         setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        dispatch(getS3SignedUrlForContentUploadThunk());
         setContentEditorMode("Writing");
+        
+    }
+
+    const handleDraftSample = (content) => {
+        debugLog(debugOn, "draft content: ", content );
+        dispatch(saveDraftThunk({content}))
+    }
+
+    const handleDraftClicked = () => {
+        dispatch(loadDraftThunk());
+    }
+
+    const handleDraftDelete = () => {
+        dispatch(clearDraft());
     }
 
     function afterContentReadOnly() {
@@ -183,9 +198,11 @@ export default function PageCommons() {
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
+        let thisReadyForSaving = true;
         if(editorId === 'content'){
             beforeWritingContent();
             setEditingEditorId("content");
+            thisReadyForSaving = false;
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
@@ -201,6 +218,7 @@ export default function PageCommons() {
             dispatch(setVideoWordsMode({index: videoIndex, mode: "Writing"}));
             setEditingEditorId(editorId);
         }
+        setReadyForSaving(thisReadyForSaving);
     }
     
     const handleContentChanged = (editorId, content) => {
@@ -208,7 +226,7 @@ export default function PageCommons() {
         
         if(editingEditorId === "content") {
             if(content !== contentEditorContent) {
-                dispatch(saveContentThunk(content, workspaceKey));
+                dispatch(saveContentThunk({content, workspaceKey}));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -310,13 +328,21 @@ export default function PageCommons() {
 
     const handleSave = () => {
         debugLog(debugOn, "handleSave");
-        setEditingEditorMode("Saving");
+        setEditingEditorMode("Saving"); 
+        dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleCancel = () => {
         debugLog(debugOn, "handleCancel");
+        dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
+        if(draftLoaded) {
+            dispatch(loadOriginalContentThunk());
+        }
+        dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleImageButton = (e) => {
@@ -356,8 +382,6 @@ export default function PageCommons() {
     const attachmentPanels = attachmentPanelsState.map((item, index) =>
         <AttachmentPanel key={item.queueId} panelIndex={"attachment_" + index} panel={item} />
     )
-
-    const attachmentPanelsNewOnTop = attachmentPanels.reverse();
 
     const handleAttachmentButton = (e) => {
         debugLog(debugOn, "handleAttachmentBtn");
@@ -399,24 +423,35 @@ export default function PageCommons() {
     }
 
     const handleDrop = function(e) {
-        debugLog(debugOn, "handleDrop");
+        debugLog(debugOn, "handleDrop: ", e.target.id);
         e.preventDefault();
         e.stopPropagation();
         setDragActive(e,false);
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            debugLog(debugOn, "handleDrop, at least one file.");
           // at least one file has been dropped so do something
           // handleFiles(e.dataTransfer.files);
             if(e.target.id === 'images') {
                 const imageType = /image.*/;
-                const file = e.dataTransfer.files[0];
-                if (!file.type.match(imageType)) {
-                    debugLog(debugOn, "Not an image.");
+                const images = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(imageType)) {
+                        debugLog(debugOn, "Not an image.");
+                    }
+                    else images.push(file);
                 }
-            } else {
-
+                uploadImages(images, 'top');
+            } else if (e.target.id === 'attachments') {
+                debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
+                const attachments = [];
+                for(const file of e.dataTransfer.files) {
+                    attachments.push(file);
+                }
+                uploadAttachments(attachments);
             }
         }
+        setDragActive(e,false);
     };
 
     const handleContentWritingModeReady = (e) => {
@@ -591,6 +626,13 @@ export default function PageCommons() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
 
+    useEffect(()=>{
+        if(contentImagesAllDisplayed && draftLoaded) {
+            beforeWritingContent();
+            setEditingEditorId("content");
+        }
+    }, [contentImagesAllDisplayed])
+
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
@@ -661,7 +703,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady}/>
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete}/>
                 </Col> 
             </Row>
             <br />
@@ -670,9 +712,9 @@ export default function PageCommons() {
                 <div className="images">
                     <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                     <Row>
-                        <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
-                            <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                        <Col id="images" onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                            <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
                         </Col>
                     </Row>	
@@ -706,9 +748,9 @@ export default function PageCommons() {
                 <div className="attachments">
                     <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                     <Row>
-                        <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
-                            <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                            <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
                         </Col>
                     </Row>    	
@@ -716,14 +758,14 @@ export default function PageCommons() {
             }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
-                    { attachmentPanelsNewOnTop }
+                    { attachmentPanels }
                 </Col>
             </Row>
             <br />
             {photoSwipeGallery()}
             <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
             {   true &&
-                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
             }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
                 <Blocks

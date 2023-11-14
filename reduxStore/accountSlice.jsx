@@ -11,7 +11,14 @@ const initialState = {
     activityErrorMessages: {},
     accountState: null,
     apiCount: 0,
-    braintreeClientToken: null
+    braintreeClientToken: null,
+    storageUsage: 0,
+    totoalStorage50GBRequired: 0,
+    nextDueTime:null,
+    monthlyPrice: 0,
+    dues: [],
+    planOptions: null,
+    transactions: []
 }
 
 const accountSlice = createSlice({
@@ -53,10 +60,23 @@ const accountSlice = createSlice({
         clientTokenLoaded: (state, action) => {
             state.braintreeClientToken = action.payload.clientToken;
         },
+        invoiceLoaded: (state, action) => {
+            state.storageUsage = action.payload.storageUsage;
+            state.totoalStorage50GBRequired = action.payload.totoalStorage50GBRequired;
+            state.nextDueTime = action.payload.nextDueTime;
+            state.monthlyPrice = action.payload.monthlyPrice;
+            state.dues = action.payload.dues;
+            state.planOptions = action.payload.planOptions;
+        },
+        transactionsLoaded: (state, action) => {
+            state.transactions = action.payload.hits.map((transaction, i)=>{
+                return transaction._source;
+            })
+        }
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded}  = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -66,6 +86,29 @@ const newActivity = async (dispatch, type, activity) => {
     } catch(error) {
         dispatch(activityError({type, error}));
     }
+}
+
+export const getInvoiceThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.getInvoice, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getInvoice',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "getInvoiceThunk ok. ");
+                    dispatch(invoiceLoaded(data.invoice));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getInvoiceThunk failed: ", data.error);
+                    reject("getInvoiceThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getInvoiceThunk failed: ", error)
+                reject("getInvoiceThunk failed!");
+            })
+        });
+    });
 }
 
 export const getPaymentClientTokenThunk = () => async (dispatch, getState) => {
@@ -96,6 +139,7 @@ export const payThunk = (data) => async (dispatch, getState) => {
         PostCall({
             api: '/memberAPI/pay',
             body: {
+                plan: data.plan,
                 paymentMethodNonce: data.paymentMethodNonce
             }
         }).then(async data => {
@@ -114,6 +158,29 @@ export const payThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const getTransactionsThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.getTransactions, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getTransactions',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "getTransactionsThunk ok. ");
+                    const hits = data.hits.hits;
+                    dispatch(transactionsLoaded({hits}))
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getTransactionsThunk failed: ", data.error);
+                    reject("getTransactionsThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getTransactionsThunk failed: ", error)
+                reject("getTransactionsThunk failed!");
+            })
+        });
+    });
+}
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

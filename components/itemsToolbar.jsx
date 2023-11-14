@@ -76,16 +76,21 @@ export default function ItemsToolbar() {
     
     const handleDrop = async () => {
         const itemsCopy = selectedItems;
-        
+        let sourceContainerPath = JSON.parse(JSON.stringify(currentItemPath));
+        let fromTopControlPanel = false;
+        if(itemsCopy.length === 1 && itemsCopy[0].fromTopControlPanel) {
+            fromTopControlPanel = true;
+            sourceContainerPath.splice(-1);
+        }
         const payload = {
             space: workspaceId,
             items: itemsCopy,
             targetItem: containerPath[containerPath.length - 1].id,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
+            sourceContainersPath: JSON.stringify(sourceContainerPath.map(ci => ci._id)),
             targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id))
         }
         try {
-            dispatch(dropItemsThunk({action:'dropItemsInside', payload}));
+            dispatch(dropItemsThunk({action:'dropItemsInside', fromTopControlPanel, payload}));
             setShowMoveModal(false);
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
@@ -104,15 +109,20 @@ export default function ItemsToolbar() {
         let itemContainer = container;
         if(itemContainer === 'root') itemContainer = workspaceId; 
         const itemsCopy = selectedItems;
-
+        let sourceContainerPath = JSON.parse(JSON.stringify(currentItemPath));
+        let fromTopControlPanel = false;
+        if(itemsCopy.length === 1 && itemsCopy[0].fromTopControlPanel) {
+            fromTopControlPanel = true;
+            sourceContainerPath.splice(-1);
+        }
         const payload = {
             items: itemsCopy,
             targetSpace: workspaceId,
             originalContainer: itemContainer,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id))
+            sourceContainersPath: JSON.stringify(sourceContainerPath.map(ci => ci._id))
         }
         try {
-            dispatch(trashItemsThunk({payload}));
+            dispatch(trashItemsThunk({fromTopControlPanel, payload}));
             setShowTrashModal(false);
             setTrashConfirmation('');
         } catch (error) {

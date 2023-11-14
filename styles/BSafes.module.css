@@ -262,7 +262,7 @@
   position:fixed;
   left: 0px;
   right:0px;
-  top:60%;
+  top:40%;
   width:100%;
   z-index: 10;
 }
@@ -277,12 +277,21 @@
 
 .pageBtnFixed {
   position: fixed;
-  top:60%;
+  top:45%;
   background-color:transparent;
   display: inline-block;
   z-index:1000;
   color: black;
 }
+
+.coverBtnFixed {
+  position: fixed;
+  background-color:transparent;
+  display: inline-block;
+  z-index:1000;
+  color: black;
+}
+
 
 .previousPageBtn {
   left:-10px;
