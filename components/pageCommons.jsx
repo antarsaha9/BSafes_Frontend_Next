@@ -18,7 +18,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -54,6 +54,9 @@ export default function PageCommons() {
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
+
+    const videoFilesInputRef = useRef(null);
+    const [videosDragActive, setVideosDragActive] = useState(false);
 
     const imageFilesInputRef = useRef(null);
     const [imagesDragActive, setImagesDragActive] = useState(false);
@@ -297,6 +300,21 @@ export default function PageCommons() {
         }
         dispatch(setDraftLoaded(false));
         setReadyForSaving(false);
+    }
+
+    const handleVideoButton = (e) => {
+        debugLog(debugOn, "handleVideoBtn");
+        e.preventDefault();
+        videoFilesInputRef.current.value = null;
+        videoFilesInputRef.current?.click();
+    };
+
+    const handleVideoFiles = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleVideoFiles: ", e.target.id);
+        const files = e.target.files;
+        console.log(files);
+        dispatch(uploadVideosThunk({files, workspaceKey}));
     }
 
     const handleImageButton = (e) => {
@@ -647,6 +665,24 @@ export default function PageCommons() {
                 </Col> 
             </Row>
             <br />
+            <br />
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="videos">
+                    <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
+                    <Row>
+                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${videosDragActive?BSafesStyle.videosDragDropZoneActive:BSafesStyle.videosDragDropZone}`}>
+                            <Button id="videos" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="videos" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>	
+                </div>
+            }
+            <Row className="justify-content-center">
+                <Col xs="12" md="8" >
+                    { /*videoPanels*/ }
+                </Col>
+            </Row>
             <br />
             { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
                 <div className="images">

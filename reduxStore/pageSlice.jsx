@@ -9,8 +9,8 @@ import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice'
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
-import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, findAnElementByClassAndId, getEditorConfig } from '../lib/bSafesCommonUI';
-import { downScaleImage, rotateImage } from '../lib/wnImage';
+import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
+import { downScaleImage } from '../lib/wnImage';
 
 const debugOn = true;
 
@@ -44,6 +44,9 @@ const initialState = {
     contentImagedDownloadIndex: 0,
     contentImagesDisplayIndex:0,
     contentVideosDownloadQueue:[],
+    videoPanels:[],
+    videosUploadQueue:[],
+    videosUploadIndex:0,
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
@@ -418,6 +421,60 @@ const pageSlice = createSlice({
             video.status = "Downloaded";
             if(action.payload.link) video.src = action.payload.link;
         },
+        addUploadVideos: (state, action) => {
+            if(state.aborted ) return;
+            const files = action.payload.files;
+            if(!files.length) return;
+            let newPanels = [];
+            for(let i=0; i < files.length; i++) {
+                const queueId = 'u' + state.videosUploadQueue.length;
+                let numberOfChunks = Math.floor(files[i].size/getEditorConfig().videoChunkSize);
+                if(files[i].size % state.chunkSize) numberOfChunks+=1;
+                const newUpload = {file: files[i], numberOfChunks};
+                state.videosUploadQueue.push(newUpload);
+                const newPanel = {
+                    queueId: queueId,
+                    fileName: files[i].name,
+                    fileSize: files[i].size,
+                    fileType: files[i].type,
+                    status: "WaitingForUpload",
+                    numberOfChunks: newUpload.numberOfChunks,
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
+
+            switch (action.payload.where) {
+                case "top":
+                    state.videoPanels.unshift(...newPanels);
+                    break;
+                default:
+                    let index = parseInt(action.payload.where.split('_').pop());
+                    state.videoPanels.splice(index+1, 0, ...newPanels);
+            }
+        
+        },
+        uploadingVideo: (state, action) => {
+            if(state.aborted ) return;
+            let panel = state.videoPanels.find((item) => item.queueId === 'u'+state.videosUploadIndex);
+            panel.status = "Uploading";
+            panel.progress = action.payload;
+        },
+        videoUploaded: (state, action) => {
+            if(state.aborted ) return;
+            let panel = state.videoPanels.find((item) => item.queueId === 'u'+state.videosUploadIndex);
+            if(!panel) return;
+            panel.status = "Uploaded";
+            panel.progress = 100;
+            panel.fileType = action.payload.fileType;
+            panel.fileSize = action.payload.fileSize;
+            panel.s3KeyPrefix = action.payload.s3KeyPrefix;
+            panel.size = action.payload.size;
+            panel.failedChunk = null;
+            panel.src = action.payload.link;
+            panel.play = true;
+            state.videosUploadIndex += 1;
+        },
         addUploadImages: (state, action) => {
             if(state.aborted ) return;
             const files = action.payload.files;
@@ -664,11 +721,37 @@ const pageSlice = createSlice({
             state.contentImagesDisplayIndex = 0;
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
-        }
+        },
+        addUploadVideos: (state, action) => {
+            if(state.aborted ) return;
+            const files = action.payload.files;
+            if(!files.length) return;
+            let newPanels = [];
+            for(let i=0; i < files.length; i++) {
+                const queueId = 'u' + state.videosUploadQueue.length;
+                let numberOfChunks = Math.floor(files[i].size/getEditorConfig().videoChunkSize);
+                if(files[i].size % state.chunkSize) numberOfChunks+=1;
+                const newUpload = {file: files[i], numberOfChunks};
+                state.videosUploadQueue.push(newUpload);
+                const newPanel = {
+                    queueId: queueId,
+                    fileName: files[i].name,
+                    fileSize: files[i].size,
+                    fileType: files[i].type,
+                    status: "WaitingForUpload",
+                    numberOfChunks: newUpload.numberOfChunks,
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
+
+            state.videoPanels = state.videoPanels.concat(newPanels);
+        
+        },
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -2085,6 +2168,406 @@ const findImageWordsByKey = (images, s3Key) => {
     }
     return null;
 }
+
+const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, workspaceKey) => {
+    const chunkSize = getEditorConfig().videoChunkSize;
+    const fileType = video.type;
+    const fileSize = video.size;
+    const fileName = video.name;
+    const encodedFileName = encodeURI(fileName);
+    const encryptedFileName = encryptBinaryString(encodedFileName, state.itemKey);
+    let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+    let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
+    const itemId = state.id;
+    const itemKey = state.itemKey;
+    // BEGIN **** For playing back video from service worker ***
+    function setupWriter(s3KeyPrefix) {
+        console.log("setupWriter");
+
+        return new Promise(async (resolve, reject) => {
+            console.log("talkToServiceWorker");
+            navigator.serviceWorker.getRegistration("/").then((registration) => {
+                console.log("registration: ", registration);
+                if (registration) {
+
+                    messageChannel = new MessageChannel();
+
+                    registration.active.postMessage({
+                        type: 'INIT_EDITOR_VIDEO_PORT',
+                        videoChunkSize: getEditorConfig().videoChunkSize,
+                        s3KeyPrefix,
+                        fileName,
+                        fileType,
+                        fileSize,
+                        browserInfo: getBrowserInfo()
+                    }, [messageChannel.port2]);
+
+                    messageChannel.port1.onmessage = async (event) => {
+                        // Print the result
+                        console.log(event.data);
+                        if (event.data) {
+                            switch (event.data.type) {
+                                case 'STREAM_OPENED':
+                                    videoLinkFromServiceWorker = '/downloadFile/video/' + event.data.stream.id;
+
+                                    console.log("STREAM_OPENED");
+
+                                    resolve();
+                                    break;
+                                case 'NEXT_CHUNK':
+
+                                    break;
+                                case 'STREAM_CLOSED':
+                                    messageChannel.port1.onmessage = null
+                                    messageChannel.port1.close();
+                                    messageChannel.port2.close();
+                                    messageChannel = null;
+                                    break;
+                                default:
+                            }
+                        }
+                    };
+
+                } else {
+                    console.log("serviceWorker.getRegistration error");
+                    reject("serviceWorker.getRegistration error")
+                }
+            }).catch(error => {
+                console.log("serviceWorker.getRegistration error: ", error);
+                reject(error);
+            });
+        })
+    }
+
+    function writeAChunkToFile(chunkIndex, chunk) {
+        console.log("writeAChunkToFile");
+        return new Promise(async (resolve, reject) => {
+
+            console.log("BINARY: ", Date.now());
+            messageChannel.port1.postMessage({
+                type: 'BINARY',
+                chunkIndex,
+                chunk
+            });
+            resolve();
+
+        })
+    }
+
+    // END **** For playing back video from service worker ***
+
+    function sliceEncryptAndUpload(file, chunkIndex) {
+        return new Promise((resolve, reject) => {
+            let reader, offset, data, binaryData, encryptedData, fileUploadProgress = 0;
+
+            offset = (chunkIndex) * chunkSize;
+            reader = new FileReader();
+            const blob = file.slice(offset, offset + chunkSize);
+
+            function uploadAChunk(index, data) {
+                let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
+
+                s3KeyPrefixParts = s3KeyPrefix.split(':');
+                timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1];
+
+                function setUploadTimeout() {
+                    timer = setTimeout(()=> {
+                        if(controller) controller.abort();
+                    }, 30000);
+                }
+
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        result = await preS3ChunkUpload(state.id, index, timeStamp);
+                        fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                        console.log(`File upload prgoress: ${fileUploadProgress}`);
+                        dispatch(uploadingVideo(fileUploadProgress));
+
+                        s3Key = result.s3Key;
+                        s3KeyPrefix = result.s3KeyPrefix;
+                        signedURL = result.signedURL;
+                        console.log('chunk signed url', signedURL);
+
+                        if (!serviceWorkerReady) {
+                            await setupWriter(s3KeyPrefix);
+                            serviceWorkerReady = true;
+                        }
+
+                        controller = new AbortController();
+
+                        await uploader(signedURL, data, timer, uploadingVideo, controller, numberOfChunks, index, dispatch);
+                        await writeAChunkToFile(chunkIndex, binaryData);
+                        if(timer) clearTimeout(timer);
+                        dispatch(setAbortController(null));
+                        resolve();
+                    } catch (error) {
+                        console.log('uploadAChunk failed: ', error);
+                        reject(error);
+                    }
+                });
+            }
+
+            reader.onloadend = async function (e) {
+                data = reader.result;
+                binaryData = data;
+                // fileUploadProgress = chunkIndex * (100 / numberOfChunks) + 2 / numberOfChunks;
+                // fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
+                // _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                // console.log(`File upload prgoress: ${fileUploadProgress}`);
+
+                encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, state.itemKey);
+                // fileUploadProgress = chunkIndex * (100 / numberOfChunks) + 10 / numberOfChunks;
+                // fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
+                // console.log(`File upload prgoress: ${fileUploadProgress}`);
+                // _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+
+                encryptedFileSize += encryptedData.length;
+
+                try {
+                    await uploadAChunk(chunkIndex, encryptedData);
+                    resolve();
+                } catch (error) {
+                    console.log('sliceEncryptAndUpload failed: ', error);
+                    reject(error);
+                }
+            };
+            reader.readAsBinaryString(blob);
+        });
+    }
+
+    function doneUploadAVideo(videoThumbnailImage) {
+        console.log(videoThumbnailImage)
+        let i, newVideos=[];
+        return new Promise(async (resolve, reject) => {
+            if (!state.itemCopy) {
+                try {
+                    let keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
+
+                    let newPageData = {
+                        itemId: state.id,
+                        keyEnvelope: forge.util.encode64(keyEnvelope),
+                        s3KeyPrefix,
+                        fileName: forge.util.encode64(encryptedFileName),
+	                    fileType,
+                        fileSize,
+	                    size: encryptedFileSize,
+	                    numberOfChunks
+                    };
+                
+                    let updatedState = {
+                    };
+
+                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                    resolve();
+                } catch(error) {
+                    reject("Failed to create a new page with attachment.");
+                } 
+            } else {
+                let itemCopy = {
+                    ...state.itemCopy
+                }
+                if(itemCopy.video)
+                    newVideos.push(...itemCopy.video)
+                const thisVideo = {
+                    fileName: forge.util.encode64(encryptedFileName),
+                    fileType,
+                    fileSize,
+                    s3KeyPrefix,
+                    size: encryptedFileSize,
+                    numberOfChunks
+                }
+                newVideos.push(thisVideo);
+                try {
+                    itemCopy.video = newVideos;
+                    itemCopy.update = "video";    
+                    await createNewItemVersionForPage(itemCopy, dispatch);
+                    itemCopy.video[newVideos.length-1].thumbnail = videoThumbnailImage;
+                    
+                    dispatch(newVersionCreated({
+                        itemCopy
+                    }));
+                    resolve();
+                } catch (error) {
+                    reject("Failed to add an video.");
+                }
+            }
+        })
+    }
+    
+    async function getVideoSnapshot(s3Key) {
+        return new Promise(async resolve => {
+            const videoE = document.createElement('video');
+            videoE.src = videoLinkFromServiceWorker;
+            videoE.autoplay = true;
+            document.body.appendChild(videoE)
+
+            await new Promise(async resolve => {
+                videoE.addEventListener("loadedmetadata", resolve)
+            });
+            await new Promise(async resolve => {
+                videoE.addEventListener("canplay", resolve)
+            });
+            let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
+            let canvas = $canvas[0];
+            $canvas.insertAfter('body');
+            let ratio = videoE.videoWidth / videoE.videoHeight;
+            console.log('videoWidth, videoHeight: ', videoE.videoWidth, videoE.videoHeight);
+            let myWidth = 640;
+            let myHeight = parseInt(myWidth / ratio, 10);
+            canvas.width = myWidth;
+            canvas.height = myHeight;
+            let context = canvas.getContext('2d');
+
+            const uploadSnapshot = async (data) => {
+                let encryptedStr = encryptLargeBinaryString(data, itemKey);
+                let s3KeyParts = s3Key.split('&');
+                let s3KeyPrefix = s3KeyParts[3];
+                let timeStamp = s3KeyPrefix.split(':').pop();
+
+                try {
+                    let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
+                    let signedURL = result.signedURL;
+                    console.log('video snapshot signed url', signedURL);
+
+                    const onUploadProgress = (progressEvent) => {
+                        let percentCompleted = progressEvent.loaded * 100 / progressEvent.total;
+                        console.log(`Video snapshot upload progress: ${percentCompleted} `);
+                    }
+
+                    await uploadData(encryptedStr, signedURL, onUploadProgress);
+                    
+                    resolve();
+                } catch (error) {
+                    console.log("uploadSnapshot failed");
+                }
+            }
+
+            const takeAShot = () => {
+                // if (bSafesVideSnapShots[s3Key]) return;
+                console.log("takeAShot...");
+                
+                // console.log("bSafesVideSnapShots", bSafesVideSnapShots);
+
+                context.fillRect(0, 0, myWidth, myHeight);
+                context.drawImage(videoE, 0, 0, myWidth, myHeight);
+                console.log('myWidth, myHeight', myWidth, myHeight);
+                let imageData = context.getImageData(0, 0, myWidth, myHeight);
+                let isBlank = true;
+                for (let i = 0; i < imageData.data.length; i++) {
+                    //console.log(imageData.data[i]);
+                    if ((i + 1) % 4) {
+                        if (imageData.data[i] !== 0) {
+                            isBlank = false;
+                            break;
+                        }
+                    }
+                }
+                if (isBlank) {
+                    setTimeout(takeAShot, 1000);
+                    console.log("Blank snapshot");
+                } else {
+
+                    canvas.toBlob((blob) => {
+                        const reader = new FileReader();
+
+                        reader.onload = () => {
+                            //console.log(reader.result);
+                            videoE.pause();
+                            videoE.removeAttribute('src');
+                            videoE.load();
+                            
+                            uploadSnapshot(reader.result);
+                        };
+
+
+                        reader.readAsBinaryString(blob);
+                        // bSafesVideSnapShots[s3Key] = true;
+                    });
+                }
+            }
+            
+            setTimeout(takeAShot, 100);
+        })
+    }
+    return new Promise(async (resolvea, reject)=>{
+
+        startingChunk = 0;
+        for(i=startingChunk; i<numberOfChunks; i++){
+          try {
+              console.log('sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
+              await sliceEncryptAndUpload(video, i);
+          } catch(error) {
+              console.log('uploadAVideo failed: ', error); 
+            //   _setProgressMessage(editor.language.translate('Uploading ...'), i*(100/numberOfChunks));
+              break;
+          }
+        }
+
+        if (i === numberOfChunks) {
+            console.log(`uploadAVideo done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
+            try {
+                const s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
+                const videoThumbnailImage = await getVideoSnapshot(s3KeyInfo);
+                await doneUploadAVideo(videoThumbnailImage);
+                return resolvea({ fileType, fileSize, s3KeyPrefix, size: encryptedFileSize, link:videoLinkFromServiceWorker });
+                // let videoLink = videoLinkFromServiceWorker;//window.URL.createObjectURL(video);
+                // _videoUploaded.call(null, $current_video, videoLink, s3KeyInfo, fileSize);
+            } catch (error) {
+                console.log('Could not get videoLink');
+                reject("doneUploadAnAttachment error.");
+            }
+        } else {
+            alert("Upload failed.")
+        }  
+    })
+}
+
+export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
+    let state, workspaceKey, itemKey, video, uploadResult;
+    state = getState().page;
+    workspaceKey = data.workspaceKey;
+    
+    if(state.activity & pageActivity.UploadVideos) {
+        dispatch(addUploadVideos({files:data.files}));
+        return;
+    }
+
+    newActivity(dispatch, pageActivity.UploadVideos,  () => {
+        return new Promise(async (resolve, reject) => {
+            dispatch(addUploadVideos({files:data.files}));
+            state = getState().page;
+            if(!state.itemCopy) {
+                itemKey = setupNewItemKey();
+                dispatch(newItemKey({itemKey}));
+            }
+            state = getState().page;
+            while(state.videosUploadQueue.length > state.videosUploadIndex){
+                if(state.aborted) 
+                {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                console.log("======================= Uploading file: ", `index: ${state.videosUploadIndex} name: ${state.videosUploadQueue[state.videosUploadIndex].file.name}`)
+                video = state.videosUploadQueue[state.videosUploadIndex];
+                try {
+                    uploadResult = await uploadAVideo(dispatch, getState, state, video, workspaceKey);
+                    
+                    dispatch(videoUploaded(uploadResult));
+                    
+                    state = getState().page;
+                } catch(error) {
+                    debugLog(debugOn, 'uploadVideosThunk failed: ', error);
+                    reject("Failed to upload Video.");
+                    break;
+                }
+            }
+            if(state.videosUploadQueue.length === state.videosUploadIndex) {
+                resolve();
+            }
+        });
+    });
+}
+
 
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;

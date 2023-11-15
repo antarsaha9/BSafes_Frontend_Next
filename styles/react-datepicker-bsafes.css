@@ -750,7 +750,7 @@
   font-size: 1.44rem;
 }
 
-.react-datepicker__aria-live { /* see issue: https://github.com/Hacker0x01/react-datepicker/issues/3924 */
+.react-datepicker__aria-live { /* see issue:  https://github.com/Hacker0x01/react-datepicker/issues/3924 */
   position: absolute;
   clip-path: circle(0);
   border: 0;
