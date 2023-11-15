@@ -26,6 +26,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const editorRef = useRef(null);
     const [draftInterval, setDraftInterval] = useState(null);
     const [intervalState, setIntervalState] = useState(null);
+    const froalaRef = useRef(null);
+
     const expandedKey = useSelector( state => state.auth.expandedKey);
     const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
     const itemId = useSelector( state => state.page.id);
@@ -99,7 +101,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
         }
         
-        $(editorRef.current).froalaEditor(froalaOptions);
+        froalaRef.current = $(editorRef.current).froalaEditor(froalaOptions);
         if(editorId === 'content'){
             const contentSample = $(editorRef.current).froalaEditor('html.get');
             setOriginalContent(contentSample);
@@ -123,15 +125,16 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     const readOnly = () => {
         if(editorOn) {        
-            $(editorRef.current).froalaEditor('destroy');
-            $(editorRef.current).html(content);
-            editorRef.current.style.overflowX = 'auto';
+            froalaRef.current.froalaEditor('destroy');
+            froalaRef.current.html(content);
+            if (editorRef.current)
+                editorRef.current.style.overflowX = 'auto';
             if(draftInterval){
-                clearInterval(draftInterval);
-                setDraftInterval(null);
-                setIntervalState(null);
-            }
-            setOriginalContent(null);
+                    clearInterval(draftInterval);
+                    setDraftInterval(null);
+                    setIntervalState(null);
+                }
+                setOriginalContent(null);
             setEditorOn(false);  
             if(readOnlyModeReady) readOnlyModeReady();
         }
