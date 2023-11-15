@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Next.js: debug client-side",
+        "type": "chrome",
+        "request": "launch",
+        "url": "http://127.0.0.1:3000",
+        "program": "google-chrome --unsafely-treat-insecure-origin-as-secure=http://127.0.0.1:3000"
+      },
+      {
+        "name": "Next.js: debug client-side https",
+        "type": "chrome",
+        "request": "launch",
+        "url": "https://localbsafes.com:8443"
+      },
+    ]
+  }

@@ -18,11 +18,10 @@ import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import {  } from "../../reduxStore/containerSlice";
-import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink, getDiaryPageIndexForToday } from "../../lib/bSafesCommonUI";
 
 export default function Diary() {
     const debugOn = false;
@@ -38,6 +37,7 @@ export default function Diary() {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector( state => state.page.activity);
+    const activityErrors = useSelector( state => state.page.activityErrors);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
@@ -93,14 +93,8 @@ export default function Diary() {
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
         try {
-            const currentTime = new Date();
-            const year = currentTime.getFullYear();
-            let month, date, pageIndex, link;
-            month = currentTime.getMonth() + 1;
-            if (month < 10) month = '0' + month;
-            date = currentTime.getDate();
-            if (date < 10) date = '0' + date;
-            pageIndex = year + '-' + month + '-' + date;
+            let pageIndex, link;
+            pageIndex = getDiaryPageIndexForToday();
             link = '/diary/p/' + pageItemId.replace('d:', 'dp:') + ':' + pageIndex;
             router.push(link);
         } catch (error) {
@@ -121,16 +115,15 @@ export default function Diary() {
     }
 
     useEffect(() => {
-        if(activity === "Done") {
-            if(editingEditorId) {
+        if(activity === 0) {
+            if((activityErrors === 0) && editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
-            }
-        } else if (activity === "Error") {
-            if(editingEditorId) {
+            } else if(editingEditorId) {
                 setEditingEditorMode("Writing");
             }
-        }
+        } 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
     
     return (
@@ -150,7 +143,7 @@ export default function Diary() {
                                     <br />
                                     <Row className="justify-content-center">
                                         <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
                                         </Col> 
                                     </Row>
                                     <br />

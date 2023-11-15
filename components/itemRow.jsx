@@ -20,9 +20,9 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from '../lib/helper';
 import { getItemLink } from '../lib/bSafesCommonUI';
 
-import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk} from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, dropItemsThunk} from '../reduxStore/containerSlice';
 
-export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
+export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect}) {
     const debugOn = true;
     const router = useRouter();
     const dispatch = useDispatch();
@@ -30,11 +30,8 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
     const [show, setShow] = useState(false);
     const [addAction, setAddAction] = useState(null);
 
-    const workspaceId = useSelector(state => state.container.workspace);
-    const containerItems = useSelector(state => state.container.items);
+    const workspaceId = useSelector(state => state.container.workspace);   
     const selectedItems = useSelector(state => state.container.selectedItems);
-
-    const currentItemPath = useSelector(state => state.page.itemPath);
 
     const handleClose = () => setShow(false);
 
@@ -101,31 +98,23 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
     }
 
     const handleCheck = (e) => {
-        if (e.target.checked)
-            dispatch(selectItem(item.id))
-        else
+        if (e.target.checked) {
+            const itemCopy = JSON.parse(JSON.stringify(item));
+            dispatch(selectItem(itemCopy));
+        } else {
             dispatch(deselectItem(item.id))
-    }
-    
-    const handleClearSelected = () => {
-        dispatch(clearSelected());
+        }
     }
 
     const handleDrop = async (action) => {
-        const itemsCopy = [];
-        let i;
-
-        for(i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
+        const itemsCopy = selectedItems;
 
         const payload = {
             space: workspaceId,
             targetContainer: item.container,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: item.id,
+            targetItemIndex: itemIndex,
             targetPosition: item.position,
         }
 
@@ -137,9 +126,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
             default:
         }
         try {
-            await dropItems({action, payload});
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(dropItemsThunk({action, payload}));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -149,17 +136,22 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
         <>
             {item.id.startsWith('np') && 
                 <div>
-                    <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
-                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
+                    <Row>
+                        <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: item.itemPack.pageNumber}} />
                         </Col> 
-                        <Col xs={8} sm={8} md={9}>
+                        <Col xs={7} sm={7} md={8} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
+                        </Col>
+                        <Col xs={1} >
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                            </a>
                         </Col>
                     </Row>
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row>
                     
@@ -167,22 +159,27 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
             }
             {item.id.startsWith('dp') &&                
                 <div>                  
-                    <Row className={BSafesStyle.contentsItemRow} onClick={rowClicked} style={{ cursor: 'pointer' }}>
-                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}}>
+                    <Row className={BSafesStyle.contentsItemRow}>
+                        <Col className={`${(day === 0 || day === 6)?BSafesStyle.diaryWeekendItem:''} ${isSameDay(new Date(), date)?BSafesStyle.diaryTodayItem:''}`} xs={{span:3, offset:1}} sm={{span:2, offset:1}} xl={{span:1, offset:1}} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             { mode==='listAll'?
                                 <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'dd EEEEE')}} />
                                 :
                                 <span className='fs-5' dangerouslySetInnerHTML={{__html: format(date, 'yyyy-LL-dd')}} />
                             }   
                             </Col> 
-                        <Col xs={7} sm={8} xl={9}>
+                        <Col xs={6} sm={7} xl={8} onClick={rowClicked} style={{ cursor: 'pointer' }}>
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
-                        </Col>             
+                        </Col>      
+                        <Col xs={1} >
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
+                            </a>
+                        </Col>
                     </Row>
 
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row> 
                 </div>
@@ -198,8 +195,8 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
                                 <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
-                                <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
+                                <Form.Group className="me-2" >
+                                    <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e.id===item.id)}  onChange={handleCheck}/>
                                 </Form.Group>
                                 { !(selectedItems.length) &&
                                 <Dropdown align="end" className="justify-content-end">
@@ -231,7 +228,7 @@ export default function ItemRow({item , mode='listAll',  onAdd, onSelect}) {
 
                     <Row>
                         <Col xs={{span:10, offset:1}}>
-                            <hr className="mt-0 mb-0"/>
+                            <hr className="mt-1 mb-1"/>
                         </Col>
                     </Row> 
                     <ItemTypeModal show={show} handleClose={handleClose} optionSelected={optionSelected} />

@@ -5,6 +5,11 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 
+import { Blocks } from  'react-loader-spinner';
+
+import PhotoSwipe from "photoswipe";
+import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
+
 import Editor from './editor';
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
@@ -12,11 +17,12 @@ import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
-import { updateContentImagesDisplayIndex, updateContentVideosDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk } from "../reduxStore/pageSlice";
+
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
@@ -25,22 +31,28 @@ export default function PageCommons() {
 
     const activity = useSelector( state => state.page.activity);
 
+    const pageItemId = useSelector(state => state.page.id);
+    const oldVersion = useSelector(state=>state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
+    const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
+    
     const [editingEditorId, setEditingEditorId] = useState(null);
+    const [readyForSaving, setReadyForSaving] = useState(false);
 
+    const S3SignedUrlForContentUpload = useSelector( state => state.page.S3SignedUrlForContentUpload);
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
-
+    const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
-    const contentVideosDisplayIndex = useSelector( state => state.page.contentVideosDisplayIndex);
-
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
+    const draftLoaded = useSelector(state=>state.page.draftLoaded);
 
+    const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
 
     const imageFilesInputRef = useRef(null);
@@ -48,7 +60,7 @@ export default function PageCommons() {
 
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
-
+    
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
 
@@ -70,17 +82,108 @@ export default function PageCommons() {
         const options = {
             // optionName: 'option value'
             // for example:
+            history: false,
             index: startingIndex // start at first slide
         };
         const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
         gallery.init();
     }
 
+    const handleVideoClick = (e) => {
+        let playVideoElement = e.target;
+        if(e.target.tagName === 'I') {
+            playVideoElement = e.target.parentNode;
+        }
+        const videoId = playVideoElement.id.replace('playVideoCenter_',"");
+        const containerElement = playVideoElement.parentNode;
+        playVideoElement.remove();
+        
+        let spinnerElement = createSpinnerForImage(videoId);
+        containerElement.appendChild(spinnerElement);
+        const id =  videoId;
+        const idParts = id.split('&');
+        if(idParts[0] === 'chunks') {
+            let s3Key = idParts[3];
+            let chunks = parseInt(idParts[1]);
+            let fileName = idParts[2];
+            let fileSize = parseInt(idParts[5]);
+            let fileType = idParts[4];
+            dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+        } else {
+            let s3Key = idParts[0];
+            dispatch(downloadContentVideoThunk({id, s3Key}));
+        }
+        
+    }; 
+
+    function createSpinnerForImage(imageId) {
+        let spinnerElement = spinnerRef.current.cloneNode(true);
+        spinnerElement.className = 'bsafesImageSpinner';
+        spinnerElement.id = 'spinner_' + imageId;
+        spinnerElement.style.position = 'absolute';
+        spinnerElement.style.textAlign = 'center';
+        spinnerElement.removeAttribute('hidden');
+        return spinnerElement;
+    }
+
+    function createPlayVideoButton(image) {        
+        let playVideoCenterElement = document.createElement('div');
+        let playVideoId = 'playVideoCenter_' + image.id;
+        let playVideoButtonId = 'playVideoButton_' + image.id;
+        playVideoCenterElement.className = 'bsafesPlayVideo';
+        playVideoCenterElement.id = playVideoId;
+        playVideoCenterElement.style.position = 'absolute';
+        playVideoCenterElement.style.width = '100px';
+        playVideoCenterElement.style.borderRadius = '10px';
+        playVideoCenterElement.style.textAlign = 'center';
+        playVideoCenterElement.style.background = 'white';
+        playVideoCenterElement.style.opacity = '0.5';
+        playVideoCenterElement.innerHTML = `<i class="fa fa-play-circle-o fa-4x text-danger" id=${playVideoButtonId} aria-hidden="true"></i>`;
+        return playVideoCenterElement;
+    }
+
+    function beforeWritingContent() {
+        const spinners = document.querySelectorAll('.bsafesImageSpinner');
+        spinners.forEach((spinner) => {
+            spinner.remove();
+        });
+        
+        const playVideos = document.querySelectorAll('.bsafesPlayVideo');
+        playVideos.forEach((playVideo) => {
+            playVideo.remove();
+        });
+        
+        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
+        setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        dispatch(getS3SignedUrlForContentUploadThunk());
+        setContentEditorMode("Writing");
+        
+    }
+
+    const handleDraftSample = (content) => {
+        debugLog(debugOn, "draft content: ", content );
+        dispatch(saveDraftThunk({content}))
+    }
+
+    const handleDraftClicked = () => {
+        dispatch(loadDraftThunk());
+    }
+
+    const handleDraftDelete = () => {
+        dispatch(clearDraft());
+    }
+
+    function afterContentReadOnly() {
+        
+    }
+
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
+        let thisReadyForSaving = true;
         if(editorId === 'content'){
-            setContentEditorMode("Writing");
+            beforeWritingContent();
             setEditingEditorId("content");
+            thisReadyForSaving = false;
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
@@ -92,6 +195,7 @@ export default function PageCommons() {
             dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
             setEditingEditorId(editorId);
         }
+        setReadyForSaving(thisReadyForSaving);
     }
     
     const handleContentChanged = (editorId, content) => {
@@ -99,7 +203,7 @@ export default function PageCommons() {
         
         if(editingEditorId === "content") {
             if(content !== contentEditorContent) {
-                dispatch(saveContentThunk(content, workspaceKey));
+                dispatch(saveContentThunk({content, workspaceKey}));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -133,12 +237,12 @@ export default function PageCommons() {
     }
 
     const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === "Done")} />
+        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
 
     const handleWrite = () =>{
         debugLog(debugOn, "handleWrite");
-        setContentEditorMode("Writing");
+        beforeWritingContent();
         setEditingEditorId("content");
     }
 
@@ -178,13 +282,21 @@ export default function PageCommons() {
 
     const handleSave = () => {
         debugLog(debugOn, "handleSave");
-        setEditingEditorMode("Saving");
+        setEditingEditorMode("Saving"); 
+        dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleCancel = () => {
         debugLog(debugOn, "handleCancel");
+        dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
+        if(draftLoaded) {
+            dispatch(loadOriginalContentThunk());
+        }
+        dispatch(setDraftLoaded(false));
+        setReadyForSaving(false);
     }
 
     const handleImageButton = (e) => {
@@ -251,28 +363,63 @@ export default function PageCommons() {
     }
 
     const handleDrop = function(e) {
-        debugLog(debugOn, "handleDrop");
+        debugLog(debugOn, "handleDrop: ", e.target.id);
         e.preventDefault();
         e.stopPropagation();
         setDragActive(e,false);
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+            debugLog(debugOn, "handleDrop, at least one file.");
           // at least one file has been dropped so do something
           // handleFiles(e.dataTransfer.files);
             if(e.target.id === 'images') {
                 const imageType = /image.*/;
-                const file = e.dataTransfer.files[0];
-                if (!file.type.match(imageType)) {
-                    debugLog(debugOn, "Not an image.");
+                const images = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(imageType)) {
+                        debugLog(debugOn, "Not an image.");
+                    }
+                    else images.push(file);
                 }
-            } else {
-
+                uploadImages(images, 'top');
+            } else if (e.target.id === 'attachments') {
+                debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
+                const attachments = [];
+                for(const file of e.dataTransfer.files) {
+                    attachments.push(file);
+                }
+                uploadAttachments(attachments);
             }
         }
+        setDragActive(e,false);
     };
 
+    const handleContentWritingModeReady = (e) => {
+        return;
+    }
+
+    const handleContentReadOnlyModeReady = (e) => {
+        const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
+        for(let i=0; i<bSafesDownloadVideoImages.length; i++){
+            let image = bSafesDownloadVideoImages[i];
+            let containerElement = image.parentNode;
+            let playVideoElement = createPlayVideoButton(image);
+            containerElement.appendChild(playVideoElement);
+            playVideoElement.onclick = handleVideoClick;
+        }
+        return;
+    }
+    
     useEffect(() => {
-        if(activity === "Done") {
+        debugLog(debugOn, "pageCommons mounted.");
+    }, []);
+
+    useEffect(()=> {
+        setcontentEditorContentWithImagesAndVideos(null);
+    }, [pageItemId])
+
+    useEffect(() => {
+        if(activity === 0) {
             if(editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
@@ -282,27 +429,25 @@ export default function PageCommons() {
                 setEditingEditorMode("Writing");
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     useEffect(()=>{
         if(contentEditorContent === null) return;
-        const videoDownloads = document.getElementsByClassName('bSafesDownloadVideo');
-        Array.from(videoDownloads).forEach(element => {
-            const elementClone = element.cloneNode(true); // Remove all possible event listeners
-            elementClone.onclick = (e) => {
-                const id =  e.target.id;
-                const idParts = id.split('&');
-	            const s3Key = idParts[0];
-                dispatch(downloadContentVideoThunk({id, s3Key}));
-            };
-            element.replaceWith(elementClone);
-        });
-
+        afterContentReadOnly();
+        setcontentEditorContentWithImagesAndVideos(contentEditorContent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
     useEffect(()=> {
-        let image, imageElement, imageElementClone, contentImageContainer, progressElement, progressBarElement;
+        let image, imageElement, containerElement;
         let i = contentImagesDisplayIndex;
+        
+        const videoControlsElements = document.querySelectorAll(".videoControls");
+            videoControlsElements.forEach((item) => {
+            item.remove();
+        }); 
+
         if(i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
             imageElement = document.getElementById(image.id);
@@ -310,145 +455,123 @@ export default function PageCommons() {
                 dispatch(updateContentImagesDisplayIndex(i+1));
                 return;
             }
-            if(image.status === "Downloading") {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
-                progressElement = document.getElementById('progress_' + image.id);
-                if(contentImageContainer){
-                    if(!progressElement) {
-                        progressElement = document.createElement('div');
-                        progressElement.className = 'progress';
-                        progressElement.id = 'progress_' + image.id;
-                        progressElement.style.width = '250px';
-                        progressElement.style.margin = 'auto';
-                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                        contentImageContainer.appendChild(progressElement);
-                    }
-                    progressBarElement = document.getElementById('progressBar_' + image.id);
-                    if(progressBarElement) progressBarElement.style.width = image.progress + '%';
-                } else {
-                    imageElementClone = imageElement.cloneNode(true);
-                    contentImageContainer = document.createElement('div');
-                    contentImageContainer.style.position = 'relative';
-                
-                    contentImageContainer.id = 'imageContainer_' + image.id;
-                    contentImageContainer.appendChild(imageElementClone);
-                    imageElement.replaceWith(contentImageContainer);   
-                    
-                    progressElement = document.createElement('div');
-                    progressElement.className = 'progress';
-                    progressElement.id = 'progress_' + image.id;
-                    progressElement.style.width = '250px';
-                    progressElement.style.margin = 'auto';
-                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${image.id}" style="width: ${image.progress}%;"></div>`;
-                    contentImageContainer.appendChild(progressElement);
-                }
-            } else if(image.status === "Downloaded") {
-                contentImageContainer = document.getElementById('imageContainer_' + image.id);
-                progressElement = document.getElementById('progress_' + image.id);
-                if(progressElement) contentImageContainer.removeChild(progressElement);
-                imageElement = document.getElementById(image.id);
-                imageElement.src = image.src;
-                dispatch(updateContentImagesDisplayIndex(i+1));
-            }          
-        }
 
+            if(!imageElement.parentNode.classList.contains('bsafesMediaContainer')){
+                containerElement = document.createElement('div');
+                containerElement.className = 'bsafesMediaContainer';
+                containerElement.style.display = 'flex';
+                containerElement.style.alignItems = 'center';
+                containerElement.style.justifyContent = 'center';
+                let imageElementClone = imageElement.cloneNode(true);
+                containerElement.appendChild(imageElementClone);
+                imageElement.replaceWith(containerElement);
+                imageElement = imageElementClone;
+                let spinnerElement = createSpinnerForImage(image.id);
+                containerElement.appendChild(spinnerElement);
+            } else {
+                containerElement = imageElement.parentNode;
+                let spinnerElement =  document.getElementById('spinner_' + image.id);
+                if(!spinnerElement) {
+                    let spinnerElement = createSpinnerForImage(image.id);
+                    containerElement.appendChild(spinnerElement);
+                }
+            }
+            if(image.status === "Downloading") {
+  
+                return;
+            } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
+             
+                let spinnerElement =  document.getElementById('spinner_' + image.id);
+                if(spinnerElement) spinnerElement.remove();
+                if(image.status === "Downloaded") {
+                    imageElement.src = image.src;
+                }
+                if(imageElement.classList.contains('bSafesDownloadVideo')){
+                    let playVideoCenterElement = null;
+                    playVideoCenterElement = document.getElementById('playVideoCenter_' + image.id)
+                    
+                    if(!playVideoCenterElement && contentEditorMode === 'ReadOnly') {
+                        playVideoCenterElement = createPlayVideoButton(image);
+                        containerElement.appendChild(playVideoCenterElement);
+
+                    } 
+                    if(contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
+                }
+                dispatch(updateContentImagesDisplayIndex(i+1));
+            } 
+            
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue]);
 
     useEffect(()=> {
-        let video, videoElement, videoElementClone, contentVideoContainer, progressElement, progressBarElement;
-        let i = contentVideosDisplayIndex;
-        if(i < contentVideosDownloadQueue.length) {
+        let video, videoElement;
+        
+        for(let i=0; i< contentVideosDownloadQueue.length; i++) {
             video = contentVideosDownloadQueue[i];
-            videoElement = document.getElementById(video.id);
-            if(!videoElement) {
-                dispatch(updateContentImagesDisplayIndex(i+1));
-                return;
-            }
-            if(video.status === "Downloading") {
-                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
-                progressElement = document.getElementById('progress_' + video.id);
-                if(contentVideoContainer){
-                    if(!progressElement) {
-                        progressElement = document.createElement('div');
-                        progressElement.className = 'progress';
-                        progressElement.id = 'progress_' + video.id;
-                        progressElement.style.width = '250px';
-                        progressElement.style.margin = 'auto';
-                        progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
-                        contentVideoContainer.appendChild(progressElement);
-                    }
-                    progressBarElement = document.getElementById('progressBar_' + video.id);
-                    if(progressBarElement) progressBarElement.style.width = video.progress + '%';
-                } else {
-                    videoElementClone = videoElement.cloneNode(true);
-                    contentVideoContainer = document.createElement('div');
-                    contentVideoContainer.style.position = 'relative';
+            const videoId = video.id;
+            videoElement = document.getElementById(videoId);
+
+            if(video.status === "Downloading") {                    
+
+            } else if((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
+                let spinnerElement = document.getElementById('spinner_' + videoId);
+                if(spinnerElement) spinnerElement.remove();
+                if(!videoElement.classList.contains('fr-video')){
+                    const videoSpan = document.createElement('span'); 
                 
-                    contentVideoContainer.id = 'videoContainer_' + video.id;
-                    contentVideoContainer.appendChild(videoElementClone);
-                    videoElement.replaceWith(contentVideoContainer);   
+                    videoSpan.className = 'fr-video';
+                    videoSpan.classList.add('fr-draggable');
+                
+                    videoSpan.setAttribute('contenteditable', 'true');
+                    videoSpan.setAttribute('draggable', 'true');
+                
+                    const newVideoElement = document.createElement('video');
+                    newVideoElement.className = 'bSafesVideo';
+                    newVideoElement.classList.add('fr-draggable');
+                    newVideoElement.classList.add('fr-dvi');
+                    newVideoElement.classList.add('fr-fvc');
+                    newVideoElement.setAttribute('controls', '');
+                    newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
+                    newVideoElement.id = videoId;
+                    newVideoElement.src = video.src;
+                    newVideoElement.style = videoElement.style;
                     
-                    progressElement = document.createElement('div');
-                    progressElement.className = 'progress';
-                    progressElement.id = 'progress_' + video.id;
-                    progressElement.style.width = '250px';
-                    progressElement.style.margin = 'auto';
-                    progressElement.innerHTML = `<div class="progress-bar" id="progressBar_${video.id}" style="width: ${video.progress}%;"></div>`;
-                    contentVideoContainer.appendChild(progressElement);
+                    newVideoElement.addEventListener("loadeddata", (event) => {
+                        newVideoElement.play();  
+                    });
+
+	                if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
+	                if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
+	                if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
+	                if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
+	                if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
+
+                    videoSpan.appendChild(newVideoElement);
+                    videoElement.replaceWith(videoSpan);
+                    dispatch(playingContentVideo({itemId: pageItemId, indexInQueue: i}));
                 }
-            } else if(video.status === "Downloaded") {
-                contentVideoContainer = document.getElementById('videoContainer_' + video.id);
-                progressElement = document.getElementById('progress_' + video.id);
-                if(progressElement) contentVideoContainer.removeChild(progressElement);
-                videoElement = document.getElementById(video.id);
-
-                const videoSpan = document.createElement('span'); 
                 
-                videoSpan.className = 'fr-video';
-                videoSpan.classList.add('fr-draggable');
-                videoSpan.setAttribute('contenteditable', 'true');
-                videoSpan.setAttribute('draggable', 'true');
-                
-                const newVideoElement = document.createElement('video');
-                newVideoElement.className = 'bSafesVideo';
-                newVideoElement.classList.add('fr-draggable');
-                newVideoElement.classList.add('fr-dvi');
-                newVideoElement.classList.add('fr-fvc');
-                newVideoElement.setAttribute('controls', '');
-                newVideoElement.innerHTML = 'Your browser does not support HTML5 video.';
-                newVideoElement.id = videoElement.id;
-                newVideoElement.src = video.src;
-                newVideoElement.style = videoElement.style;
-                
-	            if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
-	            if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
-	            if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
-	            if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
-	            if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
-
-                videoSpan.appendChild(newVideoElement);
-                videoElement.replaceWith(videoSpan);
-                dispatch(updateContentVideosDisplayIndex(i+1));
-            }          
+            }
         }
-
+        
+    // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentVideosDownloadQueue]);
 
     useEffect(()=>{
         if(contentEditorMode === "ReadOnly"){
             debugLog(debugOn, "ReadOnly");
-
-            contentImagesDownloadQueue.forEach(image => {
-                if(image.status === "Downloaded") {
-                    const imageElement = document.getElementById(image.id);
-                    if(imageElement && imageElement.src.startsWith('http')) {
-                        imageElement.src = image.src;
-                    }
-                }
-            });
-            
+            afterContentReadOnly();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
+
+    useEffect(()=>{
+        if(contentImagesAllDisplayed && draftLoaded) {
+            beforeWritingContent();
+            setEditingEditorId("content");
+        }
+    }, [contentImagesAllDisplayed])
 
     const photoSwipeGallery = () => {
         return (
@@ -500,56 +623,61 @@ export default function PageCommons() {
         )
     }
 
+
     return (
         <>
             <Row className="justify-content-center">
-                <Col md="10">
+                <Col sm="10">
                     <hr />
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col md="10" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                <Col sm="10" >
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) } />
                 </Col> 
             </Row>
             <Row className="justify-content-center">
-                <Col md="10">
+                <Col sm="10">
                     <hr />
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col className="contenEditorRow"  xs="12" md="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                <Col className="contenEditorRow"  xs="12" sm="10" >
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete}/>
                 </Col> 
             </Row>
             <br />
             <br />
-            <div className="images">
-                <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
-                <Row>
-                    <Col id="images" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
-                        <Button id="1" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                            <h4><i id="1" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
-                        </Button>
-                    </Col>
-                </Row>	
-            </div>
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="images">
+                    <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
+                    <Row>
+                        <Col id="images" onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                            <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>	
+                </div>
+            }
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" lg="8" >
                     {imagePanels}
                 </Col>
             </Row>
             <br />
-            <div className="attachments">
-                <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
-                <Row>
-                    <Col id="attachments" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
-                        <Button id="1" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                            <h4><i id="1" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
-                        </Button>
-                    </Col>
-                </Row>    	
-            </div>
+            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+                <div className="attachments">
+                    <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
+                    <Row>
+                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                            <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                            </Button>
+                        </Col>
+                    </Row>    	
+                </div>
+            }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
                     { attachmentPanels }
@@ -557,8 +685,20 @@ export default function PageCommons() {
             </Row>
             <br />
             {photoSwipeGallery()}
-            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
-            <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>
+            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
+            {   true &&
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
+            }
+            <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
+                <Blocks
+                    visible={true}
+                    height="80"
+                    width="80"
+                    ariaLabel="blocks-loading"
+                    wrapperStyle={{}}
+                    wrapperClass="blocks-wrapper"
+                />
+            </div> 
         </>
     )
 }

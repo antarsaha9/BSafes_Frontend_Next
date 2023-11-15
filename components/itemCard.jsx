@@ -15,9 +15,9 @@ import ItemTypeModal from './itemTypeModal'
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getItemLink } from '../lib/bSafesCommonUI';
-import { deselectItem, selectItem, clearSelected, dropItems, listItemsThunk } from '../reduxStore/containerSlice';
+import { deselectItem, selectItem, clearSelected, dropItemsThunk, listItemsThunk } from '../reduxStore/containerSlice';
 
-export default function ItemCard({item, onAdd, isOpenable=true}) {
+export default function ItemCard({ itemIndex, item, onAdd, isOpenable=true}) {
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -29,7 +29,6 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
     const [addAction, setAddAction] = useState(null);
 
     const workspaceId = useSelector(state => state.container.workspace);
-    const containerItems = useSelector(state => state.container.items);
     const selectedItems = useSelector(state => state.container.selectedItems);
 
     const currentItemPath = useSelector(state => state.page.itemPath);
@@ -88,33 +87,26 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
     }
 
     const handleCheck = (e) => {
-        if (e.target.checked)
-            dispatch(selectItem(item.id))
-        else
+        if (e.target.checked) {
+            const itemCopy = JSON.parse(JSON.stringify(item));
+            dispatch(selectItem(itemCopy));
+        } else {
             dispatch(deselectItem(item.id))
-    }
-
-    const handleClearSelected = () => {
-        dispatch(clearSelected());
+        }
     }
 
     const handleDrop = async (action) => {
-        const itemsCopy = [];
-        let i;
+        const itemsCopy = selectedItems;
 
-        for(i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
-
-        const sourceContainersPath = currentItemPath.map(ci => ci.id);
-        const targetContainersPath = sourceContainersPath.push(item.id);
+        const sourceContainersPath = currentItemPath.map(ci => ci._id);
+        const targetContainersPath = [...sourceContainersPath];
+        targetContainersPath.push(item.id);
         const payload = {
             space: workspaceId,
             targetContainer: item.container,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: item.id,
+            targetItemIndex: itemIndex,
             targetPosition: item.position,
         }
 
@@ -124,17 +116,14 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
             case 'dropItemsAfter':
                 break;
             case 'dropItemsInside':
-                const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
                 payload.sourceContainersPath = JSON.stringify(sourceContainersPath);
                 payload.targetContainersPath = JSON.stringify(targetContainersPath);
-                payload.totalUsage = JSON.stringify(totalUsage);
                 break;
             default:
         }
         try {
-            await dropItems({action, payload});
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
+            dispatch(dropItemsThunk({action, payload}));
+
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -144,7 +133,7 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
         <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Link href={isOpenable?getItemLink(item):'#'}> 
+                    <Link href={isOpenable?getItemLink(item):'#'} legacyBehavior> 
                         <Col xs={9}>   
                             {item.itemPack.type === 'D' &&
                                 <div >
@@ -188,8 +177,8 @@ export default function ItemCard({item, onAdd, isOpenable=true}) {
                             {isOpenable && <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                             </a>}
-                            <Form.Group className="me-2" controlId="formBasicCheckbox">
-                                <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e===item.id)}  onChange={handleCheck}/>
+                            <Form.Group className="me-2" >
+                                <Form.Check type="checkbox" checked={!!selectedItems.find(e=>e.id===item.id)}  onChange={handleCheck}/>
                             </Form.Group>
 
                             {isOpenable && !selectedItems.length &&

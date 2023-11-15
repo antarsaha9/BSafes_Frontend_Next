@@ -1,55 +1,59 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import {useRouter} from "next/router";
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
-
-import jquery from "jquery"
+import Spinner from 'react-bootstrap/Spinner';
 
 import { debugLog } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
-import Scripts from '../components/scripts'
 
 import { logOutAsyncThunk } from '../reduxStore/auth'
 
 export default function LogOut() {
     const debugOn = false;
+    const router = useRouter();
     const dispatch = useDispatch();
 
-    const scriptsLoaded = useSelector(state => state.scripts.done);
+    const activity = useSelector(state=>state.auth.activity);
+    const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
 
     const handleSubmit = async e => { 
         debugLog(debugOn,  "handleSubmit");
-
-        dispatch(logOutAsyncThunk());
-        
+        dispatch(logOutAsyncThunk());     
     }
 
     useEffect(()=> {
-        window.$ = window.jQuery = jquery;
-        if(scriptsLoaded) {
-            //argon2Functions.loadArgon2('native-wasm');
+        if(!isLoggedIn) {
+            router.push('/logIn');
         }
-    }, [scriptsLoaded]);
+    }, [isLoggedIn])
+
 
     return (
         <ContentPageLayout> 
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
-                        <h1>Log Out</h1>
-                        <hr></hr>
                         <Form>
-                            <Button variant="dark" onClick={handleSubmit}>Submit</Button>
+                            <Button variant="dark" onClick={handleSubmit} disabled={activity==="LoggingOut"}>
+                                {(activity==="LoggingOut")?
+                                    <Spinner animation="border" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </Spinner>
+                                    :'Lock'
+                                }
+                                
+                            </Button>
                         </Form>
                     </Col>           
                 </Row>
             </Container>
-            <Scripts />
         </ContentPageLayout>
     )
 }

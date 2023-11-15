@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, forwardRef } from "react";
 import { useRouter } from "next/router";
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -12,24 +12,46 @@ import Form from 'react-bootstrap/Form'
 import Dropdown from 'react-bootstrap/Dropdown'
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import NewItemModal from "./newItemModal";
 
 import { debugLog } from "../lib/helper";
+import { createANewItemThunk, clearNewItem, selectItem, clearReoloadAPage, setItemTrashed} from "../reduxStore/containerSlice";
+import { getItemLink, isItemAContainer } from "../lib/bSafesCommonUI";
 
 
-export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onAdd=null, onSubmitSearch=null, onCancelSearch=null}) {
+export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onSubmitSearch=null, onCancelSearch=null}) {
     const debugOn = true;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
+    const dispatch = useDispatch();
     const pageNumberInputRef = useRef(null);
     const searchInputRef = useRef(null);
     const router = useRouter();
     
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
-    const pageItemId = useSelector( state => state.page.id);
-    const position = useSelector( state => state.page.position);
 
-    const container = useSelector( state => state.container.container);
-    const mode = useSelector( state => state.container.mode);
+    const [selectedItemType, setSelectedItemType] = useState(null);
+    const [addAction, setAddAction] = useState(null);
+    const [targetItem, setTargetItem] = useState(null);
+    const [targetPosition, setTargetPosition] = useState(null);
+    const [showNewItemModal, setShowNewItemModal] = useState(false);
+
+    const pageActivity = useSelector( state => state.page.activity );
+    const pageItemId = useSelector( state => state.page.id);
+    const container = useSelector( state => state.page.container);
+    const position = useSelector( state => state.page.position);
+    const title = useSelector( state=> state.page.title);
+    const itemCopy = useSelector( state=>state.page.itemCopy);
+
+    const containerActivity = useSelector( state => state.container.activity);
+    const workspaceId = useSelector( state=>state.container.workspace);
+    const newItem = useSelector( state => state.container.newItem);
+    const containerInWorkspace = useSelector(state => state.container.container);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector( state => state.container.searchKey);
+    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const reloadAPage = useSelector(state=>state.container.reloadAPage);
+    const itemTrashed = useSelector(state=>state.container.itemTrashed);
 
     function plusButton({ children, onClick }, ref) {
         return (
@@ -57,7 +79,20 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
     }
 
     const handleAddClicked = (action) => {       
-        onAdd('Page', action, pageItemId, position);
+        setSelectedItemType('Page');
+        setAddAction(action);
+        setTargetItem(pageItemId);
+        setTargetPosition(position);
+        setShowNewItemModal(true);
+    }
+
+    const handleClose = () => setShowNewItemModal(false);
+
+    const handleCreateANewItem = async (titleStr) => {
+        debugLog(debugOn, "createANewItem", titleStr);
+        setShowNewItemModal(false);
+
+        dispatch(createANewItemThunk({titleStr, currentContainer:containerInWorkspace, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}))
     }
 
     const onShowSearchBarClicked = (e) => {
@@ -81,6 +116,19 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
         onCancelSearch();
     }
 
+    const onMore = (e) => {
+        const item = {id:pageItemId, container, position, title, itemPack:{type: itemCopy.type} }
+        if(isItemAContainer(pageItemId)){
+            item.itemPack.totalItemVersions = itemCopy.totalItemVersions;
+            item.itemPack.totalStorage = itemCopy.totalStorage;
+        } else {
+            item.itemPack.version = itemCopy.version;
+            item.itemPack.totalItemSize = itemCopy.usage.totalItemSize;
+        }
+        item.fromTopControlPanel = true;
+        dispatch(selectItem(item));
+    }
+
     useEffect(()=>{
         if(!pageNumberInputRef.current ) return;
         pageNumberInputRef.current.value = pageNumber;
@@ -92,28 +140,51 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
         }
     }, [showSearchBar])
 
+    useEffect(()=> {
+        if(newItem) {
+            const link = getItemLink(newItem, true);
+            dispatch(clearNewItem());
+            router.push(link);
+        }
+    }, [newItem]);
+
+    useEffect(()=> {
+        if(reloadAPage) {
+            dispatch(clearReoloadAPage());
+            router.reload();
+        }
+    }, [reloadAPage]);
+
+    useEffect(()=>{
+        if(itemTrashed){
+            dispatch(setItemTrashed(false));
+            const trashBoxPath = '/trashBox/' + workspaceId;
+            router.push(trashBoxPath);
+        }
+    }, [itemTrashed]);
+
     return (
-    <>
+    <>  
         <Row>
             <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
                 <Card className={`${BSafesStyle.containerControlPanel}`}>
                     <Card.Body className=''>
                         <Row>
                             <Col xs={4}>
-                                {!container && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
-                                {container && (container.startsWith('u') || container.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
-                                {( pageNumber || (container && (container.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
-                                {( container && container.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
-                                {( container && container.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && !containerInWorkspace && <Button variant='link' size='sm' className='text-white'><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button> }
+                                { ((pageActivity === 0) && (containerActivity === 0)) && containerInWorkspace && (containerInWorkspace.startsWith('u') || containerInWorkspace.startsWith('t')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-square fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && ( pageNumber || (containerInWorkspace && (containerInWorkspace.startsWith('n') ))) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-book fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && ( containerInWorkspace && containerInWorkspace.startsWith('f')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-folder-o fa-lg" aria-hidden="true"></i></Button>}
+                                { ((pageActivity === 0) && (containerActivity === 0)) && (containerInWorkspace && containerInWorkspace.startsWith('b')) && <Button variant='link' size='sm' className='text-white' onClick={onCoverClicked}><i className="fa fa-archive fa-lg" aria-hidden="true"></i></Button>}
                                 {( pageNumber || 
-                                  (container && (
-                                  (container.startsWith('n') && !router.asPath.includes('\/contents\/')) || 
-                                  (container.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
-                                  (container.startsWith('b') && !router.asPath.includes('\/contents\/')) 
+                                  (containerInWorkspace && (
+                                  (containerInWorkspace.startsWith('n') && !router.asPath.includes('\/contents\/')) || 
+                                  (containerInWorkspace.startsWith('f') && !router.asPath.includes('\/contents\/')) ||
+                                  (containerInWorkspace.startsWith('b') && !router.asPath.includes('\/contents\/')) 
                                   ))) && <Button variant='link' size='sm' className='text-white' onClick={onContentsClicked}><i className="fa fa-list-ul fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                             <Col xs={8}>
-                                { ( pageNumber || (container && container.startsWith('n'))) && 
+                                { ( pageNumber || (containerInWorkspace && containerInWorkspace.startsWith('n'))) && 
                                     <Form.Group className='pull-right'>                
                                         <Form.Control ref={pageNumberInputRef} type="text" defaultValue={pageNumber?pageNumber:''} className={`${BSafesStyle.pageNavigationPart} ${BSafesStyle.pageNumberInput} pt-0 pb-0`} />                    
                                         <Button variant='link' size='sm' className='text-white' id="gotoPageBtn" onClick={pageNumberChanged}><i className="fa fa-arrow-right fa-lg" aria-hidden="true"></i></Button>
@@ -124,9 +195,9 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                         }
                                     </Form.Group>
                                 }
-                                { ( (container && (container.startsWith('f') || container.startsWith('b')))) && 
+                                { ( (containerInWorkspace && ( containerInWorkspace.startsWith('u') || containerInWorkspace.startsWith('t') || containerInWorkspace.startsWith('f') || containerInWorkspace.startsWith('b')))) && 
                                     <ButtonGroup className='pull-right'>  
-                                        { container.startsWith('f') &&  
+                                        { containerInWorkspace.startsWith('f') &&  
                                         <>       
 										    <Button variant='link' size='sm' className='text-white' id="gotoFirstItemBtn" onClick={onGotoFirstItem}><i className="fa fa-step-backward fa-lg" aria-hidden="true"></i></Button>
 										    <Button variant='link' size='sm' className='text-white' id="gotoLastItemBtn" onClick={onGotoLastItem}><i className="fa fa-step-forward fa-lg" aria-hidden="true"></i></Button>
@@ -144,7 +215,11 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                                     <Dropdown.Item onClick={()=> handleAddClicked("addAnItemAfter")}>Add after</Dropdown.Item>                           
                                                 </Dropdown.Menu>
                                             </Dropdown>
-                                            <Button variant='link' size='sm' className='text-white'><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
+                                        </>
+                                        }
+                                        {  !router.asPath.includes('\/contents\/') && pageItemId && (pageItemId.startsWith('p') || pageItemId.startsWith('b') || pageItemId.startsWith('f')) &&
+                                        <>
+                                            <Button variant='link' size='sm' className='text-white' onClick={onMore}><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>
                                         </>
                                         }
                                         { router.asPath.includes('\/contents\/') && !showSearchBar &&
@@ -154,7 +229,6 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
                                         }
                                     </ButtonGroup>
                                 }
-                                {container && (container.startsWith('t') || container.startsWith('u')) && <Button variant='link' size='sm' className='text-white pull-right'><i className="fa fa-ellipsis-v fa-lg" aria-hidden="true"></i></Button>}
                             </Col>
                         </Row>
                     </Card.Body>
@@ -166,19 +240,19 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             <br/>
             <Row>
                 <Col xs={12} sm={{span:10, offset:1}} lg={{span:8, offset:2}}>
-                    <Card className={`${BSafesStyle.containerControlPanel}`}>
+                    <Card className={`${BSafesStyle.containerSearchPanel}`}>
                         
                         <Form onSubmit={onSearchEntered} className={BSafesStyle.searchBar}>
                             <InputGroup>
-                                <Form.Control ref={searchInputRef} type="text" className={`${BSafesStyle.searchBarInput} text-white display-1`}
+                                <Form.Control ref={searchInputRef} type="text" className={`${BSafesStyle.searchBarInput}  display-1`}
                                     value={searchValue} 
                                     onChange={onSearchValueChanged}
                                 />
                                 <Button variant="link">
-                                    <i id="1" className="fa fa-search fa-lg text-white" aria-hidden="true" onClick={onSearchEntered}></i>
+                                    <i id="1" className="fa fa-search fa-lg text-black" aria-hidden="true" onClick={onSearchEntered}></i>
                                 </Button>
                                 <Button variant="link">
-                                    <i id="1" className="fa fa-times fa-lg text-white" aria-hidden="true" onClick={onCancelSearchClicked}></i>
+                                    <i id="1" className="fa fa-times fa-lg text-black" aria-hidden="true" onClick={onCancelSearchClicked}></i>
                                 </Button>
                             </InputGroup>
                         </Form>
@@ -187,6 +261,7 @@ export default function TopControlPanel({pageNumber=null, onCoverClicked=null, o
             </Row>
         </>
         }
+        <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
     </>                            
     )
 }

@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
-import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 
@@ -16,36 +15,27 @@ import TopControlPanel from "../../../components/topControlPanel";
 import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
-import NewItemModal from '../../../components/newItemModal'
 
-import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer, createANewItem} from '../../../reduxStore/containerSlice';
+import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer} from '../../../reduxStore/containerSlice';
 import { setChangingPage } from "../../../reduxStore/pageSlice";
 
 import { debugLog } from "../../../lib/helper";
-import { getItemLink, gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
+import { gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
 
 export default function FolderPage() {
     const debugOn = true;
     debugLog(debugOn, "Rendering item");
+    const dispatch = useDispatch();
 
     const router = useRouter();
     
-    const [selectedItemType, setSelectedItemType] = useState(null);
-    const [addAction, setAddAction] = useState(null);
-    const [targetItem, setTargetItem] = useState(null);
-    const [targetPosition, setTargetPosition] = useState(null);
-    const [showNewItemModal, setShowNewItemModal] = useState(false);
-
     const changingPage = useSelector(state => state.page.changingPage);
     const pageItemId = useSelector(state => state.page.id);
     const container = useSelector(state => state.page.container);
     const position = useSelector(state => state.page.position);
 
     const containerInWorkspace = useSelector(state => state.container.container);
-    const workspaceKey = useSelector(state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
-
+    
     async function gotoAnotherPage(anotherPageNumber) {
         debugLog(debugOn, `gotoAnotherPage ${changingPage} ${pageItemId} ${container} ${position}`);
         if(changingPage || !(pageItemId || !container || !position)) return;
@@ -54,7 +44,7 @@ export default function FolderPage() {
         switch (anotherPageNumber) {
             case '-1':
                 try{
-                    result = await gotoAnotherFolderPage('getPreviousFolderPage', container, position);
+                    result = await gotoAnotherFolderPage('getPreviousFolderPage', container, position, dispatch);
                     if (result === 'EndOfFolder') {
                         nextPageId = `/folder/contents/${container}`; 
                     } else {
@@ -66,7 +56,7 @@ export default function FolderPage() {
                 break;
             case '+1':
                 try{
-                    result = await gotoAnotherFolderPage('getNextFolderPage', container, position);
+                    result = await gotoAnotherFolderPage('getNextFolderPage', container, position, dispatch);
                     if (result === 'EndOfFolder') {
                         alert('End of folder');
                     } else {
@@ -110,7 +100,7 @@ export default function FolderPage() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);
@@ -122,7 +112,7 @@ export default function FolderPage() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             if(itemId) {
                 const newLink = `/folder/p/${itemId}`;
                 router.push(newLink);
@@ -132,41 +122,12 @@ export default function FolderPage() {
         }
     }
 
-
-    const handleAdd = (type, action, target, position) => {
-        debugLog(debugOn, `${type} ${action} ${target} ${position}`);
-        addAnItem(type, action, target, position );
-    }
-
-    const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
-    
-        setSelectedItemType(itemType);
-        setAddAction(addAction);
-        setTargetItem(targetItem);
-        setTargetPosition(targetPosition);
-        setShowNewItemModal(true);
-        
-    }
-
-    const handleClose = () => setShowNewItemModal(false);
-
-    const handleCreateANewItem = async (title) => {
-        debugLog(debugOn, "createANewItem", title);
-        setShowNewItemModal(false);
-
-
-        const item = await createANewItem(title, containerInWorkspaces, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
-        const link = getItemLink(item);
-
-        router.push(link);
-    }
-
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
                 <PageItemWrapper itemId={router.query.itemId}>
                     <br />
-                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem} onAdd={handleAdd}></TopControlPanel>
+                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
@@ -176,9 +137,7 @@ export default function FolderPage() {
                             </div>
                         </Col>
                     </Row> 
-                    <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-
                 </PageItemWrapper>  
             </ContentPageLayout>
             <Scripts />

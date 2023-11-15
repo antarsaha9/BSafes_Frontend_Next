@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -15,17 +16,21 @@ import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
+import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
+import { getItemLink } from "../lib/bSafesCommonUI";
 export default function ItemTopRows() {
     const dispatch = useDispatch();
+    const router = useRouter();
 
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector( state => state.container.searchKey);
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
+    const oldVersion = useSelector(state=>state.page.oldVersion);
     const activity = useSelector( state => state.page.activity);
     const tagsState = useSelector(state => state.page.tags);
+    const itemCopy  = useSelector( state => state.page.itemCopy);
 
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
@@ -46,8 +51,14 @@ export default function ItemTopRows() {
     }
 
     const openVersionsHistoryModal = () => {
-        setVersionsHistoryModalOpened(true)
-        dispatch(getItemVersionsHistoryThunk());
+        setVersionsHistoryModalOpened(true);
+        dispatch(clearItemVersions());
+        dispatch(getItemVersionsHistoryThunk({page:1}));
+    }
+
+    const handleLinkChanged = (link) => {
+        router.push(link);
+        setVersionsHistoryModalOpened(false);
     }
 
     useEffect(()=>{
@@ -55,11 +66,10 @@ export default function ItemTopRows() {
     }, [tagsState])
 
     useEffect(() => {
-        if(activity === "Done") {
+        if(activity === 0) {
             if (showTagsConfirmButton) setShowTagsConfirmButton(false);
-        } else if (activity === "Error") {
-
-        }
+        } 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     return (
@@ -67,20 +77,24 @@ export default function ItemTopRows() {
             <Row>
                 <Col>
                     <div className="pull-right">
-                        <span>v.1</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
-                        <Button variant="link" className="text-dark" >
+                        <span>{itemCopy && `v.${itemCopy.version}`}</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
+                        { false && <Button variant="link" className="text-dark" >
 		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
-		        	    </Button>
+		        	    </Button>}
                     </div>
                 </Col>     
             </Row>
 
             <Row>
-                <Col xs="1">
-                    <label className="pull-right"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                <Col xs="1" className="px-0">
+                    <label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
                 <Col xs="10">
-                    <TagsInput value={tags} onChange={handleChange} />
+                    {oldVersion?
+                        <TagsInput value={tags} onChange={handleChange} disabled/>
+                        :
+                        <TagsInput value={tags} onChange={handleChange} />
+                    }
                 </Col>
             </Row>
             {showTagsConfirmButton && <Row>
@@ -89,13 +103,31 @@ export default function ItemTopRows() {
                     <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
             </Row>}
-            <VersionsHistoryModal versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
+            <VersionsHistoryModal onLinkChanged={handleLinkChanged} versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
         </Container>
     )
 }
 
-function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistoryModal }) {
+function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, closeVersionsHistoryModal }) {
+
+    const dispatch = useDispatch();
+    
     const itemVersions = useSelector(state => state.page.itemVersions);
+    const totalVersions = useSelector(state => state.page.totalVersions);
+    const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
+    const versionsPerPage = useSelector(state => state.page.versionsPerPage);
+    
+    const handleMore = (e) => {
+        dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
+    }
+    
+    const handleVersionSelected = (link) => {
+        onLinkChanged(link);
+    }
+
+    const itemVersionCards = itemVersions.map((itemVersion, index) => 
+        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index===0}/>
+    )
 
     return (
         <Modal show={versionsHistoryModalOpened} onHide={closeVersionsHistoryModal}>
@@ -106,31 +138,48 @@ function VersionsHistoryModal({ versionsHistoryModalOpened, closeVersionsHistory
                 </ModalTitle>
             </ModalHeader>
             <ModalBody>
-                <ListGroup>
-                    {itemVersions?.map(ItemVersionCard)}
-                </ListGroup>
-                {/* {showMoreIcon && <div class="text-center hidden" id="moreVersions">
-                    <a href="#" onClick={handleMoreVersionClick}>More ...</a>
-                </div>} */}
+                {itemVersionCards}
+                { totalVersions> (versionsPageNumber*versionsPerPage) &&
+                    <div className='text-center'>
+                        <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
+                            More
+                        </Button>
+                    </div>
+                }
             </ModalBody>
         </Modal>
     )
 }
 
-function ItemVersionCard({id,updatedBy,updatedTime,updatedText,updatedTimeStamp,version}) {
+function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion}) {
+    
+    const item = {id, container};
+    
+    let link = getItemLink(item);
+    if(!latestVersion) {
+        link += `?version=${version}`;
+    }
+    const rowClicked = () => {    
+        onVersionSelected(link);   
+    }
 
     return (
         <ListGroup.Item key={id}>
             <Row>
-                <Col xs={3}><h4>v.{version}</h4></Col>
-                <Col xs={9}><h4 className="pull-right">{updatedText}</h4></Col>
+                <Col xs={3} onClick={rowClicked} style={{ cursor: 'pointer' }}><h4>v.{version}</h4></Col>
+                <Col xs={8} onClick={rowClicked} style={{ cursor: 'pointer' }}><h5 className="pull-right px-2">{updatedText}</h5></Col>
+                <Col xs={1}>
+                    <a className={BSafesStyle.externalLink} target="_blank" href={link} rel="noopener noreferrer">
+                        <i className="me-2 fa fa-external-link mt-1  text-dark pull-right" aria-hidden="true"></i>
+                    </a>
+                </Col>
             </Row>
-            <Row>
-                <Col xs={6}><h6>{updatedBy}</h6></Col>
-                <Col xs={6}><h6 className="pull-right">{updatedTime}</h6></Col>
+            <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
+                <Col xs={6}><p>{updatedBy}</p></Col>
+                <Col xs={6}><p className="pull-right">{updatedTime}</p></Col>
             </Row>
-            <Row>
-                <Col xs={12}><h6 className="pull-right">{updatedTimeStamp}</h6></Col>
+            <Row onClick={rowClicked} style={{ cursor: 'pointer' }}>
+                <Col xs={12}><p className="pull-right">{updatedTimeStamp}</p></Col>
             </Row>
         </ListGroup.Item>
     )

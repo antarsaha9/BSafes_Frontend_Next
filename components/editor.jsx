@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
+import ButtonGroup from 'react-bootstrap/ButtonGroup';
 
 import jquery from "jquery"
 
@@ -12,26 +13,31 @@ const forge = require('node-forge');
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { debugLog, PostCall, convertUint8ArrayToBinaryString } from "../lib/helper";
-import { encryptBinaryString, encryptLargeBinaryString } from "../lib/crypto";
+import { getEditorConfig } from "../lib/bSafesCommonUI";
+import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
+import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true}) {
-    const debugOn = false;    
+
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
+    const debugOn = true;    
+    const dispatch = useDispatch();
+
     const editorRef = useRef(null);
-    const froalaKey = process.env.NEXT_PUBLIC_FROALA_KEY;
-
-    const scriptsLoaded = useSelector(state => state.scripts.done);
-
+    const [draftInterval, setDraftInterval] = useState(null);
+    const [intervalState, setIntervalState] = useState(null);
     const expandedKey = useSelector( state => state.auth.expandedKey);
+    const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
     const itemId = useSelector( state => state.page.id);
     const itemKey = useSelector( state => state.page.itemKey);
     const itemIV = useSelector( state => state.page.itemIV);
+    const draft = useSelector( state=>state.page.draft);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
-    
-
+   
     const [ editorOn, setEditorOn ] = useState(false);
+    const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
+    const [ originalContent, setOriginalContent] = useState(null);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
     
@@ -51,12 +57,14 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                   }
                 break;
             case 'content':
+                $(editorRef.current).html(content);
                 froalaOptions = {
                     key: froalaKey,
-                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
-                    toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo'],
+                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
+                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    //toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         'Georgia,serif': 'Georgia', 'Impact,Charcoal,sans-serif': 'Impact',
@@ -77,18 +85,32 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             default:
                 froalaOptions = {
                     key: froalaKey,
+                    /*
                     toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertFile', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
                     toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
                     toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
                     toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo']
+                    */
+                    toolbarButtons: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
+                    toolbarButtonsMD: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
+                    toolbarButtonsSM: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
+                    toolbarButtonsXS: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo']
                 };
 
         }
+        
         $(editorRef.current).froalaEditor(froalaOptions);
+        if(editorId === 'content'){
+            const contentSample = $(editorRef.current).froalaEditor('html.get');
+            setOriginalContent(contentSample);
+        }
+          
+        editorRef.current.style.overflowX = null;
         if(!editorOn){
             debugLog(debugOn, "setEditorOn")
             setEditorOn(true);
         }
+        if(writingModeReady) writingModeReady();
     }
 
     const saving = () => {
@@ -103,7 +125,15 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         if(editorOn) {        
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
+            editorRef.current.style.overflowX = 'auto';
+            if(draftInterval){
+                clearInterval(draftInterval);
+                setDraftInterval(null);
+                setIntervalState(null);
+            }
+            setOriginalContent(null);
             setEditorOn(false);  
+            if(readOnlyModeReady) readOnlyModeReady();
         }
     }
 
@@ -120,6 +150,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 break;
             default:
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode])
  
     useEffect(()=>{
@@ -132,20 +163,73 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     useEffect(() => {
         window.$ = window.jQuery = jquery;``
+
+        import('../lib/importScripts').then(async ic=>{
+            await ic.Froala;
+            await ic.FroalaPlugins;
+            await ic.Codemirror;
+            await ic.Photoswipe;
+            await ic.Others;
+
+            setScriptsLoaded(true);
+
+        });
     },[]);
 
     useEffect(()=>{
         if(!(scriptsLoaded && window)) return;
+
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
         window.bsafesFroala.rotateImage = rotateImageHook;
         window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
+        window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
         window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
         window.bsafesFroala.encryptLargeBinaryString = encryptLargeBinaryStringHook;
+        window.bsafesFroala.encryptChunkBinaryStringToBinaryStringAsync = encryptChunkBinaryStringToBinaryStringAsyncHook;
         window.bsafesFroala.preS3Upload = preS3UploadHook;
+        window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
         window.bsafesFroala.postS3Upload = postS3UploadHook;
         window.bsafesFroala.uploadData = uploadDataHook;
+        window.bsafesFroala.getBrowserInfo = getBrowserInfoHook;
+        window.bsafesFroala.arraryBufferToStr = arraryBufferToStrHook;
+        window.bsafesFroala.getEditorConfig = getEditorConfigHook;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
+
+    useEffect(()=> {
+        if( originalContent !== null){
+            if(editorId === 'content'){
+                setIntervalState('Start');
+            }
+        }
+    }, [originalContent])
+
+    useEffect(()=> {
+        let content;
+        debugLog(debugOn, 'interval state:', intervalState);
+        switch(intervalState) {
+            case 'Start': 
+                const interval = setInterval(()=>{
+                    debugLog(debugOn, "Saving draft ...");
+                    content = $(editorRef.current).froalaEditor('html.get');
+                    //debugLog(debugOn, "editor content: ", content );
+                    if(content !== originalContent) {
+                        debugLog(debugOn, 'Content changed');
+                        onDraftSampled(content);
+                        setOriginalContent(content);
+                        setIntervalState('Stop');
+                    }  
+                }, 1000);
+                setDraftInterval(interval);
+                break;
+            case 'Stop':
+                clearInterval(draftInterval);
+                setDraftInterval(null);
+                break;
+            default:
+        }
+    }, [intervalState])
 
     const handlePenClicked = () => {
         onPenClicked(editorId);
@@ -154,7 +238,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const bSafesPreflightHook = (fn) => {
         debugLog(debugOn, "bSafesPreflight");
         PostCall({
-            api:'/memberAPI/preflight'
+            api:'/memberAPI/preflight',
+            dispatch
         }).then( data => {
             debugLog(debugOn, data);
             if(data.status === 'ok') {
@@ -182,6 +267,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         }
     }
 
+    const compareArraryBufferAndUnit8ArrayHook = (thisBuffer, thisArray) => {
+        return compareArraryBufferAndUnit8Array(thisBuffer, thisArray);
+    }
+
     const encryptBinaryStringHook = (binaryString, key) => {
         return encryptBinaryString(binaryString, key);
     }
@@ -190,10 +279,15 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return encryptLargeBinaryString(binaryString, key);
     }
 
+    const encryptChunkBinaryStringToBinaryStringAsyncHook = (arrayBuffer, key) => {
+        return encryptChunkBinaryStringToBinaryStringAsync(arrayBuffer, key);
+    }
+
     const preS3UploadHook = () => {
         return new Promise( async (resolve, reject) => {
             PostCall({
                 api:'/memberAPI/preS3Upload',
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {  
@@ -213,12 +307,42 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         });
     }
 
+    const preS3ChunkUploadHook = (itemId, chunkIndex, timeStamp) => {
+        return new Promise((resolve, reject) => {
+            let s3Key, s3KeyPrefix, signedURL;
+            PostCall({
+              api:'/memberAPI/preS3ChunkUpload',
+              body: {
+                  itemId,
+                  chunkIndex: chunkIndex.toString(),
+                  timeStamp: timeStamp
+              },
+              dispatch
+            }).then( data => {
+              debugLog(debugOn, data);
+              if(data.status === 'ok') {   
+                  s3Key = data.s3Key;                        
+                  s3KeyPrefix = s3Key.split('_chunk_')[0];
+                  signedURL = data.signedURL;
+                  resolve({s3Key, s3KeyPrefix, signedURL});
+              } else {
+                  debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
+                  reject(data.error);
+              }
+            }).catch( error => {
+              debugLog(debugOn, "preS3ChunkUpload failed: ", error)
+              reject(error);
+            })
+        });;
+    }
+
     const postS3UploadHook = (s3Object) => {
         return new Promise( async (resolve, reject) => {
             s3Object.keyEnvelope = forge.util.encode64(s3Object.keyEnvelope);
             PostCall({
                 api:'/memberAPI/postS3Upload',
-                body: s3Object
+                body: s3Object,
+                dispatch
             }).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {                                  
@@ -253,28 +377,50 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         });
     }
 
+    const getBrowserInfoHook = () => {
+        return getBrowserInfo();
+    }
+
+    const arraryBufferToStrHook = (arrayBuffer) => {
+        return arraryBufferToStr(arrayBuffer);
+    }
+
+    const getEditorConfigHook = () => {
+        return getEditorConfig();
+    }
     return (
         <>
+        {scriptsLoaded?
+            <>
             {  (showPen)&&(editable)?
                 
                 <Row>
-                    <Col>
-                        <Button variant="link" className="text-dark pull-right" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                    <Col xs={6}>
+                        {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
+                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Content</h6>}
+                    </Col>
+                    <Col xs={6}>
+                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                        {(editorId==='content' && draft !== null) &&
+                            <ButtonGroup className='pull-right mx-3' size="sm">
+                                <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
+                                <Button variant="danger" onClick={onDraftDelete}>X</Button>
+                            </ButtonGroup>
+                        }
                     </Col>
                 </Row>
-                
                 :
-
-                <Row>
-                    <Col>
-                        <Button variant="link" className="text-dark pull-right"></Button>
-                    </Col>
+                ""
+                
+            }
+            { ((mode === 'Writing' || mode === 'Saving') || !(hideIfEmpty && (!content || content.length === 0))) &&
+                <Row className={`${(editorId ==='title')?BSafesStyle.titleEditorRow:BSafesStyle.editorRow} fr-element fr-view`}>
+                    <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}} style={{overflowX:'auto'}}>
+                    </div>
                 </Row>
             }
-            <Row className={`${BSafesStyle.editorRow} fr-element fr-view`}>
-                <div ref={editorRef} dangerouslySetInnerHTML={{__html: content}}>
-                </div>
-            </Row>
+            </>:""
+        }
         </>
     );
 }

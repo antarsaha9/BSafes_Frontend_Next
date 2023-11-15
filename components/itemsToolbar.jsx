@@ -15,14 +15,15 @@ import InputGroup from "react-bootstrap/InputGroup";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { clearSelected, dropItems, trashItems, listContainerThunk, listItemsThunk } from "../reduxStore/containerSlice";
+import { clearSelected, dropItemsThunk, trashItemsThunk, listContainersThunk, listItemsThunk } from "../reduxStore/containerSlice";
 import { debugLog } from "../lib/helper";
 
-export default function ItemsToolbar(props) {
+export default function ItemsToolbar() {
     const debugOn = true;
     const router = useRouter();
     const dispatch = useDispatch();
 
+    const [boxOnly, setBoxOnly] = useState(false);
     const [showMoveModal, setShowMoveModal] = useState(false);
     const [showTrashModal, setShowTrashModal] = useState(false);
     const [trashConfirmation, setTrashConfirmation] = useState('');
@@ -32,7 +33,10 @@ export default function ItemsToolbar(props) {
     const workspaceId = useSelector(state => state.container.workspace);
     const container = useSelector( state => state.container.container );
     const containerItems = useSelector(state => state.container.items);
-    const containerList = useSelector(state => state.container.containerList);
+    const containersList = useSelector(state => state.container.containersList);
+    const containersPerPage = useSelector(state=>state.container.containersPerPage);
+    const containersPageNumber = useSelector(state => state.container.containersPageNumber);
+    const containersTotal = useSelector(state=>state.container.containersTotal);
 
     const currentItemPath = useSelector(state => state.page.itemPath);
     
@@ -46,7 +50,15 @@ export default function ItemsToolbar(props) {
     
     const handleMove = () => {
         setShowMoveModal(true);
-        dispatch(listContainerThunk({ container: workspaceId }));
+        const result = selectedItems.filter((i)=>  i.itemPack.type !== 'P');
+        let thisBoxOnly = false;
+        if(result.length > 0) thisBoxOnly=true;
+        setBoxOnly(thisBoxOnly);
+        dispatch(listContainersThunk({ container: workspaceId, boxOnly:thisBoxOnly, pageNumber:1 }));
+    }
+
+    const handleMore = () => {
+        dispatch(listContainersThunk({ container: containerPath[containerPath.length-1].id, boxOnly:boxOnly, pageNumber:containersPageNumber+1 }));
     }
 
     const onContainerClick = (container) => {
@@ -59,30 +71,27 @@ export default function ItemsToolbar(props) {
                 title: container.title,
                 id: container.id
             }])
-        dispatch(listContainerThunk({ container: container.id }))
+        dispatch(listContainersThunk({ container: container.id, boxOnly, pageNumber:1 }));
     }
     
     const handleDrop = async () => {
-        const itemsCopy = [];
-        for(let i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
+        const itemsCopy = selectedItems;
+        let sourceContainerPath = JSON.parse(JSON.stringify(currentItemPath));
+        let fromTopControlPanel = false;
+        if(itemsCopy.length === 1 && itemsCopy[0].fromTopControlPanel) {
+            fromTopControlPanel = true;
+            sourceContainerPath.splice(-1);
         }
-        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
         const payload = {
             space: workspaceId,
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetItem: containerPath[containerPath.length - 1].id,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
-            targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id)),
-            totalUsage: JSON.stringify(totalUsage),
+            sourceContainersPath: JSON.stringify(sourceContainerPath.map(ci => ci._id)),
+            targetContainersPath: JSON.stringify(containerPath.map(ci => ci.id))
         }
         try {
-            await dropItems({action:'dropItemsInside', payload});
+            dispatch(dropItemsThunk({action:'dropItemsInside', fromTopControlPanel, payload}));
             setShowMoveModal(false);
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Moving items failed.")
         }
@@ -98,27 +107,24 @@ export default function ItemsToolbar(props) {
 
     const handleTrash = async () => {
         let itemContainer = container;
-        const itemsCopy = [];
-        for(let i=0; i<selectedItems.length; i++) {
-            let thisItem = containerItems.find(ele => ele.id === selectedItems[i]);
-            thisItem = {id:thisItem.id, container: thisItem.container, position: thisItem.position};
-            itemsCopy.push(thisItem);
-        }
         if(itemContainer === 'root') itemContainer = workspaceId; 
-        const totalUsage = 0; //calculateTotalMovingItemsUsage(items);
+        const itemsCopy = selectedItems;
+        let sourceContainerPath = JSON.parse(JSON.stringify(currentItemPath));
+        let fromTopControlPanel = false;
+        if(itemsCopy.length === 1 && itemsCopy[0].fromTopControlPanel) {
+            fromTopControlPanel = true;
+            sourceContainerPath.splice(-1);
+        }
         const payload = {
-            items: JSON.stringify(itemsCopy),
+            items: itemsCopy,
             targetSpace: workspaceId,
             originalContainer: itemContainer,
-            sourceContainersPath: JSON.stringify(currentItemPath.map(ci => ci._id)),
-            totalUsage: JSON.stringify(totalUsage),
+            sourceContainersPath: JSON.stringify(sourceContainerPath.map(ci => ci._id))
         }
         try {
-            await trashItems({payload});
+            dispatch(trashItemsThunk({fromTopControlPanel, payload}));
             setShowTrashModal(false);
             setTrashConfirmation('');
-            handleClearSelected()
-            dispatch(listItemsThunk({ pageNumber: 1 }));
         } catch (error) {
             debugLog(debugOn, "Trashing items failed.")
         }
@@ -181,12 +187,12 @@ export default function ItemsToolbar(props) {
                 <Modal.Body>
                     <Breadcrumb>
                         {containerPath && containerPath.map((cp, index) => {
-                            return (<Breadcrumb.Item key={cp.title + index} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
+                            return (<Breadcrumb.Item key={cp.title + index} active={index===containerPath.length-1} onClick={() => onContainerClick(cp)}>{cp.title}</Breadcrumb.Item>)
                         })}
                     </Breadcrumb>
                     <ListGroup>
                         { true &&
-                            containerList.flatMap(container => {
+                            containersList.flatMap(container => {
                                 let icon = '';
                                 if (selectedItems.find(i => i === container.id))
                                     return [];
@@ -204,6 +210,13 @@ export default function ItemsToolbar(props) {
                             })
                         }
                     </ListGroup>
+                    { containersTotal> (containersPageNumber*containersPerPage) &&
+                        <div className='text-center'>
+                            <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
+                                More
+                            </Button>
+                        </div>
+                    }
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="primary" size="sm" onClick={handleDrop}>

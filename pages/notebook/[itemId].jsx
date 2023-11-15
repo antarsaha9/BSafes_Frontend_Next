@@ -18,10 +18,10 @@ import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
 import { } from "../../reduxStore/containerSlice";
-import { setPageItemId, saveTitleThunk } from "../../reduxStore/pageSlice";
+import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getLastAccessedItem, getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
+import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
 
 export default function Notebook() {
     const debugOn = false;
@@ -37,6 +37,7 @@ export default function Notebook() {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
 
     const activity = useSelector( state => state.page.activity);
+    const activityErrors = useSelector( state => state.page.activityErrors);
     const [editingEditorId, setEditingEditorId] = useState(null);
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
@@ -91,19 +92,11 @@ export default function Notebook() {
 
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
-        try {
-            const item = await getLastAccessedItem(pageItemId);
-            if(item) {
-                debugLog(debugLog, item);
-            } else {
-                debugLog(debugLog, "lastAccessedItem not set");
-                const idParts = pageItemId.split(":");
-                const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
-                router.push(firstPage);
-            }
-        } catch (error) {
-            debugLog(debugOn, error)
-        }
+
+        const idParts = pageItemId.split(":");
+        const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+        router.push(firstPage);
+            
     }
 
     const handleCoverClicked = () => {
@@ -119,16 +112,15 @@ export default function Notebook() {
     }
 
     useEffect(() => {
-        if(activity === "Done") {
-            if(editingEditorId) {
+        if(activity === 0) {
+            if((activityErrors === 0) && editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
-            }
-        } else if (activity === "Error") {
-            if(editingEditorId) {
+            } else if(editingEditorId) {
                 setEditingEditorMode("Writing");
             }
-        }
+        } 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     return (
@@ -148,13 +140,13 @@ export default function Notebook() {
                                     <br />
                                     <Row className="justify-content-center">
                                         <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
-                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === "Done")} />
+                                            <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
                                         </Col> 
                                     </Row>
                                     <br />
                                     <Row>
                                         <Col>
-                                            <ContainerOpenButton handleOpen={handleOpen} />
+                                            <ContainerOpenButton handleOpen={handleOpen}/>
                                         </Col>
                                     </Row>
                                     <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} onSave={handleSave} onCancel={handleCancel}/>

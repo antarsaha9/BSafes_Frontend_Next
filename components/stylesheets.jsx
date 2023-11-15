@@ -8,15 +8,10 @@ export default function Stylesheets() {
     count ++;
     
     return (
-        <div>
+        <div> 
+			{/*
 				<link rel="preconnect" href="https://fonts.googleapis.com" />
 				<link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-				<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300&display=swap" rel="stylesheet" />
-				<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=La+Belle+Aurore&display=swap" rel="stylesheet" />
-				<link href='https://fonts.googleapis.com/css?family=Roboto:400,300,300italic,400italic,700,700italic&subset=latin,vietnamese,latin-ext,cyrillic,cyrillic-ext,greek-ext,greek' rel='stylesheet' type='text/css' />
-				<link href='https://fonts.googleapis.com/css?family=Oswald:400,300,700&subset=latin,latin-ext' rel='stylesheet' type='text/css' />
-				<link href='https://fonts.googleapis.com/css?family=Montserrat:400,700' rel='stylesheet' type='text/css' />
-				<link href='https://fonts.googleapis.com/css?family=Open+Sans+Condensed:300,300italic,700&subset=latin,greek,greek-ext,vietnamese,cyrillic-ext,cyrillic,latin-ext' rel='stylesheet' type='text/css' />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" />
                 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/froala_editor.min.css?v0.OB1.20211130" integrity="sha384-jvHCuNtfPGLMsiP4SDWWcKNJvBI59kcFwyLJhBVj7viDth7i3WwHaZbn2bfeyuSZ" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/froala_style.min.css?v0.OB1.20211130" integrity="sha384-PWPEGQLOmmckdheKfP2+eOpLg5UTWQOqVJYUmOxAFnjkcpQfgIDkU1Ir4yNEJbD4" crossOrigin="anonymous" />
@@ -32,9 +27,10 @@ export default function Stylesheets() {
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/line_breaker.min.css?v0.OB1.20211130" integrity="sha384-D8J0J9BDQDJZVMRnPv7mPcf3a10Lna3LIW9ectwVSp16upwpXa2FuKY5FKYFEOBd" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/quick_insert.min.css?v0.OB1.20211130" integrity="sha384-hIpOJCEpNcF9z9SBTc4LzPC6uxLaSc97x5PUzgQna1bAQHsYlO6Tp9z0grDZECWD" crossOrigin="anonymous" />
 		        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/froala-editor/2.6.5/css/plugins/table.min.css?v0.OB1.20211130" integrity="sha384-Q3HbN07q2FZogwHXFAydCAVta/dmUDXVBV3mQPgbBH2joTjueoSlbZUcFh18njuN" crossOrigin="anonymous" />      
-				<link rel="stylesheet" href="/css/froalaEditorCSS/video.css?v0.OB1.20211130" integrity="sha384-zybqihXH2wZhyHcLTxMYKi/t544M/4UrFa93RrG4XnQf4z1nJx7t9xLIuzRpD9jJ" crossOrigin="anonymous"></link>
+				<link rel="stylesheet" href="/css/froalaEditorCSS/video.css?v0.OB1.20211130" crossOrigin="anonymous"></link>
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css?v0.OB1.20211130" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossOrigin="anonymous" />
 				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css?v0.OB1.20211130" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossOrigin="anonymous" />
-		</div>
+			*/}
+		</div> 
     )
 }

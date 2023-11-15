@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
+import { useSearchParams } from 'next/navigation'
+
 import Container from 'react-bootstrap/Container'
 
 import format from "date-fns/format";
@@ -9,7 +11,7 @@ import format from "date-fns/format";
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { clearContainer, initContainer, initWorkspaceThunk, changeContainerOnly, clearItems, listItemsThunk, setWorkspaceKeyReady, setStartDateValue, setDiaryContentsPageFirstLoaded} from '../reduxStore/containerSlice';
-import { abort, clearPage, setChangingPage, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
+import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageItemId, setPageStyle, decryptPageItemThunk, getPageItemThunk, getPageCommentsThunk } from "../reduxStore/pageSlice";
 
 import { debugLog } from "../lib/helper";
 
@@ -19,10 +21,11 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     const dispatch = useDispatch();
     const router = useRouter();
+    const searchParams = useSearchParams();
 
-    const [pageCleared, setPageCleared] = useState(false); 
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -35,8 +38,8 @@ const PageItemWrapper = ({ itemId, children}) => {
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const startDateValue = useSelector( state => state.container.startDateValue);
     const [startDate, setStartDate] = useState(new Date(startDateValue));
-    const diaryContentsPageFirstLoaded = useSelector( state => state.container.diaryContentsPageFirstLoaded);
 
+    const aborted = useSelector(state=>state.page.aborted);
     const pageItemId = useSelector(state => state.page.id);
     const pageNumber = useSelector( state=> state.page.pageNumber);
     const navigationMode = useSelector(state => state.page.navigationMode);
@@ -44,32 +47,15 @@ const PageItemWrapper = ({ itemId, children}) => {
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
 
-    useEffect(() => {
-        const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          
-          dispatch(abort());
-        }
-    
-        router.events.on('routeChangeStart', handleRouteChange)
-    
-        // If the component is unmounted, unsubscribe
-        // from the event with the `off` method:
-        return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-        }
-    }, []);
+    debugLog(debugOn, "aborted: ", aborted);
+    debugLog(debugOn, "itemId: ", itemId);
+    debugLog(debugOn, "pageItemId: ", pageItemId);
+  
+    const reloadAPage = () => {
+        debugLog(debugOn, "Reload a page: ", itemId);
 
-    useEffect(()=> {
-      if(isLoggedIn && itemId) {
-        debugLog(debugOn, "page wrapper useEffect itemId: ", itemId);
-        dispatch(clearPage());
         dispatch(setChangingPage(false));
-        setPageCleared(true);
+
         dispatch(setWorkspaceKeyReady(false));
         debugLog(debugOn, "set pageItemId: ", router.query.itemId);
         dispatch(setPageItemId(router.query.itemId)); 
@@ -78,27 +64,73 @@ const PageItemWrapper = ({ itemId, children}) => {
         path = path.split('/')[2];
         if(path === 'contents') {
           dispatch(clearItems());
-          let pageType = itemId.split(':')[0];
-          if(pageType === 'd') {
+          let itemType = itemId.split(':')[0];
+          if(itemType === 'd') {
             dispatch(setStartDateValue((new Date()).getTime()));
             dispatch(setDiaryContentsPageFirstLoaded(false));
           }
         }
-      }
-    }, [isLoggedIn, itemId]);
-
-    useEffect(()=>{
-      if(pageItemId && pageCleared) {
-          debugLog(debugOn, "Dispatch getPageItemThunk ...");
-          dispatch(getPageItemThunk({ itemId: pageItemId, navigationInSameContainer }));
-      }
-    }, [pageItemId, pageCleared]);
+    }
 
     useEffect(() => {
-      if (pageCleared && navigationMode) {
+        
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          
+          dispatch(abort());
+          dispatch(clearPage());
+          dispatch(clearItems());
+        }
+    
+        const handleRouteChangeComplete = () => {
+          debugLog(debugOn, "handleRouteChangeComplete");
+          dispatch(initPage());
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+          router.events.off('routeChangeComplete', handleRouteChangeComplete)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    
+    useEffect(()=> {
+      debugLog(debugOn, `${isLoggedIn}, ${itemId}, ${pageItemId}`);
+      if(isLoggedIn && itemId && !pageItemId && !aborted) {
+        reloadAPage();
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn, itemId, pageItemId, aborted]);
+
+    useEffect(()=>{
+      if(pageItemId) {
+          const version = searchParams.get('version');
+    
+          debugLog(debugOn, "Dispatch getPageItemThunk ...");
+          const payload = { itemId: pageItemId, navigationInSameContainer };
+          if(version) {
+            payload.version = parseInt(version);
+          } 
+          dispatch(getPageItemThunk(payload));
+      }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pageItemId]);
+
+    useEffect(() => {
+      if (navigationMode) {
           debugLog(debugOn, "setContainerData ...");
           dispatch(setContainerData({ itemId: pageItemId, container: { space: workspace, id: containerInWorkspace } }));
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [navigationMode]);
 
     useEffect(()=>{
@@ -110,10 +142,11 @@ const PageItemWrapper = ({ itemId, children}) => {
               dispatch(setPageStyle(BSafesStyle.rightPagePanel));
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pageNumber])
 
     useEffect(()=>{
-      if(space && pageCleared) {  
+      if(space) {  
         let path = router.asPath;
         path = path.split('/')[2];      
         
@@ -128,11 +161,18 @@ const PageItemWrapper = ({ itemId, children}) => {
           }
           dispatch(setWorkspaceKeyReady(true));
           return;
+        } else if(space === workspace){
+          if(container !== containerInWorkspace) {
+            dispatch(changeContainerOnly({container}));
+          }
+          dispatch(setWorkspaceKeyReady(true));
+          return;
         }
         
         dispatch(clearContainer());
         setContainerCleared(true);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [space]);
 
     useEffect(()=>{
@@ -148,20 +188,29 @@ const PageItemWrapper = ({ itemId, children}) => {
               }        
               dispatch(setWorkspaceKeyReady(true));
           } else {
-              if(path !== 'contents'){
-                dispatch(initWorkspaceThunk({teamId:space, container}));
+              let teamId;
+              if(accountVersion === 'v1') {
+                teamId = space.substring(0, space.length - 4);
               } else {
-                dispatch(initWorkspaceThunk({teamId:space, container:pageItemId}));
+                teamId = space;
+              }
+              
+              if(path !== 'contents'){
+                dispatch(initWorkspaceThunk({teamId, container}));
+              } else {
+                dispatch(initWorkspaceThunk({teamId, container:pageItemId}));
               }            
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [containerCleared]);
 
     useEffect(()=>{
       debugLog(debugOn, "useEffect [workspaceKey] ...");
+      if(!workspaceKeyReady || !itemCopy) return;
       let path = router.asPath;
       path = path.split('/')[2]; 
-      if(( path !== 'contents' && workspaceKeyReady && workspaceKey && itemCopy && pageCleared)) {
+      if(( path !== 'contents' && workspaceKeyReady && workspaceKey && itemCopy)) {
           let pageType = pageItemId.split(':')[0];
           debugLog(debugOn, "Dispatch decryptPageItemThunk ...");
           dispatch(decryptPageItemThunk({itemId:pageItemId, workspaceKey}));
@@ -170,20 +219,19 @@ const PageItemWrapper = ({ itemId, children}) => {
             dispatch(getPageCommentsThunk({itemId:pageItemId}));
           }
           
-          setPageCleared(false);
           setContainerCleared(false);
         }
-    }, [workspaceKeyReady, itemCopy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [workspaceKeyReady]);
 
     useEffect(()=>{ 
       debugLog(debugOn, "useEffect [workspaceKey] ...");
-      
-      if( containerInWorkspace &&  workspaceKeyReady && pageCleared) {
+      if(!workspaceKeyReady || !pageItemId) return;
+      if( containerInWorkspace &&  workspaceKeyReady ) {
           let pageType = pageItemId.split(':')[0];
           let path = router.asPath;
           path = path.split('/')[2]; 
           if(path === 'contents'){
-            setPageCleared(false);
             setContainerCleared(false);
             debugLog(debugOn, "listItemsThunk ...");
             if( pageType !== 'd' ) {
@@ -194,6 +242,7 @@ const PageItemWrapper = ({ itemId, children}) => {
             }    
           }
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workspaceKeyReady, containerInWorkspace]);
 
     

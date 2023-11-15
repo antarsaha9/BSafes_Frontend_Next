@@ -4,6 +4,8 @@
  * Copyright 2014-2017 Froala Labs
  */
 
+const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
+
 (function (factory) {
     if (typeof define === 'function' && define.amd) {
         // AMD. Register as an anonymous module.
@@ -369,10 +371,17 @@
 
       editor.events.trigger(replaced ? 'video.replaced' : 'video.inserted', [$video]);
     }
+  
+    const bSafesVideSnapShots = {};
 
-    function _loadedCallback () {
+    function _loadedCallback (s3Key) {
       var $video = $(this);
+      var video = this;
 
+      console.log("_loadedCallback...");
+      console.log("video: ", video);
+      console.log("bSafesVideSnapShots", bSafesVideSnapShots);
+      
       editor.popups.hide('video.insert');
 
       $video.removeClass('fr-uploading');
@@ -385,6 +394,102 @@
       _editVideo($video.parent());
 
       editor.events.trigger('video.loaded', [$video.parent()]);
+      
+      console.log('editor.helpers.isIOS(): ', editor.helpers.isIOS());
+      if(editor.helpers.isIOS()){
+        video.addEventListener("loadeddata", (event) => {
+          console.log(
+            "video loadeddata",
+          );
+          video.play();
+          getVideoSnapshot();    
+        });
+      } else {
+        video.play();
+        getVideoSnapshot(); 
+      }
+
+      async function getVideoSnapshot() {
+
+        let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
+        let canvas = $canvas[0];
+        $canvas.insertAfter('body');
+        let ratio = video.videoWidth/video.videoHeight;
+        console.log('videoWidth, videoHeight: ', video.videoWidth, video.videoHeight);
+        let myWidth = 640; 
+        let myHeight = parseInt(myWidth/ratio,10);
+        canvas.width = myWidth;
+        canvas.height = myHeight;
+        let context = canvas.getContext('2d');
+
+        const uploadSnapshot = async (data) => {
+          const itemId = $('.container').data('itemId');
+          const itemKey = $('.container').data('itemKey');
+          let encryptedStr = encryptLargeBinaryString(data, itemKey);
+          let s3KeyParts = s3Key.split('&');
+          let s3KeyPrefix = s3KeyParts[3];
+          let timeStamp = s3KeyPrefix.split(':').pop(); 
+    
+          try {
+            let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
+            let signedURL = result.signedURL;
+            console.log('video snapshot signed url', signedURL );
+                          
+            const onUploadProgress = (progressEvent) => {
+                let percentCompleted = progressEvent.loaded*100/progressEvent.total;
+                console.log( `Video snapshot upload progress: ${percentCompleted} `);
+            }
+                            
+            await uploadData(encryptedStr, signedURL, onUploadProgress);  
+          } catch (error) {
+            console.log("uploadSnapshot failed");
+          }
+        }
+
+        const takeAShot = () => {
+          if(bSafesVideSnapShots[s3Key]) return;
+          console.log("takeAShot...");
+          console.log("bSafesVideSnapShots", bSafesVideSnapShots);
+          
+          context.fillRect(0,0,myWidth,myHeight);
+          context.drawImage(video,0,0,myWidth,myHeight);
+          console.log('myWidth, myHeight', myWidth, myHeight);
+          let imageData = context.getImageData(0,0,myWidth, myHeight);
+          let isBlank = true;
+          for (let i=0; i< imageData.data.length; i++) {
+            //console.log(imageData.data[i]);
+            if((i+1)%4){
+              if(imageData.data[i] !== 0) {
+                isBlank = false;
+                break;
+              }
+            }
+          }
+          if(isBlank) {
+            setTimeout(takeAShot, 1000);
+            console.log("Blank snapshot");
+          } else {
+
+            canvas.toBlob((blob) => {
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                //console.log(reader.result);
+                
+                uploadSnapshot(reader.result);
+              };
+              
+
+              reader.readAsBinaryString(blob);
+              bSafesVideSnapShots[s3Key] = true;
+            });
+          }
+        }
+        
+        setTimeout(takeAShot, 100); 
+      }
+
+      
     }
 
     /**
@@ -652,6 +757,7 @@
     function _videoUploadProgress (e) {
       if (e.lengthComputable) {
         var complete = (e.loaded / e.total * 100 | 0);
+
         _setProgressMessage(editor.language.translate('Uploading'), complete);
       }
     }
@@ -677,10 +783,10 @@
       }
 
       // Create video object and set the load event.
-      var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
+      var $video = $('<span contenteditable="false" draggable="true" class="fr-video fr-dv' + (editor.opts.videoDefaultDisplay[0]) + (editor.opts.videoDefaultAlign != 'center' ? ' fr-fv' + editor.opts.videoDefaultAlign[0] : '') + '"><video playsinline autoplay src="' + link + '" ' + data_str + (width ? ' style="width: ' + width + ';" ' : '') + ' controls>' + editor.language.translate('Your browser does not support HTML5 video.') + '</video></span>');
       $video.toggleClass('fr-draggable', editor.opts.videoMove);
-
-			$video.find('video').addClass('bSafesVideo');		
+			
+      $video.find('video').addClass('bSafesVideo');		
 			var id = s3Key + "&" + videoSize;	
 			$video.find('video').attr('id', id);
 
@@ -714,10 +820,18 @@
       editor.selection.clear();
 
       if ($video.find('video').get(0).readyState > $video.find('video').get(0).HAVE_FUTURE_DATA || editor.helpers.isIOS()) {
-        loadCallback.call($video.find('video').get(0));
+        console.log('readyState: ', $video.find('video').get(0).readyState);
+        loadCallback.call($video.find('video').get(0), s3Key);
       }
       else {
-        $video.find('video').on('canplaythrough load', loadCallback);
+        const loadCallbackWithS3Key = () => {
+          console.log('loadCallbackWithS3Key');
+          loadCallback.call($video.find('video').get(0), s3Key);
+        }
+        $video.find('video').on('canplaythrough load', 
+          loadCallbackWithS3Key
+        );
+        
       }
 
       return $video;
@@ -1164,74 +1278,31 @@
     /**
      * Do video upload.
      */
-    function upload (videos) {
-      var itemKey = $('.container').data('itemKey');
-      var itemIV = $('.container').data('itemIV');			
-			var s3Key;
+    async function upload (videos) {
+      const itemId = $('.container').data('itemId');
+      const itemKey = $('.container').data('itemKey');
 
-			function uploadToS3(data, fn) {
-				var signedURL;
-
-        async function callPreS3Upload(fn) {
-          const data = await preS3Upload();
-
-          if(data.status === 'ok') {
-            s3Key = data.s3Key;
-            signedURL = data.signedURL;
-            fn(null);
-          } else {
-            fn(data.error);
-          }
-
-        };
-
-				function _uploadProgress (e) {
-					if (e.lengthComputable) {
-          	var complete = (e.loaded / e.total * 100 | 0);
-             _setProgressMessage(editor.language.translate('Uploading'), complete);
-						 console.log(complete);
-          }
-				};
-
-				callPreS3Upload(async function(err) {
-					if(err) {
-						fn(err);
-					} else {
-            try {
-              await uploadData(data, signedURL, _uploadProgress);
-              fn(null);
-            } catch(error) {
-              alert('Uploading failed');
-              console.log(error);
-              fn('Uploading failed');
-            }
-					}
-				});
-			};
-	
-      // Make sure we have what to upload.
       if (typeof videos != 'undefined' && videos.length > 0) {
-
         // Check if we should cancel the video upload.
         if (editor.events.trigger('video.beforeUpload', [videos]) === false) {
-
           return false;
         }
 
-        var video = videos[0];
-				var fileType = video.type;
+        const chunkSize = getEditorConfig().videoChunkSize;
+        const video = videos[0];
+				const fileType = video.type;
+        const fileSize = video.size;
+        let numberOfChunks = Math.floor(fileSize/chunkSize);
+        if(fileSize%chunkSize) numberOfChunks += 1;
+        const fileName = video.name;
+        const encodedFileName = encodeURI(fileName);
+	      const encryptedFileName = encryptBinaryString(encodedFileName, itemKey);
+        let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+        let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
 
-        // Check video max size.
-        if (video.size > editor.opts.videoMaxSize) {
-          _throwError(MAX_SIZE_EXCEEDED);
-
-          return false;
-        }
-
-        // Check video types.
+          // Check video types.
         if (editor.opts.videoAllowedTypes.indexOf(video.type.replace(/video\//g, '')) < 0) {
           _throwError(BAD_FILE_TYPE);
-
           return false;
         }
 
@@ -1240,37 +1311,190 @@
         editor.edit.off();
         editor.events.enableBlur();
 
-        function encryptDataInBinaryString(data, fn) {
-          var time1 = Date.now();
-          var binaryStr = data;
-          console.log('encrypting', binaryStr.length);
-          var encryptedStr = encryptLargeBinaryString(binaryStr, itemKey, itemIV);
+        function sleep(ms) {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        }
 
-          fn(null, encryptedStr);
-        };
-        _setProgressMessage(editor.language.translate('Encrypting'), 0);
-				var reader = new FileReader();
-				reader.addEventListener('load', function () {
-					var videoData = reader.result;
-					var videoInUint8Array = new Uint8Array(videoData);
-          var videoString = convertUint8ArrayToBinaryString(videoInUint8Array);
-					var videoSize = videoInUint8Array.length;
-					var videoBlob = new Blob([videoInUint8Array], {type: fileType});
-					$('#testVideo').attr('type', fileType);
-					videoLink = window.URL.createObjectURL(videoBlob);
+        // BEGIN **** For playing back video from service worker ***
+        function setupWriter(s3KeyPrefix) {
+          console.log("setupWriter");
 
-					encryptDataInBinaryString(videoString, function(error, encryptedVideoDataInBinaryString) {
-            uploadToS3(encryptedVideoDataInBinaryString, function(err) {
-							if(err) {
-                alert('uploadToS3:' + err);
-							} else {
-								_videoUploaded.call(null, $current_video, videoLink, s3Key, videoSize); 	
-							}
-						});
-					});
-				}, false);
-				
-				reader.readAsArrayBuffer(video);
+          return new Promise(async (resolve, reject)=> {
+            console.log("talkToServiceWorker");
+            navigator.serviceWorker.getRegistration("/").then((registration) => {
+              console.log("registration: ", registration);
+              if (registration) {
+
+                          messageChannel =  new MessageChannel();
+          
+                          registration.active.postMessage({
+                              type: 'INIT_EDITOR_VIDEO_PORT',
+                              videoChunkSize: getEditorConfig().videoChunkSize,
+                              s3KeyPrefix,
+                              fileName,
+                              fileType,
+                              fileSize,
+                              browserInfo: getBrowserInfo()
+                            }, [messageChannel.port2]);
+          
+                          messageChannel.port1.onmessage = async (event) => {
+                              // Print the result
+                              console.log(event.data);
+                              if(event.data) {
+                                  switch(event.data.type) {
+                                      case 'STREAM_OPENED':
+                                          videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.stream.id;
+                                          
+                                          console.log("STREAM_OPENED");
+                                                    
+                                          resolve();
+                                          break;
+                                      case 'NEXT_CHUNK':
+                                          
+                                          break;
+                                      case 'STREAM_CLOSED':
+                                          messageChannel.port1.onmessage = null
+                                          messageChannel.port1.close();
+                                          messageChannel.port2.close();
+                                          messageChannel = null;
+                                          break;
+                                      default:
+                                  }
+                              }
+                          };
+                          
+              } else {
+                console.log("serviceWorker.getRegistration error");
+                reject("serviceWorker.getRegistration error")
+              }
+            }).catch(error => {
+              console.log("serviceWorker.getRegistration error: ", error);
+              reject(error);
+            });
+          })
+        }
+
+        function writeAChunkToFile(chunkIndex, chunk) {
+          console.log("writeAChunkToFile");
+          return new Promise(async (resolve, reject)=>{
+              
+              console.log("BINARY: ", Date.now());
+              messageChannel.port1.postMessage({
+                  type: 'BINARY',
+                  chunkIndex,
+                  chunk
+              }); 
+              resolve();
+              
+          })
+        }
+
+        // END **** For playing back video from service worker ***
+
+        function sliceEncryptAndUpload(file, chunkIndex) {
+            return new Promise((resolve, reject) => {
+                let reader, offset, data, binaryData, encryptedData, decryptedData, isSame, fileUploadProgress = 0;
+               
+                offset = (chunkIndex) * chunkSize;
+                reader = new FileReader();
+                const blob = file.slice(offset, offset + chunkSize);
+                
+                function uploadAChunk(index, data) {
+                    let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
+                    
+                    s3KeyPrefixParts = s3KeyPrefix.split(':');
+                    timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1];
+    
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            result = await preS3ChunkUpload(itemId, index, timeStamp);
+                            fileUploadProgress = index*(100/numberOfChunks) + 15/numberOfChunks;
+                            console.log(`File upload prgoress: ${fileUploadProgress}`);
+                          
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            console.log('chunk signed url', signedURL );
+                            
+                            if(!serviceWorkerReady) {
+                              await setupWriter(s3KeyPrefix);
+                              serviceWorkerReady = true;
+
+                            }
+
+                            controller = new AbortController();
+                          
+                            const onUploadProgress = (progressEvent) => {
+                              let percentCompleted = 15 + Math.ceil(progressEvent.loaded*85/progressEvent.total);
+                              fileUploadProgress = index*(100/numberOfChunks) + percentCompleted/numberOfChunks;
+                              fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
+                              console.log( `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                              console.log( `File upload prgoress: ${fileUploadProgress}`);
+                              _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                            }
+                            
+                            await uploadData(data, signedURL, onUploadProgress);              
+                            await writeAChunkToFile(chunkIndex, binaryData);
+                            resolve();
+                        } catch(error) {
+                            console.log('uploadAChunk failed: ', error);
+                            reject(error);
+                        }
+                    });
+                }
+    
+                reader.onloadend = async function(e) {
+                    data = reader.result;
+                    binaryData = data;
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 2/numberOfChunks;
+                    fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
+                    _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                    console.log(`File upload prgoress: ${fileUploadProgress}`);
+                    
+                    encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, itemKey);
+                    fileUploadProgress = chunkIndex*(100/numberOfChunks) + 10/numberOfChunks;
+                    fileUploadProgress = (Math.round(fileUploadProgress*100)/100).toFixed(2);
+                    console.log(`File upload prgoress: ${fileUploadProgress}`);
+                    _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+
+                    encryptedFileSize += encryptedData.length;
+
+                    try {   
+                        await uploadAChunk(chunkIndex, encryptedData);
+                        resolve();
+                    } catch(error) {
+                        console.log('sliceEncryptAndUpload failed: ', error);
+                        reject(error);
+                    }
+                  };
+                reader.readAsBinaryString(blob);
+            });
+        }
+
+        startingChunk = 0;
+        for(i=startingChunk; i<numberOfChunks; i++){
+          try {
+              console.log('sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
+              await sliceEncryptAndUpload(video, i);   
+          } catch(error) {
+              console.log( 'uploadAnAttachment failed: ', error); 
+              _setProgressMessage(editor.language.translate('Uploading ...'), i*(100/numberOfChunks));
+              break;
+          }
+        }
+
+        if(i === numberOfChunks){
+          console.log(`uploadAnAttachment done, total chunks: {numberOfChunks} encryptedFileSize: {encryptedFileSize}`);
+          try {
+            let videoLink = videoLinkFromServiceWorker;//window.URL.createObjectURL(video);
+            let s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
+            _videoUploaded.call(null, $current_video, videoLink, s3KeyInfo, fileSize);
+          } catch (error) {
+            console.log('Could not get videoLink');
+          }        
+        } else {
+          alert("Upload failed.")
+        }  
       }
     }
 

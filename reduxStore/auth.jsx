@@ -1,11 +1,29 @@
-import { createSlice, current } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials} from '../lib/crypto'
-const debugOn = false;
+import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { authActivity } from '../lib/activities';
+
+import { cleanAccountSlice, setAccountState } from './accountSlice';
+import { cleanV1AccountSlice, setNextAuthStep, setKeyMeta } from './v1AccountSlice';
+import { cleanContainerSlice } from './containerSlice';
+import { cleanPageSlice } from './pageSlice';
+import { cleanTeamSlice } from './teamSlice';
+
+const debugOn = true;
 
 const initialState = {
+    activity: 0,  
+    activityErrors: 0,
+    activityErrorMessages: {},
+    error: null,
+    contextId:null,
+    challengeState: false,
+    preflightReady: false,
+    localSessionState: null,
+    MFAPassed: false,
+    accountVersion:'',
     memberId: null,
     displayName: null,
     isLoggedIn: false,
@@ -13,160 +31,317 @@ const initialState = {
     publicKey: null,
     privateKey: null,
     searchKey: null,
-    searchIV: null
+    searchIV: null,
+    froalaLicenseKey: null
 }
 
 const authSlice = createSlice({
     name: "auth",
     initialState: initialState,
     reducers: {
-        loggedIn: (state, action) => {
-            state.isLoggedIn = true;
+        cleanAuthSlice: (state, action) => {
+            const stateKeys = Object.keys(initialState);
+            for(let i=0; i<stateKeys.length; i++) {
+                let key = stateKeys[i];
+                state[key] = initialState[key];
+            }
+        },
+        activityStart: (state, action) => {
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload]='';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
+        },
+        setContextId:(state, action) => {
+            state.contextId = action.payload;
+        },
+        setChallengeState: (state, action) => {
+            state.challengeState = action.payload;
+        },
+        setPreflightReady: (state, action) => {
+            state.preflightReady = action.payload;
+        },
+        setLocalSessionState: (state, action) => {
+            state.localSessionState = action.payload;
+        },
+        setDisplayName: (state, action) => {
+            state.displayName = action.payload;
+        },
+        loggedIn: (state, action) => {   
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
+            if(!credentials) return;
+            state.isLoggedIn = true;
+            state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
             state.searchKey = credentials.secret.searchKey;
-            state.searchIV = credentials.secret.searchIV;
+            if(state.accountVersion === 'v2') {
+                state.searchIV = credentials.secret.searchIV;
+            }
+            state.froalaLicenseKey = action.payload.froalaLicenseKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
+            state.expandedKey = null;
+            state.publicKey = null;
+            state.privateKey = null;
+            state.searchKey = null;
+            state.searchIV = null;
+            state.froalaLicenseKey = null;
+        },
+        setAccountVersion: (state, action) => {
+            state.accountVersion = action.payload;
         }
     }
 });
 
-export const { loggedIn, loggedOut} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
 
-export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
-
-    const credentials = await calculateCredentials(data.nickname, data.keyPassword);
-    
-    if(credentials) {
-        debugLog(debugOn, "credentials: ", credentials);
-
-        PostCall({
-            api:'/keySetup',
-            body: credentials.keyPack,
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                credentials.memberId = data.memberId;
-                credentials.displayName = data.displayName;
-                saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
-                
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-            } else {
-                debugLog(debugOn, "woo... failed to create an account:", data.error);
-            }
-        }).catch( error => {
-            debugLog(debugOn, "woo... failed to create an account.")
-        })
+const newActivity = async (dispatch, type, activity) => {
+    dispatch(activityStart(type));
+    try {
+        await activity();
+        dispatch(activityDone(type));
+    } catch(error) {
+        dispatch(activityError({type, error}));
     }
+}
+export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, authActivity.KeySetup, () => {
+        return new Promise(async (resolve, reject) => {
+            const credentials = await calculateCredentials(data.nickname, data.keyPassword);
+    
+            if(credentials) {
+                debugLog(debugOn, "credentials: ", credentials);
 
+                PostCall({
+                    api:'/keySetup',
+                    body: credentials.keyPack,
+                    dispatch
+                }).then( data => {
+                    debugLog(debugOn, data);
+                    if(data.status === 'ok') {
+                        localStorage.setItem("authToken", data.authToken);
+                        credentials.memberId = data.memberId;
+                        credentials.displayName = data.displayName;
+                        saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                        resolve();
+                    } else {
+                        debugLog(debugOn, "woo... failed to create an account:", data.error);
+                        reject("Failed to create an account.");
+                    }
+                }).catch( error => {
+                    debugLog(debugOn, "woo... failed to create an account.")
+                    reject("Failed to create an account.");
+                })
+            }
+        });
+    });
 }
 
 export const logInAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, authActivity.LogIn, () => {
+        return new Promise(async (resolve, reject) => {
+            const credentials = await calculateCredentials(data.nickname, data.keyPassword, true);
+            if(credentials) {
+                debugLog(debugOn, "credentials: ", credentials);
+    
+                PostCall({
+                    api:'/logIn',
+                    body: credentials.keyPack,
+                    dispatch
+                }).then( data => {
+                    debugLog(debugOn, data);
+                    if(data.status !== 'ok') {
+                        debugLog(debugOn, "woo... failed to login.")
+                        reject("Failed to login.");
+                        return;
+                    }
+                    dispatch(setChallengeState(true));
+                    localStorage.setItem("authToken", data.authToken);
 
-        const credentials = await calculateCredentials(data.nickname, data.keyPassword, true);
+                    credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
+                    credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
+                    credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
+                    credentials.keyPack.publicKey = data.publicKey;
+    
+                    function verifyChallenge() {
+                        let randomMessage = data.randomMessage;
+                        randomMessage = forge.util.encode64(randomMessage);
+                        
+                        let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                        privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
+                        const pki = forge.pki;
+                        let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
+                        const md = forge.md.sha1.create();
+                        md.update(randomMessage, 'utf8');
+                        let signature = privateKeyFromPem.sign(md);
+                        signature = forge.util.encode64(signature);
+    
+    
+                        PostCall({
+                            api:'/memberAPI/verifyChallenge',
+                            body: { signature },
+                            dispatch
+                        }).then( data => {
 
-        if(credentials) {
-            debugLog(debugOn, "credentials: ", credentials);
-
-            PostCall({
-                api:'/logIn',
-                body: credentials.keyPack,
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status !== 'ok') {
+                            if(data.status == "ok") {
+                                debugLog(debugOn, "Logged in.");
+                                credentials.memberId = data.memberId;
+                                credentials.displayName = data.displayName;
+                                saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                                
+                                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                                debugLog(debugOn, "loggedIn dispatched.");
+                                resolve();
+                            } else {
+                                debugLog(debugOn, "Error: ", data.error);
+                                reject("Failed to verify challenge.");
+                            }
+                        }).catch( error => {
+                            debugLog(debugOn, "woo... failed to verify challenge.");
+                            reject("Failed to verify challenge.");
+                        }).finally(()=>{
+                            dispatch(setChallengeState(false));
+                            debugLog(debugOn, "setChallengeState(false)");
+                        })
+                        
+                    } 
+                        
+                    verifyChallenge();
+    
+                }).catch( error => {
                     debugLog(debugOn, "woo... failed to login.")
-                    return;
-                }
-                credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
-                credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
-                credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
-                credentials.keyPack.publicKey = data.publicKey;
-
-                function verifyChallenge() {
-                    let randomMessage = data.randomMessage;
-                    randomMessage = forge.util.encode64(randomMessage);
-                    
-                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
-                    privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
-                    const pki = forge.pki;
-                    let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
-                    const md = forge.md.sha1.create();
-                    md.update(randomMessage, 'utf8');
-                    let signature = privateKeyFromPem.sign(md);
-                    signature = forge.util.encode64(signature);
-
-
-                    PostCall({
-                        api:'/memberAPI/verifyChallenge',
-                        body: { signature },
-                    }).then( data => {
-                        if(data.status == "ok") {
-                            debugLog(debugOn, "Logged in.");
-                            credentials.memberId = data.memberId;
-                            credentials.displayName = data.displayName;
-                            saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
-                            
-                            dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-                        } else {
-                            debugLog(debugOn, "Error: ", data.error);
-                        }
-                    }).catch( error => {
-                        debugLog(debugOn, "woo... failed to verify challenge.");
-                    })
-                } 
-                    
-                verifyChallenge();
-
-            }).catch( error => {
-                debugLog(debugOn, "woo... failed to login.")
-            })
-        }
-
+                    reject("Failed to login.");
+                })
+            }
+        })
+    });
 }
 
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
-    localStorage.clear();
-
-    PostCall({
-        api:'/memberAPI/logOut'
-    }).then( data => {
-        debugLog(debugOn, data);
-        if(data.status === 'ok') {
+    newActivity(dispatch, authActivity.LogOut, () => {
+        return new Promise(async (resolve, reject) => {
+            localStorage.clear();
             dispatch(loggedOut());
-        } else {
-            debugLog(debugOn, "woo... failed to log out: ", data.error)
-        } 
-    }).catch( error => {
-        debugLog(debugOn, "woo... failed to log out.")
-    })
-}
-
-export const preflightAsyncThunk = () => async (dispatch, getState) => {
-    await new Promise(resolve => {
-
-        PostCall({
-            api:'/memberAPI/preflight'
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-            } else {
-                debugLog(debugOn, "woo... preflight failed: ", data.error)
-            } 
-        }).catch( error => {
-            debugLog(debugOn, "woo... preflight failed.")
-        })
-
+            dispatch(cleanMemoryThunk());
+            PostCall({
+                api:'/memberAPI/logOut',
+                dispatch
+            }).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... failed to log out: ", data.error)
+                    reject("Failed to log out.");
+                } 
+            }).catch( error => {
+                debugLog(debugOn, "woo... failed to log out.")
+                reject("Failed to log out.");
+            })
+            
+        });
     });
-    
 }
 
+export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, authActivity.Preflight, () => {
+        return new Promise(async (resolve, reject) => {
+            if(getState().auth.challengeState) return;
+            dispatch(setNextAuthStep(null));
+            const params = {
+                api:'/memberAPI/preflight',
+                dispatch
+            };
+            if(data && data.action) params.body= {action: data.action};
+            PostCall(params).then( data => {
+                debugLog(debugOn, data);
+                if(data.status === 'ok') {
+                    if(data.nextStep) {
+                        localStorage.setItem("authState", data.nextStep.step);
+                        if(data.nextStep.keyMeta){
+                            dispatch(setDisplayName(data.nextStep.keyMeta.displayName));
+                            dispatch(setKeyMeta(data.nextStep.keyMeta));
+                        }
+                        if(data.idleTimeout) {
+                            if(data.accountVersion === 'v1'){
+                                clearLocalCredentials('v1');
+                            } else {
+                                localStorage.clear();
+                                dispatch(loggedOut());
+                            
+                            }
+                            dispatch(setNextAuthStep(data.nextStep))
+                        } 
+                    } else {
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                        dispatch(setAccountState(data.accountState));
+                    }
+                } else { 
+                    if(data.error === 'SessionNotExisted'){
+                        localStorage.clear();
+                        dispatch(loggedOut);
+                    }
+                } 
+                dispatch(setPreflightReady(true));
+                resolve();
+            }).catch( error => {
+                debugLog(debugOn, "woo... preflight failed.");
+                dispatch(setPreflightReady(true));
+                reject("Preflight failed.");
+            })
+        });
+    });  
+}
+
+export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
+    const checkLocalSession = () => {
+        const authToken = localStorage.getItem('authToken');
+        const encodedGold = localStorage.getItem("encodedGold");
+        const authState = localStorage.getItem("authState");
+        return {sessionExists:authToken?true:false, authState, unlocked:encodedGold?true:false};
+    } 
+    const state = getState().auth;
+    let contextId = state.contextId;
+    if(!contextId){
+        contextId = Date.now();
+        dispatch(setContextId(contextId));
+    }
+    const intervalId =  `checkSessionStateInterval-${contextId}`;
+    let checkSessionStateInterval = localStorage.getItem(intervalId);
+    
+    if(!checkSessionStateInterval) {
+        const thisInterval = setInterval(()=>{
+            //debugLog(debugOn, "Check session state");.
+            const state = checkLocalSession();
+            dispatch(setLocalSessionState(state));
+        }, 1000);
+        localStorage.setItem(intervalId, thisInterval)
+        debugLog(debugOn, "Creating new timer: ", thisInterval)
+    }
+}
+
+export const cleanMemoryThunk = () => (dispatch, getState) => {
+    dispatch(cleanAccountSlice());
+    dispatch(cleanAuthSlice());
+    dispatch(cleanContainerSlice());
+    dispatch(cleanPageSlice());
+    dispatch(cleanTeamSlice());
+    dispatch(cleanV1AccountSlice());
+}
 
 export const authReducer = authSlice.reducer;
 

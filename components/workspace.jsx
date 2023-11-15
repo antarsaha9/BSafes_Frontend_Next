@@ -16,13 +16,14 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import AddAnItemButton from './addAnItemButton'
 import NewItemModal from './newItemModal'
 import ItemCard from './itemCard'
+import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
-import { createANewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
-import { clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
+import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
-export default function Workspace() {
+export default function Workspace({readyToList = false}) {
     const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
@@ -39,6 +40,10 @@ export default function Workspace() {
     const [searchValue, setSearchValue] = useState("");
 
     const itemsState = useSelector( state => state.container.items);
+    const newItem = useSelector( state => state.container.newItem);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
 
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
@@ -52,7 +57,7 @@ export default function Workspace() {
     }
 
     const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} item={item} onAdd={handleAdd}/>
+        <ItemCard key={index} itemIndex={index} item={item} onAdd={handleAdd}/>
     );
 
     const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
@@ -67,15 +72,12 @@ export default function Workspace() {
 
     const handleClose = () => setShowNewItemModal(false);
 
-    const handleCreateANewItem = async (title) => {
-        debugLog(debugOn, "createANewItem", title);
+    const handleCreateANewItem = async (titleStr) => {
+        debugLog(debugOn, "createANewItem", titleStr);
         setShowNewItemModal(false);
 
-
-        const item = await createANewItem(title, workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, workspaceSearchKey, workspaceSearchIV );
-        const link = getItemLink(item);
-
-        router.push(link);
+        dispatch(createANewItemThunk({titleStr, currentContainer:workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}));
+    
     }
 
     const onSearchValueChanged = (e) => {
@@ -94,13 +96,62 @@ export default function Workspace() {
         dispatch(listItemsThunk({pageNumber: 1}));
     }
 
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
+    }
+
     useEffect(() => {
-        if(!workspaceId || !workspaceKeyReady || container !== 'root') return;
+        
+        const handleRouteChange = (url, { shallow }) => {
+          console.log(
+            `App is changing to ${url} ${
+              shallow ? 'with' : 'without'
+            } shallow routing`
+          )
+          
+          dispatch(abort());
+          dispatch(clearPage());
+          dispatch(clearItems());
+        }
+    
+        const handleRouteChangeComplete = () => {
+          debugLog(debugOn, "handleRouteChangeComplete");
+        }
+
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete)
+    
+        // If the component is unmounted, unsubscribe
+        // from the event with the `off` method:
+        return () => {
+          router.events.off('routeChangeStart', handleRouteChange)
+          router.events.off('routeChangeComplete', handleRouteChangeComplete)
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
+        if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
+        debugLog(debugOn, "listItemsThunk");
         dispatch(clearPage());
         const itemPath = [{_id: workspaceId}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(listItemsThunk({pageNumber: 1}));
-    }, [container, workspaceId, workspaceKeyReady ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [readyToList, container, workspaceId, workspaceKeyReady ]);
+
+    useEffect(()=> {
+        if(newItem) {
+            const link = getItemLink(newItem, true);
+            dispatch(clearNewItem());
+            router.push(link);
+        }
+    }, [newItem]);
 
     return (
         <Container className={BSafesStyle.container}>
@@ -135,13 +186,31 @@ export default function Workspace() {
                 </Row>
                 <br />
             </>
-            }
+            }     
             {items}
+            {itemsState && itemsState.length > 0 &&
+                <Row>
+                    <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                        <div className='mt-4 d-flex justify-content-center'>
+                            <PaginationControl
+                                page={pageNumber}
+                                // between={4}
+                                total={total}
+                                limit={itemsPerPage}
+                                changePage={(page) => {
+                                    listItems({pageNumber:page})
+                                }}
+                                ellipsis={1}
+                            />
+                        </div>
+                    </Col>
+                </Row>}
+            <br />
             <br />
             <br />
             {workspaceId && <Row>
                 <Col xs={12}>
-                    <Link href={"/trashBox/" + workspaceId}>
+                    <Link href={"/trashBox/" + workspaceId} legacyBehavior>
                         <Button variant="light" className='pull-right border-0 shadow-none'>
                             <i className="fa fa-5x fa-trash" aria-hidden="true" />
                         </Button>

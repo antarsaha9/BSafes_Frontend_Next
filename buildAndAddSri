@@ -1,0 +1,23 @@
+DIR=out
+if [ -d "$DIR" ];
+then
+    echo "$DIR directory exists."
+    rm -rf out
+else
+	echo "$DIR directory does not exist."
+fi
+DIR=upload
+if [ -d "$DIR" ];
+then
+    echo "$DIR directory exists."
+    rm -rf upload
+else
+    echo "$DIR directory does not exist."
+fi
+mkdir out
+mkdir upload
+npm run build
+cd upload
+cp -r ../out/* .
+node ../tools/addSriProtection.js .
+cd ..

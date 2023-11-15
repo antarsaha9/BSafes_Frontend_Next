@@ -22,7 +22,9 @@ import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
     const debugOn = true;
-    debugLog(debugOn, "Rendering item");
+    debugLog(debugOn, "Rendering NotebookPage");
+
+    const dispatch = useDispatch();
     const router = useRouter();
     
     const pageItemId = useSelector( state => state.page.id);
@@ -59,7 +61,7 @@ export default function NotebookPage() {
 
         nextPageId = idParts.join(':');
         debugLog(debugOn, "setNavigationInSameContainer ...");
-        setNavigationInSameContainer(true);
+        dispatch(setNavigationInSameContainer(true));
         router.push(`/notebook/p/${nextPageId}`);       
     }
 
@@ -90,9 +92,9 @@ export default function NotebookPage() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
+            const pageNumber = itemId.split(':').pop();
+            gotoAnotherPage(pageNumber);
         } catch(error) {
             alert("Could not get the first item in the container");
         }
@@ -100,9 +102,9 @@ export default function NotebookPage() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
-            const newLink = `/notebook/p/${itemId}`;
-            router.push(newLink);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
+            const pageNumber = itemId.split(':').pop();
+            gotoAnotherPage(pageNumber);
         } catch(error) {
             alert("Could not get the first item in the container");
         }

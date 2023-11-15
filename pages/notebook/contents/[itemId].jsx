@@ -12,6 +12,7 @@ import PageItemWrapper from "../../../components/pageItemWrapper";
 import TopControlPanel from "../../../components/topControlPanel";
 import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
+import PaginationControl from "../../../components/paginationControl";
 
 import { listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import {  } from "../../../reduxStore/pageSlice";
@@ -24,17 +25,20 @@ export default function NotebookContents() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-
+    const [searchValue, setSearchValue] = useState(null);
 
     const containerInWorkspace = useSelector( state => state.container.container);
+    const mode = useSelector( state => state.container.mode);
+    const itemsState = useSelector( state => state.container.items);
     const pageNumber = useSelector( state => state.container.pageNumber);
     const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
-    const itemsState = useSelector( state => state.container.items);
-    
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
+
     const pageItemId = useSelector( state => state.page.id);
 
     const items = itemsState.map( (item, index) => 
-        <ItemRow key={index} item={item}/>
+        <ItemRow itemIndex={index} key={index} item={item}/>
     );
 
 
@@ -89,8 +93,9 @@ export default function NotebookContents() {
         gotoAnotherPage(anotherPageNumber);
     }
 
-    const handleSubmitSearch = (searchValue) => {
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+    const handleSubmitSearch = (value) => {
+        setSearchValue(value);
+        dispatch(searchItemsThunk({searchValue:value, pageNumber:1}));
     }
 
     const handleCancelSearch = () => {
@@ -99,7 +104,7 @@ export default function NotebookContents() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/notebook/p/${itemId}`;
             router.push(newLink);
         } catch(error) {
@@ -109,12 +114,20 @@ export default function NotebookContents() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/notebook/p/${itemId}`;
             router.push(newLink);
         } catch(error) {
             alert("Could not get the first item in the container");
         }
+    }
+
+    const listItems = ({ pageNumber = 1, searchMode }) => {
+        const derivedSearchMode = searchMode || mode;
+        if (derivedSearchMode === 'listAll')
+            dispatch(listItemsThunk({ pageNumber }));
+        else if (derivedSearchMode === 'search')
+            dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
 
     return (
@@ -132,18 +145,35 @@ export default function NotebookContents() {
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row>
                                     <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                            <p>Page</p> 
+           	                            <p className="fs-5">Page</p> 
                                     </Col> 
                                     <Col xs={8} sm={8} md={9}>
-              	                        <p>Title</p> 
+              	                        <p className="fs-5">Title</p> 
                                     </Col>
                                 </Row>
                                 <Row>
                                     <Col xs={{span:10, offset:1}}>
-                                        <hr className="mt-0 mb-0"/>
+                                        <hr className="mt-1 mb-1"/>
                                     </Col>
                                 </Row>
                                 {items}
+                                {itemsState && itemsState.length > 0 && (total > itemsPerPage) &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({pageNumber:page})
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

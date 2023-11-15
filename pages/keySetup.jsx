@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useRef, useState } from 'react'
+import { useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -7,13 +7,7 @@ import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 
-import jquery from "jquery"
-
-const forge = require('node-forge');
-const argon2 = require('argon2-browser')
-
 import { debugLog } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials } from '../lib/crypto'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Scripts from '../components/scripts'
@@ -31,8 +25,6 @@ export default function KeySetup() {
 
     const nicknameRef = useRef(null);
 
-    const scriptsLoaded = useSelector(state => state.scripts.done);
-
     const keyPasswordChanged = ( password ) => {
         debugLog(debugOn, "keyPassword: ", password);
         setKeyPassword(password);
@@ -48,16 +40,8 @@ export default function KeySetup() {
         dispatch(keySetupAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword}));
     }
 
-    useEffect(()=> {
-        window.$ = window.jQuery = jquery;
-        if(scriptsLoaded) {
-            //argon2Functions.loadArgon2('native-wasm');
-        }
-    }, [scriptsLoaded]);
-
-
     return (
-        <ContentPageLayout> 
+        <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
@@ -66,16 +50,16 @@ export default function KeySetup() {
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">
                                 <Form.Label>Nickname</Form.Label>
-                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Enter a nickname' />
+                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Plase choose a nickname' />
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="keyPassword">
+                            <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
                                 <Form.Label>Key Password</Form.Label>
                                 <KeyInput onKeyChanged={keyPasswordChanged}/>
                                 <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
                                 </Form.Text>
                             </Form.Group>
-                            <Form.Group className="mb-3" controlId="ConfirmkeyPassword">
+                            <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
                                 <Form.Label>Please retype to confirm</Form.Label>
                                 <KeyInput onKeyChanged={confirmPasswordChanged}/>
                             </Form.Group>

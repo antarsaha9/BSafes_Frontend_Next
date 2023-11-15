@@ -1,158 +1,84 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import Head from 'next/head'
-import Button from 'react-bootstrap/Button' 
+import {useRouter} from "next/router";
+
+import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row'
+import Col from 'react-bootstrap/Col'
+import Form from 'react-bootstrap/Form'
+import Button from 'react-bootstrap/Button'
+import Spinner from 'react-bootstrap/Spinner';
+
 import BSafesStyle from '../styles/BSafes.module.css'
+
+import { debugLog} from '../lib/helper'
+
 import ContentPageLayout from '../components/layouts/contentPageLayout';
+import KeyInput from "../components/keyInput";
 
-import jquery from "jquery"
-
-import { debugLog } from '../lib/helper';
-
-import Scripts from '../components/scripts'
-import Editor from '../components/editor';
-import ImagesGallery from '../components/imagesGallery';
-
-import { preflightAsyncThunk } from '../reduxStore/auth';
+import { logInAsyncThunk } from '../reduxStore/auth'
 
 export default function Home() {
-  const debugOn = false;
-
-  const host = process.env.NEXT_PUBLIC_DB_HOST;
-  debugLog(debugOn, `host: ${host}`);
-
-  const dispatch = useDispatch();
-  const scriptsLoaded = useSelector(state => state.scripts.done);
-  const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
-
-  const [mainEditorMode, setMainEditorMode] = useState("ReadOnly");
-  const [mainEditorContent, setMainEditorContent] = useState("Hello World");
-
-  const [ editingEditorId, setEditingEditorId ] = useState("");
-
-  const thoseImageTextEditors = [
-    {
-      editorId: "image-1",
-      editorMode: "ReadOnly",
-      editorContent:"abc",
-    }
-  ];
-
-  const [ imageTextEditors, setImageTextEditors ] = useState(thoseImageTextEditors); 
-
-  debugLog(debugOn, "Rendering Home ...")
-
-  useEffect(() => {
-    window.$ = window.jQuery = jquery;
-    if(scriptsLoaded) {
-      $("#edit").froalaEditor();
-    }
-  },[scriptsLoaded, isLoggedIn])
-
-  const upload = async () => {
-    $.get("/", function(data, status){
-      debugLog(debugOn, "Data: " + data + "\nStatus: " + status);
-    });
-  }
-
-  const handleWrite = () => {
-    debugLog(debugOn, "Writing");
-    setMainEditorMode("Writing");
-    setEditingEditorId("main");
-  }
-
-  const handleSave = () => {
-    debugLog(debugOn, "Saving");
-    if(editingEditorId === "main") {
-      setMainEditorMode("Saving");
-    } else {
-      const editorsCopy = [...imageTextEditors];
-      let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
-      thisEditor.editorMode = "Saving";
-      setImageTextEditors(editorsCopy);
-    }
-  }
-
-  const handleCancel = () => {
-    debugLog(debugLog, "Cancel");
-    if(editingEditorId === "main") {
-      setMainEditorMode("ReadOnly");
-    } else {
-      const editorsCopy = [...imageTextEditors];
-      let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
-      thisEditor.editorMode = "ReadOnly";
-      setImageTextEditors(editorsCopy);
-    }
-  }
-
-  const handlePenClicked = (editorId) => {
-    debugLog(debugOn, `pen ${editorId} clicked`);
-    if(editorId === 'main'){
-      setMainEditorMode("Writing");
-      setEditingEditorId("main");
-    } else {
-      const editorsCopy = [...imageTextEditors];
-      let thisEditor = editorsCopy.find((item) => item.editorId === editorId);
-      thisEditor.editorMode = "Writing";
-      setImageTextEditors(editorsCopy);
-      setEditingEditorId(editorId);
-    }
-  }
-
-  var handleContentChanged = (editorId, content) => {
-    debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
+    const debugOn = false;
+    const router = useRouter();
+    const dispatch = useDispatch();
     
-    setTimeout(()=>{
-      if(editingEditorId === "main") {
-        setMainEditorContent(content);
-        setMainEditorMode("ReadOnly");
-      } else {
-        const editorsCopy = [...imageTextEditors];
-        let thisEditor = editorsCopy.find((item) => item.editorId === editingEditorId);
-        thisEditor.editorContent = content;
-        thisEditor.editorMode = "ReadOnly";
-        setImageTextEditors(editorsCopy);
-      }     
-    },1000)
-  }
+    const [keyPassword, setKeyPassword] = useState("");
+    const nicknameRef = useRef(null);
+    const activity = useSelector(state=>state.auth.activity);
+    const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
 
-  const imageEditorComponents = imageTextEditors.map( (thisEditor) => 
-    <Editor key={thisEditor.editorId} editorId={thisEditor.editorId} mode={thisEditor.editorMode} content={thisEditor.editorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
-  )
+    const keyPasswordChanged = ( password ) => {
+        debugLog(debugOn, "keyPassword: ", password);
+        setKeyPassword(password);
+    }
 
-  return (
-    <div>
-      <Head>
-        <title>Create Next App</title>
-        <meta name="description" content="Generated by create next app" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
-      <ContentPageLayout>
-        {isLoggedIn?
-          <main>
-          <h1>Introduction</h1>
-
-          <div id='edit'></div>
+    const handleSubmit = async e => { 
+        debugLog(debugOn,  "handleSubmit");
         
-          <ImagesGallery />
+        dispatch(logInAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword }));
+    }
 
-          <Editor editorId="main" mode={mainEditorMode} content={mainEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} />
-
-          {imageEditorComponents}
-
-          <Button onClick={handleWrite}>Write</Button>
-          <Button variant="success" onClick={handleSave}>Save</Button>
-          <Button variant="warning" onClick={handleCancel}>Cancel</Button>
-        </main>
-        : <main></main>
+    useEffect(()=> {
+        if(isLoggedIn) {
+            router.push('/safe');
         }
-      </ContentPageLayout>
+    }, [isLoggedIn])
 
-      <footer>
-
-      </footer>
-      <Scripts />
-    </div>
-  )
+    return (
+        <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
+            <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
+                <Row>
+                    <Col>
+                        <h1>Log In</h1>
+                        <hr></hr>
+                        <Form>
+                            <Form.Group className="mb-3" controlId="Nickname">
+                                <Form.Label>Nickname</Form.Label>
+                                <Form.Control ref={nicknameRef} type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox}/>
+                            </Form.Group>
+                            <Form.Group className="mb-3" controlId="keyPassword">
+                                <Form.Label>Key Password</Form.Label>
+                                <KeyInput onKeyChanged={keyPasswordChanged}/>
+                                <Form.Text id="passwordHelpBlock" muted>
+                Your password must be longer than 8 characters, contain letters and numbers
+                                </Form.Text>
+                            </Form.Group>
+                            <Button variant="dark" onClick={handleSubmit} disabled={activity==="LoggingIn"}>
+                                {activity==="LoggingIn"?
+                                    <Spinner animation="border" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                    </Spinner>
+                                    :'Unlock'
+                                }
+                            </Button>
+                            {(activity ==='Error') && 
+                                <p className="text-danger">Please provide correct Nickname and Key Passowrd </p>
+                            }
+                        </Form>
+                    </Col>           
+                </Row>
+            </Container>
+        </ContentPageLayout>
+    )
 }

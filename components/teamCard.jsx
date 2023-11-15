@@ -9,12 +9,14 @@ import Dropdown from 'react-bootstrap/Dropdown';
 
 import BSafesStyle from '../styles/BSafes.module.css';
 
-export default function TeamCard({ team, onAdd }) {
+import { debugLog } from '../lib/helper'
+
+export default function TeamCard({ index, team, onAdd }) {
+    const debugOn = true;
 
     const cardStyle = BSafesStyle.safeItem;
     const cardBodyStyle = '';
-    const cardRowStyle = ''
-
+    const cardRowStyle = ''    
 
     const teamId = team.id;
     let temp = document.createElement('span');
@@ -58,7 +60,7 @@ export default function TeamCard({ team, onAdd }) {
     const sortToggle = forwardRef(sortButton);
 
     const handleAddClicked = (action) => {
-        onAdd(action, teamId, team.position);
+        onAdd({action, index, targetTeam: teamId, targetPosition: team.position});
     }
 
     return (
@@ -74,7 +76,7 @@ export default function TeamCard({ team, onAdd }) {
         <Card className={cardStyle} style={{ cursor: 'pointer' }}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
-                    <Link href={`/team/${team.id}`}>
+                    <Link href={`/team/${team.id}`} legacyBehavior>
                         <Col xs={9}>
                             <div >
                                 <h2 dangerouslySetInnerHTML={{ __html: teamText }} />
@@ -92,8 +94,8 @@ export default function TeamCard({ team, onAdd }) {
                                         <Dropdown.Toggle as={plusToggle} variant="link" />
 
                                         <Dropdown.Menu>
-                                            <Dropdown.Item onClick={() => handleAddClicked("addAnTeamBefore")}>Add before</Dropdown.Item>
-                                            <Dropdown.Item onClick={() => handleAddClicked("addAnTeamAfter")}>Add after</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleAddClicked("addATeamBefore")}>Add before</Dropdown.Item>
+                                            <Dropdown.Item onClick={() => handleAddClicked("addATeamAfter")}>Add after</Dropdown.Item>
                                         </Dropdown.Menu>
                                 </Dropdown>
                             }

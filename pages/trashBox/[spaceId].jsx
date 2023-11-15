@@ -11,12 +11,12 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import ItemCard from "../../components/itemCard";
+import PaginationControl from "../../components/paginationControl";
 
-import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItems, initContainer, listItemsThunk, restoreItemsFromTrash, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
+import { initWorkspaceThunk, changeContainerOnly, clearContainer, clearItems, emptyTrashBoxItemsThunk, initContainer, listItemsThunk, restoreItemsFromTrashThunk, setWorkspaceKeyReady, getTrashBoxThunk, clearSelected } from '../../reduxStore/containerSlice';
+import { abort, initPage, clearPage, itemPathLoaded } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink } from "../../lib/bSafesCommonUI"
 
 export default function TrashBox() {
     const debugOn = true;
@@ -26,22 +26,25 @@ export default function TrashBox() {
     const [space, setSpace] = useState(null);
     const [containerCleared, setContainerCleared] = useState(false);
 
+    const accountVersion = useSelector( state => state.auth.accountVersion);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
     const expandedKey = useSelector( state => state.auth.expandedKey );
 
     const workspaceId = useSelector( state => state.container.workspace );
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
     const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
     const itemsState = useSelector(state => state.container.items);
+    const pageNumber = useSelector( state => state.container.pageNumber);
+    const itemsPerPage = useSelector(state => state.container.itemsPerPage);
+    const total = useSelector(state => state.container.total);
     const selectedItems = useSelector(state => state.container.selectedItems);
     const trashBoxId = useSelector(state => state.container.trashBoxId);
 
     const items = itemsState.map((item, index) =>
         <Row key={index}>
             <Col lg={{ span: 10, offset: 1 }}>
-                <ItemCard item={item} isOpenable={false} />
+                <ItemCard itemIndex={index} item={item} isOpenable={false} />
             </Col>
         </Row>
     );
@@ -51,14 +54,8 @@ export default function TrashBox() {
             teamSpace: workspaceId,
             trashBoxId: trashBoxId,
             selectedItems: items,
-        }
-        try {
-            await restoreItemsFromTrash({ payload });
-            dispatch(clearSelected());
-            dispatch(listItemsThunk({ pageNumber: 1 }));
-        } catch(error) {
-            debugLog(debugOn, 'handleRestore failed: ', error)
-        }
+        }        
+        dispatch(restoreItemsFromTrashThunk({ payload }));     
     }
 
     const handleEmpty = async (items) => {
@@ -67,12 +64,7 @@ export default function TrashBox() {
             trashBoxId: trashBoxId,
             selectedItems: items,
         }
-        try {
-            await emptyTrashBoxItems({ payload });
-            dispatch(listItemsThunk({ pageNumber: 1 }));
-        } catch(error) {
-            debugLog(debugOn, 'handleEmpty failed: ', error)
-        }
+        dispatch(emptyTrashBoxItemsThunk({ payload }));
     }
 
     const handleEmptyAll = () => {
@@ -80,17 +72,17 @@ export default function TrashBox() {
     }
 
     const handleEmptySelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
-        handleEmpty(items);
+        handleEmpty(selectedItems);
     }
     const handleRestoreAll = () => {
         handleRestore(itemsState)
     }
     const handleRestoreSelected = () => {
-        const items = itemsState.filter(i => selectedItems.find(si => si === i.id));
-        handleRestore(items)
+        handleRestore(selectedItems)
     }
-
+    const listItems = ({ pageNumber = 1}) => {
+        dispatch(listItemsThunk({ pageNumber }));
+    }
     useEffect(() => {
         const handleRouteChange = (url, { shallow }) => {
             console.log(
@@ -100,13 +92,20 @@ export default function TrashBox() {
             dispatch(abort());
         }
 
-        router.events.on('routeChangeStart', handleRouteChange)
+        const handleRouteChangeComplete = () => {
+            debugLog(debugOn, "handleRouteChangeComplete");
+            dispatch(initPage());
+        }
 
+        router.events.on('routeChangeStart', handleRouteChange)
+        router.events.on('routeChangeComplete', handleRouteChangeComplete);
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
             router.events.off('routeChangeStart', handleRouteChange)
+            router.events.off('routeChangeComplete', handleRouteChangeComplete);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
@@ -126,6 +125,7 @@ export default function TrashBox() {
                 setContainerCleared(true);
             }    
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoggedIn, router.query.spaceId]);
 
     useEffect(()=>{
@@ -134,9 +134,16 @@ export default function TrashBox() {
                 dispatch(initContainer({container:'Unknown', workspaceId:space, workspaceKey: expandedKey, searchKey, searchIV }));
                 dispatch(setWorkspaceKeyReady(true));
             } else {
-                dispatch(initWorkspaceThunk({teamId:space, container: 'Unknown'}));          
+                let teamId;
+                if(accountVersion === 'v1') {
+                    teamId = space.substring(0, space.length - 4);
+                } else {
+                    teamId = space;
+                }
+                dispatch(initWorkspaceThunk({teamId, container: 'Unknown'}));          
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [space, containerCleared]);
 
     useEffect(() => {
@@ -145,12 +152,14 @@ export default function TrashBox() {
         const itemPath = [{_id: workspaceId}, {_id:'t:workspaceId'}];
         dispatch(itemPathLoaded(itemPath));
         dispatch(getTrashBoxThunk());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [workspaceId, workspaceKeyReady ]);
 
     useEffect(()=> {
         if(!trashBoxId || trashBoxId === 'Unknown') return;
         dispatch(changeContainerOnly({container: trashBoxId}));
         dispatch(listItemsThunk({pageNumber: 1}));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [trashBoxId])
 
     return (
@@ -180,15 +189,28 @@ export default function TrashBox() {
                                         </Col>
                                     </Row>
                                 </div>
-                                {/* <Row className="justify-content-center">
-                                    <AddAnItemButton addAnItem={addAnItem} />
-                                </Row>
-                                <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} /> */}
+    
                                 <br />
                                 <br />
 
                                 {items}
-
+                                {(true) &&
+                                    <Row>
+                                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                                            <div className='mt-4 d-flex justify-content-center'>
+                                                <PaginationControl
+                                                    page={pageNumber}
+                                                    // between={4}
+                                                    total={total}
+                                                    limit={itemsPerPage}
+                                                    changePage={(page) => {
+                                                        listItems({pageNumber:page})
+                                                    }}
+                                                    ellipsis={1}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>}
                             </div>
                         </Col>
                     </Row>

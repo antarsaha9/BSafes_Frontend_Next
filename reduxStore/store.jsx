@@ -1,13 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { createWrapper } from 'next-redux-wrapper'
 
+import accountSlice, {accountReducer} from './accountSlice';
 import scriptsSlice, { scriptsReducer } from './scriptsSlice';
 import stylesheetsSlice, { stylesheetsReducer } from './stylesheetsSlice';
 import authSlice, {authReducer} from './auth';
 import containerSlice, {containerReducer} from './containerSlice';
 import pageSlice, {pageReducer} from './pageSlice';
 import teamSlice, {teamReducer} from './teamSlice';
-import accountSlice, {accountReducer} from './accountSlice';
+import v1AccountSlice, { v1AccountReducer } from './v1AccountSlice';
+
 
 const reduxStore = configureStore({
     reducer: {
@@ -16,8 +18,9 @@ const reduxStore = configureStore({
         [authSlice.name]: authReducer,
         [containerSlice.name]: containerReducer,
         [pageSlice.name]: pageReducer,
-        [accountSlice.name]: accountReducer,
-        [teamSlice.name]: teamReducer
+        [teamSlice.name]: teamReducer,
+        [v1AccountSlice.name]: v1AccountReducer,
+        [accountSlice.name]:accountReducer
     },
     devTools: true,
     middleware: (getDefaultMiddleware) =>
@@ -26,9 +29,9 @@ const reduxStore = configureStore({
         // Ignore these action types
         ignoredActions: ['page/addImages', 'page/imageUploaded', 'page/setAbortController'],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer'],
+        ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer', 'payload.xhr', 'payload.writer'],
         // Ignore these paths in the state
-        ignoredPaths: ['page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController'],
+        ignoredPaths: ['page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController', 'page.xhr', 'page.writer'],
       },
     }),
 })
