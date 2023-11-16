@@ -15,7 +15,6 @@ import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageI
 
 import { debugLog } from "../lib/helper";
 
-
 const PageItemWrapper = ({ itemId, children}) => {
     const debugOn = true;
 
@@ -73,7 +72,7 @@ const PageItemWrapper = ({ itemId, children}) => {
     }
 
     useEffect(() => {
-        
+        debugLog(debugOn, 'pageItemWrapper useEffect, []');
         const handleRouteChange = (url, { shallow }) => {
           console.log(
             `App is changing to ${url} ${
@@ -87,8 +86,8 @@ const PageItemWrapper = ({ itemId, children}) => {
         }
     
         const handleRouteChangeComplete = () => {
-          debugLog(debugOn, "handleRouteChangeComplete");
-          dispatch(initPage());
+          
+          
         }
 
         router.events.on('routeChangeStart', handleRouteChange)
@@ -97,12 +96,18 @@ const PageItemWrapper = ({ itemId, children}) => {
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
+          debugLog(debugOn, 'pageItemWrapper events.off');
           router.events.off('routeChangeStart', handleRouteChange)
           router.events.off('routeChangeComplete', handleRouteChangeComplete)
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
+    useEffect(()=> {
+      debugLog(debugOn, "initPage");
+      dispatch(initPage());
+    }, [itemId])
+
     useEffect(()=> {
       debugLog(debugOn, `${isLoggedIn}, ${itemId}, ${pageItemId}`);
       if(isLoggedIn && itemId && !pageItemId && !aborted) {

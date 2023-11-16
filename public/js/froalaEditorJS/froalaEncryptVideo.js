@@ -1311,10 +1311,6 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         editor.edit.off();
         editor.events.enableBlur();
 
-        function sleep(ms) {
-          return new Promise(resolve => setTimeout(resolve, ms));
-        }
-
         // BEGIN **** For playing back video from service worker ***
         function setupWriter(s3KeyPrefix) {
           console.log("setupWriter");
