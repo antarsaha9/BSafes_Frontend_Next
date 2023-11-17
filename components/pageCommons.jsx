@@ -11,6 +11,7 @@ import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
 import Editor from './editor';
+import VideoPanel from "./videoPanel";
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 import AttachmentPanel from "./attachmentPanel";
@@ -18,7 +19,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, downloadVideoThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -47,6 +48,7 @@ export default function PageCommons() {
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
     const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
+    const videoPanelsState = useSelector(state => state.page.videoPanels);
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
@@ -64,6 +66,19 @@ export default function PageCommons() {
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
     
+    const onVideoClicked = (queueId) => {
+        debugLog(debugOn, "onVideoClicked: ", queueId);
+        for (const thisPanel of videoPanelsState) {
+            if(thisPanel.queueId === queueId) {
+                const id = queueId;
+                const s3KeyPrefix = thisPanel.s3KeyPrefix;
+                const numberOfChunks = thisPanel.numberOfChunks-1;
+                dispatch(downloadVideoThunk({id, s3KeyPrefix, numberOfChunks}));
+                break;
+            }
+        }
+    }
+
     const onImageClicked = (queueId) => {
         debugLog(debugOn, "onImageClicked: ", queueId);
 
@@ -238,6 +253,10 @@ export default function PageCommons() {
             dispatch(saveCommentThunk({index: editingEditorId, content}));
         }    
     }
+
+    const videoPanels = videoPanelsState.map((item, index) =>
+        <VideoPanel key={item.queueId} panelIndex={"video_" + index} panel={item} onVideoClicked={onVideoClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+    )
 
     const imagePanels = imagePanelsState.map((item, index) =>
         <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
@@ -680,7 +699,7 @@ export default function PageCommons() {
             }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
-                    { /*videoPanels*/ }
+                    { videoPanels }
                 </Col>
             </Row>
             <br />

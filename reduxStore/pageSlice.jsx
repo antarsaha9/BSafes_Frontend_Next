@@ -108,7 +108,7 @@ function findMediasInContent(state, content) {
         let id = item.id;
         let idParts = id.split('&');
         if(idParts[0] === 'chunks') {
-            let s3Key = idParts[3] + '_chunk_99999';
+            let s3Key = idParts[3] + '_chunk_' + getEditorConfig().videoThumbnailIndex;
             state.contentImagesDownloadQueue.push({id, s3Key});
         }
     });
@@ -2009,8 +2009,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
     const fileType = video.type;
     const fileSize = video.size;
     const fileName = video.name;
-    const encodedFileName = encodeURI(fileName);
-    const encryptedFileName = encryptBinaryString(encodedFileName, state.itemKey);
+    
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
     const itemId = state.id;
@@ -2182,6 +2181,27 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
     function doneUploadAVideo(videoThumbnailImage) {
         debugLog(debugOn, videoThumbnailImage)
         let i, newVideos=[];
+        const videos = [];
+
+        const findVideoWordsByKey = (videos, s3KeyPrefix) => {
+            if(!videos) return null;
+            for(let i=0; i< videos.length; i++) {
+                if(videos[i].s3KeyPrefix === s3KeyPrefix) {
+                    return videos[i].words;
+                }
+            }
+            return null;
+        }
+        
+        for(let i=0; i<state.videoPanels.length; i++) {
+            const videoPanel = state.videoPanels[i];
+            let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, size:videoPanel.size, numberOfChunks: videoPanel.numberOfChunks};
+            let words = null;
+            if(state.itemCopy) words = findVideoWordsByKey(state.itemCopy.videos, video.s3KeyPrefix);
+            video.words = words;
+            videos.push(video);
+        }
+
         return new Promise(async (resolve, reject) => {
             if (!state.itemCopy) {
                 try {
@@ -2190,12 +2210,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
                     let newPageData = {
                         itemId: state.id,
                         keyEnvelope: forge.util.encode64(keyEnvelope),
-                        s3KeyPrefix,
-                        fileName: forge.util.encode64(encryptedFileName),
-	                    fileType,
-                        fileSize,
-	                    size: encryptedFileSize,
-	                    numberOfChunks
+                        videos: JSON.stringify(videos)
                     };
                 
                     let updatedState = {
@@ -2210,23 +2225,10 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
                 let itemCopy = {
                     ...state.itemCopy
                 }
-                if(itemCopy.video)
-                    newVideos.push(...itemCopy.video)
-                const thisVideo = {
-                    fileName: forge.util.encode64(encryptedFileName),
-                    fileType,
-                    fileSize,
-                    s3KeyPrefix,
-                    size: encryptedFileSize,
-                    numberOfChunks
-                }
-                newVideos.push(thisVideo);
                 try {
-                    itemCopy.video = newVideos;
-                    itemCopy.update = "video";    
-                    await createNewItemVersionForPage(itemCopy, dispatch);
-                    itemCopy.video[newVideos.length-1].thumbnail = videoThumbnailImage;
-                    
+                    itemCopy.videos = videos;
+                    itemCopy.update = "videos";    
+                    await createNewItemVersionForPage(itemCopy, dispatch);      
                     dispatch(newVersionCreated({
                         itemCopy
                     }));
@@ -2238,7 +2240,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
         })
     }
     
-    async function getVideoSnapshot(s3Key) {
+    async function getVideoSnapshot(s3KeyPrefix) {
         return new Promise(async resolve => {
             const videoE = document.createElement('video');
             videoE.src = videoLinkFromServiceWorker;
@@ -2349,8 +2351,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
         if (i === numberOfChunks) {
             debugLog(debugOn, `uploadAVideo done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
             try {
-                const s3KeyInfo = `chunks&${numberOfChunks}&${btoa(encryptedFileName)}&${s3KeyPrefix}&${encodeURI(fileType)}`;
-                const videoThumbnailImage = await getVideoSnapshot(s3KeyInfo);
+                const videoThumbnailImage = await getVideoSnapshot(s3KeyPrefix);
                 await doneUploadAVideo(videoThumbnailImage);
                 return resolve({ fileType, fileSize, s3KeyPrefix, size: encryptedFileSize, link:videoLinkFromServiceWorker });
             } catch (error) {

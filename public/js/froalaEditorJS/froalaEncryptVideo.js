@@ -431,7 +431,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           let timeStamp = s3KeyPrefix.split(':').pop(); 
     
           try {
-            let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
+            let result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
             let signedURL = result.signedURL;
             console.log('video snapshot signed url', signedURL );
                           
