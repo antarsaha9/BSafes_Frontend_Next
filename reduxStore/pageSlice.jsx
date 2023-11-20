@@ -6,7 +6,7 @@ const axios = require('axios');
 
 import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
-import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, arraryBufferToStr } from '../lib/helper'
+import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
@@ -729,8 +729,10 @@ const pageSlice = createSlice({
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.videosUploadQueue.length;
-                let numberOfChunks = Math.floor(files[i].size/getEditorConfig().videoChunkSize);
-                if(files[i].size % state.chunkSize) numberOfChunks+=1;
+                const fileSize = files[i].size;
+                const videoChunkSize = getEditorConfig().videoChunkSize;
+                let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+                if(fileSize % videoChunkSize) numberOfChunks+=1;
                 const newUpload = {file: files[i], numberOfChunks};
                 state.videosUploadQueue.push(newUpload);
                 const newPanel = {
@@ -2092,14 +2094,14 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
 
     function sliceEncryptAndUpload(file, chunkIndex) {
         return new Promise((resolve, reject) => {
-            let reader, offset, data, binaryData, encryptedData, fileUploadProgress = 0;
+            let reader, offset, binaryData, encryptedData, fileUploadProgress = 0;
 
             offset = (chunkIndex) * chunkSize;
             reader = new FileReader();
             const blob = file.slice(offset, offset + chunkSize);
 
             function uploadAChunk(index, data) {
-                let result, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
+                let result, signedURL, s3KeyPrefixParts, timeStamp;
 
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
                 timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1];
@@ -2111,7 +2113,6 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
                         debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
                         dispatch(uploadingVideo(fileUploadProgress));
 
-                        s3Key = result.s3Key;
                         s3KeyPrefix = result.s3KeyPrefix;
                         signedURL = result.signedURL;
                         debugLog(debugOn, 'chunk signed url', signedURL);
@@ -2151,18 +2152,9 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
             }
 
             reader.onloadend = async function (e) {
-                data = reader.result;
-                binaryData = data;
-                // fileUploadProgress = chunkIndex * (100 / numberOfChunks) + 2 / numberOfChunks;
-                // fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
-                // _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
-                // debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                binaryData = reader.result;
 
-                encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(data, state.itemKey);
-                // fileUploadProgress = chunkIndex * (100 / numberOfChunks) + 10 / numberOfChunks;
-                // fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
-                // debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                // _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
+                encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(binaryData, state.itemKey);
 
                 encryptedFileSize += encryptedData.length;
 
@@ -2176,68 +2168,6 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
             };
             reader.readAsBinaryString(blob);
         });
-    }
-
-    function doneUploadAVideo(videoThumbnailImage) {
-        debugLog(debugOn, videoThumbnailImage)
-        let i, newVideos=[];
-        const videos = [];
-
-        const findVideoWordsByKey = (videos, s3KeyPrefix) => {
-            if(!videos) return null;
-            for(let i=0; i< videos.length; i++) {
-                if(videos[i].s3KeyPrefix === s3KeyPrefix) {
-                    return videos[i].words;
-                }
-            }
-            return null;
-        }
-        
-        for(let i=0; i<state.videoPanels.length; i++) {
-            const videoPanel = state.videoPanels[i];
-            let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, size:videoPanel.size, numberOfChunks: videoPanel.numberOfChunks};
-            let words = null;
-            if(state.itemCopy) words = findVideoWordsByKey(state.itemCopy.videos, video.s3KeyPrefix);
-            video.words = words;
-            videos.push(video);
-        }
-
-        return new Promise(async (resolve, reject) => {
-            if (!state.itemCopy) {
-                try {
-                    let keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
-
-                    let newPageData = {
-                        itemId: state.id,
-                        keyEnvelope: forge.util.encode64(keyEnvelope),
-                        videos: JSON.stringify(videos)
-                    };
-                
-                    let updatedState = {
-                    };
-
-                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
-                    resolve();
-                } catch(error) {
-                    reject("Failed to create a new page with attachment.");
-                } 
-            } else {
-                let itemCopy = {
-                    ...state.itemCopy
-                }
-                try {
-                    itemCopy.videos = videos;
-                    itemCopy.update = "videos";    
-                    await createNewItemVersionForPage(itemCopy, dispatch);      
-                    dispatch(newVersionCreated({
-                        itemCopy
-                    }));
-                    resolve();
-                } catch (error) {
-                    reject("Failed to add an video.");
-                }
-            }
-        })
     }
     
     async function getVideoSnapshot(s3KeyPrefix) {
@@ -2351,8 +2281,6 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
         if (i === numberOfChunks) {
             debugLog(debugOn, `uploadAVideo done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
             try {
-                const videoThumbnailImage = await getVideoSnapshot(s3KeyPrefix);
-                await doneUploadAVideo(videoThumbnailImage);
                 return resolve({ fileType, fileSize, s3KeyPrefix, size: encryptedFileSize, link:videoLinkFromServiceWorker });
             } catch (error) {
                 debugLog(debugOn, 'Could not get videoLink');
@@ -2374,7 +2302,68 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
         return;
     }
 
-    newActivity(dispatch, pageActivity.UploadVideos,  () => {
+    function doneUploadAVideo() {
+        debugLog(debugOn, 'doneUploadAVideo ...');
+        const videos = [];
+
+        const findVideoWordsByKey = (videos, s3KeyPrefix) => {
+            if(!videos) return null;
+            for(let i=0; i< videos.length; i++) {
+                if(videos[i].s3KeyPrefix === s3KeyPrefix) {
+                    return videos[i].words;
+                }
+            }
+            return null;
+        }
+        
+        for(let i=0; i<state.videoPanels.length; i++) {
+            const videoPanel = state.videoPanels[i];
+            let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, size:videoPanel.size, numberOfChunks: videoPanel.numberOfChunks};
+            let words = null;
+            if(state.itemCopy) words = findVideoWordsByKey(state.itemCopy.videos, video.s3KeyPrefix);
+            video.words = words;
+            videos.push(video);
+        }
+
+        return new Promise(async (resolve, reject) => {
+            if (!state.itemCopy) {
+                try {
+                    let keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
+
+                    let newPageData = {
+                        itemId: state.id,
+                        keyEnvelope: forge.util.encode64(keyEnvelope),
+                        videos: JSON.stringify(videos)
+                    };
+                
+                    let updatedState = {
+                    };
+
+                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                    resolve();
+                } catch(error) {
+                    reject("Failed to create a new page with attachment.");
+                } 
+            } else {
+                let itemCopy = {
+                    ...state.itemCopy
+                }
+                try {
+                    itemCopy.videos = videos;
+                    itemCopy.update = "videos";    
+                    await createNewItemVersionForPage(itemCopy, dispatch);      
+                    dispatch(newVersionCreated({
+                        itemCopy
+                    }));
+                    resolve();
+                } catch (error) {
+                    reject("Failed to add an video.");
+                }
+            }
+        })
+    }
+
+    newActivity(dispatch, pageActivity.UploadVideos,  () => {     
         return new Promise(async (resolve, reject) => {
             dispatch(addUploadVideos({files:data.files}));
             state = getState().page;
@@ -2393,9 +2382,9 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
                 video = state.videosUploadQueue[state.videosUploadIndex];
                 try {
                     uploadResult = await uploadAVideo(dispatch, getState, state, video, workspaceKey);
-                    
                     dispatch(videoUploaded(uploadResult));
-                    
+                    state = getState().page;
+                    await doneUploadAVideo(uploadResult);
                     state = getState().page;
                 } catch(error) {
                     debugLog(debugOn, 'uploadVideosThunk failed: ', error);

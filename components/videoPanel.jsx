@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -8,18 +8,25 @@ import Dropdown from 'react-bootstrap/Dropdown'
 import ProgressBar from 'react-bootstrap/ProgressBar'
 import Image from 'react-bootstrap/Image'
 
+import jquery from "jquery"
+const axios = require('axios');
+
 import Editor from './editor'
 
 import { uploadVideosThunk, deleteAVideoThunk } from '../reduxStore/pageSlice'
 import { debugLog } from '../lib/helper';
 
 export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMode, onContentChanged, onPenClicked, editable = true }) {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const videoFilesInputRef = useRef(null);
+    const s3KeyPrefix = panel.s3KeyPrefix;
 
     const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const itemId = useSelector(state => state.page.id);
+
+    const [snapshotTaken, setSnapshotTaken] = useState(false);
 
     const handleVideoClicked = () => {
         onVideoClicked(panel.queueId);
@@ -56,6 +63,102 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
         dispatch(uploadVideosThunk({ files, where, workspaceKey }));
     };
 
+    const onLoadedMetadata = (e) => {
+        debugLog(debugOn, 'onLoadedMetaData ..., autoplay muted ');
+    }
+    const onLoadedData = (e) => {
+        debugLog(debugOn, 'onLoadedData ...');
+    }
+
+    const onCanPlay = (event) => {
+        debugLog(debugOn, 'onCanPlay ...');
+    };
+
+    const onPlaying = (e) => {
+        debugLog(debugOn, 'onPlaying ...');
+        getVideoSnapshot(e.target)
+
+    }
+
+    async function getVideoSnapshot(video) {
+
+        let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
+        let canvas = $canvas[0];
+        $canvas.insertAfter('body');
+        let ratio = video.videoWidth/video.videoHeight;
+    
+        let myWidth = 640; 
+        let myHeight = parseInt(myWidth/ratio,10);
+        canvas.width = myWidth;
+        canvas.height = myHeight;
+        let context = canvas.getContext('2d');
+
+        const uploadSnapshot = async (data) => {
+          let timeStamp = s3KeyPrefix.split(':').pop(); 
+          try {
+            let result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
+            let signedURL = result.signedURL;
+                      
+            const config = {
+                onUploadProgress: async (progressEvent) => {
+                    let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
+                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                },
+                headers: {
+                    'Content-Type': 'binary/octet-stream'
+                }
+            }
+
+            await axios.put(signedURL, Buffer.from(data, 'binary'), config); 
+        } catch (error) {
+            console.log("uploadSnapshot failed");
+          }
+        }
+
+        const takeAShot = () => {
+          if(snapshotTaken) return;
+          console.log("takeAShot...");
+          console.log("snapshotTaken", snapshotTaken);
+          
+          context.fillRect(0,0,myWidth,myHeight);
+          context.drawImage(video,0,0,myWidth,myHeight);
+          console.log('myWidth, myHeight', myWidth, myHeight);
+          let imageData = context.getImageData(0,0,myWidth, myHeight);
+          let isBlank = true;
+          for (let i=0; i< imageData.data.length; i++) {
+            if((i+1)%4){
+              if(imageData.data[i] !== 0) {
+                isBlank = false;
+                break;
+              }
+            }
+          }
+          if(isBlank) {
+            setTimeout(takeAShot, 1000);
+            console.log("Blank snapshot");
+          } else {
+
+            canvas.toBlob((blob) => {
+              const reader = new FileReader();
+
+              reader.onload = () => {
+                uploadSnapshot(reader.result);
+              };
+              
+              reader.readAsBinaryString(blob);
+              setSnapshotTaken(true);
+            });
+          }
+        }
+        
+        setTimeout(takeAShot, 100); 
+    }
+
+    useEffect(()=> {
+        window.$ = window.jQuery = jquery;``
+    }, []);
+
+
     return (
         <div>
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
@@ -66,7 +169,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                             {panel.play ?
                                 <>
                                     {panel.src ?
-                                        <video alt="Video broken" poster={panel.thumbnail} src={panel.src} onLoadedData={(e) => { e.target.play() }} className='w-100' controls /> :
+                                        <video alt="Video broken" playsInline controls autoPlay muted  poster={panel.thumbnail} src={panel.src} onPlaying={onPlaying} onCanPlay={onCanPlay} onLoadedMetadata={onLoadedMetadata} onLoadedData={onLoadedData} className='w-100' /> :
                                         <>
                                             <Image alt="image broken" src={panel.thumbnail} fluid />    
                                         </>
@@ -84,7 +187,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                         cursor: 'pointer'
                                     }}
                                         onClick={handleVideoClicked}>
-                                        <i class="fa fa-play-circle-o fa-4x text-danger" aria-hidden="true"></i>
+                                        <i className="fa fa-play-circle-o fa-4x text-danger" aria-hidden="true"></i>
                                     </div>
                                 </>
                             }
