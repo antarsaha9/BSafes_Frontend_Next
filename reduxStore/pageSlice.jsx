@@ -179,6 +179,37 @@ function decryptPageItemFunc(state, workspaceKey) {
         }  	                            
     }
 
+    if(item.videos) {
+        let words = "";
+        let newPanels = [];
+        for(let i=0; i<item.videos.length; i++) {
+            let video = item.videos[i];
+            const videoThumbnailS3Key = `${video.s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
+            state.imageDownloadQueue.push({s3Key: videoThumbnailS3Key, forVideo:true});
+            const queueId = 'd' + i;
+            if(video.words && video.words !== "") {
+                encryptedWords = forge.util.decode64(video.words);
+                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
+                words = forge.util.decodeUtf8(encodedWords);
+                words = DOMPurify.sanitize(words);
+            } 
+            const newPanel = {
+                video: true,
+                queueId,
+                size: video.size,
+                status: "WaitingForDownload",
+                numberOfChunks: video.numberOfChunks,
+                s3KeyPrefix: video.s3KeyPrefix,
+                progress: 0,
+                words,
+                thumbnail: null,
+                placeholder: "https://placehold.co/600x400?text=Video"
+            }
+            newPanels.push(newPanel);
+        }
+        state.videoPanels = newPanels;
+    }
+
     if(item.images) {
         for(let i=0; i<item.images.length; i++) {
             let image = item.images[i];
@@ -454,6 +485,35 @@ const pageSlice = createSlice({
             }
         
         },
+        addUploadVideos: (state, action) => {
+            if(state.aborted ) return;
+            const files = action.payload.files;
+            if(!files.length) return;
+            let newPanels = [];
+            for(let i=0; i < files.length; i++) {
+                const queueId = 'u' + state.videosUploadQueue.length;
+                const fileSize = files[i].size;
+                const videoChunkSize = getEditorConfig().videoChunkSize;
+                let numberOfChunks = Math.floor(fileSize/videoChunkSize);
+                if(fileSize % videoChunkSize) numberOfChunks+=1;
+                const newUpload = {file: files[i], numberOfChunks};
+                state.videosUploadQueue.push(newUpload);
+                const newPanel = {
+                    video: true,
+                    queueId: queueId,
+                    fileName: files[i].name,
+                    fileSize: files[i].size,
+                    fileType: files[i].type,
+                    status: "WaitingForUpload",
+                    numberOfChunks: newUpload.numberOfChunks,
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
+
+            state.videoPanels = state.videoPanels.concat(newPanels);
+        
+        },
         uploadingVideo: (state, action) => {
             if(state.aborted ) return;
             let panel = state.videoPanels.find((item) => item.queueId === 'u'+state.videosUploadIndex);
@@ -523,19 +583,26 @@ const pageSlice = createSlice({
         downloadingImage: (state, action) => {     
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
-            let panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            let panel = state.videoPanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(!panel) panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
             if(!panel) return;
             panel.status = "Downloading";
             panel.progress = action.payload.progress;
         },
         imageDownloaded: (state, action) => {
             if(state.aborted ) return;
-            if(action.payload.itemId !== state.activeRequest) return;  
-            let panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(action.payload.itemId !== state.activeRequest) return; 
+
+            let panel = state.videoPanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(!panel) panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
             if(!panel) return;
             panel.status = "Downloaded";
             panel.progress = 100;
-            panel.src = action.payload.link;
+            if(panel.video) {
+                panel.thumbnail = action.payload.link;
+            } else {
+                panel.src = action.payload.link;
+            }
             panel.width = action.payload.width;
             panel.height = action.payload.height;
             panel.editorMode = "ReadOnly";
@@ -721,35 +788,7 @@ const pageSlice = createSlice({
             state.contentImagesDisplayIndex = 0;
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
-        },
-        addUploadVideos: (state, action) => {
-            if(state.aborted ) return;
-            const files = action.payload.files;
-            if(!files.length) return;
-            let newPanels = [];
-            for(let i=0; i < files.length; i++) {
-                const queueId = 'u' + state.videosUploadQueue.length;
-                const fileSize = files[i].size;
-                const videoChunkSize = getEditorConfig().videoChunkSize;
-                let numberOfChunks = Math.floor(fileSize/videoChunkSize);
-                if(fileSize % videoChunkSize) numberOfChunks+=1;
-                const newUpload = {file: files[i], numberOfChunks};
-                state.videosUploadQueue.push(newUpload);
-                const newPanel = {
-                    queueId: queueId,
-                    fileName: files[i].name,
-                    fileSize: files[i].size,
-                    fileType: files[i].type,
-                    status: "WaitingForUpload",
-                    numberOfChunks: newUpload.numberOfChunks,
-                    progress: 0
-                }
-                newPanels.push(newPanel);
-            }
-
-            state.videoPanels = state.videoPanels.concat(newPanels);
-        
-        },
+        }
     }
 })
 
@@ -1088,8 +1127,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
             const downloadAnImage = (image) => {
 
                 return new Promise(async (resolve, reject) => {
-                    const s3Key = image.s3Key + "_gallery";
-
+                    const s3Key = image.s3Key + (image.forVideo?'':"_gallery");
                     try {
                         dispatch(downloadingImage({itemId, progress:5}));
                         const signedURL = await preS3Download(state.id, s3Key, dispatch);
@@ -2014,8 +2052,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
     
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
-    const itemId = state.id;
-    const itemKey = state.itemKey;
+
     // BEGIN **** For playing back video from service worker ***
     function setupWriter(s3KeyPrefix) {
         debugLog(debugOn, "setupWriter");
@@ -2170,101 +2207,6 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
         });
     }
     
-    async function getVideoSnapshot(s3KeyPrefix) {
-        return new Promise(async resolve => {
-            const videoE = document.createElement('video');
-            videoE.src = videoLinkFromServiceWorker;
-            videoE.autoplay = true;
-            document.body.appendChild(videoE)
-
-            await new Promise(async resolve => {
-                videoE.addEventListener("loadedmetadata", resolve)
-            });
-            await new Promise(async resolve => {
-                videoE.addEventListener("canplay", resolve)
-            });
-            let $canvas = $('<canvas hidden id = "canvas" width = "640" height = "300"></canvas>');
-            let canvas = $canvas[0];
-            $canvas.insertAfter('body');
-            let ratio = videoE.videoWidth / videoE.videoHeight;
-            debugLog(debugOn, 'videoWidth, videoHeight: ', videoE.videoWidth, videoE.videoHeight);
-            let myWidth = 640;
-            let myHeight = parseInt(myWidth / ratio, 10);
-            canvas.width = myWidth;
-            canvas.height = myHeight;
-            let context = canvas.getContext('2d');
-
-            const uploadSnapshot = async (data) => {
-                let encryptedStr = encryptLargeBinaryString(data, itemKey);
-                let s3KeyParts = s3Key.split('&');
-                let s3KeyPrefix = s3KeyParts[3];
-                let timeStamp = s3KeyPrefix.split(':').pop();
-
-                try {
-                    let result = await preS3ChunkUpload(itemId, 99999, timeStamp);
-                    let signedURL = result.signedURL;
-                    debugLog(debugOn, 'video snapshot signed url', signedURL);
-
-                    const onUploadProgress = (progressEvent) => {
-                        let percentCompleted = progressEvent.loaded * 100 / progressEvent.total;
-                        debugLog(debugOn, `Video snapshot upload progress: ${percentCompleted} `);
-                    }
-
-                    await uploadData(encryptedStr, signedURL, onUploadProgress);
-                    
-                    resolve();
-                } catch (error) {
-                    debugLog(debugOn, "uploadSnapshot failed");
-                }
-            }
-
-            const takeAShot = () => {
-                // if (bSafesVideSnapShots[s3Key]) return;
-                debugLog(debugOn, "takeAShot...");
-                
-                // debugLog(debugOn, "bSafesVideSnapShots", bSafesVideSnapShots);
-
-                context.fillRect(0, 0, myWidth, myHeight);
-                context.drawImage(videoE, 0, 0, myWidth, myHeight);
-                debugLog(debugOn, 'myWidth, myHeight', myWidth, myHeight);
-                let imageData = context.getImageData(0, 0, myWidth, myHeight);
-                let isBlank = true;
-                for (let i = 0; i < imageData.data.length; i++) {
-                    //debugLog(debugOn, imageData.data[i]);
-                    if ((i + 1) % 4) {
-                        if (imageData.data[i] !== 0) {
-                            isBlank = false;
-                            break;
-                        }
-                    }
-                }
-                if (isBlank) {
-                    setTimeout(takeAShot, 1000);
-                    debugLog(debugOn, "Blank snapshot");
-                } else {
-
-                    canvas.toBlob((blob) => {
-                        const reader = new FileReader();
-
-                        reader.onload = () => {
-                            //debugLog(debugOn, reader.result);
-                            videoE.pause();
-                            videoE.removeAttribute('src');
-                            videoE.load();
-                            
-                            uploadSnapshot(reader.result);
-                        };
-
-
-                        reader.readAsBinaryString(blob);
-                        // bSafesVideSnapShots[s3Key] = true;
-                    });
-                }
-            }
-            
-            setTimeout(takeAShot, 100);
-        })
-    }
     return new Promise(async (resolve, reject)=>{
 
         startingChunk = 0;
@@ -2399,6 +2341,32 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
     });
 }
 
+export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) =>{
+    let state = getState().page;
+    const itemId = state.id;
+    const s3KeyPrefix = data.s3KeyPrefix;
+    const snapshot = data.snapshot;
+    let timeStamp = s3KeyPrefix.split(':').pop(); 
+    try {
+        const result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
+        const signedURL = result.signedURL;
+        const encryptedStr = encryptLargeBinaryString(snapshot, state.itemKey);
+
+        const config = {
+            onUploadProgress: async (progressEvent) => {
+                let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
+                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+            },
+            headers: {
+                'Content-Type': 'binary/octet-stream'
+            }
+        }
+
+        await axios.put(signedURL, Buffer.from(encryptedStr, 'binary'), config); 
+    } catch (error) {
+        console.log("uploadSnapshot failed");
+    }
+}
 
 const uploadAnImage = async (dispatch, state, file) => {
     let img;

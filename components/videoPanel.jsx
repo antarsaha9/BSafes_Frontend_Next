@@ -13,7 +13,7 @@ const axios = require('axios');
 
 import Editor from './editor'
 
-import { uploadVideosThunk, deleteAVideoThunk } from '../reduxStore/pageSlice'
+import { uploadVideosThunk, uploadVideoSnapshotThunk, deleteAVideoThunk } from '../reduxStore/pageSlice'
 import { debugLog } from '../lib/helper';
 
 export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMode, onContentChanged, onPenClicked, editable = true }) {
@@ -24,7 +24,6 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
     const s3KeyPrefix = panel.s3KeyPrefix;
 
     const workspaceKey = useSelector(state => state.container.workspaceKey);
-    const itemId = useSelector(state => state.page.id);
 
     const [snapshotTaken, setSnapshotTaken] = useState(false);
 
@@ -93,28 +92,6 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
         canvas.height = myHeight;
         let context = canvas.getContext('2d');
 
-        const uploadSnapshot = async (data) => {
-          let timeStamp = s3KeyPrefix.split(':').pop(); 
-          try {
-            let result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
-            let signedURL = result.signedURL;
-                      
-            const config = {
-                onUploadProgress: async (progressEvent) => {
-                    let percentCompleted = Math.ceil(progressEvent.loaded*100/progressEvent.total);
-                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                },
-                headers: {
-                    'Content-Type': 'binary/octet-stream'
-                }
-            }
-
-            await axios.put(signedURL, Buffer.from(data, 'binary'), config); 
-        } catch (error) {
-            console.log("uploadSnapshot failed");
-          }
-        }
-
         const takeAShot = () => {
           if(snapshotTaken) return;
           console.log("takeAShot...");
@@ -142,7 +119,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
               const reader = new FileReader();
 
               reader.onload = () => {
-                uploadSnapshot(reader.result);
+                dispatch(uploadVideoSnapshotThunk({s3KeyPrefix, snapshot:reader.result}));
               };
               
               reader.readAsBinaryString(blob);
@@ -176,7 +153,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                     }
                                 </> :
                                 <>
-                                    <Image alt="image broken" src={panel.thumbnail} fluid />
+                                    <Image alt="image broken" src={panel.thumbnail || panel.placeholder} fluid />
                                     <div style={{
                                         position: 'absolute',
                                         width: '100px',
