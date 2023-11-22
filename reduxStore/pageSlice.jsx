@@ -196,7 +196,10 @@ function decryptPageItemFunc(state, workspaceKey) {
             const newPanel = {
                 video: true,
                 queueId,
-                size: video.size,
+                fileType: video.fileType,
+                fileName: decodeURI(decryptBinaryString(forge.util.decode64(video.fileName), state.itemKey)),
+                fileSize: video.fileSize,
+                encryptedFileSize: video.encryptedFileSize,
                 status: "WaitingForDownload",
                 numberOfChunks: video.numberOfChunks,
                 s3KeyPrefix: video.s3KeyPrefix,
@@ -459,39 +462,6 @@ const pageSlice = createSlice({
             let newPanels = [];
             for(let i=0; i < files.length; i++) {
                 const queueId = 'u' + state.videosUploadQueue.length;
-                let numberOfChunks = Math.floor(files[i].size/getEditorConfig().videoChunkSize);
-                if(files[i].size % state.chunkSize) numberOfChunks+=1;
-                const newUpload = {file: files[i], numberOfChunks};
-                state.videosUploadQueue.push(newUpload);
-                const newPanel = {
-                    queueId: queueId,
-                    fileName: files[i].name,
-                    fileSize: files[i].size,
-                    fileType: files[i].type,
-                    status: "WaitingForUpload",
-                    numberOfChunks: newUpload.numberOfChunks,
-                    progress: 0
-                }
-                newPanels.push(newPanel);
-            }
-
-            switch (action.payload.where) {
-                case "top":
-                    state.videoPanels.unshift(...newPanels);
-                    break;
-                default:
-                    let index = parseInt(action.payload.where.split('_').pop());
-                    state.videoPanels.splice(index+1, 0, ...newPanels);
-            }
-        
-        },
-        addUploadVideos: (state, action) => {
-            if(state.aborted ) return;
-            const files = action.payload.files;
-            if(!files.length) return;
-            let newPanels = [];
-            for(let i=0; i < files.length; i++) {
-                const queueId = 'u' + state.videosUploadQueue.length;
                 const fileSize = files[i].size;
                 const videoChunkSize = getEditorConfig().videoChunkSize;
                 let numberOfChunks = Math.floor(fileSize/videoChunkSize);
@@ -501,9 +471,9 @@ const pageSlice = createSlice({
                 const newPanel = {
                     video: true,
                     queueId: queueId,
-                    fileName: files[i].name,
+                    fileName: forge.util.encode64(encryptBinaryString(encodeURI(files[i].name), state.itemKey)),
                     fileSize: files[i].size,
-                    fileType: files[i].type,
+                    fileType: encodeURI(files[i].type),
                     status: "WaitingForUpload",
                     numberOfChunks: newUpload.numberOfChunks,
                     progress: 0
@@ -2223,7 +2193,7 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
         if (i === numberOfChunks) {
             debugLog(debugOn, `uploadAVideo done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
             try {
-                return resolve({ fileType, fileSize, s3KeyPrefix, size: encryptedFileSize, link:videoLinkFromServiceWorker });
+                return resolve({ fileType, fileSize, s3KeyPrefix, encryptedFileSize, link:videoLinkFromServiceWorker });
             } catch (error) {
                 debugLog(debugOn, 'Could not get videoLink');
                 reject("doneUploadAnAttachment error.");
@@ -2260,7 +2230,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
         
         for(let i=0; i<state.videoPanels.length; i++) {
             const videoPanel = state.videoPanels[i];
-            let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, size:videoPanel.size, numberOfChunks: videoPanel.numberOfChunks};
+            let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, fileType:videoPanel.fileType, fileName: videoPanel.fileName, fileSize:videoPanel.fileSize, encryptedFileSize:videoPanel.encryptedFileSize, numberOfChunks: videoPanel.numberOfChunks};
             let words = null;
             if(state.itemCopy) words = findVideoWordsByKey(state.itemCopy.videos, video.s3KeyPrefix);
             video.words = words;
