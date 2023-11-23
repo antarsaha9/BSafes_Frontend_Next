@@ -19,7 +19,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadContentVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, downloadVideoThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -70,10 +70,10 @@ export default function PageCommons() {
         debugLog(debugOn, "onVideoClicked: ", queueId);
         for (const thisPanel of videoPanelsState) {
             if(thisPanel.queueId === queueId) {
-                const id = queueId;
+                const id = 'galleryVideo_'+ thisPanel.queueId;
                 const s3KeyPrefix = thisPanel.s3KeyPrefix;
-                const numberOfChunks = thisPanel.numberOfChunks-1;
-                dispatch(downloadVideoThunk({id, s3KeyPrefix, numberOfChunks}));
+                const numberOfChunks = thisPanel.numberOfChunks;
+                dispatch(downloadVideoThunk({id, s3KeyPrefix, numberOfChunks, fileName:thisPanel.fileName, fileType: thisPanel.fileType, fileSize:thisPanel.fileSize}));
                 break;
             }
         }
@@ -121,15 +121,15 @@ export default function PageCommons() {
         const id =  videoId;
         const idParts = id.split('&');
         if(idParts[0] === 'chunks') {
-            let s3Key = idParts[3];
-            let chunks = parseInt(idParts[1]);
+            let s3KeyPrefix = idParts[3];
+            let numberOfChunks = parseInt(idParts[1]);
             let fileName = idParts[2];
             let fileSize = parseInt(idParts[5]);
             let fileType = idParts[4];
-            dispatch(downloadContentVideoThunk({id, s3Key, chunks, fileName, fileType, fileSize}));
+            dispatch(downloadVideoThunk({fromContent: true, id, s3KeyPrefix, numberOfChunks, fileName, fileType, fileSize}));
         } else {
             let s3Key = idParts[0];
-            dispatch(downloadContentVideoThunk({id, s3Key}));
+            dispatch(downloadVideoThunk({id, s3Key}));
         }
         
     }; 
