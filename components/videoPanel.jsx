@@ -9,7 +9,6 @@ import ProgressBar from 'react-bootstrap/ProgressBar'
 import Image from 'react-bootstrap/Image'
 
 import jquery from "jquery"
-const axios = require('axios');
 
 import Editor from './editor'
 
@@ -141,7 +140,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
             <Row className="">
                 <Col>
-                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
+                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
                         <div className='d-flex justify-content-center align-items-center w-100' >
                             {panel.play ?
                                 <>

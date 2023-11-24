@@ -19,7 +19,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -70,7 +70,7 @@ export default function PageCommons() {
         debugLog(debugOn, "onVideoClicked: ", queueId);
         for (const thisPanel of videoPanelsState) {
             if(thisPanel.queueId === queueId) {
-                const id = 'galleryVideo_'+ thisPanel.queueId;
+                const id = thisPanel.queueId;
                 const s3KeyPrefix = thisPanel.s3KeyPrefix;
                 const numberOfChunks = thisPanel.numberOfChunks;
                 dispatch(downloadVideoThunk({id, s3KeyPrefix, numberOfChunks, fileName:thisPanel.fileName, fileType: thisPanel.fileType, fileSize:thisPanel.fileSize}));
@@ -205,6 +205,10 @@ export default function PageCommons() {
         } else if(editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
+        } else if(editorId.startsWith("video_")) {
+            const videoIndex = parseInt(editorId.split("_")[1]);
+            dispatch(setVideoWordsMode({index: videoIndex, mode: "Writing"}));
+            setEditingEditorId(editorId);
         } else if(editorId.startsWith("image_")) {
             const imageIndex = parseInt(editorId.split("_")[1]);
             dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
@@ -231,6 +235,15 @@ export default function PageCommons() {
                 dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
+                setEditingEditorId(null);
+            }
+        } else if(editingEditorId.startsWith("video_")){
+            const videoIndex = parseInt(editingEditorId.split("_")[1]);
+            console.log(content, videoPanelsState[videoIndex].words)
+            if(content !== videoPanelsState[videoIndex].words) {
+                dispatch(saveVideoWordsThunk({index: videoIndex, content: content}));
+            } else {
+                dispatch(setVideoWordsMode({index: videoIndex, mode: "ReadOnly"}));
                 setEditingEditorId(null);
             }
         } else if(editingEditorId.startsWith("image_")){
@@ -277,7 +290,16 @@ export default function PageCommons() {
                 setTitleEditorMode(mode);
                 break;
             default:
-                if(editingEditorId.startsWith("image_")){
+                if(editingEditorId.startsWith("video_")){
+                    const videoIndex = parseInt(editingEditorId.split("_")[1]);
+                    switch(mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setVideoWordsMode({index: videoIndex, mode}))
+                            break;
+                        default:
+                    }     
+                } else if(editingEditorId.startsWith("image_")){
                     const imageIndex = parseInt(editingEditorId.split("_")[1]);
                     switch(mode) {
                         case "Saving":
@@ -328,12 +350,17 @@ export default function PageCommons() {
         videoFilesInputRef.current?.click();
     };
 
+    const uploadVideos = (files, where) => {
+        dispatch(uploadVideosThunk({files, where, workspaceKey}));
+    };
+
     const handleVideoFiles = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleVideoFiles: ", e.target.id);
         const files = e.target.files;
-        console.log(files);
-        dispatch(uploadVideosThunk({files, workspaceKey}));
+        if(files.length) {
+            uploadVideos(files, 'top');
+        }
     }
 
     const handleImageButton = (e) => {

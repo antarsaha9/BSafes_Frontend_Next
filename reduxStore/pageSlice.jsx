@@ -181,10 +181,10 @@ function decryptPageItemFunc(state, workspaceKey) {
     }
 
     if(item.videos) {
-        let words = "";
         let newPanels = [];
         for(let i=0; i<item.videos.length; i++) {
             let video = item.videos[i];
+            let encryptedWords,encodedWords, words;
             const videoThumbnailS3Key = `${video.s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
             state.imageDownloadQueue.push({s3Key: videoThumbnailS3Key, forVideo:true});
             const queueId = 'd' + i;
@@ -193,7 +193,10 @@ function decryptPageItemFunc(state, workspaceKey) {
                 encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
                 words = forge.util.decodeUtf8(encodedWords);
                 words = DOMPurify.sanitize(words);
-            } 
+            } else {
+                words = "";
+            }
+
             const newPanel = {
                 video: true,
                 queueId,
@@ -219,7 +222,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             let image = item.images[i];
             let encryptedWords,encodedWords, words;
             state.imageDownloadQueue.push({s3Key: image.s3Key});
-            const queueId = 'd' + i;
+            const queueId = 'd' + (item.videos.length + i);
             if(image.words && image.words !== "") {
                 encryptedWords = forge.util.decode64(image.words);
                 encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
@@ -399,20 +402,24 @@ const pageSlice = createSlice({
         contentImageDownloaded: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
+            
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            state.contentImagedDownloadIndex += 1;
             if(!image) return;
             image.status = "Downloaded";
-            image.src = action.payload.link;
-            state.contentImagedDownloadIndex += 1;
+            image.src = action.payload.link;  
+            
         },
         contentImageDownloadFailed: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
+            
             const image = state.contentImagesDownloadQueue[state.contentImagedDownloadIndex];
+            state.contentImagedDownloadIndex += 1;
             if(!image) return;
             image.status = "DownloadFailed";
             image.src = action.payload.link;
-            state.contentImagedDownloadIndex += 1;
+            
         },
         updateContentImagesDisplayIndex: (state, action) => {        
             state.contentImagesDisplayIndex = action.payload;
@@ -481,9 +488,14 @@ const pageSlice = createSlice({
                 }
                 newPanels.push(newPanel);
             }
-
-            state.videoPanels = state.videoPanels.concat(newPanels);
-        
+            switch (action.payload.where) {
+                case "top":
+                    state.videoPanels.unshift(...newPanels);
+                    break;
+                default:
+                    let index = parseInt(action.payload.where.split('_').pop());
+                    state.videoPanels.splice(index+1, 0, ...newPanels);
+            }
         },
         uploadingVideo: (state, action) => {
             if(state.aborted ) return;
@@ -493,7 +505,9 @@ const pageSlice = createSlice({
         },
         videoUploaded: (state, action) => {
             if(state.aborted ) return;
+            
             let panel = state.videoPanels.find((item) => item.queueId === 'u'+state.videosUploadIndex);
+            state.videosUploadIndex += 1;
             if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
@@ -504,7 +518,12 @@ const pageSlice = createSlice({
             panel.failedChunk = null;
             panel.src = action.payload.link;
             panel.play = true;
-            state.videosUploadIndex += 1;
+            
+        },
+        setVideoWordsMode: (state, action) => {
+            let panel = state.videoPanels[action.payload.index];
+            if(!panel) return;
+            panel.editorMode = action.payload.mode;
         },
         downloadVideo: (state, action) => {
             if(state.aborted ) return;
@@ -515,36 +534,21 @@ const pageSlice = createSlice({
             if(action.payload.itemId !== state.activeRequest) return;
             const indexInQueue = action.payload.indexInQueue;
             const video = state.videosDownloadQueue[indexInQueue];
-            if(!video) return;
-            video.status = "Downloading";
-            video.progress = action.payload.progress;
+            const panel = state.videoPanels.find((item) => item.queueId === video.id);
+            if(!panel) return;
+            panel.status = "DownloadingVideo";
+            panel.progress = action.payload.progress;
         },
         videoFromServiceWorker: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return;
             const indexInQueue = action.payload.indexInQueue;
             const video = state.videosDownloadQueue[indexInQueue];
-            if(!video) return;
-            video.status = "DownloadedFromServiceWorker";
-            video.play = true;
-            video.src = action.payload.link;
-        },
-        playingVideo: (state, action) => {
-            if(state.aborted ) return;
-            if(action.payload.itemId !== state.activeRequest) return;
-            const indexInQueue = action.payload.indexInQueue;
-            const video = state.contentVideosDownloadQueue[indexInQueue];
-            if(!video) return;
-            video.status = "playingContentVideo";
-        },
-        videoDownloaded: (state, action) => {
-            if(state.aborted ) return;
-            if(action.payload.itemId !== state.activeRequest) return;
-            const indexInQueue = action.payload.indexInQueue;
-            const video = state.contentVideosDownloadQueue[indexInQueue];
-            if(!video) return;
-            video.status = "Downloaded";
-            if(action.payload.link) video.src = action.payload.link;
+            const panel = state.videoPanels.find((item) => item.queueId === video.id);
+            if(!panel) return;
+            panel.status = "DownloadedFromServiceWorker";
+            panel.play = true;
+            panel.src = action.payload.link;
         },
         addUploadImages: (state, action) => {
             if(state.aborted ) return;
@@ -578,7 +582,9 @@ const pageSlice = createSlice({
         },
         imageUploaded: (state, action) => {
             if(state.aborted ) return;
+            
             let panel = state.imagePanels.find((item) => item.queueId === 'u'+state.imageUploadIndex);
+            state.imageUploadIndex += 1;
             if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
@@ -589,7 +595,7 @@ const pageSlice = createSlice({
             panel.size = action.payload.size;
             panel.editorMode = "ReadOnly";
             panel.words="";
-            state.imageUploadIndex += 1;
+            
         },
         downloadingImage: (state, action) => {     
             if(state.aborted ) return;
@@ -603,9 +609,10 @@ const pageSlice = createSlice({
         imageDownloaded: (state, action) => {
             if(state.aborted ) return;
             if(action.payload.itemId !== state.activeRequest) return; 
-
+            
             let panel = state.videoPanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
             if(!panel) panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            state.imageDownloadIndex += 1;
             if(!panel) return;
             panel.status = "Downloaded";
             panel.progress = 100;
@@ -616,8 +623,8 @@ const pageSlice = createSlice({
             }
             panel.width = action.payload.width;
             panel.height = action.payload.height;
-            panel.editorMode = "ReadOnly";
-            state.imageDownloadIndex += 1;
+            panel.editorMode = "ReadOnly";  
+            
         },
         setImageWordsMode: (state, action) => {
             let panel = state.imagePanels[action.payload.index];
@@ -680,7 +687,9 @@ const pageSlice = createSlice({
         },
         attachmentUploaded: (state, action) => {
             if(state.aborted ) return;
+            
             let panel = state.attachmentPanels.find((item) => item.queueId === 'u'+state.attachmentsUploadIndex);
+            state.attachmentsUploadIndex += 1;
             if(!panel) return;
             panel.status = "Uploaded";
             panel.progress = 100;
@@ -689,7 +698,7 @@ const pageSlice = createSlice({
             panel.s3KeyPrefix = action.payload.s3KeyPrefix;
             panel.size = action.payload.size;
             panel.failedChunk = null;
-            state.attachmentsUploadIndex += 1;
+            
         },
         uploadAChunkFailed: (state, action) => {
             let attachment = state.attachmentsUploadQueue[state.attachmentsUploadIndex];
@@ -803,7 +812,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, downloadVideo, downloadingVideo, videoDownloaded, videoFromServiceWorker, playingVideo} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -2288,7 +2297,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
     workspaceKey = data.workspaceKey;
     
     if(state.activity & pageActivity.UploadVideos) {
-        dispatch(addUploadVideos({files:data.files}));
+        dispatch(addUploadVideos({files:data.files, where:data.where}));
         return;
     }
 
@@ -2309,6 +2318,10 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
         for(let i=0; i<state.videoPanels.length; i++) {
             const videoPanel = state.videoPanels[i];
             let video = {s3KeyPrefix: videoPanel.s3KeyPrefix, fileType:videoPanel.fileType, fileName: videoPanel.fileName, fileSize:videoPanel.fileSize, encryptedFileSize:videoPanel.encryptedFileSize, numberOfChunks: videoPanel.numberOfChunks};
+            
+            if(videoPanel.queueId.startsWith('d')) {
+                video.fileName =  forge.util.encode64(encryptBinaryString(encodeURI(videoPanel.fileName), state.itemKey))
+            } 
             let words = null;
             if(state.itemCopy) words = findVideoWordsByKey(state.itemCopy.videos, video.s3KeyPrefix);
             video.words = words;
@@ -2355,7 +2368,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
 
     newActivity(dispatch, pageActivity.UploadVideos,  () => {     
         return new Promise(async (resolve, reject) => {
-            dispatch(addUploadVideos({files:data.files}));
+            dispatch(addUploadVideos({files:data.files, where:data.where}));
             state = getState().page;
             if(!state.itemCopy) {
                 itemKey = setupNewItemKey();
@@ -3192,6 +3205,51 @@ export const deleteAnAttachmentThunk = (data) => async (dispatch, getState) => {
             }
         });
     });
+}
+
+export const saveVideoWordsThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.SaveVideoWords, () => {
+        return new Promise(async (resolve, reject) => {
+            console.log('saveVideoWordsThunk')
+            let state, encodedContent, encryptedContent, itemCopy, videoPanels;
+            const content = data.content;
+            const index = data.index;
+            state = getState().page;
+            
+            try {
+                
+                encodedContent = forge.util.encodeUtf8(content);
+                encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
+            
+                if (!state.itemCopy) {
+                } else {
+                    itemCopy = JSON.parse(JSON.stringify(state.itemCopy));
+                        
+                    itemCopy.videos[index].words = forge.util.encode64(encryptedContent);
+                    itemCopy.update = "video words";
+            
+                    videoPanels = JSON.parse(JSON.stringify(state.videoPanels));
+                    for(let i=0; i< videoPanels.length; i++) {
+                        videoPanels[i].thumbnail = state.videoPanels[i].thumbnail;
+                        videoPanels[i].src = state.videoPanels[i].src;
+                        videoPanels[i].play = state.videoPanels[i].play;
+                    }
+                    videoPanels[index].words = content;
+                    
+                    await createNewItemVersionForPage(itemCopy, dispatch);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        videoPanels
+                    }));
+                    resolve();
+                }
+            } catch (error) {
+                console.error(error);
+                reject("Failed to save video words.");
+            }
+
+        });
+    })
 }
 
 export const saveImageWordsThunk = (data) => async (dispatch, getState) => {
