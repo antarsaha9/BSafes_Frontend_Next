@@ -222,7 +222,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             let image = item.images[i];
             let encryptedWords,encodedWords, words;
             state.imageDownloadQueue.push({s3Key: image.s3Key});
-            const queueId = 'd' + (item.videos.length + i);
+            const queueId = 'd' + (item.videos?item.videos.length:0 + i);
             if(image.words && image.words !== "") {
                 encryptedWords = forge.util.decode64(image.words);
                 encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
@@ -243,7 +243,7 @@ function decryptPageItemFunc(state, workspaceKey) {
         }            
     }
     if(item.attachments.length > 1) {
-        let attachment, encryptedFileName, encodedFileName, fileName, fileType, fileSize;
+        let encryptedFileName, encodedFileName, fileName, fileType, fileSize;
         let newPanels = [];
         for(let i=1; i< item.attachments.length; i++) {
             let attachment = item.attachments[i];
@@ -536,7 +536,7 @@ const pageSlice = createSlice({
             const video = state.videosDownloadQueue[indexInQueue];
             const panel = state.videoPanels.find((item) => item.queueId === video.id);
             if(!panel) return;
-            panel.status = "DownloadingVideo";
+            if(panel.status !== 'DownloadedFromServiceWorker') panel.status = "DownloadingVideo";
             panel.progress = action.payload.progress;
         },
         videoFromServiceWorker: (state, action) => {
@@ -2948,7 +2948,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
-        let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, decryptedDataInArrary, startingChunk, writer;
+        let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
 

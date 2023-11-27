@@ -86,8 +86,8 @@ const PageItemWrapper = ({ itemId, children}) => {
         }
     
         const handleRouteChangeComplete = () => {
-          
-          
+          debugLog(debugOn, "handleRouteChangeComplete - initPage");
+          dispatch(initPage());      
         }
 
         router.events.on('routeChangeStart', handleRouteChange)

@@ -11,6 +11,7 @@ import Image from 'react-bootstrap/Image'
 import jquery from "jquery"
 
 import Editor from './editor'
+import { LoaderSpinner } from './loaderSpinner'
 
 import { uploadVideosThunk, uploadVideoSnapshotThunk, deleteAVideoThunk } from '../reduxStore/pageSlice'
 import { debugLog } from '../lib/helper';
@@ -140,7 +141,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
             <Row className="">
                 <Col>
-                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
+                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadingVideo' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
                         <div className='d-flex justify-content-center align-items-center w-100' >
                             {panel.play ?
                                 <>
@@ -165,6 +166,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                         onClick={handleVideoClicked}>
                                         <i className="fa fa-play-circle-o fa-4x text-danger" aria-hidden="true"></i>
                                     </div>
+                                    {panel.status === "downloadingVideo" && <LoaderSpinner />}
                                 </>
                             }
                         </div>

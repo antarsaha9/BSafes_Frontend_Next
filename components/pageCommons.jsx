@@ -408,7 +408,9 @@ export default function PageCommons() {
     }
 
     const setDragActive = (e, active) => {
-        if(e.target.id === "images") {
+        if(e.target.id === "videos") {
+            setVideosDragActive(active);
+        } else if(e.target.id === "images") {
             setImagesDragActive(active);
         } else {
             setAttachmentsDragActive(active);
@@ -436,7 +438,17 @@ export default function PageCommons() {
             debugLog(debugOn, "handleDrop, at least one file.");
           // at least one file has been dropped so do something
           // handleFiles(e.dataTransfer.files);
-            if(e.target.id === 'images') {
+            if(e.target.id === 'videos') {
+                const videoType = /video.*/;
+                const videos = [];
+                for(const file of e.dataTransfer.files) {
+                    if (!file.type.match(videoType)) {
+                        debugLog(debugOn, "Not an image.");
+                    }
+                    else videos.push(file);
+                }
+                uploadVideos(videos, 'top');
+            } else if(e.target.id === 'images') {
                 const imageType = /image.*/;
                 const images = [];
                 for(const file of e.dataTransfer.files) {
@@ -734,7 +746,7 @@ export default function PageCommons() {
                 <div className="images">
                     <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                     <Row>
-                        <Col id="images" onDragOver={handleDrag} onDragLeave={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                        <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
                             <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
                                 <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
                             </Button>
