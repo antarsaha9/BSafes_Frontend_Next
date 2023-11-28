@@ -186,8 +186,9 @@ function decryptPageItemFunc(state, workspaceKey) {
             let video = item.videos[i];
             let encryptedWords,encodedWords, words;
             const videoThumbnailS3Key = `${video.s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
+            const queueId = 'd' + state.imageDownloadQueue.length;
             state.imageDownloadQueue.push({s3Key: videoThumbnailS3Key, forVideo:true});
-            const queueId = 'd' + i;
+            
             if(video.words && video.words !== "") {
                 encryptedWords = forge.util.decode64(video.words);
                 encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
@@ -221,8 +222,8 @@ function decryptPageItemFunc(state, workspaceKey) {
         for(let i=0; i<item.images.length; i++) {
             let image = item.images[i];
             let encryptedWords,encodedWords, words;
-            state.imageDownloadQueue.push({s3Key: image.s3Key});
-            const queueId = 'd' + (item.videos?item.videos.length:0 + i);
+            const queueId = 'd' + state.imageDownloadQueue.length;
+            state.imageDownloadQueue.push({s3Key: image.s3Key});      
             if(image.words && image.words !== "") {
                 encryptedWords = forge.util.decode64(image.words);
                 encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
@@ -626,6 +627,15 @@ const pageSlice = createSlice({
             panel.editorMode = "ReadOnly";  
             
         },
+        imageDownloadFailed: (state, action) => {
+            if(state.aborted ) return;
+            if(action.payload.itemId !== state.activeRequest) return; 
+            let panel = state.videoPanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            if(!panel) panel = state.imagePanels.find((item) => item.queueId === 'd'+state.imageDownloadIndex);
+            state.imageDownloadIndex += 1;
+            if(!panel) return;
+            panel.status = "DownloadFailed";
+        },
         setImageWordsMode: (state, action) => {
             let panel = state.imagePanels[action.payload.index];
             if(!panel) return;
@@ -812,7 +822,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1184,6 +1194,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     
 
                     } catch(error) {
+                        dispatch(imageDownloadFailed({itemId}));
                         debugLog(debugOn, 'downloadFromS3 error: ', error)
                         reject("Failed to download an image.");
                     }
@@ -1200,7 +1211,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                 try {
                     await downloadAnImage(image); 
                 } catch (error) {
-                    break;
+                    
                 }
                 state = getState().page; 
             }

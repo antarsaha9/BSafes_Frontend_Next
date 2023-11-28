@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import {useRouter} from "next/router";
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -12,22 +11,21 @@ import Table from 'react-bootstrap/Table'
 import format from "date-fns/format";
 const dropin = require('braintree-web-drop-in');
 
-import ContentPageLayout from '../components/layouts/contentPageLayout';
+import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
+import { getInvoiceThunk, getPaymentClientTokenThunk, payThunk, getTransactionsThunk } from '../../reduxStore/accountSlice';
 
-
-import { getInvoiceThunk, getPaymentClientTokenThunk, payThunk, getTransactionsThunk } from '../reduxStore/accountSlice';
-
-import { debugLog } from '../lib/helper'
+import { debugLog } from '../../lib/helper'
 
 export default function Payment() {
     const debugOn = false;
-    const router = useRouter();
+    
     const dispatch = useDispatch();
 
     const [plan, setPlan] = useState('yearly');
     const braintreeInstanceRef = useRef(null);
 
+    const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const storageUsage = useSelector(state=>state.account.storageUsage);
     const totoalStorage50GBRequired = useSelector(state=>state.account.totoalStorage50GBRequired);
     const nextDueTime = useSelector(state=>state.account.nextDueTime);
@@ -35,7 +33,8 @@ export default function Payment() {
     const dues = useSelector(state=>state.account.dues);
     const planOptions = useSelector(state=>state.account.planOptions);
     const transactions = useSelector(state=>state.account.transactions);
-
+    const braintreeClientToken = useSelector(state => state.account.braintreeClientToken)
+    
     let storageUsageString;
     if(storageUsage < 1000000) {
         storageUsageString = (storageUsage/(1000000)).toFixed(3) + ' MB';
@@ -70,8 +69,6 @@ export default function Payment() {
         </tr>
     )
 
-    const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
-    const braintreeClientToken = useSelector(state => state.account.braintreeClientToken)
     const changePlan = (e) => {
         setPlan(e.target.value);
     }

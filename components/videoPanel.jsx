@@ -141,7 +141,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
             <Row className="">
                 <Col>
-                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadingVideo' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
+                    {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadFailed'|| panel.status === 'DownloadingVideo' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
                         <div className='d-flex justify-content-center align-items-center w-100' >
                             {panel.play ?
                                 <>
