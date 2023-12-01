@@ -18,7 +18,8 @@ const initialState = {
     monthlyPrice: 0,
     dues: [],
     planOptions: null,
-    transactions: []
+    transactions: [],
+    mfa: null
 }
 
 const accountSlice = createSlice({
@@ -72,11 +73,14 @@ const accountSlice = createSlice({
             state.transactions = action.payload.hits.map((transaction, i)=>{
                 return transaction._source;
             })
-        }
+        },
+        MFALoaded: (state, action) => {
+            state.mfa = action.payload;
+        },
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded} = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -86,6 +90,72 @@ const newActivity = async (dispatch, type, activity) => {
     } catch(error) {
         dispatch(activityError({type, error}));
     }
+}
+
+export const getMFADataThunk = () => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.GetMFAData, () => {
+        return new Promise(async (resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/getMFAData',
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(MFALoaded({ otpAuthUrl: data.otpAuthUrl, mfaEnabled: data.mfaEnabled }));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getMFADataThunk failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getMFADataThunk failed: ", error)
+                reject("getMFADataThunk failed!");
+            })
+        });
+    });
+}
+
+export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.VerifyMFASetupToken, () => {
+        return new Promise((resolve, reject) => {
+            const token = data.token;
+            PostCall({
+                api: '/memberAPI/verifyMFASetupToken',
+                body: { token }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(MFALoaded({ mfaEnabled: true }));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... verifyMFASetupToken failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... verifyMFASetupToken failed.")
+            })   
+        })
+    });
+}
+
+export const deleteMFAThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.DeleteMFA, () => {
+        return new Promise((resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/deleteMFA',
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(MFALoaded({mfaEnabled: false}));
+                    resolve()
+                } else {
+                    debugLog(debugOn, "woo... deleteMFA failed: ", data.error);
+                    reject()
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... deleteMFA failed.")
+            });
+        })
+    });
 }
 
 export const getInvoiceThunk = () => async (dispatch, getState) => {

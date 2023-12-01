@@ -19,7 +19,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
@@ -40,7 +40,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     
     const preflightReady = useSelector( state=>state.auth.preflightReady);
     const localSessionState = useSelector( state => state.auth.localSessionState);
-    
+    const v2NextAuthStep = useSelector( state => state.auth.v2NextAuthStep);
+
     const accountVersion = useSelector(state => state.auth.accountVersion);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const displayName = useSelector(state=> state.auth.displayName);
@@ -124,7 +125,11 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                 } else { 
                     switch(localSessionState.authState) {
                         case 'MFARequired':
-                            changePage('/v1/extraMFA');
+                            if(accountVersion === 'v1'){
+                                changePage('/v1/extraMFA');
+                            } else {
+                                changePage('/services/mfa');
+                            }
                             break;
                         case 'KeyRequired':
                             changePage('/v1/keyEnter');
@@ -228,6 +233,28 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         localSessionStateChanged();
     }, [localSessionState]);
 
+    useEffect(()=> {
+        if(!v2NextAuthStep) return;
+        
+        debugLog(debugOn, "route v2NextAuthStep: ", v2NextAuthStep.step);
+        let nextPage = null;
+        switch(v2NextAuthStep.step){
+            case 'Home':
+                const path = router.asPath;
+                if(path === '/') break;
+                nextPage = '/';
+                break;
+            case 'MFARequired':
+                nextPage = '/services/mfa';
+                break;         
+            default:
+        }
+        dispatch(setV2NextAuthStep(null));
+        if(nextPage) {
+            const path = router.asPath;
+            if(path !== nextPage) changePage(nextPage);
+        }
+    }, [v2NextAuthStep]);
 
     useEffect(()=> {
         if(!nextAuthStep) return;
@@ -258,7 +285,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             if(path !== nextPage) changePage(nextPage);
         }
     }, [nextAuthStep])
-    //<Spinner className={BSafesStyle.screenCenter} animation='border' />    
+    
     
     useEffect(()=> {
         if(preflightReady && accountState) {

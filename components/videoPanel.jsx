@@ -75,7 +75,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
 
     const onPlaying = (e) => {
         debugLog(debugOn, 'onPlaying ...');
-        getVideoSnapshot(e.target)
+        if(panel.status === 'Uploaded') getVideoSnapshot(e.target);
 
     }
 

@@ -4,6 +4,7 @@ const Document = () => {
     return (
         <Html>
             <Head>
+                <meta charSet="utf-8" />
             </Head>
             <body>
                 <Main />

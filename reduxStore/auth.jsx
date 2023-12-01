@@ -22,7 +22,6 @@ const initialState = {
     challengeState: false,
     preflightReady: false,
     localSessionState: null,
-    MFAPassed: false,
     accountVersion:'',
     memberId: null,
     displayName: null,
@@ -32,7 +31,9 @@ const initialState = {
     privateKey: null,
     searchKey: null,
     searchIV: null,
-    froalaLicenseKey: null
+    froalaLicenseKey: null,
+    v2NextAuthStep: null,
+    tempCredentials: null,
 }
 
 const authSlice = createSlice({
@@ -101,11 +102,17 @@ const authSlice = createSlice({
         },
         setAccountVersion: (state, action) => {
             state.accountVersion = action.payload;
+        },
+        setV2NextAuthStep: (state, action) => {
+            state.v2NextAuthStep = action.payload;
+        },
+        setTempCredentials: (state, action) => {
+            state.tempCredentials = action.payload;
         }
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setTempCredentials } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -198,14 +205,22 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         }).then( data => {
 
                             if(data.status == "ok") {
-                                debugLog(debugOn, "Logged in.");
                                 credentials.memberId = data.memberId;
                                 credentials.displayName = data.displayName;
-                                saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                                 
-                                dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
-                                debugLog(debugOn, "loggedIn dispatched.");
-                                resolve();
+                                if(data.nextStep) {
+                                    dispatch(setTempCredentials({credentials, sessionKey:data.sessionKey, sessionIV:data.sessionIV}));
+                                    localStorage.setItem("authState", data.nextStep.step);      
+                                    dispatch(setV2NextAuthStep(data.nextStep));
+                                    resolve();
+                                } else {
+                                    saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
+                                    debugLog(debugOn, "Logged in.");
+                                    localStorage.setItem("authState", "Unlocked");
+                                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                                    debugLog(debugOn, "loggedIn dispatched.");
+                                    resolve();
+                                }
                             } else {
                                 debugLog(debugOn, "Error: ", data.error);
                                 reject("Failed to verify challenge.");

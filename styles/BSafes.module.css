@@ -470,3 +470,11 @@
   padding-right:0px;
 }
 /* End of Image Panel */
+
+
+/*--****** MFA *******/
+.qrCode {
+  width: 256px;
+}
+
+/* End of MFA */
