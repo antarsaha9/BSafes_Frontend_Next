@@ -49,6 +49,10 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
+    const mfaSetup = (e) => {
+        router.push('/services/mfaSetup');
+    }
+
     const payment = (e) => {
         router.push('/payment');
     }
@@ -293,9 +297,6 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         }
     }, [preflightReady, accountState])
     
-    
-
-
     return (
         <div>
             { ( (accountActivity !==0 ) || (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
@@ -322,6 +323,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                             
                                 { isLoggedIn? 
                                     <>
+                                    <Dropdown.Item onClick={mfaSetup}>MFA</Dropdown.Item>
                                     <Dropdown.Item onClick={payment}>Payment</Dropdown.Item>
                                     <Dropdown.Item onClick={logOut}>Log out</Dropdown.Item>
                                     </>

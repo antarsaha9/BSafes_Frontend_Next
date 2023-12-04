@@ -33,7 +33,6 @@ const initialState = {
     searchIV: null,
     froalaLicenseKey: null,
     v2NextAuthStep: null,
-    tempCredentials: null,
 }
 
 const authSlice = createSlice({
@@ -105,14 +104,11 @@ const authSlice = createSlice({
         },
         setV2NextAuthStep: (state, action) => {
             state.v2NextAuthStep = action.payload;
-        },
-        setTempCredentials: (state, action) => {
-            state.tempCredentials = action.payload;
         }
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setTempCredentials } = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -141,8 +137,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                         localStorage.setItem("authToken", data.authToken);
                         credentials.memberId = data.memberId;
                         credentials.displayName = data.displayName;
-                        saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
-                
+                        saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);      
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
                         resolve();
                     } else {
@@ -209,17 +204,17 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                                 credentials.displayName = data.displayName;
                                 
                                 if(data.nextStep) {
-                                    dispatch(setTempCredentials({credentials, sessionKey:data.sessionKey, sessionIV:data.sessionIV}));
+                                    saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                                     localStorage.setItem("authState", data.nextStep.step);      
                                     dispatch(setV2NextAuthStep(data.nextStep));
                                     resolve();
                                 } else {
                                     saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                                     debugLog(debugOn, "Logged in.");
-                                    localStorage.setItem("authState", "Unlocked");
+                                    localStorage.setItem("authState", "Unlocked");  
                                     dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
                                     debugLog(debugOn, "loggedIn dispatched.");
-                                    resolve();
+                                    resolve();                       
                                 }
                             } else {
                                 debugLog(debugOn, "Error: ", data.error);
@@ -242,6 +237,60 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     reject("Failed to login.");
                 })
             }
+        })
+    });
+}
+
+export const verifyMFATokenThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, authActivity.VerifyMFAToken, () => {
+        return new Promise((resolve, reject) => {
+            const token = data.token;
+            PostCall({
+                api: '/memberAPI/verifyMFAToken',
+                body: { token }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "Logged in.");
+                    localStorage.setItem("authState", "Unlocked");
+                    resolve();
+                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                    debugLog(debugOn, "loggedIn dispatched.");
+                } else {
+                    debugLog(debugOn, "woo... verifyMFAToken failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... verifyMFAToken failed.")
+                reject(data.error);
+            })   
+        })
+    });
+}
+
+export const recoverMFAThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, authActivity.RecoverMFA, () => {
+        return new Promise((resolve, reject) => {
+            const recoveryWords = data.recoveryWords;
+            PostCall({
+                api: '/memberAPI/recoverMFA',
+                body: { recoveryWords }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "Logged in.");
+                    localStorage.setItem("authState", "Unlocked");
+                    resolve();
+                    dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
+                    debugLog(debugOn, "loggedIn dispatched.");
+                } else {
+                    debugLog(debugOn, "woo... recoverMFAThunk failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... recoverMFAThunk failed.")
+                reject(data.error);
+            })   
         })
     });
 }
@@ -327,7 +376,7 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
         const authToken = localStorage.getItem('authToken');
         const encodedGold = localStorage.getItem("encodedGold");
         const authState = localStorage.getItem("authState");
-        return {sessionExists:authToken?true:false, authState, unlocked:encodedGold?true:false};
+        return {sessionExists:authToken?true:false, authState, unlocked:(authState === 'Unlocked')};
     } 
     const state = getState().auth;
     let contextId = state.contextId;

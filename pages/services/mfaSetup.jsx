@@ -24,6 +24,8 @@ export default function MFASetup() {
     const [extraMFAEnabled, setExtraMFAEnabled] = useState(false);
     const [qrCode, setQrCode] = useState(null);
     const [token, setToken] = useState('');
+    const [showRecoveryWords, setShowRecoveryWords] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
     const confirmInputRef = useRef(null);
@@ -39,17 +41,24 @@ export default function MFASetup() {
         } catch (error) {
             alert(error)
         }
+    
+    }
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(mfa.recoveryWords);
+        setCopied(true);
     }
 
     const handleDeleteModalOnEntered = () => {
         confirmInputRef.current.focus();
     }
+
     const handleCloseDeleteTrigger = () => {
         setDeleteConfirmation('');
         setShowDeleteModal(false);
     }
     const handleDelete = async () => {
-        dispatch(deleteMFAThunk());;
+        dispatch(deleteMFAThunk());
         handleCloseDeleteTrigger();
     }
     useEffect(()=>{
@@ -60,6 +69,7 @@ export default function MFASetup() {
 
     useEffect(() => {
         if(!mfa) return;
+        if(mfa.mfaSetup) setShowRecoveryWords(true);
         if (mfa.mfaEnabled){
             setExtraMFAEnabled(true);
         } else {
@@ -135,6 +145,20 @@ export default function MFASetup() {
                                 <Button variant="light" className="pull-right" size="md" onClick={handleCloseDeleteTrigger}>
                                     Cancel
                                 </Button>
+                            </Modal.Body>
+                        </Modal>
+                        <Modal show={showRecoveryWords} fullscreen={true} onHide={() => setShowRecoveryWords(false)}>
+                            <Modal.Header closeButton>
+                                <Modal.Title>MFA Recovery Words</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                <p>Store your recovery words in a secure location. If you lost your MFA authenticator account, using recovery words is the only way to pass the MFA step.</p>
+                                <hr />
+                                <h3>{mfa.recoveryWords}</h3>
+                                <hr />
+                                <Row>
+                                    <Button variant="primary" onClick={handleCopy}>{copied?`Copied`:`Copy`}</Button>
+                                </Row>
                             </Modal.Body>
                         </Modal>
                     </Col>

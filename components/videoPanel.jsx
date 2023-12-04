@@ -166,7 +166,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                         onClick={handleVideoClicked}>
                                         <i className="fa fa-play-circle-o fa-4x text-danger" aria-hidden="true"></i>
                                     </div>
-                                    {panel.status === "downloadingVideo" && <LoaderSpinner />}
+                                    {(panel.status === "Downloading" || panel.status === "DownloadingVideo")  && <LoaderSpinner />}
                                 </>
                             }
                         </div>

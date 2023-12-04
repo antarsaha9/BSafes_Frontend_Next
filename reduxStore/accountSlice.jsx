@@ -124,7 +124,7 @@ export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => 
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(MFALoaded({ mfaEnabled: true }));
+                    dispatch(MFALoaded({ mfaSetup: true, recoveryWords:data.recoveryWords, mfaEnabled: true }));
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... verifyMFASetupToken failed: ", data.error);

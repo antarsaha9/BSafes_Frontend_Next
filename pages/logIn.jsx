@@ -40,6 +40,10 @@ export default function LogIn() {
     }
 
     useEffect(()=> {
+        nicknameRef.current.focus();
+    }, []);
+
+    useEffect(()=> {
         if(isLoggedIn) {
             router.push('/safe');
         }
