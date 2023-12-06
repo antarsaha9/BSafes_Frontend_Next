@@ -1085,12 +1085,9 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             const decodedContent =  DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
                             dispatch(contentDecrypted({item:{id: data.itemId, content:decodedContent}}));
                             
-                            state = getState().page;
-
-                            if(state.contentImagesDownloadQueue.length) {
-                                startDownloadingContentImages(data.itemId, dispatch, getState);
-                            }   
-
+                            state = getState().page;                 
+                            startDownloadingContentImages(data.itemId, dispatch, getState);
+                             
                             resolve();
                         } else {
                             resolve();
@@ -1231,9 +1228,8 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
             };
             dispatch(decryptPageItem({itemId, workspaceKey: data.workspaceKey}));
             state = getState().page;    
-            if(state.contentImagesDownloadQueue.length) {
-                startDownloadingContentImages(itemId, dispatch, getState);
-            }                    
+            startDownloadingContentImages(itemId, dispatch, getState);
+                             
             if(state.imageDownloadQueue.length) {
                 startDownloadingImages();
             }
@@ -2005,9 +2001,7 @@ export const loadDraftThunk = (data) => async (dispatch, getState) => {
 
 export const startDownloadingContentImagesForDraftThunk = (data) => async (dispatch, getState) => {
     const state = getState().page;
-    if(state.contentImagesDownloadQueue.length) {
-        startDownloadingContentImages(state.id, dispatch, getState);
-    }  
+    startDownloadingContentImages(state.id, dispatch, getState);
 }
 
 export const loadOriginalContentThunk = (data) => async (dispatch, getState) => {

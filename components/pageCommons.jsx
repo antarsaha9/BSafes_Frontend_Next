@@ -665,13 +665,6 @@ export default function PageCommons() {
         }
     }, [contentImagesAllDownloaded, draftLoaded]);
     
-/*    useEffect(()=> {
-        if(writingAfterDraftLoaded){ 
-            handleWrite();
-            setWritingAfterDraftLoaded(false);
-        }
-    },[writingAfterDraftLoaded]);*/
-
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
