@@ -43,6 +43,7 @@ const initialState = {
     contentImagesDownloadQueue: [],
     contentImagedDownloadIndex: 0,
     contentImagesDisplayIndex:0,
+    contentImagesAllDownloaded: false,
     contentVideosDownloadQueue:[],
     videoPanels:[],
     videosUploadQueue:[],
@@ -422,6 +423,9 @@ const pageSlice = createSlice({
             image.src = action.payload.link;
             
         },
+        setContentImagesAllDownloaded: (state, action) => {
+            state.contentImagesAllDownloaded = action.payload;
+        },
         updateContentImagesDisplayIndex: (state, action) => {        
             state.contentImagesDisplayIndex = action.payload;
         },
@@ -797,13 +801,14 @@ const pageSlice = createSlice({
         },
         draftLoaded: (state, action) => {
             state.originalContent = state.content;
-            state.content = state.draft;
+            state.content = forge.util.decodeUtf8(state.draft);
             state.draftLoaded = true;
             state.draft = null;
             const draftId = 'Draft-' + state.id;
             localStorage.removeItem(draftId);
             state.contentImagesDownloadQueue = [];
             state.contentImagedDownloadIndex = 0;
+            state.contentImagesAllDownloaded = false;
             state.contentImagesDisplayIndex = 0;
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
@@ -822,7 +827,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -884,6 +889,7 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
 
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
     let state = getState().page; 
+    dispatch(setContentImagesAllDownloaded(false));
     const downloadAnImage = (image) => {
 
         return new Promise(async (resolve, reject) => {
@@ -939,6 +945,7 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
         }
         state = getState().page; 
     }
+    dispatch(setContentImagesAllDownloaded(true));
 }
 
 function getItemPath(id, dispatch, getState) {
@@ -1994,6 +2001,9 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
 
 export const loadDraftThunk = (data) => async (dispatch, getState) => {
     dispatch(draftLoaded());
+}
+
+export const startDownloadingContentImagesForDraftThunk = (data) => async (dispatch, getState) => {
     const state = getState().page;
     if(state.contentImagesDownloadQueue.length) {
         startDownloadingContentImages(state.id, dispatch, getState);

@@ -19,7 +19,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -46,6 +46,7 @@ export default function PageCommons() {
     const S3SignedUrlForContentUpload = useSelector( state => state.page.S3SignedUrlForContentUpload);
     const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
     const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
+    const contentImagesAllDownloaded = useSelector( state=> state.page.contentImagesAllDownloaded);
     const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
     const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
     const videoPanelsState = useSelector(state => state.page.videoPanels);
@@ -53,6 +54,8 @@ export default function PageCommons() {
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
     const draftLoaded = useSelector(state=>state.page.draftLoaded);
+    const [renderingDraft, setRenderingDraft] = useState(false);
+    const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
@@ -516,6 +519,7 @@ export default function PageCommons() {
     }, [contentEditorContent]);
 
     useEffect(()=> {
+        if(draftLoaded && !renderingDraft) return;
         let image, imageElement, containerElement;
         let i = contentImagesDisplayIndex;
         
@@ -578,7 +582,7 @@ export default function PageCommons() {
             
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps    
-    }, [contentImagesDownloadQueue]);
+    }, [contentImagesDownloadQueue, renderingDraft]);
 
     useEffect(()=> {
         let video, videoElement;
@@ -642,12 +646,31 @@ export default function PageCommons() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
 
+    useEffect(()=> {
+        if(!draftLoaded) return;
+        setRenderingDraft(true);
+    }, [draftLoaded]);
+
     useEffect(()=>{
-        if(contentImagesAllDisplayed && draftLoaded) {
-            beforeWritingContent();
-            setEditingEditorId("content");
+        if(renderingDraft) {
+            dispatch(startDownloadingContentImagesForDraftThunk());
         }
-    }, [contentImagesAllDisplayed])
+    }, [renderingDraft]);
+
+    useEffect(()=> {
+        if(contentImagesAllDownloaded && draftLoaded){
+            handleWrite();
+            setWritingAfterDraftLoaded(false);
+            setRenderingDraft(false);
+        }
+    }, [contentImagesAllDownloaded, draftLoaded]);
+    
+/*    useEffect(()=> {
+        if(writingAfterDraftLoaded){ 
+            handleWrite();
+            setWritingAfterDraftLoaded(false);
+        }
+    },[writingAfterDraftLoaded]);*/
 
     const photoSwipeGallery = () => {
         return (
