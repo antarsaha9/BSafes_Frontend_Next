@@ -16,7 +16,7 @@ const debugOn = true;
 const initialState = {
     activity: 0,  
     activityErrors: 0,
-    activityErrorMessages: {},
+    activityErrorCodes: {},
     error: null,
     contextId:null,
     challengeState: false,
@@ -48,7 +48,7 @@ const authSlice = createSlice({
         },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
-            state.activityErrorMessages[action.payload]='';
+            state.activityErrorCodes[action.payload]='';
             state.activity |= action.payload;
         },
         activityDone: (state, action) => {
@@ -57,7 +57,7 @@ const authSlice = createSlice({
         activityError: (state, action) => {
             state.activity &= ~action.payload.type;
             state.activityErrors |= action.payload.type;
-            state.activityErrorMessages[action.payload.type] = action.payload.error;
+            state.activityErrorCodes[action.payload.type] = action.payload.error;
         },
         setContextId:(state, action) => {
             state.contextId = action.payload;
@@ -142,11 +142,11 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                         resolve();
                     } else {
                         debugLog(debugOn, "woo... failed to create an account:", data.error);
-                        reject("Failed to create an account.");
+                        reject("10");
                     }
                 }).catch( error => {
                     debugLog(debugOn, "woo... failed to create an account.")
-                    reject("Failed to create an account.");
+                    reject("12");
                 })
             }
         });
@@ -168,7 +168,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, data);
                     if(data.status !== 'ok') {
                         debugLog(debugOn, "woo... failed to login.")
-                        reject("Failed to login.");
+                        reject("102");
                         return;
                     }
                     dispatch(setChallengeState(true));
@@ -202,7 +202,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                             if(data.status == "ok") {
                                 credentials.memberId = data.memberId;
                                 credentials.displayName = data.displayName;
-                                
+                                dispatch(setAccountVersion('v2'));
                                 if(data.nextStep) {
                                     saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);
                                     localStorage.setItem("authState", data.nextStep.step);      
@@ -218,11 +218,11 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                                 }
                             } else {
                                 debugLog(debugOn, "Error: ", data.error);
-                                reject("Failed to verify challenge.");
+                                reject("104");
                             }
                         }).catch( error => {
                             debugLog(debugOn, "woo... failed to verify challenge.");
-                            reject("Failed to verify challenge.");
+                            reject("106");
                         }).finally(()=>{
                             dispatch(setChallengeState(false));
                             debugLog(debugOn, "setChallengeState(false)");
@@ -234,7 +234,7 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
     
                 }).catch( error => {
                     debugLog(debugOn, "woo... failed to login.")
-                    reject("Failed to login.");
+                    reject("108");
                 })
             }
         })
@@ -258,11 +258,11 @@ export const verifyMFATokenThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "loggedIn dispatched.");
                 } else {
                     debugLog(debugOn, "woo... verifyMFAToken failed: ", data.error);
-                    reject(data.error);
+                    reject("112");
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... verifyMFAToken failed.")
-                reject(data.error);
+                reject("114");
             })   
         })
     });
@@ -298,9 +298,7 @@ export const recoverMFAThunk = (data) => async (dispatch, getState) => {
 export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.LogOut, () => {
         return new Promise(async (resolve, reject) => {
-            localStorage.clear();
-            dispatch(loggedOut());
-            dispatch(cleanMemoryThunk());
+            
             PostCall({
                 api:'/memberAPI/logOut',
                 dispatch
@@ -316,6 +314,9 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to log out.")
                 reject("Failed to log out.");
             })
+            localStorage.clear();
+            dispatch(loggedOut());
+            dispatch(cleanMemoryThunk());
             
         });
     });
@@ -334,6 +335,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
             PostCall(params).then( data => {
                 debugLog(debugOn, data);
                 if(data.status === 'ok') {
+                    dispatch(setAccountVersion(data.accountVersion));
                     if(data.nextStep) {
                         localStorage.setItem("authState", data.nextStep.step);
                         if(data.nextStep.keyMeta){
@@ -365,7 +367,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
             }).catch( error => {
                 debugLog(debugOn, "woo... preflight failed.");
                 dispatch(setPreflightReady(true));
-                reject("Preflight failed.");
+                reject("110");
             })
         });
     });  

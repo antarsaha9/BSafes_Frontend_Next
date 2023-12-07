@@ -5,6 +5,7 @@ import {useRouter} from "next/router";
 import Navbar from 'react-bootstrap/Navbar'
 import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
+import Button from 'react-bootstrap/Button';
 
 
 import { Blocks } from  'react-loader-spinner';
@@ -18,8 +19,9 @@ import ItemsMovingProgress from '../itemsMovingProgress';
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
+import { getErrorMessages } from '../../lib/activities';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
@@ -33,6 +35,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     const accountState = useSelector( state => state.account.accountState);
     const accountActivity = useSelector( state => state.account.activity);
     const authActivity = useSelector( state => state.auth.activity);
+    const authActivityErrors = useSelector(state=>state.auth.activityErrors);
+    const authActivityErrorCodes = useSelector(state=>state.auth.activityErrorCodes);
     const v1AccountActivity = useSelector (state => state.v1Account.activity);
     const teamsActivity = useSelector (state => state.team.activity);
     const containerActivity = useSelector( state => state.container.activity);
@@ -63,7 +67,8 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
 
     const logOut = (e) => {
         debugLog(debugOn, "Log out");
-        changePage('/logOut');
+        //changePage('/logOut');
+        dispatch(logOutAsyncThunk()); 
     }
 
     const lock = (e) => {
@@ -94,6 +99,20 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             path.startsWith('/v1/' ||
             path.startsWith('/v3'))); 
     } 
+
+    const errorNotice = (errorMessage) => {
+        toast.error(errorMessage, {
+            position: "bottom-center",
+            autoClose: 5000,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "colored",
+            toastId: 'customId'
+        });
+    };
 
     const localSessionStateChanged = () => {
         debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
@@ -207,21 +226,6 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     useEffect(()=> {
         if(preflightReady) {
             dispatch(createCheckSessionIntervalThunk());
-            const notify = () => {
-                toast('🦄 Wow so easy! ' + accountState, {
-                    position: "top-right",
-                    autoClose: false,
-                    hideProgressBar: true,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    theme: "light",
-                    toastId: 'customId'
-                    });
-              } 
-            //notify();
-            setTimeout(notify, 500);
         }
     }, [preflightReady]);
 
@@ -297,6 +301,14 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
         }
     }, [preflightReady, accountState])
     
+    useEffect(()=> {
+        if(authActivityErrors) {
+            const errorMessages = getErrorMessages('Auth', authActivityErrors, authActivityErrorCodes);
+            //notify();
+            if(errorMessages.length) setTimeout(errorNotice(errorMessages[0]), 500);
+        }
+    },[authActivityErrors]);
+
     return (
         <div>
             { ( (accountActivity !==0 ) || (authActivity !==0 ) || (v1AccountActivity !== 0 ) || (teamsActivity !==0) || (containerActivity !== 0) || (pageActivity !== 0 )) &&
@@ -318,17 +330,18 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                         <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
                             <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
                         </Dropdown.Toggle>
-                        { accountVersion !== 'v1' &&
+                        { accountVersion === 'v2' &&
                             <Dropdown.Menu>
                             
-                                { isLoggedIn? 
+                                { isLoggedIn && 
                                     <>
-                                    <Dropdown.Item onClick={mfaSetup}>MFA</Dropdown.Item>
+                                    <Dropdown.Item onClick={mfaSetup}>2FA</Dropdown.Item>
                                     <Dropdown.Item onClick={payment}>Payment</Dropdown.Item>
-                                    <Dropdown.Item onClick={logOut}>Log out</Dropdown.Item>
+                                    <Dropdown.Item onClick={logOut}>Lock</Dropdown.Item>
                                     </>
-                                    :
-                                    <Dropdown.Item onClick={logIn}>Log In</Dropdown.Item>
+                                }
+                                { localSessionState && localSessionState.authState === 'MFARequired' &&
+                                    <Dropdown.Item onClick={logOut}>Lock</Dropdown.Item>
                                 }
                             
                             </Dropdown.Menu>

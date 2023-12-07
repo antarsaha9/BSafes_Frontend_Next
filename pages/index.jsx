@@ -50,7 +50,7 @@ export default function Home() {
             <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
                 <Row>
                     <Col>
-                        <h1>Log In</h1>
+                        <h1>Open your BSafes</h1>
                         <hr></hr>
                         <Form>
                             <Form.Group className="mb-3" controlId="Nickname">

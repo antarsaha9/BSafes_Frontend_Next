@@ -98,10 +98,10 @@ export default function MFASetup() {
                 {!extraMFAEnabled ?
                 <div className='m-3'>
                     <Row>
-                        <h1>Turn On MFA</h1>
+                        <h1>Turn On 2FA</h1>
                     </Row>
                     <Row>
-                        <h4>{`Step 1. Open your MFA authenticator app., or download one if you don't have any;`}</h4>
+                        <h4>{`Step 1. Open your authenticator app., or download one if you don't have any;`}</h4>
                     </Row>
                     <Row>
                         <h4>Step 2. Add an account by scanning the following QR code;</h4>
@@ -120,16 +120,16 @@ export default function MFASetup() {
                     </Row>
                     <br />
                     <Row>
-                        <h4>Step 4. Store your recovery phrase in a secure location. You would need the recovery phrase if you lost your MFA account.</h4>
+                        <h4>Step 4. Store your recovery phrase in a secure location. You would need the recovery phrase if you lost your 2FA account.</h4>
                     </Row>
                 </div> :
                 <div className='m-3'>
                     <Col xs={12}>
-                        <h1>MFA is enabled.</h1>
+                        <h1>2FA is enabled.</h1>
                         <Button variant="warning" className="py-2" onClick={() => setShowDeleteModal(true)}>Disable</Button>
                         <Modal show={showDeleteModal} onEntered={handleDeleteModalOnEntered} onHide={handleCloseDeleteTrigger}>
                             <Modal.Body>
-                                <h3>Are you Sure?</h3>
+                                <h3>Are you sure?</h3>
                                 <Form >
                                     <InputGroup className="mb-3">
                                         <Form.Control ref={confirmInputRef} size="lg" type="text"
@@ -149,12 +149,12 @@ export default function MFASetup() {
                         </Modal>
                         <Modal show={showRecoveryWords} fullscreen={true} onHide={() => setShowRecoveryWords(false)}>
                             <Modal.Header closeButton>
-                                <Modal.Title>MFA Recovery Words</Modal.Title>
+                                <Modal.Title>2FA Recovery Words</Modal.Title>
                             </Modal.Header>
                             <Modal.Body>
-                                <p>Store your recovery words in a secure location. If you lost your MFA authenticator account, using recovery words is the only way to pass the MFA step.</p>
+                                <p>Store your recovery words in a secure location. If you lost your 2FA authenticator account, using recovery words is the only way to pass the 2FA step.</p>
                                 <hr />
-                                <h3>{mfa.recoveryWords}</h3>
+                                <h3>{mfa && mfa.recoveryWords}</h3>
                                 <hr />
                                 <Row>
                                     <Button variant="primary" onClick={handleCopy}>{copied?`Copied`:`Copy`}</Button>

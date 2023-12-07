@@ -61,7 +61,7 @@ export default function MFA() {
             <Container>
                 <div className='m-3'>
                     <Row>
-                        <h1>Multi-factor Authentication (MFA)</h1>
+                        <h1>Second-Factor Authentication (2FA)</h1>
                         <h6>Please enter the token</h6>
                     </Row>
                     <Row>
