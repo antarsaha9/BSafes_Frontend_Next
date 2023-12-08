@@ -3,10 +3,13 @@ import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
 import Navbar from 'react-bootstrap/Navbar'
+import Nav from 'react-bootstrap/Nav';
+import NavDropdown from 'react-bootstrap/NavDropdown';
+import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
-
+import Form from 'react-bootstrap/Form';
 
 import { Blocks } from  'react-loader-spinner';
 import { ToastContainer, toast } from 'react-toastify';
@@ -58,7 +61,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
     }
 
     const payment = (e) => {
-        router.push('/payment');
+        router.push('/services/payment');
     }
     const logIn = (e) => {
         debugLog(debugOn, "Log in");
@@ -323,50 +326,42 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     />
                 </div> 
             }
-            <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
+            { true && 
+            <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
                 <Container fluid>
-                    <Navbar.Brand><span className={BSafesStyle.navbarTeamName}>{workspaceName}</span></Navbar.Brand>
-                    {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
-                        <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
-                            <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
-                        </Dropdown.Toggle>
-                        { accountVersion === 'v2' &&
-                            <Dropdown.Menu>
-                            
-                                { isLoggedIn && 
-                                    <>
-                                    <Dropdown.Item onClick={mfaSetup}>2FA</Dropdown.Item>
-                                    <Dropdown.Item onClick={payment}>Payment</Dropdown.Item>
-                                    <Dropdown.Item onClick={logOut}>Lock</Dropdown.Item>
-                                    </>
-                                }
-                                { localSessionState && localSessionState.authState === 'MFARequired' &&
-                                    <Dropdown.Item onClick={logOut}>Lock</Dropdown.Item>
-                                }
-                            
-                            </Dropdown.Menu>
-                        }
-                        { accountVersion === 'v1' &&
-                            <Dropdown.Menu>
-                            
-                                { isLoggedIn &&
-                                    <Dropdown.Item onClick={lock}>Lock</Dropdown.Item> 
-                                }
-                                { (isLoggedIn || (router.asPath === '/v1/keyEnter')) &&
-                                    <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
-                                }
-                            </Dropdown.Menu>
-                        }
-                        { accountVersion === '' &&
-                            <Dropdown.Menu>
-                                { (router.asPath === '/v1/keyEnter') &&
-                                    <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
-                                }
-                            </Dropdown.Menu>
-                        }
-                    </Dropdown>}
-                </Container>        
+                    {isLoggedIn &&
+                    <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-false`} />
+                    }
+                    {(localSessionState && localSessionState.authState !== 'MFARequired' && !isLoggedIn) &&
+                        <Navbar.Brand><h2>BSafes</h2></Navbar.Brand>
+                    }
+                    {(localSessionState && localSessionState.authState === 'MFARequired' && !isLoggedIn) && 
+                        <Navbar.Brand><h2>Security</h2></Navbar.Brand>
+                    }
+                    {isLoggedIn &&
+                    <Navbar.Offcanvas
+                        id={`offcanvasNavbar-expand-false`}
+                        aria-labelledby={`offcanvasNavbarLabel-expand-false`}
+                        placement="start"
+                    >
+                        {true && <Offcanvas.Header closeButton>
+                            <Offcanvas.Title id={`offcanvasNavbarLabel-expand-false`}>
+                                Services
+                            </Offcanvas.Title>
+                        </Offcanvas.Header>}
+                        <Offcanvas.Body>    
+                            <Nav className="justify-content-end flex-grow-1 pe-3">
+                                <Nav.Link onClick={mfaSetup}>2FA</Nav.Link>
+                                <Nav.Link onClick={payment}>Payment</Nav.Link>
+                            </Nav>
+                        </Offcanvas.Body>
+                    </Navbar.Offcanvas>
+                    }
+                    {( (localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && <Button variant='dark' size= 'sm' class='ms-auto' onClick={logOut}>Lock</Button>}
+                </Container>
             </Navbar>
+
+            }
             <div>
         
         <ToastContainer
@@ -380,7 +375,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
             theme="light"
         />
       </div>
-            {showPathRow && <ItemPath />}
+            {isLoggedIn && showPathRow && <ItemPath />}
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />

@@ -2,10 +2,13 @@ import { useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
 
 import Container from 'react-bootstrap/Container'
+import Card from 'react-bootstrap/Card'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
+
+import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper'
 
@@ -41,34 +44,49 @@ export default function KeySetup() {
     }
 
     return (
+        <div className={BSafesStyle.safeBackground}>
         <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
-            <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
+            <Container>
+                <br />
+                <br />
+                <br />     
                 <Row>
-                    <Col>
-                        <h1>Create Your BSafes</h1>
-                        <hr></hr>
-                        <Form>
-                            <Form.Group className="mb-3" controlId="Nickname">
-                                <Form.Label>Nickname</Form.Label>
-                                <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Plase choose a nickname' />
-                            </Form.Group>
-                            <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
-                                <Form.Label>Key Password</Form.Label>
-                                <KeyInput onKeyChanged={keyPasswordChanged}/>
-                                <Form.Text id="passwordHelpBlock" muted>
+                    <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
+                        <Card className='p-3'> 
+                            <h1>Create Your BSafes</h1>
+                            <hr></hr>
+                            <Form>
+                                <Form.Group className="mb-3" controlId="Nickname">
+                                    <Form.Label>Nickname</Form.Label>
+                                    <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Plase choose a nickname' />
+                                </Form.Group>
+                                <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
+                                    <Form.Label>Key Password</Form.Label>
+                                    <KeyInput onKeyChanged={keyPasswordChanged}/>
+                                    <Form.Text id="passwordHelpBlock" muted>
                 Your password must be longer than 8 characters, contain letters and numbers
-                                </Form.Text>
-                            </Form.Group>
-                            <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
-                                <Form.Label>Please retype to confirm</Form.Label>
-                                <KeyInput onKeyChanged={confirmPasswordChanged}/>
-                            </Form.Group>
-                            <Button variant="dark" onClick={handleSubmit}>Submit</Button>
-                        </Form>
+                                    </Form.Text>
+                                </Form.Group>
+                                <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
+                                    <Form.Label>Please retype to confirm</Form.Label>
+                                    <KeyInput onKeyChanged={confirmPasswordChanged}/>
+                                </Form.Group>
+                            </Form>
+                            <br />
+                            <Row>
+                                <Col className='text-center'>
+                                    <Button variant="dark" onClick={handleSubmit}>Submit</Button>
+                                </Col>
+                            </Row>
+                        </Card>
                     </Col>           
                 </Row>
+                <br />
+                <br />
+                <br />
             </Container>
             <Scripts />
         </ContentPageLayout>
+        </div>
     )
 }

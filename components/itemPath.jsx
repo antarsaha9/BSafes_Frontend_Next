@@ -158,13 +158,13 @@ export default function ItemPath() {
         <>
             <Container fluid>
                 <Row>
-                    <Col xs={10} sm={11} className={`${BSafesStyle.itemPath} rounded-end`}>
+                    <Col xs={10} md={11} className={`${BSafesStyle.itemPath} rounded-end`}>
                         <Breadcrumb className={`${BSafesStyle.itemPathBreadcrumb}`}>
-                            <Breadcrumb.Item href="/teams" active={false} className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Teams </Breadcrumb.Item>
+                            <Breadcrumb.Item href="/teams" active={false} className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Spaces </Breadcrumb.Item>
                             {breadItems}
                         </Breadcrumb>
                     </Col>
-                    <Col xs={2} sm={1}>
+                    <Col xs={2} md={1}>
                         <Dropdown align="end" className="justify-content-end pull-right">
                             <Dropdown.Toggle size='sm' variant="primary" bsPrefix='px-3 py-2'>
                                 <span><i className="fa fa-plus" aria-hidden="true"></i></span>

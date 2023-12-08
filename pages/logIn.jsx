@@ -3,11 +3,11 @@ import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
 import Container from 'react-bootstrap/Container'
+import Card from 'react-bootstrap/Card'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
-import Spinner from 'react-bootstrap/Spinner';
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -39,8 +39,12 @@ export default function LogIn() {
         dispatch(logInAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword }));
     }
 
+    const handleCreate = () => {
+        router.push('/keySetup');
+    }
+
     useEffect(()=> {
-        nicknameRef.current.focus();
+        //nicknameRef.current.focus();
     }, []);
 
     useEffect(()=> {
@@ -50,39 +54,52 @@ export default function LogIn() {
     }, [isLoggedIn])
 
     return (
+        <div className={BSafesStyle.safeBackground}>
         <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
-            <Container className="mt-5 d-flex justify-content-center" style={{height:'80vh', backgroundColor: "white"}}>     
+            <Container >
+                <br />
+                <br />  
+                <br />   
                 <Row>
-                    <Col>
-                        <h1>Open your BSafes</h1>
-                        <hr></hr>
-                        <Form>
-                            <Form.Group className="mb-3" controlId="Nickname">
-                                <Form.Label>Nickname</Form.Label>
-                                <Form.Control ref={nicknameRef} type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox}/>
-                            </Form.Group>
-                            <Form.Group className="mb-3" controlId="keyPassword">
-                                <Form.Label>Key Password</Form.Label>
-                                <KeyInput onKeyChanged={keyPasswordChanged}/>
-                                <Form.Text id="passwordHelpBlock" muted>
-                Your password must be longer than 8 characters, contain letters and numbers
-                                </Form.Text>
-                            </Form.Group>
-                            <Button variant="dark" onClick={handleSubmit} disabled={activity==="LoggingIn"}>
-                                {activity==="LoggingIn"?
-                                    <Spinner animation="border" role="status">
-                                        <span className="visually-hidden">Loading...</span>
-                                    </Spinner>
-                                    :'Unlock'
-                                }
-                            </Button>
-                            {(activity ==='Error') && 
-                                <p className="text-danger">Please provide correct Nickname and Key Passowrd </p>
-                            }
-                        </Form>
+                    <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
+                        <Card className='p-3'> 
+                            <h1>Open your BSafes</h1>
+                            <hr></hr>
+                            <Form>
+                                <Form.Group className="mb-3" controlId="Nickname">
+                                    <Form.Label>Nickname</Form.Label>
+                                    <Form.Control ref={nicknameRef} type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox}/>
+                                </Form.Group>
+                                <Form.Group className="mb-3" controlId="keyPassword">
+                                    <Form.Label>Key Password</Form.Label>
+                                    <KeyInput onKeyChanged={keyPasswordChanged}/>
+                                    <Form.Text id="passwordHelpBlock" muted>
+                                        Your password must be longer than 8 characters, contain letters and numbers
+                                    </Form.Text>
+                                </Form.Group>
+                            </Form>
+                            <Row className='p-2'>
+                                <Col className='text-center'>
+                                    <Button variant="dark" onClick={handleSubmit} disabled={activity==="LoggingIn"}>
+                                        Unlock
+                                    </Button>
+                                </Col>
+                            </Row>
+                            <Row className='p-2'>
+                                <h4>New user ?
+                                    <Button variant='link' onClick={handleCreate} disabled={activity==="LoggingIn"}>
+                                    Create
+                                    </Button>
+                                </h4>
+                            </Row>        
+                        </Card>
                     </Col>           
                 </Row>
+                <br />
+                <br />
+                <br />
             </Container>
         </ContentPageLayout>
+        </div>
     )
 }
