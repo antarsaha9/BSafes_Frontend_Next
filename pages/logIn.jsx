@@ -63,7 +63,7 @@ export default function LogIn() {
                 <Row>
                     <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
                         <Card className='p-3'> 
-                            <h1>Open your BSafes</h1>
+                            <h1>Your BSafes</h1>
                             <hr></hr>
                             <Form>
                                 <Form.Group className="mb-3" controlId="Nickname">
@@ -73,9 +73,6 @@ export default function LogIn() {
                                 <Form.Group className="mb-3" controlId="keyPassword">
                                     <Form.Label>Key Password</Form.Label>
                                     <KeyInput onKeyChanged={keyPasswordChanged}/>
-                                    <Form.Text id="passwordHelpBlock" muted>
-                                        Your password must be longer than 8 characters, contain letters and numbers
-                                    </Form.Text>
                                 </Form.Group>
                             </Form>
                             <Row className='p-2'>

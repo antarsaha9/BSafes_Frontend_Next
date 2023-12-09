@@ -24,7 +24,7 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 import { getErrorMessages } from '../../lib/activities';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk, setAccountVersion } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
@@ -326,14 +326,44 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     />
                 </div> 
             }
-            { true && 
+            { (accountVersion === '' || accountVersion === 'v1') &&
+            <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
+                <Container fluid>
+                    <Navbar.Brand><span className={BSafesStyle.navbarTeamName}>{workspaceName || 'BSafes'}</span></Navbar.Brand>
+                    {showNavbarMenu && <Dropdown align="end" className="justify-content-end">
+                        <Dropdown.Toggle variant="link" id="dropdown-basic" className={BSafesStyle.navbarMenu}>
+                            <span className={BSafesStyle.memberBadge}>{displayName && displayName.charAt(0)}</span>
+                        </Dropdown.Toggle> 
+
+                        <Dropdown.Menu>
+                        
+                            { isLoggedIn &&
+                                <Dropdown.Item onClick={lock}>Lock</Dropdown.Item> 
+                            }
+                            { (isLoggedIn || (router.asPath === '/v1/keyEnter')) &&
+                                <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
+                            }
+                        </Dropdown.Menu>
+
+                        { accountVersion === '' &&
+                            <Dropdown.Menu>
+                                { (router.asPath === '/v1/keyEnter') &&
+                                    <Dropdown.Item onClick={signOut}>Sign out</Dropdown.Item>
+                                }
+                            </Dropdown.Menu>
+                        }
+                    </Dropdown>}
+                </Container>        
+            </Navbar>    
+            }
+            { (accountVersion === 'v2') && 
             <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
                 <Container fluid>
                     {isLoggedIn &&
                     <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-false`} />
                     }
                     {(localSessionState && localSessionState.authState !== 'MFARequired' && !isLoggedIn) &&
-                        <Navbar.Brand><h2>BSafes</h2></Navbar.Brand>
+                        <Navbar.Brand href='/'><h2>BSafes</h2></Navbar.Brand>
                     }
                     {(localSessionState && localSessionState.authState === 'MFARequired' && !isLoggedIn) && 
                         <Navbar.Brand><h2>Security</h2></Navbar.Brand>

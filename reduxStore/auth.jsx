@@ -138,6 +138,8 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                         credentials.memberId = data.memberId;
                         credentials.displayName = data.displayName;
                         saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);      
+                        localStorage.setItem("authState", "Unlocked"); 
+                        dispatch(setAccountVersion('v2'));
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
                         resolve();
                     } else {
