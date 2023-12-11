@@ -27,7 +27,7 @@ import { getErrorMessages } from '../../lib/activities';
 import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk, setAccountVersion } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
-const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) => {
+const ContentPageLayout = ({children, showNaveBar=true, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
@@ -326,7 +326,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                     />
                 </div> 
             }
-            { (accountVersion === '' || accountVersion === 'v1') &&
+            { showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
             <Navbar bg="light" expand="lg" className={BSafesStyle.bsafesNavbar}>
                 <Container fluid>
                     <Navbar.Brand><span className={BSafesStyle.navbarTeamName}>{workspaceName || 'BSafes'}</span></Navbar.Brand>
@@ -356,7 +356,7 @@ const ContentPageLayout = ({children, showNavbarMenu=true, showPathRow=true}) =>
                 </Container>        
             </Navbar>    
             }
-            { (accountVersion === 'v2') && 
+            { showNaveBar && (accountVersion === 'v2') && 
             <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
                 <Container fluid>
                     {isLoggedIn &&

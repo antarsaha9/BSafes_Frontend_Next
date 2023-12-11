@@ -55,11 +55,13 @@ export default function LogIn() {
 
     return (
         <div className={BSafesStyle.safeBackground}>
-        <ContentPageLayout showNavbarMenu={false} showPathRow={false}> 
+        <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}> 
             <Container >
                 <br />
                 <br />  
                 <br />   
+                <br />  
+                <br />
                 <Row>
                     <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
                         <Card className='p-3'> 

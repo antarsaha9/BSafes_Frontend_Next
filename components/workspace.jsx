@@ -10,6 +10,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
 import Form from 'react-bootstrap/Form'
 import InputGroup from 'react-bootstrap/InputGroup'
+import Card from 'react-bootstrap/Card'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -187,6 +188,26 @@ export default function Workspace({readyToList = false}) {
                 <br />
             </>
             }     
+            { (mode !== 'search' && items.length === 0) &&
+                <Row className='justify-content-center'>
+                    <Col sm={8}>
+                        <Card>
+                            <Card.Header>😊Welcome!</Card.Header>
+                            <Card.Body>
+                                <Card.Title>Instructions</Card.Title>
+                                <Card.Text>
+                                    <ul>
+                                        <li><strong>Adding a record</strong> - Click on the central blue button, then select an item type.</li>
+                                        <li><strong>Searching for records</strong> - Enter keywords in central field, then click on search button.</li>
+                                        <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
+                                        <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
+                                    </ul>
+                                </Card.Text>            
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            }
             {items}
             {itemsState && itemsState.length > 0 &&
                 <Row>

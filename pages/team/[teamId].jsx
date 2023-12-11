@@ -88,7 +88,7 @@ export default function Team(props) {
                   </Row>
                   <Row>
                     <Col className="text-center">
-                      <Link href={`/teamMembers/${workspaceId}`}>Members</Link> |
+                      {false && <span><Link href={`/teamMembers/${workspaceId}`}>Members</Link> |</span>}
 					            <Link href={`/activities/${workspaceId}`}>Activities</Link>
                     </Col>
                   </Row>
