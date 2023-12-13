@@ -47,6 +47,7 @@ const initialState = {
     movingItemsTask: null,
     reloadAPage: false,
     itemTrashed: false,
+    listingDone: false
 };
 
 function separateActivities(activities, getTitle) {
@@ -274,10 +275,13 @@ const containerSlice = createSlice({
         setItemTrashed: (state, action) => {
             state.itemTrashed = action.payload;
         },
+        setListingDone: (state, action) => {
+            state.listingDone = action.payload;
+        }
     }
 })
 
-export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed} = containerSlice.actions;
+export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed, setListingDone} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -438,6 +442,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.ListItems, () => {
         return new Promise(async (resolve, reject) => {
             let state, pageNumber;
+            dispatch(setListingDone(false));
             dispatch(setListingItems(true));
             dispatch(setMode("listAll"));
             state = getState().container;
@@ -493,6 +498,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     const total = data.hits.total;
                     const hits = data.hits.hits;
                     dispatch(pageLoaded({pageNumber, total, hits}));
+                    dispatch(setListingDone(true));
                     resolve();
                 } else {
                     debugLog(debugOn, "listItems failed: ", data.error);

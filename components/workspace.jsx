@@ -20,7 +20,7 @@ import ItemCard from './itemCard'
 import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
-import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk } from '../reduxStore/containerSlice';
+import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk, setListingDone} from '../reduxStore/containerSlice';
 import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
@@ -37,6 +37,7 @@ export default function Workspace({readyToList = false}) {
     const workspaceSearchIV = useSelector( state => state.container.searchIV);
     const container = useSelector( state => state.container.container);
     const mode = useSelector( state => state.container.mode);
+    const listingDone = useSelector( state => state.container.listingDone);
 
     const [searchValue, setSearchValue] = useState("");
 
@@ -113,7 +114,7 @@ export default function Workspace({readyToList = false}) {
               shallow ? 'with' : 'without'
             } shallow routing`
           )
-          
+          dispatch(setListingDone(false));
           dispatch(abort());
           dispatch(clearPage());
           dispatch(clearItems());
@@ -188,7 +189,7 @@ export default function Workspace({readyToList = false}) {
                 <br />
             </>
             }     
-            { (mode !== 'search' && items.length === 0) &&
+            { (listingDone && (mode !== 'search') && (items.length === 0)) &&
                 <Row className='justify-content-center'>
                     <Col sm={8}>
                         <Card>
