@@ -9,7 +9,6 @@ import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, s
 import { containerActivity } from '../lib/activities';
 
 import { getTeamData } from './teamSlice';
-import { getItemPathThunk } from './pageSlice';
 
 const debugOn = true;
 
@@ -293,7 +292,7 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
-export function setupNewItemKey() {
+export function generateNewItemKey() {
     const salt = forge.random.getBytesSync(16);
     const randomKey = forge.random.getBytesSync(32);
     const itemKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
@@ -316,7 +315,7 @@ export const createANewItemThunk = (data) => async (dispatch, getState) => {
             const title = '<h2>' + titleStr + '</h2>';
             const encodedTitle = forge.util.encodeUtf8(title);
           
-            const itemKey = setupNewItemKey();
+            const itemKey = generateNewItemKey();
             const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
             const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
           

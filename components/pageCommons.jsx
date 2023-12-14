@@ -33,6 +33,7 @@ export default function PageCommons() {
     const activity = useSelector( state => state.page.activity);
 
     const pageItemId = useSelector(state => state.page.id);
+    const itemCopy = useSelector(state=>state.page.itemCopy);
     const oldVersion = useSelector(state=>state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
@@ -795,8 +796,8 @@ export default function PageCommons() {
             </Row>
             <br />
             {photoSwipeGallery()}
-            <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
-            {   true &&
+            {itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
+            {true &&
                 <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
             }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>

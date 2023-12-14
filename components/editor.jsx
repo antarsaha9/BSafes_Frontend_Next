@@ -18,6 +18,8 @@ import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, ar
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
+import { generateNewItemKey } from "../reduxStore/containerSlice";
+import { newItemKey } from "../reduxStore/pageSlice";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
     const debugOn = true;    
@@ -57,6 +59,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                   }
                 break;
             case 'content':
+                if(!itemKey) {
+                    const thisItemKey = generateNewItemKey(); 
+                    dispatch(newItemKey({itemKey: thisItemKey}));
+                }
                 $(editorRef.current).html(content);
                 froalaOptions = {
                     key: froalaKey,
@@ -156,8 +162,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     useEffect(()=>{
         if(itemId && itemKey) {
             $('.container').data('itemId', itemId);
-	        $('.container').data('itemKey', itemKey);
-	        $('.container').data('itemIV', itemIV);
+            $('.container').data('itemKey', itemKey);
         }
     }, [itemId, itemKey, itemIV]);
 

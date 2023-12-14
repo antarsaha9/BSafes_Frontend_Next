@@ -4,7 +4,7 @@ const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 const axios = require('axios');
 
-import { setupNewItemKey, setNavigationInSameContainer } from './containerSlice';
+import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
@@ -1722,7 +1722,7 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
             
                 if (!state.itemCopy) {
                     try {
-                        itemKey = setupNewItemKey();
+                        itemKey = generateNewItemKey();
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
                     
                         encryptedTags = tokenfieldToEncryptedArray(tags, itemKey);
@@ -1789,7 +1789,7 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
                 
                 if (!state.itemCopy) {
                     try {
-                        itemKey = setupNewItemKey();
+                        itemKey = generateNewItemKey();
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
 
                         encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
@@ -2059,7 +2059,11 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                 
                 if (!state.itemCopy) {
                     try {
-                        itemKey = setupNewItemKey();
+                        let itemKey = state.itemKey;
+                        if(!itemKey ){
+                            itemKey = generateNewItemKey();
+                        } 
+                        
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
 
                         encryptedContent = encryptBinaryString(encodedContent, itemKey);
@@ -2383,12 +2387,12 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
 
     newActivity(dispatch, pageActivity.UploadVideos,  () => {     
         return new Promise(async (resolve, reject) => {
-            dispatch(addUploadVideos({files:data.files, where:data.where}));
             state = getState().page;
             if(!state.itemCopy) {
-                itemKey = setupNewItemKey();
+                itemKey = generateNewItemKey();
                 dispatch(newItemKey({itemKey}));
             }
+            dispatch(addUploadVideos({files:data.files, where:data.where}));
             state = getState().page;
             while(state.videosUploadQueue.length > state.videosUploadIndex){
                 if(state.aborted) 
@@ -2621,12 +2625,12 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     } 
     newActivity(dispatch, pageActivity.UploadImages,  () => {
         return new Promise(async (resolve, reject) => {
-            dispatch(addUploadImages({files:data.files, where:data.where}));
             state = getState().page;
             if(!state.itemCopy) {
-                itemKey = setupNewItemKey();
+                itemKey = generateNewItemKey();
                 dispatch(newItemKey({itemKey}));
             }
+            dispatch(addUploadImages({files:data.files, where:data.where}));
             state = getState().page;
             while(state.imageUploadQueue.length > state.imageUploadIndex){
                 if(state.aborted) 
@@ -2929,12 +2933,12 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     } 
     newActivity(dispatch, pageActivity.UploadAttachments,  () => {
         return new Promise(async (resolve, reject) => {
-            dispatch(addUploadAttachments({files:data.files}));
             state = getState().page;
             if(!state.itemCopy) {
-                itemKey = setupNewItemKey();
+                itemKey = generateNewItemKey();
                 dispatch(newItemKey({itemKey}));
             }
+            dispatch(addUploadAttachments({files:data.files}));
             state = getState().page;
             while(state.attachmentsUploadQueue.length > state.attachmentsUploadIndex){
                 if(state.aborted) 
