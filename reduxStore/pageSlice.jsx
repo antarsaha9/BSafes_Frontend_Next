@@ -264,7 +264,7 @@ function decryptPageItemFunc(state, workspaceKey) {
             }
             newPanels.push(newPanel);
         }
-        state.attachmentPanels = newPanels;
+        state.attachmentPanels = newPanels.reverse();
     }
 }
 
