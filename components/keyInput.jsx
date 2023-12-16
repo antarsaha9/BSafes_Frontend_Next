@@ -24,14 +24,14 @@ export default function KeyInput({onKeyChanged}) {
 
     return (
         <>
-            <InputGroup>
+            <InputGroup >
                 <Form.Control type={hidden?'password':'text'} 
                     onChange={handleChange}
                     value={keyValue}
                     className={BSafesStyle.inputBox}
                 >
                 </Form.Control>
-                <Button onClick={handleClick} variant="dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>
+                <Button className={BSafesStyle.inputButton} onClick={handleClick} variant="dark">{hidden?<i id="1" className="fa fa-eye-slash fa-lg" aria-hidden="true"></i>:<i id="1" className="fa fa-eye fa-lg" aria-hidden="true"></i>}</Button>
             </InputGroup>
         </>
     )

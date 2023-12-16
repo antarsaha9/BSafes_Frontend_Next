@@ -37,9 +37,15 @@
 }
 
 .inputBox {
+  height: 44px;
   border:1px solid black;
   border-radius: 6px;
   padding: 1rem 1rem;
+}
+
+.inputButton {
+  padding-top: 9px;
+  height: 44px;
 }
 /* End of general */
 

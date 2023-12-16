@@ -94,8 +94,6 @@ export default function KeySetup() {
                 <br />
                 <br />
                 <br />  
-                <br />  
-                <br />
                 <Row>
                     <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
                         <Card className='p-3'> 
