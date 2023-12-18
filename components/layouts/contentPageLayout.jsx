@@ -27,7 +27,7 @@ import { getErrorMessages } from '../../lib/activities';
 import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk, setAccountVersion } from '../../reduxStore/auth';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
-const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNaveBar=true, showNavbarMenu=true, showPathRow=true}) => {
+const ContentPageLayout = ({children, showNaveBar=true, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = false;
     debugLog(debugOn, "Rendering ContentPageLayout");
     const router = useRouter();
@@ -353,9 +353,6 @@ const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNa
                             </Dropdown.Menu>
                         }
                     </Dropdown>}
-                    {publicPage && <Button size='sm' variant='light' align="end" className="justify-content-end" onClick={()=>publicHooks.onOpen()}>
-                        Open
-                    </Button>}
                 </Container>        
             </Navbar>    
             }
