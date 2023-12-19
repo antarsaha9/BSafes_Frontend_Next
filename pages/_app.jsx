@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import SSRProvider from 'react-bootstrap/SSRProvider'
-import store, {reduxWrapper} from '../reduxStore/store'
+import {reduxWrapper} from '../reduxStore/store'
+
 import '../styles/materia.css'
 import '../styles/bootstrapOverride.css'
 import '../styles/react-tagsinput-bsafes.css'
@@ -7,7 +9,7 @@ import "../styles/react-datepicker-bsafes.css";
 import "../styles/froala-editor-bsafes.css"
 import '../lib/importStyles';
 import '../public/css/froalaEditorCSS/video.css'
-import { useEffect } from 'react';
+
 
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
