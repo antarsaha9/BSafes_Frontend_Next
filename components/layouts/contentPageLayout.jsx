@@ -390,7 +390,7 @@ const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNa
                         </Offcanvas.Body>
                     </Navbar.Offcanvas>
                     }
-                    {( (localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && <Button variant='dark' size= 'sm' class='ms-auto' onClick={logOut}>Lock</Button>}
+                    {( (localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && <Button variant='dark' size= 'sm' className='ms-auto' onClick={logOut}>Lock</Button>}
                 </Container>
             </Navbar>
 

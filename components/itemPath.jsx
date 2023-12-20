@@ -33,7 +33,7 @@ export default function ItemPath() {
 
     const breadItems = pathItems.map((item, index) => 
         (index!==(pathItems.length-1))?
-        <Breadcrumb.Item key={index} href={item.link} active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
+        <Breadcrumb.Item key={index} onClick={()=>router.push(item.link)} /*href={item.link}*/ active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
         : 
         <Breadcrumb.Item key={index} active={true}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
     );
@@ -160,7 +160,7 @@ export default function ItemPath() {
                 <Row>
                     <Col xs={10} md={11} className={`${BSafesStyle.itemPath} rounded-end`}>
                         <Breadcrumb className={`${BSafesStyle.itemPathBreadcrumb}`}>
-                            <Breadcrumb.Item href="/teams" active={false} className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Spaces </Breadcrumb.Item>
+                            <Breadcrumb.Item /*href="/teams"*/ onClick={()=>router.push('/teams')} active={false} className={`${BSafesStyle.teamsPathItem}`} linkProps={{ className: BSafesStyle.teamsPathLink }}><i className="fa fa-building" aria-hidden="true" /> Spaces </Breadcrumb.Item>
                             {breadItems}
                         </Breadcrumb>
                     </Col>
