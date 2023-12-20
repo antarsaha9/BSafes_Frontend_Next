@@ -8,7 +8,7 @@ import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 
-import { Inter, Roboto_Mono, Montserrat } from 'next/font/google'
+import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
  
 export const inter = Inter({
   subsets: ['latin'],
@@ -23,7 +23,22 @@ export const roboto_mono = Roboto_Mono({
 export const monteserrat = Montserrat({
     subsets: ['latin'],
     display: 'swap',
-  })
+})
+
+export const orbitron = Orbitron({
+    subsets: ['latin'],
+    display: 'swap',
+})
+
+export const tourney = Tourney({
+    subsets: ['latin'],
+    display: 'swap',
+})
+
+export const oswald = Oswald({
+    subsets: ['latin'],
+    display: 'swap',
+})
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -58,7 +73,7 @@ export default function Home() {
         <ContentPageLayout publicPage={true} publicHooks={{onOpen:handleUnlock}} showNavbarMenu={false} showPathRow={false}> 
             <div className={BSafesStyle.metalBackground} style={{height:`200px`, padding:'20px'}}>
                 <DialerLock size={120} fontSize={0.6} triangleSize={3}/>
-                <h1 className={BSafesStyle.metalH1+' '+ monteserrat.className}>
+                <h1 className={BSafesStyle.metalH1+' '+ orbitron.className}>
                     <span>Since 2017</span>
                     <span>Since 2017</span>
                 </h1>
@@ -69,9 +84,10 @@ export default function Home() {
             <Container>   
                 <br />
                 <br />            
-                <Row className={roboto_mono.className}>
+                <Row className={oswald.className}>
                     <Col md={6}>
                         <h1>Protecting Your Confidential Records in the Cloud.</h1>
+                        <p>BSafes is an end-to-end ecrypted web app for you to write securely, protect and origanize sensitve videos, photos, text, documents and files in the cloud.</p>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>
