@@ -100,10 +100,16 @@ export default function Home() {
                             <h6>Protecting confidential records, with end-to-end encryption.</h6>
                         </li>
                         <li>
+                            <h6>Writing securely with rich text. Inserting photos and videos.</h6>
+                        </li>
+                        <li>
                             <h6>Adding sensitive videos, photos, text and file to one record.</h6>
                         </li>
                         <li>
                             <h6>Organizing records with boxes, folders, notebooks and diaries.</h6>
+                        </li>
+                        <li>
+                            <h6>Locating records with search capability.</h6>
                         </li>
                         <li>
                             <h6>Access to records anytime, anywhere, on any devices.</h6>
