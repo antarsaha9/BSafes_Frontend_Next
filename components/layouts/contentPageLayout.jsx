@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
+import { SafeArea } from 'capacitor-plugin-safe-area';
+
 import Navbar from 'react-bootstrap/Navbar'
 import Nav from 'react-bootstrap/Nav';
-import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
-import Form from 'react-bootstrap/Form';
 
 import { Blocks } from  'react-loader-spinner';
 import { ToastContainer, toast } from 'react-toastify';
@@ -29,7 +29,16 @@ import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '.
 
 const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNaveBar=true, showNavbarMenu=true, showPathRow=true}) => {
     const debugOn = false;
-    debugLog(debugOn, "Rendering ContentPageLayout");
+    debugLog(false, "Rendering ContentPageLayout");
+
+    SafeArea.getSafeAreaInsets().then(({ insets }) => {
+        debugLog(debugOn, insets);
+    });
+      
+    SafeArea.getStatusBarHeight().then(({ statusBarHeight }) => {
+        debugLog(debugOn, 'statusbarHeight: ', statusBarHeight);
+    });
+
     const router = useRouter();
     const dispatch = useDispatch();
 
@@ -62,10 +71,6 @@ const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNa
 
     const payment = (e) => {
         router.push('/services/payment');
-    }
-    const logIn = (e) => {
-        debugLog(debugOn, "Log in");
-        changePage('/logIn');
     }
 
     const logOut = (e) => {
@@ -205,6 +210,7 @@ const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNa
     }, [router.asPath]);
 
     useEffect(() => {
+
         dispatch(setPreflightReady(false));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);    
         dispatch(preflightAsyncThunk());

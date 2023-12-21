@@ -20,6 +20,7 @@
     "bip39": "^3.1.0",
     "braintree-web-drop-in": "^1.40.2",
     "broadcast-channel": "^5.1.0",
+    "capacitor-plugin-safe-area": "^2.0.6",
     "codemirror": "^5.3.0",
     "date-fns": "^2.29.3",
     "dompurify": "^2.4.0",
