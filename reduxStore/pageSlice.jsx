@@ -2292,20 +2292,19 @@ const uploadAVideo = (dispatch, getState, state, {file:video, numberOfChunks}, w
               await sliceEncryptAndUpload(video, i);
           } catch(error) {
               debugLog(debugOn, 'uploadAVideo failed: ', error); 
-              break;
+              if(confirm("Network failure, retry?")) {
+                i--;
+              } else {
+                break;
+              };
           }
         }
 
         if (i === numberOfChunks) {
             debugLog(debugOn, `uploadAVideo done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
-            try {
-                return resolve({ fileType, fileSize, s3KeyPrefix, encryptedFileSize, link:videoLinkFromServiceWorker });
-            } catch (error) {
-                debugLog(debugOn, 'Could not get videoLink');
-                reject("doneUploadAnAttachment error.");
-            }
+            return resolve({ fileType, fileSize, s3KeyPrefix, encryptedFileSize, link:videoLinkFromServiceWorker });         
         } else {
-            alert("Upload failed.")
+           reject("Uploadig a video failed!")
         }  
     })
 }
@@ -2410,7 +2409,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) =>{
                     state = getState().page;
                 } catch(error) {
                     debugLog(debugOn, 'uploadVideosThunk failed: ', error);
-                    reject("Failed to upload Video.");
+                    reject("Failed to upload a Video.");
                     break;
                 }
             }
@@ -2533,7 +2532,10 @@ const uploadAnImage = async (dispatch, state, file) => {
                                                 'Content-Type': 'binary/octet-stream'
                                             }
                                         }
-                                    );
+                                    ).catch(error => {
+                                        reject(error);
+                                        return;
+                                    }); ;
                                     uploadThumbnailImgPromise = axios.put(
                                         signedThumbnailURL,
                                         Buffer.from(thumbnailImgString, 'binary'), 
@@ -2542,22 +2544,33 @@ const uploadAnImage = async (dispatch, state, file) => {
                                                 'Content-Type': 'binary/octet-stream'
                                             }
                                         }
-                                    );
-                                    
-                                    const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
-                                    debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
-                                    debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
-                                    debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
-                                    resolve({s3Key, size: totalUploadedSize, link:img.src, width:img.width, height:img.height, buffer});
+                                    ).catch(error => {
+                                        reject(error);
+                                        return;
+                                    }); ;
+                                    try {
+                                        const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
+                                        debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
+                                        debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
+                                        debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
+                                        resolve({s3Key, size: totalUploadedSize, link:img.src, width:img.width, height:img.height, buffer});
+                                    } catch(error) {
+                                        debugLog(debugOn, "Uploading an image failed: ", error);
+                                        reject(error);
+                                    }    
                                 }
                             },
                             headers: {
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
-                        uploadOriginalImgPromise = axios.put(signedURL,
-                            Buffer.from(data, 'binary'), config);                      
-            
+                        uploadOriginalImgPromise = axios.put(signedURL, 
+                            Buffer.from(data, 'binary'), config)
+                            .catch(error => {
+                                reject(error);
+                                return;
+                            }); 
+                        
                     } catch(error) {
                         debugLog(debugOn, 'uploadImagesToS3 error: ', error)
                         reject("uploadImagesToS3 error.");
@@ -2640,8 +2653,13 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 }
                 debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
                 const file = state.imageUploadQueue[state.imageUploadIndex].file;
-                const uploadResult = await uploadAnImage(dispatch, state, file);
-                dispatch(imageUploaded(uploadResult));
+                try {
+                    const uploadResult = await uploadAnImage(dispatch, state, file);
+                    dispatch(imageUploaded(uploadResult));
+                } catch(error) {
+                    alert("Network failure, retry?")
+                }
+                
                 state = getState().page;
             }
             state = getState().page;
@@ -2904,8 +2922,12 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                 chunkForUpload = await sliceEncryptAndUpload(file, i);   
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
-                reject("sliceEncryptAndUpload error.");
-                break;
+                if(confirm('Network failure, retry?')) {
+                    i--;
+                } else {
+                    break;
+                }
+
             }
         }
         if(i === numberOfChunks + 1){
@@ -2916,9 +2938,10 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
             } catch(error) {
                 debugLog(debugOn, 'uploadAnAttachment failed: ', error); 
                 reject("doneUploadAnAttachment error.");
-            }
-            
-        }       
+            }     
+        } else {
+            reject("Uploading an attachment failed.");
+        }      
     });
 }
 
@@ -2954,8 +2977,10 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
                     state = getState().page;
                 } catch(error) {
                     debugLog(debugOn, 'uploadAttachmentsThunk failed: ', error);
-                    reject("Failed to upload attachments.");
-                    break;
+                    if(!confirm("Network failure, retry?")) {
+                        reject("Failed to upload attachments.");
+                        break;
+                    } 
                 }
             }
             if(state.attachmentsUploadQueue.length === state.attachmentsUploadIndex) {

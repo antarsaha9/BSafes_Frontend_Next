@@ -1287,7 +1287,6 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
         if (editor.events.trigger('video.beforeUpload', [videos]) === false) {
           return false;
         }
-
         const chunkSize = getEditorConfig().videoChunkSize;
         const video = videos[0];
 				const fileType = video.type;
@@ -1475,7 +1474,11 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
           } catch(error) {
               console.log( 'uploadAnAttachment failed: ', error); 
               _setProgressMessage(editor.language.translate('Uploading ...'), i*(100/numberOfChunks));
-              break;
+              if(confirm("Network failure, retry?")) {
+                i--;
+              } else {
+                break;
+              }
           }
         }
 
