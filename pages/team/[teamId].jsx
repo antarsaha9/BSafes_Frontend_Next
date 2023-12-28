@@ -18,7 +18,7 @@ import { abort } from '../../reduxStore/pageSlice';
 import { debugLog } from '../../lib/helper';
 
 export default function Team(props) {
-    const debugOn = true;
+    const debugOn = false;
 
     const router = useRouter();
     const dispatch = useDispatch();

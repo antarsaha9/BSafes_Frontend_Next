@@ -9,7 +9,7 @@ import { v1AccountActivity } from '../lib/activities';
 
 import { setDisplayName, loggedIn, loggedOut, setAccountVersion, cleanMemoryThunk} from './auth';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,  

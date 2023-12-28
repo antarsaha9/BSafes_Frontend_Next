@@ -66,7 +66,7 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
     const request = streamDB
     .transaction(chunkStoreName, "readwrite")
     .objectStore(chunkStoreName)
-    .add(chunkDataInBinary);
+    .put(chunkDataInBinary);
 
     request.onsuccess = (e) => {
       console.log("chunk added: ", e.target.result);
@@ -113,7 +113,7 @@ function getChunkFromDB(videoId, chunkIndex) {
     request.onsuccess = (e) => {
       //console.log("got chunk: ", e.target.result );
       time2 = Date.now();
-      console.log("getChunkFromDB takes time: ", time2-time1)
+      //console.log("getChunkFromDB takes time: ", time2-time1)
       resolve(e.target.result);
     } 
 

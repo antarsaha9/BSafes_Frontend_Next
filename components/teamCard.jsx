@@ -12,7 +12,7 @@ import BSafesStyle from '../styles/BSafes.module.css';
 import { debugLog } from '../lib/helper'
 
 export default function TeamCard({ index, team, onAdd }) {
-    const debugOn = true;
+    const debugOn = false;
 
     const cardStyle = BSafesStyle.safeItem;
     const cardBodyStyle = '';

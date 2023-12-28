@@ -10,7 +10,7 @@ import { containerActivity } from '../lib/activities';
 
 import { getTeamData } from './teamSlice';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,  

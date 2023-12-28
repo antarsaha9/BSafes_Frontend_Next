@@ -12,7 +12,7 @@ import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, preS3Download, preS3ChunkUpload, preS3ChunkDownload, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { downScaleImage } from '../lib/wnImage';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     aborted: false,

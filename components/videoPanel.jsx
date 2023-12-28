@@ -17,7 +17,7 @@ import { uploadVideosThunk, uploadVideoSnapshotThunk, deleteAVideoThunk } from '
 import { debugLog } from '../lib/helper';
 
 export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMode, onContentChanged, onPenClicked, editable = true }) {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const videoFilesInputRef = useRef(null);

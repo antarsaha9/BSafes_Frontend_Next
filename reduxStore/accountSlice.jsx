@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { debugLog, PostCall } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,  

@@ -16,7 +16,7 @@ import { abort, clearPage, initPage, setChangingPage, setContainerData, setPageI
 import { debugLog } from "../lib/helper";
 
 const PageItemWrapper = ({ itemId, children}) => {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

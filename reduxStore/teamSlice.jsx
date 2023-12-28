@@ -6,7 +6,7 @@ import { encryptBinaryString, encryptBinaryStringCBC, decryptBinaryStringCBC, EC
 import { debugLog, PostCall } from '../lib/helper'
 import { teamsActivity } from '../lib/activities';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,  

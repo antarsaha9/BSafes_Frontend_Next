@@ -21,7 +21,7 @@ import { debugLog } from '../../lib/helper';
 import { getItemLink } from '../../lib/bSafesCommonUI';
 
 export default function Activities(props) {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

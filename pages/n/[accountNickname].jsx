@@ -17,7 +17,7 @@ import { debugLog} from '../../lib/helper'
 import { nicknameSignInAsyncThunk, authenticateManagedMemberAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 export default function LogIn() {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

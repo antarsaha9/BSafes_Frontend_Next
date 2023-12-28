@@ -22,7 +22,7 @@ import { debugLog } from "../../../lib/helper";
 import { getItemLink} from "../../../lib/bSafesCommonUI";
 
 export default function BoxContents() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering Contents");
     const dispatch = useDispatch();
     const router = useRouter();

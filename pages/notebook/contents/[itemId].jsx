@@ -20,7 +20,7 @@ import { debugLog } from "../../../lib/helper";
 
 
 export default function NotebookContents() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering Contents");
     const dispatch = useDispatch();
     const router = useRouter();

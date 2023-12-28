@@ -18,7 +18,7 @@ import { verifyKeyHashAsyncThunk } from '../../reduxStore/v1AccountSlice';
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 export default function KeyEnter() {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

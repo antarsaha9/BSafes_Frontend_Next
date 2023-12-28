@@ -17,7 +17,7 @@ import { numberWithCommas } from '../lib/bSafesCommonUI'
 import { debugLog } from '../lib/helper'
 
 export default function AttachmentPanel ({panelIndex, panel}) {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
     const workspaceKey = useSelector( state => state.container.workspaceKey);
     const saveFileRef = useRef(null);

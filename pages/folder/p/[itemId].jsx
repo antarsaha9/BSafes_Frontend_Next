@@ -23,7 +23,7 @@ import { debugLog } from "../../../lib/helper";
 import { gotoAnotherFolderPage } from "../../../lib/bSafesCommonUI";
 
 export default function FolderPage() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
     const dispatch = useDispatch();
 

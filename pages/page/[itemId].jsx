@@ -20,7 +20,7 @@ import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink, getAnotherItem} from "../../lib/bSafesCommonUI"
 
 export default function Page() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
 
     const router = useRouter();

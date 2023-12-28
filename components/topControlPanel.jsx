@@ -20,7 +20,7 @@ import { getItemLink, isItemAContainer } from "../lib/bSafesCommonUI";
 
 
 export default function TopControlPanel({pageNumber=null, onCoverClicked=null, onContentsClicked, onPageNumberChanged=null, onGotoFirstItem=null, onGotoLastItem=null, onSubmitSearch=null, onCancelSearch=null}) {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering TopControlPanel:", pageNumber)
     const dispatch = useDispatch();
     const pageNumberInputRef = useRef(null);

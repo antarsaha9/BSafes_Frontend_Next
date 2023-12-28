@@ -19,7 +19,7 @@ import { abort, initPage, clearPage, itemPathLoaded } from "../../reduxStore/pag
 import { debugLog } from "../../lib/helper";
 
 export default function TrashBox() {
-    const debugOn = true;
+    const debugOn = false;
     const dispatch = useDispatch();
     const router = useRouter();
 

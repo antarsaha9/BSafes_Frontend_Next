@@ -26,7 +26,7 @@ import { setPageStyle } from "../../../reduxStore/pageSlice";
 import { debugLog } from "../../../lib/helper";
 
 export default function DiaryPage() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering item");
 
     const dispatch = useDispatch();

@@ -19,7 +19,7 @@ import { clearSelected, dropItemsThunk, trashItemsThunk, listContainersThunk, li
 import { debugLog } from "../lib/helper";
 
 export default function ItemsToolbar() {
-    const debugOn = true;
+    const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
 

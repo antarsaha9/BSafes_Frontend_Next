@@ -23,7 +23,7 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 import { deselectItem, selectItem, dropItemsThunk} from '../reduxStore/containerSlice';
 
 export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect}) {
-    const debugOn = true;
+    const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
 

@@ -20,7 +20,7 @@ import KeyInput from "../../components/keyInput";
 import { verifyMFAAsyncThunk } from '../../reduxStore/v1AccountSlice';
 
 export default function ExtraMFA() {
-    const debugOn = true;
+    const debugOn = false;
 
     const dispatch = useDispatch();
     const router = useRouter();

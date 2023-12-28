@@ -21,7 +21,7 @@ import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInCon
 import { debugLog } from "../../../lib/helper";
 
 export default function NotebookPage() {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(debugOn, "Rendering NotebookPage");
 
     const dispatch = useDispatch();

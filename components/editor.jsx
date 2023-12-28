@@ -22,7 +22,7 @@ import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
-    const debugOn = true;    
+    const debugOn = false;    
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);

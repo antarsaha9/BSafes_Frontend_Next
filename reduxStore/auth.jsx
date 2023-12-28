@@ -11,7 +11,7 @@ import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
 import { cleanTeamSlice } from './teamSlice';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,  
