@@ -173,7 +173,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                         : ""
                     }
                     {(panel.status === "Uploading") ? <ProgressBar now={panel.progress} /> : ""}
-                    {(panel.status === "WaitingForUpload" || panel.status === "WaitingForDownload") && <i class="fa fa-video-camera" aria-hidden="true"></i>}
+                    {(panel.status === "WaitingForUpload" || panel.status === "WaitingForDownload") && <i className="fa fa-video-camera" aria-hidden="true"></i>}
                 </Col>
             </Row>
             <Row>

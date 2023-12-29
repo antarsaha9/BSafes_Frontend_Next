@@ -14,7 +14,7 @@ import '../styles/bootstrapOverride.css'
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV193.js?v196", {
+      navigator.serviceWorker.register("/serviceWorkerV193.js?v206", {
         scope: "/",
       }).then(
           function(registration) {

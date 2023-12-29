@@ -49,6 +49,7 @@ const initialState = {
     videosUploadQueue:[],
     videosUploadIndex:0,
     videosDownloadQueue:[],
+    videoChunksMap:{},
     imagePanels:[],
     imageUploadQueue:[],
     imageUploadIndex:0,
@@ -555,6 +556,13 @@ const pageSlice = createSlice({
             panel.play = true;
             panel.src = action.payload.link;
         },
+        updateVideoChunksMap: (state, action) => {
+            const chunksMapId = action.payload.chunkId;
+            const map = action.payload.map;
+            const downloadingChunk = action.payload.downloadingChunk;
+            const lastChunkDownloaded = action.payload.lastChunkDownloaded;
+            state.videoChunksMap[chunksMapId] = {map, downloadingChunk, lastChunkDownloaded}
+        },
         addUploadImages: (state, action) => {
             if(state.aborted ) return;
             const files = action.payload.files;
@@ -827,7 +835,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, playingVideo} = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo} = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1299,6 +1307,7 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
     if(state.videosDownloadQueue.length === 0 && state.contentVideosDownloadQueue.length === 0) {
         navigator.serviceWorker.addEventListener("message", async (event) => {
             debugLog(debugOn, event.data);
+            /*This happens when playing from html video player, but the stream does not exist.*/
             if(event.data.type === 'STREAM_NOT_FOUND'){
                 let videoLinkFromServiceWorker = '/downloadFile/video/' +  event.data.id;
                 state = getState().page;
@@ -1411,7 +1420,10 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
                                                     if(event.data.nextChunkIndex>=0){
                                                         await downloadDecryptAndAssemble(event.data.nextChunkIndex);
                                                     }
-                                                    
+                                                    const chunksMap = event.data.chunksMap;
+                                                    chunksMap.downloadingChunk = event.data.nextChunkIndex;
+                                                    chunksMap.lastChunkDownloaded = (event.data.nextChunkIndex === -99999);
+                                                    dispatch(updateVideoChunksMap(chunksMap));
                                                     break;
                                                 case 'STREAM_CLOSED':
                                                     messageChannel.port1.onmessage = null

@@ -68,9 +68,10 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
     .objectStore(chunkStoreName)
     .put(chunkDataInBinary);
 
-    request.onsuccess = (e) => {
+    request.onsuccess = async (e) => {
       console.log("chunk added: ", e.target.result);
-      resolve();
+      const chunksMap = await updateChunksMap('Add', videoId, chunkIndex);
+      resolve(chunksMap);
     }
 
     request.onerror = (e) => {
@@ -82,6 +83,36 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
 
   })
   
+}
+
+function updateChunksMap(action, videoId, chunkIndex) {
+  return new Promise(async (resolve, reject) => {
+    const chunksMapId = videoId + '_chunksMap'
+    let chunksMap = await getChunkFromDB(videoId, 'chunksMap');
+    if(chunksMap) {
+      chunksMap.map[chunkIndex] = (action === 'Add')? true: false;
+    } else {
+      chunksMap = {chunkId:chunksMapId, map:{}};
+      chunksMap.map[chunkIndex] = (action === 'Add')? true: false;
+    }
+
+    const request = streamDB
+    .transaction(chunkStoreName, "readwrite")
+    .objectStore(chunkStoreName)
+    .put(chunksMap);
+
+    request.onsuccess = (e) => {
+      console.log("chunksMap updated: ", e.target.result);
+      resolve(chunksMap);
+    }
+
+    request.onerror = (e) => {
+      console.log("Updating chunksMap failed: ", e.target.error);
+      if(e.target.error.name == "ConstraintError"){
+        resolve();
+      }
+    }
+  });
 }
 
 function deleteChunkInDB(chunkId) {
@@ -225,20 +256,25 @@ self.addEventListener('activate', event => {
 function findNextChunkToDownload(id, numberOfChunks, from) {
   return new Promise(async (resolve) => {
     console.log(`findNextChunkToDownload: ${id}, ${numberOfChunks}, ${from}`)
-    let fromIndex = from;
-    if( (fromIndex >= numberOfChunks) || from < 0) {
-      fromIndex = 1;
-    }
-    let i = 0;
-    console.log('fromIndex: ', fromIndex)
-    for(i=fromIndex; i<numberOfChunks; i++){
-      let result = await getChunkFromDB(id, i);
-      if(!result) {
-        break;
+    const chunksMap = await getChunkFromDB(id, 'chunksMap');
+    if(chunksMap) {
+      let fromIndex = from;
+      if( (fromIndex >= numberOfChunks) || from < 0) {
+        fromIndex = 1;
       }
+      let i = 0;
+      console.log('fromIndex: ', fromIndex)
+      for(i=fromIndex; i<numberOfChunks; i++){
+        let result = chunksMap.map[i];
+        if(!result) {
+          break;
+        }
+      }
+      console.log('next chunk to download: ', i)
+      resolve((i===numberOfChunks)?-99999:i);
+    } else {
+      resolve(from);
     }
-    console.log('i: ', i)
-    resolve((i===numberOfChunks)?-99999:i);
   })
 }
 
@@ -348,7 +384,7 @@ self.addEventListener("message", async (event)=> {
               let chunkLength = event.data.chunk.length;
               console.log("chunk length: ", chunkLength);
               console.log(`Service Worker RECEIVE: chunkIndex: ${event.data.chunkIndex}`)
-              await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
+              const chunksMap = await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
               
               if(streamInfo.chunksInfo[event.data.chunkIndex] && streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches){
                 console.log(`Pending fetches exist for chunkIndex: ${event.data.chunkIndex}`);
@@ -363,7 +399,7 @@ self.addEventListener("message", async (event)=> {
                 streamInfo.jumpToChunk = null;
               }
               console.log(`Service Worker SEND: NEXT_CHUNK nextChunkIndex: ${streamInfo.nextChunkIndex}`)
-              port.postMessage({ type:"NEXT_CHUNK", nextChunkIndex: streamInfo.nextChunkIndex}); 
+              port.postMessage({ type:"NEXT_CHUNK", chunksMap, nextChunkIndex: streamInfo.nextChunkIndex}); 
               streamInfo.requestedChunkIndex = streamInfo.nextChunkIndex;
 
               nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, streamInfo.nextChunkIndex+1)
