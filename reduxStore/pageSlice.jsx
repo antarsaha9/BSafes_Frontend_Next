@@ -3128,6 +3128,10 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             return new Promise(async (resolve, reject) => {
                 try {
                     result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
+                    if(numberOfChunksRequired) {
+                        numberOfChunks = result.numberOfChunks;
+                        numberOfChunksRequired = false;
+                    }
                     const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex*100/numberOfChunks, 1/numberOfChunks);                          
                     debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                     if(state.activeRequest !== itemId) {
