@@ -85,7 +85,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                         "Montserrat,sans-serif": 'Montserrat',
                         "'Open Sans Condensed',sans-serif": 'Open Sans Condensed'
                     },
-                    fontFamilySelection: false
+                    fontFamilySelection: false,
+                    tableStyles: {
+                        'fr-dashed-borders': 'Dashed Borders',
+                        'fr-alternate-rows': 'Alternate Rows',
+                        'fr-no-borders': 'No Borders'
+                    },
                 };
                 break;
             default:

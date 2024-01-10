@@ -4,15 +4,15 @@
 }
 
 .displayNone {
-	display: none;
+  display: none;
 }
 
 .orangeText {
-	color:orange;
+  color: orange;
 }
 
 .greenText {
-	color:green;
+  color: green;
 }
 
 .mt3px {
@@ -20,11 +20,11 @@
 }
 
 .externalLink {
-  margin-top:1px;
+  margin-top: 1px;
 }
 
 .spaceBackground {
-  background-color:#f8f8f8 ;
+  background-color: #f8f8f8;
   min-height: 980px;
 }
 
@@ -38,7 +38,7 @@
 
 .inputBox {
   height: 44px;
-  border:1px solid black;
+  border: 1px solid black;
   border-radius: 6px;
   padding: 1rem 1rem;
 }
@@ -47,13 +47,27 @@
   padding-top: 9px;
   height: 44px;
 }
+
+.minHeight100Percent {
+  height: auto;
+  min-height: 100vh;
+}
+
+.screenShotImage {
+  max-width:100%;
+  max-height:100%;
+}
+
+.bannerTextH1 {
+  font-size: 6rem;
+}
 /* End of general */
 
 /*--********  Navigation bar */
 .navbarTeamName {
-	color:black !important;
-	font-size: 200%;
-	font-weight: bold;
+  color: black !important;
+  font-size: 200%;
+  font-weight: bold;
 }
 
 .bsafesNavbar {
@@ -76,6 +90,7 @@
   color: #fff;
   background-color: #000;
 }
+
 /* End of navigation bar */
 
 /*--***** Custom buttons */
@@ -96,45 +111,45 @@
   display: inline-block;
   cursor: default;
   padding-top: 8px;
-  z-index:15000;
+  z-index: 15000;
 }
 
 .btnFloatingAdd {
-	padding-top:10px;
-	padding-left:15px;
+  padding-top: 10px;
+  padding-left: 15px;
 }
 
 .btnFloatingWrite {
   background: #03A9F4;
   bottom: 12px;
   right: 24px;
-  padding-left:10px;
+  padding-left: 10px;
 }
 
 .btnFloatingSave {
   background: #229954;
   bottom: 72px;
   right: 24px;
-  padding-left:10px;
+  padding-left: 10px;
 }
 
 .btnFloatingCancel {
   background: #F39C12;
   bottom: 12px;
   right: 24px;
-  padding-left:14px;
+  padding-left: 14px;
 }
 
 /* End of custom buttons */
 
 /*--****** Items Toolbar ***/
 .itemsToolbar {
-	background-color:#666666;
-	position:fixed;
-	bottom:0px;
-	width:100%;
-	height:54px;
-	margin:0px;
+  background-color: #666666;
+  position: fixed;
+  bottom: 0px;
+  width: 100%;
+  height: 54px;
+  margin: 0px;
   z-index: 100;
 }
 
@@ -159,23 +174,23 @@
 /* End of items toolbar */
 
 /*--****** Safe *******/
-	/* Safe general */
+/* Safe general */
 .managedMemberLoginBackground {
   background-color: #f8f8f8;
   height: 100vh;
 }
 
 .safeBackground {
-  height:100vh;
-  background-color:#eeeeee;
+  height: 100vh;
+  background-color: #eeeeee;
 }
 
 .safeItemTypeIcon {
-  margin-right:20px;
+  margin-right: 20px;
 }
 
 .safeItem h2 {
-  margin-top:10px;
+  margin-top: 10px;
 }
 
 .itemPath {
@@ -185,10 +200,10 @@
 .itemPathBreadcrumb {
   position: relative;
   margin-top: 11px;
-  margin-left:16px;
+  margin-left: 16px;
 }
 
-.itemPathBreadcrumb ol{
+.itemPathBreadcrumb ol {
   margin-bottom: 2px;
 }
 
@@ -196,11 +211,11 @@
   position: relative;
   font-size: 20px;
   top: -3px;
-	background-color:#D6EAF8;
+  background-color: #D6EAF8;
 }
 
 .teamsPathLink {
-	color:black;
+  color: black;
 }
 
 .itemPathBreadcrumb a:link {
@@ -212,31 +227,31 @@
 /*--****** Container *******/
 /*--**** Container general */
 .containerTitleLabel {
-  min-height:120px;
-  border-radius:5px;
-  background-color:white;
-  padding:10px 20px 10px 20px;
+  min-height: 120px;
+  border-radius: 5px;
+  background-color: white;
+  padding: 10px 20px 10px 20px;
 }
 
 .containerControlPanel {
-  background-color:black;
+  background-color: black;
   min-height: 61px;
 }
 
 .containerSearchPanel {
-  background-color:white;
+  background-color: white;
   min-height: 61px;
 }
 
 .pageNavigationPart {
-  float:left;
+  float: left;
 }
 
 .pageNumberInput {
-  background-color:transparent;
-  margin-bottom:6px;
-  max-width:50px;
-  text-align:center;
+  background-color: transparent;
+  margin-bottom: 6px;
+  max-width: 50px;
+  text-align: center;
   color: white;
 }
 
@@ -244,70 +259,76 @@
   color: white;
 }
 
-.pagePanel, .containerCoverPanel, .containerContentsPanel, .folderPanel, .notebookPanel, .diaryPanel, .boxPanel {
+.pagePanel,
+.containerCoverPanel,
+.containerContentsPanel,
+.folderPanel,
+.notebookPanel,
+.diaryPanel,
+.boxPanel {
   position: relative;
   min-height: 925px;
-  padding-bottom:48px;
+  padding-bottom: 48px;
 }
 
 .containerOpenBtn {
   background: #7F8C8D;
   display: inline-block;
   margin: 0 1em 1em 0;
-  padding-top:16px;
-	width: 48px;
-	height: 96px;
-	border-bottom-left-radius: 12px;
+  padding-top: 16px;
+  width: 48px;
+  height: 96px;
+  border-bottom-left-radius: 12px;
   border-top-left-radius: 12px;
-	position: absolute;
+  position: absolute;
   right: -18px;
 }
 
 .contentsItemRow {
-  z-index:100;
+  z-index: 100;
 }
 
 .turningPageRow {
-  position:fixed;
+  position: fixed;
   left: 0px;
-  right:0px;
-  top:40%;
-  width:100%;
+  right: 0px;
+  top: 40%;
+  width: 100%;
   z-index: 10;
 }
 
 .pageBtn {
   position: relative;
-  background-color:transparent;
+  background-color: transparent;
   display: inline-block;
-  z-index:1000;
+  z-index: 1000;
   color: black;
 }
 
 .pageBtnFixed {
   position: fixed;
-  top:45%;
-  background-color:transparent;
+  top: 45%;
+  background-color: transparent;
   display: inline-block;
-  z-index:1000;
+  z-index: 1000;
   color: black;
 }
 
 .coverBtnFixed {
   position: fixed;
-  background-color:transparent;
+  background-color: transparent;
   display: inline-block;
-  z-index:1000;
+  z-index: 1000;
   color: black;
 }
 
 
 .previousPageBtn {
-  left:-10px;
+  left: -10px;
 }
 
 .nextPageBtn {
-  right:-10px;
+  right: -10px;
 }
 
 .searchBar {
@@ -315,16 +336,17 @@
 }
 
 .searchBarInput {
-  margin-bottom:1px;
-  font-size: 1.25rem;;
+  margin-bottom: 1px;
+  font-size: 1.25rem;
+  ;
 }
 
 /* End of container general */
 /*--***** Box */
 .boxCoverPanel {
-	margin-bottom:10px;
-  background-color:#EBF5FB;
-  border-radius:10px 10px 10px 10px;
+  margin-bottom: 10px;
+  background-color: #EBF5FB;
+  border-radius: 10px 10px 10px 10px;
 }
 
 .boxItemCard {
@@ -345,18 +367,18 @@
 /* End of Box*/
 /*--**** Folder */
 .folderCoverPanel {
-  background-color:#FCF3CF;
-  border-radius:0 20px 20px 0;
-	margin-right:20px;
+  background-color: #FCF3CF;
+  border-radius: 0 20px 20px 0;
+  margin-right: 20px;
 }
 
 .folderTab {
-  background-color:#FCF3CF;
+  background-color: #FCF3CF;
   width: 45px;
   min-height: 200px;
   position: absolute;
   top: 0px;
-  right:-25px;
+  right: -25px;
   border-radius: 0px 10px 30px 0;
   z-index: 0;
 }
@@ -366,9 +388,10 @@
 /*--***** Notebook */
 .notebookCoverPanel {
   border-left: 30px solid #000;
-  background-color:#F2F3F4;
-  border-radius:0 20px 20px 0;
+  background-color: #F2F3F4;
+  border-radius: 0 20px 20px 0;
 }
+
 /* End of notebook */
 
 /*--****** Diary */
@@ -378,8 +401,8 @@
 
 .diaryCoverPanel {
   border-left: 30px solid #000;
-  background-color:#FEF5E7;
-  border-radius:0 20px 20px 0;
+  background-color: #FEF5E7;
+  border-radius: 0 20px 20px 0;
 }
 
 .diaryWeekendItem {
@@ -389,22 +412,23 @@
 .diaryTodayItem {
   background-color: rgb(235, 245, 251);
 }
+
 /* End of diary */
 
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
-  background-color:rgb(255, 255, 255);
-  margin-top:20px;
-  margin-bottom:20px;
-  padding-left:15px;
-  padding-right:15px;
-  padding-bottom:48px;
+  background-color: rgb(255, 255, 255);
+  margin-top: 20px;
+  margin-bottom: 20px;
+  padding-left: 15px;
+  padding-right: 15px;
+  padding-bottom: 48px;
 }
 
 .pageBackground {
   background-color: rgb(161, 158, 158);
-  padding-bottom:30px;
+  padding-bottom: 30px;
 }
 
 .leftPagePanel {
@@ -460,14 +484,14 @@
 /*--****** Editor *******/
 /*--***** Editor general */
 .editorRow {
-  min-height:60px;
+  min-height: 60px;
   /*overflow-x:auto;*/
   font-size: 1.1rem;
 }
 
 .titleEditorRow {
-  min-height:36px;
-  overflow-x:auto;
+  min-height: 36px;
+  overflow-x: auto;
   font-size: 1.1rem;
 }
 
@@ -476,8 +500,9 @@
 /*--****** Image Panel *******/
 .imagePanelButton {
   padding-left: 0px;
-  padding-right:0px;
+  padding-right: 0px;
 }
+
 /* End of Image Panel */
 
 
@@ -490,30 +515,30 @@
 
 /*--****** Metal *******/
 .metalBackground {
-	--u:  0.8vmin;	
-	--c1: #393939;
+  --u: 1.8vmin;
+  --c1: #393939;
   --c2: #1f1f1f;
   --c3: #000000;
-	--gp: 50%/calc(var(--u) * 5) calc(var(--u) * 10);
-	--bp: calc(var(--u) * -2.5) calc(var(--u) * -5);
-	--bg: 
-		radial-gradient(circle at 50% 25%, var(--c2)  15%, #fff0 30% 100%) var(--gp),
-		conic-gradient(from 270deg at 34% 46%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		conic-gradient(from 45deg at 66% 46%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		conic-gradient(from 180deg at 50% 80%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		conic-gradient(from 135deg at 50% 80%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		conic-gradient(from 0deg at 0% 20%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		conic-gradient(from -45deg at 100% 20%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
-		linear-gradient(180deg, var(--c2) 0 4.5%, #fff0 0 45.25%, var(--c2) 0 50%, #fff0 0% 100%) var(--gp),
-		radial-gradient(circle at 50% 25%, #fff0 0 25%, var(--c2) 26% 32%, #fff0 0 100%) var(--gp),
-		linear-gradient(165deg, var(--c3) 15%, var(--c1) 44%, #fff0 0 100%) var(--gp),
-		linear-gradient(180deg, var(--c1) 50%, #fff0 0 100%) var(--gp);
-	background: 
-		var(--bg), 
-		var(--bg);
-	background-position: 
-		var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), 
-		0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  --gp: 50%/calc(var(--u) * 5) calc(var(--u) * 10);
+  --bp: calc(var(--u) * -2.5) calc(var(--u) * -5);
+  --bg:
+    radial-gradient(circle at 50% 25%, var(--c2) 15%, #fff0 30% 100%) var(--gp),
+    conic-gradient(from 270deg at 34% 46%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    conic-gradient(from 45deg at 66% 46%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    conic-gradient(from 180deg at 50% 80%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    conic-gradient(from 135deg at 50% 80%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    conic-gradient(from 0deg at 0% 20%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    conic-gradient(from -45deg at 100% 20%, var(--c2) 0 12.5%, #fff0 0 100%) var(--gp),
+    linear-gradient(180deg, var(--c2) 0 4.5%, #fff0 0 45.25%, var(--c2) 0 50%, #fff0 0% 100%) var(--gp),
+    radial-gradient(circle at 50% 25%, #fff0 0 25%, var(--c2) 26% 32%, #fff0 0 100%) var(--gp),
+    linear-gradient(165deg, var(--c3) 15%, var(--c1) 44%, #fff0 0 100%) var(--gp),
+    linear-gradient(180deg, var(--c1) 50%, #fff0 0 100%) var(--gp);
+  background:
+    var(--bg),
+    var(--bg);
+  background-position:
+    var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp), var(--bp),
+    0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
 }
 
 .metallicButton {
@@ -523,16 +548,14 @@
   border: none;
   outline: none;
   color: #000;
-  background: linear-gradient(
-    45deg,
-    #999 5%,
-    #fff 10%,
-    #ccc 30%,
-    #ddd 50%,
-    #ccc 70%,
-    #fff 80%,
-    #999 95%
-  );
+  background: linear-gradient(45deg,
+      #999 5%,
+      #fff 10%,
+      #ccc 30%,
+      #ddd 50%,
+      #ccc 70%,
+      #fff 80%,
+      #999 95%);
   text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -544,26 +567,27 @@
   transform: translateY(-2px);
 }
 
-.metalH1>span{
+.metalH1>span {
   /*color:white;*/
   position: absolute;
   transition: translateY(-50%);
   padding: 0;
   font-style: italic;
-  font-size:0.6em;
+  font-size: 0.6em;
   letter-spacing: 5px;
-  background:linear-gradient(#262626,#eaeaea,#262626);
+  background: linear-gradient(#262626, #eaeaea, #262626);
   -webkit-background-clip: text;
-  color:transparent;
+  color: transparent;
 }
-.metalH1>span:nth-child(1)
-{
+
+.metalH1>span:nth-child(1) {
   z-index: 2;
 }
-.metalH1>span:nth-child(2)
-{
+
+.metalH1>span:nth-child(2) {
   z-index: 1;
-  text-shadow: 1px 1px 0 #262626, 2px 2px 0 #262626, 1px 2px 2px rgba(0,0,0,1),
-  -1px -1px 0 #fff;
+  text-shadow: 1px 1px 0 #262626, 2px 2px 0 #262626, 1px 2px 2px rgba(0, 0, 0, 1),
+    -1px -1px 0 #fff;
 }
+
 /* End of Metal */

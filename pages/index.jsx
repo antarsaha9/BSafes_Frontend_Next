@@ -2,11 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
+
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
+import Image from 'react-bootstrap/Image';
 
 import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
  
@@ -94,23 +96,34 @@ export default function Home() {
 
     return (
         <ContentPageLayout publicPage={true} publicHooks={{onOpen:handleUnlock}} showNavbarMenu={false} showPathRow={false}> 
-            <div className={BSafesStyle.metalBackground} style={{height:`200px`, padding:'20px'}}>
+            <div className={BSafesStyle.metalBackground} style={{padding:'20px'}}>
                 <DialerLock size={120} fontSize={0.6} triangleSize={3}/>
                 <h1 className={BSafesStyle.metalH1+' '+ orbitron.className}>
                     <span>Since 2017</span>
                     <span>Since 2017</span>
                 </h1>
-
+                <br />
+                <Container>
+                <Row className={oswald.className} style={{color: 'white'}}>
+                    <Col md={12}>
+                        <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Your Confidential Records in an AI-driven world</h1>
+                    </Col>
+                </Row>
+                </Container>
                 <br />
                 <Button className={BSafesStyle.metallicButton} onClick={handleUnlock}>TRY ME ! 30-day free <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
             </div>
+            <Image className={BSafesStyle.screenShotImage}
+                        src="/images/BSafesPreview_DoctorVisit_02.png"
+                        alt="BSafes Preview"
+            />
             <Container>   
                 <br />
-                <br />            
+                <br />        
+               
                 <Row className={oswald.className}>
-                    <Col md={6}>
-                        <h1>Protecting Your Confidential Records in the Cloud.</h1>
-                        <p>BSafes is an end-to-end ecrypted web app for you to write securely, protect and origanize sensitve videos, photos, text, documents and files in the cloud.</p>
+                    <Col md={12}>
+                        <h1 className='display-6'>BSafes is an end-to-end ecrypted cloud service for you to write about secrets, protect and origanize sensitve videos, photos, text, documents and files in the cloud.</h1>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>

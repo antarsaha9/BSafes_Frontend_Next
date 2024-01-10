@@ -88,7 +88,7 @@ export default function KeySetup() {
     }, [keyStrength, keyPassword, confirmPassword]);
 
     return (
-        <div className={BSafesStyle.safeBackground}>
+        <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
         <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}> 
             <Container>
                 <br />

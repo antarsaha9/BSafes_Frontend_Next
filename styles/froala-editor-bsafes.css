@@ -1,5 +1,11 @@
 .contenEditorRow .fr-box.fr-basic .fr-element.fr-view {
-    font-family: "Roboto", Arial, Sans-Serif;
-    font-size: 18px;
-    color: #444444;
-  }
+  font-family: "Roboto", Arial, Sans-Serif;
+  font-size: 18px;
+  color: #444444;
+}
+
+.fr-view table.fr-no-borders td,
+.fr-view table.fr-no-borders th {
+  border: none;
+}
+
