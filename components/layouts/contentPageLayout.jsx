@@ -372,7 +372,7 @@ const ContentPageLayout = ({children, publicPage=false, publicHooks=null, showNa
                     <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-false`} />
                     }
                     {(localSessionState && localSessionState.authState !== 'MFARequired' && !isLoggedIn) &&
-                        <Navbar.Brand href='/'><h2>BSafes</h2></Navbar.Brand>
+                        <Navbar.Brand href='/'><h1>BSafes</h1></Navbar.Brand>
                     }
                     {(localSessionState && localSessionState.authState === 'MFARequired' && !isLoggedIn) && 
                         <Navbar.Brand><h2>Security</h2></Navbar.Brand>

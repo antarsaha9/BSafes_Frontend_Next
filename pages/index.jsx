@@ -96,6 +96,11 @@ export default function Home() {
 
     return (
         <ContentPageLayout publicPage={true} publicHooks={{onOpen:handleUnlock}} showNavbarMenu={false} showPathRow={false}> 
+            <div className='p-2' style={{height:'auto', color:'White', backgroundColor:'Red'}}>
+                <h3 className='display-6'> 🧑🏿‍💻👩🏻‍💻 Alert! AI's potential to affect privacy rights and the protection of users' personal data.</h3>
+            </div>
+            <div style={{height:'1px', backgroundColor:'Grey'}}>
+            </div>
             <div className={BSafesStyle.metalBackground} style={{padding:'20px'}}>
                 <DialerLock size={120} fontSize={0.6} triangleSize={3}/>
                 <h1 className={BSafesStyle.metalH1+' '+ orbitron.className}>
@@ -109,9 +114,26 @@ export default function Home() {
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Your Confidential Records in an AI-driven world</h1>
                     </Col>
                 </Row>
+                <Row>
+                    <Col xs={6}>
+                        <h1 className='display-3'>🗣️  📺  📷  📑</h1>
+                    </Col>
+                    <Col xs={6}>
+                        <a className={BSafesStyle.noUnderline}href='/'>
+                            <div className={BSafesStyle.saleBadges}>
+                                <p>
+                                    <span class={BSafesStyle.saleFirstLine}>50GB</span><br/>
+                                    <span class={BSafesStyle.saleSecondLine}>$2.95</span><br/>
+                                    <span class={BSafesStyle.saleThirdLine}>PER MONTH</span><br/>
+                                    <span class={BSafesStyle.saleForthLine}>30-day free trial</span>
+                                </p>
+                            </div>
+                        </a>
+                    </Col>
+                </Row>
                 </Container>
                 <br />
-                <Button className={BSafesStyle.metallicButton} onClick={handleUnlock}>TRY ME ! 30-day free <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+                {true && <Button className={BSafesStyle.metallicButton} onClick={handleUnlock}>TRY ME! <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>}
             </div>
             <Image className={BSafesStyle.screenShotImage}
                         src="/images/BSafesPreview_DoctorVisit_02.png"
