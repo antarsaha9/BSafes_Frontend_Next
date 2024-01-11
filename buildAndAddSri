@@ -16,7 +16,7 @@ else
 fi
 mkdir out
 mkdir upload
-npm run build
+NEXT_PUBLIC_platform='Web' npm run build
 cd upload
 cp -r ../out/* .
 node ../tools/addSriProtection.js .

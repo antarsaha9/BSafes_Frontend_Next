@@ -58,144 +58,18 @@
   max-height: 100%;
 }
 
+.topAlertText {
+  font-size: 1.6rem;
+  margin-bottom: 0px;
+}
+
+.hintText {
+  font-size: 1.0rem;
+  margin-bottom: 0px;
+}
+
 .bannerTextH1 {
-  font-size: 6rem;
-}
-
-.saleFirstLine {
-  font-size: 24px;
-  font-weight: 300;
-}
-.saleSecondLine {
-  font-size: 36px;
-  line-height: 36px;
-  font-weight: 600;
-} 
-.saleThirdLine {
-  font-size: 26px;
-  line-height: 32px;
-  font-weight: 300;
-}
-.saleFourthLine {
-  font-size: 12px;
-  font-weight: 300;
-  position: relative;
-  top: -10px;
-}
-
-.noUnderline {
-  text-decoration:none;
-}
-
-.saleBadges {
-  position: relative;
-  margin: 10px auto;
-  padding-top: 32px;
-  width: 200px;
-  height: 200px;
-  background: #ee1313;
-  border-radius: 100%;
-  color: #FFF;
-  line-height: 25px;
-  text-align: center;
-  text-transform: uppercase;
-  font-family: "Open Sans", sans-serif;
-  -webkit-animation: 3s ease-in-out 0s normal none infinite running swing;
-  -moz-animation: 3s ease-in-out 0s normal none infinite running swing;
-  -o-animation: 3s ease-in-out 0s normal none infinite running swing;
-  animation: 3s ease-in-out 0s normal none infinite running swing;
-
-  -webkit-transform-origin: 100px -71px;
-  -moz-transform-origin: 100px -71px;
-  -o-transform-origin: 100px -71px;
-  transform-origin: 100px -71px;
-}
-
-.saleBadges:before{
-  content:'';
-  position:absolute;
-  top:90px;left:90px;
-  width:20px;height:20px;
-  border-radius:100%;
-  -webkit-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  -moz-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  -o-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-}
-.saleBadges:after{
-  content:'';
-  position:absolute;
-  top:-70px;left:99px;
-  width:2px;height:81px;
-  border-radius:0%;
-  background:#f6f3f3;
-}
-
-@-webkit-keyframes swing{
-  0%{-webkit-transform:rotate(5deg);}
-  50%{-webkit-transform:rotate(-5deg);}
-  100%{-webkit-transform:rotate(5deg);}
-}
-@-moz-keyframes swing{
-  0%{-moz-transform:rotate(5deg);}
-  50%{-moz-transform:rotate(-5deg);}
-  100%{-moz-transform:rotate(5deg);}
-}
-@-o-keyframes swing{
-  0%{-o-transform:rotate(5deg);}
-  50%{-o-transform:rotate(-5deg);}
-  100%{-o-transform:rotate(5deg);}
-}
-@keyframes swing{
-  0%{transform:rotate(5deg);}
-  50%{transform:rotate(-5deg);}
-  100%{transform:rotate(5deg);}
+  font-size: 4rem;
 }
 
 /* End of general */
@@ -729,3 +603,148 @@
 }
 
 /* End of Metal */
+
+/*--****** Sale Badge *******/
+.saleFirstLine {
+  font-size: 24px;
+  font-weight: 300;
+}
+.saleSecondLine {
+  font-size: 36px;
+  line-height: 36px;
+  font-weight: 600;
+} 
+.saleThirdLine {
+  font-size: 26px;
+  line-height: 32px;
+  font-weight: 300;
+}
+.saleFourthLine {
+  font-size: 12px;
+  font-weight: 300;
+  position: relative;
+  top: -10px;
+}
+
+.noUnderline {
+  text-decoration:none;
+}
+
+.saleBadges {
+  position: relative;
+  margin: 10px auto;
+  padding-top: 32px;
+  width: 200px;
+  height: 200px;
+  background: #ee1313;
+  border-radius: 100%;
+  color: #FFF;
+  line-height: 25px;
+  text-align: center;
+  text-transform: uppercase;
+  font-family: "Open Sans", sans-serif;
+  -webkit-animation: 3s ease-in-out 0s normal none infinite running swing;
+  -moz-animation: 3s ease-in-out 0s normal none infinite running swing;
+  -o-animation: 3s ease-in-out 0s normal none infinite running swing;
+  animation: 3s ease-in-out 0s normal none infinite running swing;
+
+  -webkit-transform-origin: 100px -71px;
+  -moz-transform-origin: 100px -71px;
+  -o-transform-origin: 100px -71px;
+  transform-origin: 100px -71px;
+}
+
+.saleBadges:before{
+  content:'';
+  position:absolute;
+  top:90px;left:90px;
+  width:20px;height:20px;
+  border-radius:100%;
+  -webkit-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
+              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
+              
+              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
+              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
+              
+              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
+              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
+              
+              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
+              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
+              
+  
+  -moz-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
+              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
+              
+              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
+              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
+              
+              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
+              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
+              
+              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
+              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
+              
+  
+  -o-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
+              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
+              
+              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
+              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
+              
+              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
+              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
+              
+              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
+              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
+              
+  
+  box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
+              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
+              
+              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
+              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
+              
+              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
+              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
+              
+              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
+              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
+}
+.saleBadges:after{
+  content:'';
+  position:absolute;
+  top:-70px;left:99px;
+  width:2px;height:81px;
+  border-radius:0%;
+  background:#f6f3f3;
+}
+
+@-webkit-keyframes swing{
+  0%{-webkit-transform:rotate(5deg);}
+  50%{-webkit-transform:rotate(-5deg);}
+  100%{-webkit-transform:rotate(5deg);}
+}
+@-moz-keyframes swing{
+  0%{-moz-transform:rotate(5deg);}
+  50%{-moz-transform:rotate(-5deg);}
+  100%{-moz-transform:rotate(5deg);}
+}
+@-o-keyframes swing{
+  0%{-o-transform:rotate(5deg);}
+  50%{-o-transform:rotate(-5deg);}
+  100%{-o-transform:rotate(5deg);}
+}
+@keyframes swing{
+  0%{transform:rotate(5deg);}
+  50%{transform:rotate(-5deg);}
+  100%{transform:rotate(5deg);}
+}
+/* End of Sale Badge */
+
+/*--****** Feature Card *******/
+.featureCard {
+  background-color: white;
+  border-radius: 25px ;
+}
+/* End of Feature Card */
