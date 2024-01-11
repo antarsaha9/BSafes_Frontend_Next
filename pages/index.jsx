@@ -98,7 +98,7 @@ export default function Home() {
     return (
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <div className='p-2' style={{ color: 'White', backgroundColor: 'Red' }}>
-                <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}> {`👩🏻‍💻 Alert! AI's potential to affect privacy rights and the protection of users' personal data.`}</p>
+                <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}><span style={{fontSize:"1.6rem"}}>👩🏻‍💻</span> {` Alert! AI's potential to affect privacy rights and the protection of users' personal data.`}</p>
             </div>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
@@ -117,7 +117,7 @@ export default function Home() {
                     </Row>
                     <br />
                     <Row>
-                        <Col xs={6}>
+                        <Col xs={6} className={oswald.className}>
                             <h1 className='display-3'>🗣️  📺  📷  📑</h1>
                             <h3 style={{ color: 'white' }}> AES-256 End-to-End Encryption with Your Own Key</h3>
                             <br />
@@ -127,10 +127,10 @@ export default function Home() {
                             <Link className={BSafesStyle.noUnderline} href='/'>
                                 <div className={BSafesStyle.saleBadges}>
                                     <p>
-                                        <span class={BSafesStyle.saleFirstLine}>50GB</span><br />
-                                        <span class={BSafesStyle.saleSecondLine}>$2.95</span><br />
-                                        <span class={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
-                                        <span class={BSafesStyle.saleForthLine}>30-day free trial</span>
+                                        <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
+                                        <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
+                                        <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
+                                        <span className={BSafesStyle.saleForthLine}>30-day free trial</span>
                                     </p>
                                 </div>
                             </Link>
@@ -199,13 +199,13 @@ export default function Home() {
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
                                <Container>
-                                    <Row style={{paddingTop:'100px'}}>
-                                        <Col xs={12} lg={6} style={{paddingLeft:'45px', paddingRight:'45px', maxHeight:'500px', overflow:'hidden'}}>
+                                    <Row style={{paddingTop:'0px'}}>
+                                        <Col xs={12} lg={6} style={{paddingTop:'145px', paddingLeft:'45px', paddingRight:'45px', maxHeight:'500px', overflow:'hidden'}}>
                                             <h1>Start with a page</h1>
-                                            <p style={{ fontSize: "1.2rem" }}>BSafes is designed for data privacy and security from the start. With one click, your device automatically encrypts and backs up your data without any configuration. Because your device encrypts data with a secret key that only you know, the server receives obscured data. Your secret key is never sent to the server, so nobody, including BSafes, can access your data.</p>
+                                            <p style={{ fontSize: "1.3rem" }}>BSafes is designed for data privacy and security from the start. With one click, your device automatically encrypts and backs up your data without any configuration. Because your device encrypts data with a secret key that only you know, the server receives obscured data. Your secret key is never sent to the server, so nobody, including BSafes, can access your data.</p>
                                         </Col>
-                                        <Col xs={12} lg={6} style={{textAlign:'center', maxHeight:'500px', overflow:'hidden'}}>
-                                            <Image style={{margin:'auto', width:'420px'}} src='/images/FinanceIPhone.png'></Image>
+                                        <Col xs={12} lg={6} style={{paddingTop:'100px', textAlign:'center', maxHeight:'500px', overflow:'hidden'}}>
+                                            <Image style={{margin:'auto', width:'80%'}} src='/images/FinanceIPhone.png'></Image>
                                         </Col>
                                     </Row>
                                </Container>
