@@ -98,20 +98,28 @@ export default function Home() {
     return (
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <div className='p-2' style={{ color: 'White', backgroundColor: 'Red' }}>
-                <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}><span style={{ fontSize: "1.6rem" }}>👩🏻‍💻</span> {`Alert! AI's potential to affect privacy rights and the protection of personal data.`}</p>
+                <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}><span style={{fontSize:"1.6rem"}}>👩🏻‍💻</span> {` Alert! AI's potential to affect privacy rights and the protection of users' personal data.`}</p>
             </div>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
-            <div className={BSafesStyle.metalBackground} style={{ padding: '20px' }}>
+            <div style={{ padding: '20px' }}>
                 <Container>
+                    <DialerLock size={120} fontSize={0.6} triangleSize={3} />
+                    <h1 className={BSafesStyle.metalH1 + ' ' + orbitron.className}>
+                        <span>Since 2017</span>
+                        <span>Since 2017</span>
+                    </h1>
+                    <br />
+                    <Row className={oswald.className} style={{ color: 'white' }}>
+                        <Col md={12}>
+                            <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Your Confidential Records in an AI-Driven World</h1>
+                        </Col>
+                    </Row>
+                    <br />
                     <Row>
-                        <Col xs={6}>
-                            <DialerLock size={120} fontSize={0.6} triangleSize={3} />
-                            <h1 className={BSafesStyle.metalH1 + ' ' + orbitron.className}>
-                                <span>Since 2017</span>
-                                <span>Since 2017</span>
-                            </h1>
-                            <br />
+                        <Col xs={6} className={oswald.className}>
+                            <h1 className='display-3'>🗣️  📺  📷  📑</h1>
+                            <h3 style={{ color: 'white' }}> AES-256 End-to-End Encryption with Your Own Key</h3>
                             <br />
                             {true && <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>}
                         </Col>
@@ -131,22 +139,6 @@ export default function Home() {
                 </Container>
                 <br />
             </div>
-            <Container>
-                <br />
-                <Row className={oswald.className} style={{ color: 'black' }}>
-                    <Col md={12}>
-                        <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col xs={12}>
-                        <br />
-                        <h1 className='display-6'>🗣️  📺  📷  📑</h1>
-                        <p style={{ fontSize: "1.6rem" }}>🔐 AES-256 End-to-End Encryption with Your Own Key</p>
-                        <br />
-                    </Col>
-                </Row>
-            </Container>
             <div hidden className='p-2' style={{ color: 'black', backgroundColor: 'lightgrey' }}>
                 <p className={`${BSafesStyle.hintText} ${monteserrat.className}`}> {`🧑🏿‍💻 Your device encrypts your data with a secret key known only to you, the server receives obscured data. Nobody, including BSafes, learns your data.`}</p>
             </div>
@@ -154,19 +146,19 @@ export default function Home() {
             <Carousel data-bs-theme="dark">
                 <Carousel.Item interval={3000}>
                     <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_Love_11.png"
+                        src="/images/BSafesPreview_Love_03.png"
                         alt="BSafes Preview"
                     />
                 </Carousel.Item>
                 <Carousel.Item interval={3000}>
                     <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_Finance_11.png"
+                        src="/images/BSafesPreview_Finance_01.png"
                         alt="BSafes Preview"
                     />
                 </Carousel.Item>
                 <Carousel.Item interval={3000}>
                     <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_DoctorVisit_11.png"
+                        src="/images/BSafesPreview_DoctorVisit_04.png"
                         alt="BSafes Preview"
                     />
                 </Carousel.Item>
@@ -179,8 +171,7 @@ export default function Home() {
                 <br />
                 <Row className={monteserrat.className}>
                     <Col md={12}>
-                    <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
-                        <p style={{ fontSize: "1.6rem" }}>BSafes is a safe place to write or keep records with visual-rich media (videos, photos, images) and additional attachments. Be bold about your creative ideas, privacy, and secrets because no one else can see them.</p>
+                        <p style={{ fontSize: "1.6rem" }}>BSafes is an end-to-end ecrypted cloud service for you to create and store confidential records that contain sensitive information, including text, videos, photos and any file attachemnts.</p>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>
@@ -199,7 +190,7 @@ export default function Home() {
                     </Row>
                     <Row >
                         <Col md={12}>
-                            <p style={{ fontSize: "1.6rem" }}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes.</p>
+                            <p style={{ fontSize: "1.6rem" }}>BSafes is designed for data privacy and security from the start. With one click, your device automatically encrypts and backs up your data without any configuration. Because your device encrypts data with a secret key that only you know, the server receives obscured data. Your secret key is never sent to the server, so nobody, including BSafes, can access your data.</p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
                             <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
@@ -207,17 +198,17 @@ export default function Home() {
                     <Row >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
-                                <Container>
-                                    <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6} style={{ paddingTop: '145px', paddingLeft: '45px', paddingRight: '45px', maxHeight: '500px', overflow: 'hidden' }}>
+                               <Container>
+                                    <Row style={{paddingTop:'0px'}}>
+                                        <Col xs={12} lg={6} style={{paddingTop:'145px', paddingLeft:'45px', paddingRight:'45px', maxHeight:'500px', overflow:'hidden'}}>
                                             <h1>Start with a page</h1>
                                             <p style={{ fontSize: "1.3rem" }}>BSafes is designed for data privacy and security from the start. With one click, your device automatically encrypts and backs up your data without any configuration. Because your device encrypts data with a secret key that only you know, the server receives obscured data. Your secret key is never sent to the server, so nobody, including BSafes, can access your data.</p>
                                         </Col>
-                                        <Col xs={12} lg={6} style={{ paddingTop: '100px', textAlign: 'center', maxHeight: '500px', overflow: 'hidden' }}>
-                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/FinanceIPhone.png'></Image>
+                                        <Col xs={12} lg={6} style={{paddingTop:'100px', textAlign:'center', maxHeight:'500px', overflow:'hidden'}}>
+                                            <Image style={{margin:'auto', width:'80%'}} src='/images/FinanceIPhone.png'></Image>
                                         </Col>
                                     </Row>
-                                </Container>
+                               </Container>
                             </div>
                         </Col>
                     </Row>
