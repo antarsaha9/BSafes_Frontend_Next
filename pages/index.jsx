@@ -97,7 +97,7 @@ export default function Home() {
 
     return (
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
-            <div className='p-2' style={{ color: 'White', backgroundColor: 'Red' }}>
+            <div hidden className='p-2' style={{ color: 'White', backgroundColor: 'Red' }}>
                 <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}><span style={{ fontSize: "1.6rem" }}>👩🏻‍💻</span> {`Alert! AI's potential to affect privacy rights and the protection of personal data.`}</p>
             </div>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
@@ -142,7 +142,7 @@ export default function Home() {
                     <Col xs={12}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
-                        <p style={{ fontSize: "1.6rem" }}>🔐 AES-256 End-to-End Encryption with Your Own Key</p>
+                        <p className={BSafesStyle.descriptionText}>🔐 With military-grade (AES-256) end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
                         <br />
                     </Col>
                 </Row>
@@ -171,16 +171,13 @@ export default function Home() {
                     />
                 </Carousel.Item>
             </Carousel>
-            <br />
-            <br />
-            <br />
             <Container>
                 <br />
                 <br />
                 <Row className={monteserrat.className}>
                     <Col md={12}>
                     <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
-                        <p style={{ fontSize: "1.6rem" }}>BSafes is a safe place to write or keep records with visual-rich media (videos, photos, images) and additional attachments. Be bold about your creative ideas, privacy, and secrets because no one else can see them.</p>
+                        <p className={BSafesStyle.descriptionText}>BSafes is a safe place for writing and record keeping with visual-rich media (videos, photos, images) and additional attachments. Be bold about your creative ideas, privacy, and secrets because no one else can see them.</p>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>
@@ -199,7 +196,7 @@ export default function Home() {
                     </Row>
                     <Row >
                         <Col md={12}>
-                            <p style={{ fontSize: "1.6rem" }}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes.</p>
+                            <p className={BSafesStyle.descriptionText}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes.</p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
                             <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
@@ -209,12 +206,12 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6} style={{ paddingTop: '145px', paddingLeft: '45px', paddingRight: '45px', maxHeight: '500px', overflow: 'hidden' }}>
-                                            <h1>Start with a page</h1>
-                                            <p style={{ fontSize: "1.3rem" }}>BSafes is designed for data privacy and security from the start. With one click, your device automatically encrypts and backs up your data without any configuration. Because your device encrypts data with a secret key that only you know, the server receives obscured data. Your secret key is never sent to the server, so nobody, including BSafes, can access your data.</p>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Start with a page</h1>
+                                            <p className={BSafesStyle.featureCardFont}>You could write and embed videos and photos with a secure, rich-text editor. In addition, you could create a video gallery and a photo gallery, as well as add attachments. Your device encrypts and then backs up everything.</p>
                                         </Col>
-                                        <Col xs={12} lg={6} style={{ paddingTop: '100px', textAlign: 'center', maxHeight: '500px', overflow: 'hidden' }}>
-                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/FinanceIPhone.png'></Image>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardImage}>
+                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/feature_startAPage.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>

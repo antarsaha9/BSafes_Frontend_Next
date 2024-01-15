@@ -58,20 +58,6 @@
   max-height: 100%;
 }
 
-.topAlertText {
-  font-size: 1.2rem;
-  margin-bottom: 0px;
-}
-
-.hintText {
-  font-size: 1.0rem;
-  margin-bottom: 0px;
-}
-
-.bannerTextH1 {
-  font-size: 4rem;
-}
-
 /* End of general */
 
 /*--********  Navigation bar */
@@ -609,16 +595,19 @@
   font-size: 24px;
   font-weight: 300;
 }
+
 .saleSecondLine {
   font-size: 36px;
   line-height: 36px;
   font-weight: 600;
-} 
+}
+
 .saleThirdLine {
   font-size: 26px;
   line-height: 32px;
   font-weight: 300;
 }
+
 .saleFourthLine {
   font-size: 12px;
   font-weight: 300;
@@ -627,7 +616,7 @@
 }
 
 .noUnderline {
-  text-decoration:none;
+  text-decoration: none;
 }
 
 .saleBadges {
@@ -654,97 +643,260 @@
   transform-origin: 100px -71px;
 }
 
-.saleBadges:before{
-  content:'';
-  position:absolute;
-  top:90px;left:90px;
-  width:20px;height:20px;
-  border-radius:100%;
-  -webkit-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  -moz-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  -o-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-              
-  
-  box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313,20px -98px #ee1313,39px -94px #ee1313,56px -85px #ee1313,71px -72px #ee1313,
-              83px -57px #ee1313,93px -40px #ee1313,98px -20px #ee1313,100px 0px #ee1313,
-              
-              -20px -98px #ee1313,-39px -94px #ee1313,-71px -72px #ee1313,
-              -56px -85px #ee1313,-83px -57px #ee1313,-93px -40px #ee1313,-98px -20px #ee1313,-100px 0px #ee1313,
-              
-              0px 100px #ee1313,-20px 98px #ee1313,-39px 94px #ee1313,-56px 85px #ee1313,
-              -71px 72px #ee1313,-83px 57px #ee1313,-93px -40px #ee1313,-98px 20px #ee1313,-93px 40px #ee1313,
-              
-              20px 98px #ee1313,39px 94px #ee1313,56px 85px #ee1313,
-              71px 72px #ee1313,83px 57px #ee1313,93px 40px #ee1313,98px 20px #ee1313;
-}
-.saleBadges:after{
-  content:'';
-  position:absolute;
-  top:-70px;left:99px;
-  width:2px;height:81px;
-  border-radius:0%;
-  background:#f6f3f3;
+.saleBadges:before {
+  content: '';
+  position: absolute;
+  top: 90px;
+  left: 90px;
+  width: 20px;
+  height: 20px;
+  border-radius: 100%;
+  -webkit-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313, 20px -98px #ee1313, 39px -94px #ee1313, 56px -85px #ee1313, 71px -72px #ee1313,
+    83px -57px #ee1313, 93px -40px #ee1313, 98px -20px #ee1313, 100px 0px #ee1313,
+
+    -20px -98px #ee1313, -39px -94px #ee1313, -71px -72px #ee1313,
+    -56px -85px #ee1313, -83px -57px #ee1313, -93px -40px #ee1313, -98px -20px #ee1313, -100px 0px #ee1313,
+
+    0px 100px #ee1313, -20px 98px #ee1313, -39px 94px #ee1313, -56px 85px #ee1313,
+    -71px 72px #ee1313, -83px 57px #ee1313, -93px -40px #ee1313, -98px 20px #ee1313, -93px 40px #ee1313,
+
+    20px 98px #ee1313, 39px 94px #ee1313, 56px 85px #ee1313,
+    71px 72px #ee1313, 83px 57px #ee1313, 93px 40px #ee1313, 98px 20px #ee1313;
+
+
+  -moz-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313, 20px -98px #ee1313, 39px -94px #ee1313, 56px -85px #ee1313, 71px -72px #ee1313,
+    83px -57px #ee1313, 93px -40px #ee1313, 98px -20px #ee1313, 100px 0px #ee1313,
+
+    -20px -98px #ee1313, -39px -94px #ee1313, -71px -72px #ee1313,
+    -56px -85px #ee1313, -83px -57px #ee1313, -93px -40px #ee1313, -98px -20px #ee1313, -100px 0px #ee1313,
+
+    0px 100px #ee1313, -20px 98px #ee1313, -39px 94px #ee1313, -56px 85px #ee1313,
+    -71px 72px #ee1313, -83px 57px #ee1313, -93px -40px #ee1313, -98px 20px #ee1313, -93px 40px #ee1313,
+
+    20px 98px #ee1313, 39px 94px #ee1313, 56px 85px #ee1313,
+    71px 72px #ee1313, 83px 57px #ee1313, 93px 40px #ee1313, 98px 20px #ee1313;
+
+
+  -o-box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313, 20px -98px #ee1313, 39px -94px #ee1313, 56px -85px #ee1313, 71px -72px #ee1313,
+    83px -57px #ee1313, 93px -40px #ee1313, 98px -20px #ee1313, 100px 0px #ee1313,
+
+    -20px -98px #ee1313, -39px -94px #ee1313, -71px -72px #ee1313,
+    -56px -85px #ee1313, -83px -57px #ee1313, -93px -40px #ee1313, -98px -20px #ee1313, -100px 0px #ee1313,
+
+    0px 100px #ee1313, -20px 98px #ee1313, -39px 94px #ee1313, -56px 85px #ee1313,
+    -71px 72px #ee1313, -83px 57px #ee1313, -93px -40px #ee1313, -98px 20px #ee1313, -93px 40px #ee1313,
+
+    20px 98px #ee1313, 39px 94px #ee1313, 56px 85px #ee1313,
+    71px 72px #ee1313, 83px 57px #ee1313, 93px 40px #ee1313, 98px 20px #ee1313;
+
+
+  box-shadow: 0px -82px 0px -2px #fff, 0px -100px #ee1313, 20px -98px #ee1313, 39px -94px #ee1313, 56px -85px #ee1313, 71px -72px #ee1313,
+    83px -57px #ee1313, 93px -40px #ee1313, 98px -20px #ee1313, 100px 0px #ee1313,
+
+    -20px -98px #ee1313, -39px -94px #ee1313, -71px -72px #ee1313,
+    -56px -85px #ee1313, -83px -57px #ee1313, -93px -40px #ee1313, -98px -20px #ee1313, -100px 0px #ee1313,
+
+    0px 100px #ee1313, -20px 98px #ee1313, -39px 94px #ee1313, -56px 85px #ee1313,
+    -71px 72px #ee1313, -83px 57px #ee1313, -93px -40px #ee1313, -98px 20px #ee1313, -93px 40px #ee1313,
+
+    20px 98px #ee1313, 39px 94px #ee1313, 56px 85px #ee1313,
+    71px 72px #ee1313, 83px 57px #ee1313, 93px 40px #ee1313, 98px 20px #ee1313;
 }
 
-@-webkit-keyframes swing{
-  0%{-webkit-transform:rotate(5deg);}
-  50%{-webkit-transform:rotate(-5deg);}
-  100%{-webkit-transform:rotate(5deg);}
+.saleBadges:after {
+  content: '';
+  position: absolute;
+  top: -70px;
+  left: 99px;
+  width: 2px;
+  height: 81px;
+  border-radius: 0%;
+  background: #f6f3f3;
 }
-@-moz-keyframes swing{
-  0%{-moz-transform:rotate(5deg);}
-  50%{-moz-transform:rotate(-5deg);}
-  100%{-moz-transform:rotate(5deg);}
+
+@-webkit-keyframes swing {
+  0% {
+    -webkit-transform: rotate(5deg);
+  }
+
+  50% {
+    -webkit-transform: rotate(-5deg);
+  }
+
+  100% {
+    -webkit-transform: rotate(5deg);
+  }
 }
-@-o-keyframes swing{
-  0%{-o-transform:rotate(5deg);}
-  50%{-o-transform:rotate(-5deg);}
-  100%{-o-transform:rotate(5deg);}
+
+@-moz-keyframes swing {
+  0% {
+    -moz-transform: rotate(5deg);
+  }
+
+  50% {
+    -moz-transform: rotate(-5deg);
+  }
+
+  100% {
+    -moz-transform: rotate(5deg);
+  }
 }
-@keyframes swing{
-  0%{transform:rotate(5deg);}
-  50%{transform:rotate(-5deg);}
-  100%{transform:rotate(5deg);}
+
+@-o-keyframes swing {
+  0% {
+    -o-transform: rotate(5deg);
+  }
+
+  50% {
+    -o-transform: rotate(-5deg);
+  }
+
+  100% {
+    -o-transform: rotate(5deg);
+  }
 }
+
+@keyframes swing {
+  0% {
+    transform: rotate(5deg);
+  }
+
+  50% {
+    transform: rotate(-5deg);
+  }
+
+  100% {
+    transform: rotate(5deg);
+  }
+}
+
 /* End of Sale Badge */
 
 /*--****** Feature Card *******/
 .featureCard {
   background-color: white;
-  border-radius: 25px ;
+  border-radius: 25px;
 }
+
+.featureCardText {
+  padding-top: 60px;
+  padding-left: 25px;
+  padding-right: 25px;
+  min-height: 300px;
+  max-height: 500px;
+  overflow: hidden
+}
+
+.featureCardImage {
+  padding-top: 40px;
+  text-align: center;
+  min-height: 300px;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.featureCardFont {
+  font-size: 1.1rem;
+}
+
+@media only screen and (min-width: 768px) {
+  .featureCardText {
+    padding-top: 80px;
+    padding-left: 35px;
+    padding-right: 35px;
+    min-height: 400px;
+    max-height: 500px;
+    overflow: hidden
+  }
+  
+  .featureCardImage {
+    padding-top: 60px;
+    text-align: center;
+    min-height: 400px;
+    max-height: 500px;
+    overflow: hidden;
+  }
+  .featureCardFont {
+    font-size: 1.3rem;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .featureCardText {
+    padding-top: 100px;
+    padding-left: 45px;
+    padding-right: 45px;
+    min-height: 600px;
+    max-height: 700px;
+    overflow: hidden
+  }
+  
+  .featureCardImage {
+    padding-top: 80px;
+    text-align: center;
+    min-height: 600px;
+    max-height: 700px;
+    overflow: hidden;
+  }
+  .featureCardFont {
+    font-size: 1.3rem;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .featureCardTitle {
+    font-size:3.2rem;
+    font-weight:600;
+  }
+  .featureCardText {
+    padding-top: 135px;
+    padding-left: 45px;
+    padding-right: 45px;
+    min-height: 700px;
+    max-height: 800px;
+    overflow: hidden
+  }
+  
+  .featureCardImage {
+    padding-top: 100px;
+    text-align: center;
+    min-height: 700px;
+    max-height: 800px;
+    overflow: hidden;
+  }
+  .featureCardFont {
+    font-size: 1.4rem;
+  }
+}
+
 /* End of Feature Card */
+
+/*--****** Fonts *******/
+.topAlertText {
+  font-size: 1.2rem;
+  margin-bottom: 0px;
+}
+
+.hintText {
+  font-size: 1.0rem;
+  margin-bottom: 0px;
+}
+
+.bannerTextH1 {
+  font-size: 2.6rem;
+}
+
+.descriptionText {
+  font-size: 1.1rem;
+}
+
+@media only screen and (min-width: 768px) {
+  .bannerTextH1 {
+    font-size: 4rem;
+  }  
+  .descriptionText {
+    font-size: 1.6rem;
+  }
+}
+
+/* End of Fonts */
