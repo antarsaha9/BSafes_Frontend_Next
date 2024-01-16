@@ -782,16 +782,39 @@
   padding-top: 60px;
   padding-left: 25px;
   padding-right: 25px;
-  min-height: 300px;
-  max-height: 500px;
+  padding-bottom: 60px;
   overflow: hidden
 }
 
 .featureCardImage {
-  padding-top: 40px;
+  padding-top: 00px;
   text-align: center;
   min-height: 300px;
   max-height: 500px;
+  overflow: hidden;
+}
+
+.featureCardIcon {
+  position: relative;
+  top: 20px;
+  width: 84px;
+  display: block;
+  margin: auto;
+}
+
+.featureCardRightIcon {
+  position: relative;
+  width: 84px;
+  display: block;
+  margin: auto;
+  margin-bottom: 20px ;
+}
+
+.featureCardImageTop {
+  padding-top: 00px;
+  padding-bottom: 30px;
+  text-align: center;
+  min-height: 300px;
   overflow: hidden;
 }
 
@@ -804,18 +827,47 @@
     padding-top: 80px;
     padding-left: 35px;
     padding-right: 35px;
-    min-height: 400px;
-    max-height: 500px;
+    padding-bottom: 80px;
     overflow: hidden
   }
   
   .featureCardImage {
-    padding-top: 60px;
+    padding-top: 20px;
     text-align: center;
-    min-height: 400px;
-    max-height: 500px;
+    min-height: 500px;
+    max-height: 600px;
     overflow: hidden;
   }
+
+  .featureCardIcon {
+    position: relative;
+    top: 20px;
+    width: 128px;
+    display: block;
+    margin: auto;
+  }
+
+  .featureCardRightIcon {
+    position: relative;
+    width: 128px;
+    display: block;
+    margin: auto;
+    margin-bottom: 20px ;
+  }
+
+  .featureCardImageTop {
+    padding-top: 00px;
+    padding-bottom: 30px;
+    text-align: center;
+    min-height: 500px;
+    overflow: hidden;
+  }
+  
+  .featureCardTopImage {
+    position: relative;
+    top: -400px;
+  }
+
   .featureCardFont {
     font-size: 1.3rem;
   }
@@ -826,18 +878,44 @@
     padding-top: 100px;
     padding-left: 45px;
     padding-right: 45px;
-    min-height: 600px;
-    max-height: 700px;
+    padding-bottom: 100px;
     overflow: hidden
   }
   
   .featureCardImage {
     padding-top: 80px;
     text-align: center;
-    min-height: 600px;
-    max-height: 700px;
+    min-height: 500px;
+    max-height: 600px;
     overflow: hidden;
   }
+
+  .featureCardIcon {
+    position: relative;
+    top: 100px;
+    width: 256px;
+    display: block;
+    margin: auto;
+    margin-bottom: 100px;
+  }
+
+  .featureCardRightIcon {
+    position: relative;
+    top: 100px;
+    width: 256px;
+    display: block;
+    margin: auto;
+    margin-bottom: 100px;
+  }
+
+  .featureCardImageTop {
+    padding-top: 00px;
+    padding-bottom: 30px;
+    text-align: center;
+    min-height: 600px;
+    overflow: hidden;
+  }
+
   .featureCardFont {
     font-size: 1.3rem;
   }
@@ -852,18 +930,43 @@
     padding-top: 135px;
     padding-left: 45px;
     padding-right: 45px;
-    min-height: 700px;
-    max-height: 800px;
+    padding-bottom: 135px;
     overflow: hidden
+  }
+
+  .featureCardIcon {
+    position: relative;
+    top: 135px;
+    width: 256px;
+    display: block;
+    margin: auto;
+  }
+
+  .featureCardRightIcon {
+    position: relative;
+    top: 135px;
+    width: 256px;
+    display: block;
+    margin: auto;
+    margin-bottom: 100px;
   }
   
   .featureCardImage {
     padding-top: 100px;
     text-align: center;
-    min-height: 700px;
-    max-height: 800px;
+    min-height: 500px;
+    max-height: 600px;
     overflow: hidden;
   }
+
+  .featureCardImageTop {
+    padding-top: 00px;
+    padding-bottom: 30px;
+    text-align: center;
+    min-height: 500px;
+    overflow: hidden;
+  }
+
   .featureCardFont {
     font-size: 1.4rem;
   }

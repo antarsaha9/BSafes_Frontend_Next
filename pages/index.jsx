@@ -219,6 +219,59 @@ export default function Home() {
                         </Col>
                     </Row>
                     <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>One-Click Encrypt & Back Up</h1>
+                                            <p className={BSafesStyle.featureCardFont}>After writing, with one click, your device automatically encrypts and backs up your data to the server. Because the server receives the obscured data encrypted by a key known only to you, no one can see your data.</p>
+                                        </Col>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardImageTop}>
+                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/feature_oneClick.png'></Image>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
+                    <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} lg={6}>
+                                            <Image className={BSafesStyle.featureCardIcon} src='/images/icon_thunder.png'></Image>
+                                        </Col>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>More productive than a secure storage solution</h1>
+                                            <p className={BSafesStyle.featureCardFont}>{`You don't have to write with a word processor, encrypt the document, and then upload it to cloud storage in separate steps. BSafes enables you to write directly online. With one click, your data is secured. It is much quicker to update your writing because you don't have to download, edit, and then upload again.`}</p>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
+                    <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Do not use AI tools for sensitive information</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and being disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data.</p>
+                                        </Col>
+                                        <Col xs={12} lg={6}>
+                                            <Image className={BSafesStyle.featureCardRightIcon} src='/images/icon_noAI.png'></Image>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
                     <br />
                     <br />
                 </Container>
