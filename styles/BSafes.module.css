@@ -58,6 +58,11 @@
   max-height: 100%;
 }
 
+.descriptionRow {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
 /* End of general */
 
 /*--********  Navigation bar */
@@ -511,6 +516,34 @@
 
 /* End of MFA */
 
+/*--****** Home page ********/
+.carouselRow {
+  padding-left: 0px;
+  padding-right: 0px;
+}
+
+@media only screen and (min-width: 768px) {
+  .carouselRow {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .carouselRow {
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .carouselRow {
+    padding-left: 120px;
+    padding-right: 120px;
+  }
+}
+/* Home page */
+
 /*--****** Metal *******/
 .metalBackground {
   --u: 1.8vmin;
@@ -818,8 +851,15 @@
   overflow: hidden;
 }
 
+.featureCardNormalImage {
+  display: block;
+  margin: auto;
+  width: 80%;
+}
+
 .featureCardFont {
-  font-size: 1.1rem;
+  color: black;
+  font-size: 1.0rem;
 }
 
 @media only screen and (min-width: 768px) {
@@ -841,7 +881,7 @@
 
   .featureCardIcon {
     position: relative;
-    top: 20px;
+    top: 80px;
     width: 128px;
     display: block;
     margin: auto;
@@ -849,6 +889,7 @@
 
   .featureCardRightIcon {
     position: relative;
+    top:80px;
     width: 128px;
     display: block;
     margin: auto;
@@ -862,6 +903,12 @@
     min-height: 500px;
     overflow: hidden;
   }
+
+  .featureCardNormalImage {
+    display: block;
+    margin: auto;
+    width: 80%;
+  }
   
   .featureCardTopImage {
     position: relative;
@@ -869,7 +916,8 @@
   }
 
   .featureCardFont {
-    font-size: 1.3rem;
+    color: black;
+    font-size: 1.0rem;
   }
 }
 
@@ -916,8 +964,15 @@
     overflow: hidden;
   }
 
+  .featureCardNormalImage {
+    display: block;
+    margin: auto;
+    width: 80%;
+  }
+
   .featureCardFont {
-    font-size: 1.3rem;
+    color: black;
+    font-size: 1.1rem;
   }
 }
 
@@ -967,6 +1022,12 @@
     overflow: hidden;
   }
 
+  .featureCardNormalImage {
+    display: block;
+    margin: auto;
+    width: 80%;
+  }
+  
   .featureCardFont {
     font-size: 1.4rem;
   }
@@ -990,6 +1051,7 @@
 }
 
 .descriptionText {
+  color: black;
   font-size: 1.1rem;
 }
 
@@ -998,7 +1060,7 @@
     font-size: 4rem;
   }  
   .descriptionText {
-    font-size: 1.6rem;
+    font-size: 1.3rem;
   }
 }
 

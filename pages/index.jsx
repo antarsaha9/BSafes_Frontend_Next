@@ -133,13 +133,13 @@ export default function Home() {
             </div>
             <Container>
                 <br />
-                <Row className={oswald.className} style={{ color: 'black' }}>
-                    <Col md={12}>
+                <Row className={oswald.className} style={{color: 'black' }}>
+                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
                 </Row>
-                <Row>
-                    <Col xs={12}>
+                <Row className={BSafesStyle.descriptionRow}>
+                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
                         <p className={BSafesStyle.descriptionText}>🔐 With military-grade (AES-256) end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
@@ -150,8 +150,8 @@ export default function Home() {
             <div hidden className='p-2' style={{ color: 'black', backgroundColor: 'lightgrey' }}>
                 <p className={`${BSafesStyle.hintText} ${monteserrat.className}`}> {`🧑🏿‍💻 Your device encrypts your data with a secret key known only to you, the server receives obscured data. Nobody, including BSafes, learns your data.`}</p>
             </div>
-            <div style={{ height: '1px', backgroundColor: 'Grey' }}></div>
-            <Carousel data-bs-theme="dark">
+            <div className={BSafesStyle.carouselRow}>
+                <Carousel data-bs-theme="dark">
                 <Carousel.Item interval={3000}>
                     <Image className={BSafesStyle.screenShotImage}
                         src="/images/BSafesPreview_Love_11.png"
@@ -170,13 +170,14 @@ export default function Home() {
                         alt="BSafes Preview"
                     />
                 </Carousel.Item>
-            </Carousel>
+                </Carousel>
+            </div>
             <Container>
                 <br />
                 <br />
-                <Row className={monteserrat.className}>
-                    <Col md={12}>
-                    <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
+                <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
+                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                        <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
                         <p className={BSafesStyle.descriptionText}>BSafes is a safe place for writing and record keeping with visual-rich media (videos, photos, images) and additional attachments. Be bold about your creative ideas, privacy, and secrets because no one else can see them.</p>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
@@ -192,10 +193,12 @@ export default function Home() {
                     <br />
                     <br />
                     <Row>
-                        <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Secure by Design. Secure by Default.</h1>
+                        <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Secure by Design. Secure by Default.</h1>
+                        </Col>
                     </Row>
-                    <Row >
-                        <Col md={12}>
+                    <Row className={BSafesStyle.descriptionRow}>
+                        <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                             <p className={BSafesStyle.descriptionText}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes.</p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
                             <h2><Badge pill bg="warning">Coming soon</Badge></h2>
@@ -206,12 +209,12 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Start with a page</h1>
                                             <p className={BSafesStyle.featureCardFont}>You could write and embed videos and photos with a secure, rich-text editor. In addition, you could create a video gallery and a photo gallery, as well as add attachments. Your device encrypts and then backs up everything.</p>
                                         </Col>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardImage}>
-                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/feature_startAPage.png'></Image>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardImage}>
+                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_startAPage.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -224,12 +227,12 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>One-Click Encrypt & Back Up</h1>
                                             <p className={BSafesStyle.featureCardFont}>After writing, with one click, your device automatically encrypts and backs up your data to the server. Because the server receives the obscured data encrypted by a key known only to you, no one can see your data.</p>
                                         </Col>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardImageTop}>
-                                            <Image style={{ margin: 'auto', width: '80%' }} src='/images/feature_oneClick.png'></Image>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardImageTop}>
+                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_oneClick.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -242,12 +245,28 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6}>
+                                        <Col xs={12} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and Attachment</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Effortlessly add visual-rich content to your writing and a record. Your device encrypts all media and uploads to the server.</p>
+                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/LoveMacbook.png'></Image>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
+                    <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} md={6}>
                                             <Image className={BSafesStyle.featureCardIcon} src='/images/icon_thunder.png'></Image>
                                         </Col>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>More productive than a secure storage solution</h1>
-                                            <p className={BSafesStyle.featureCardFont}>{`You don't have to write with a word processor, encrypt the document, and then upload it to cloud storage in separate steps. BSafes enables you to write directly online. With one click, your data is secured. It is much quicker to update your writing because you don't have to download, edit, and then upload again.`}</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`You don't have to write with a word processor, encrypt the document, and then upload it to cloud storage in separate steps. BSafes enables you to create content with visual-rich media. Your content is encrypted and backed up to a secure cloud storage with one click. It is much quicker to update your writing because you don't have to download, edit, and then upload again.`}</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -260,11 +279,11 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} lg={6} className={BSafesStyle.featureCardText}>
-                                            <h1 className={BSafesStyle.featureCardTitle}>Do not use AI tools for sensitive information</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and being disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data.</p>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Do not input sensitive information into a generative AI tool</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data.</p>
                                         </Col>
-                                        <Col xs={12} lg={6}>
+                                        <Col xs={12} md={6}>
                                             <Image className={BSafesStyle.featureCardRightIcon} src='/images/icon_noAI.png'></Image>
                                         </Col>
                                     </Row>
