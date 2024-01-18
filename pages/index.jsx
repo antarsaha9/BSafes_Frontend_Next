@@ -190,6 +190,23 @@ export default function Home() {
                 <Container>
                     <br />
                     <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} md={6}>
+                                            <Image className={BSafesStyle.featureCardIcon} src='/images/icon_noAI.png'></Image>
+                                        </Col>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Generative AI needs lots of data</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. Configuration errors may occur even though they provide various configuration options for protecting sensitive information. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data..</p>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
                     <br />
                     <br />
                     <Row>
@@ -199,7 +216,8 @@ export default function Home() {
                     </Row>
                     <Row className={BSafesStyle.descriptionRow}>
                         <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                            <p className={BSafesStyle.descriptionText}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes.</p>
+                            <p className={BSafesStyle.descriptionText}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes. BSafes adopts Zero-Trust & Zero-Knowledge principles.</p>
+                            <p style={{ fontSize: "1.6rem" }}></p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
                             <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
@@ -227,12 +245,12 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardImageTop}>
+                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_oneClick.png'></Image>
+                                        </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>One-Click Encrypt & Back Up</h1>
                                             <p className={BSafesStyle.featureCardFont}>After writing, with one click, your device automatically encrypts and backs up your data to the server. Because the server receives the obscured data encrypted by a key known only to you, no one can see your data.</p>
-                                        </Col>
-                                        <Col xs={12} md={6} className={BSafesStyle.featureCardImageTop}>
-                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_oneClick.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -279,12 +297,10 @@ export default function Home() {
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
-                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
-                                            <h1 className={BSafesStyle.featureCardTitle}>Do not input sensitive information into a generative AI tool</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data.</p>
-                                        </Col>
-                                        <Col xs={12} md={6}>
-                                            <Image className={BSafesStyle.featureCardRightIcon} src='/images/icon_noAI.png'></Image>
+                                        <Col xs={12} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>A Clean Space for Your Contents</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Add additional pages, notebooks, and diaries. Use boxes and folders to organize them. Search for a particular item efficiently. A clean workspace boosts your productivity.</p>
+                                            <Image className={BSafesStyle.featureCardNormalImage} src='/images/personalSpaceIPad.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -292,113 +308,42 @@ export default function Home() {
                         </Col>
                     </Row>
                     <br />
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>About Us</h1>
+                                            <p className={BSafesStyle.featureCardFont}>We started the BSafes project after a confidential record became Google searchable due to misconfiguration in a cloud service. It costs efforts to fix the issue and clear the online footprint of the leaked information.</p>
+                                            <p className={BSafesStyle.featureCardFont}>We loved the convenience of cloud services but felt we needed the most robust security controls possible to protect our confidential records, including videos, photos, documents, or any files. We searched for services to fit our needs. The closest solution is end-to-end encrypted cloud storage, such as Tresorit and Mega.</p>
+                                            <p className={BSafesStyle.featureCardFont}>End-to-end encrypted cloud storage is secure because, by default, user devices encrypt a file before sending it to the server. The server receives obscured data, and nobody can learn from it. However, to update a single piece of information in a record, we had to download the file, edit it with a separate word processor, save the work, and then upload it to the server in different steps. And it was challenging and time-consuming to do on a mobile device. Therefore, we set out to develop our solution - BSafes.</p>
+                                            <p className={BSafesStyle.featureCardFont}>In 2017, BSafes was born, and it met our goals -</p>
+                                            <ul>
+                                                <li>It must be end-to-end encrypted;</li>
+                                                <li>It must work on any device - a computer(Windows, Mac, Linux), a phone or a tablet(IOS, Android);</li>
+                                                <li>It must feature a rich-text editor for us to update a record easily;</li>
+                                                <li>It must allow us to easily add videos, photos, documents, and any files to a record. A video file size could be 10 GB or more and should be playable before downloading the whole video.</li>
+                                                <li>It must allow us to search for a record by title or tags;</li>
+                                                <li>It must be intuitive, offering a seamless experience over physical and online workspaces. It must provide pages, notebooks, diaries, folders, and boxes for content management.</li>
+                                                <li>{`It must retain a record's revision history;`}</li>
+                                                <li>The backend infrastructure must be reliable and scalable;</li>
+                                            </ul>
+                                            <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/team_small.png'></Image>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
                     <br />
                 </Container>
             </div>
-
-            <Container>
-                <br />
-                <br />
-
-                <hr />
+            <Container className={monteserrat.className}>
                 <Row>
-                    <Col>
-                        <h2><Badge pill bg="primary">Functions</Badge></h2>
-                        <ul>
-                            <li>
-                                <h6>Protecting confidential records, with end-to-end encryption.</h6>
-                            </li>
-                            <li>
-                                <h6>Writing securely with rich text. Inserting photos and videos.</h6>
-                            </li>
-                            <li>
-                                <h6>Adding sensitive videos, photos, text and file to one record.</h6>
-                            </li>
-                            <li>
-                                <h6>Organizing records with boxes, folders, notebooks and diaries.</h6>
-                            </li>
-                            <li>
-                                <h6>Locating records with search capability.</h6>
-                            </li>
-                            <li>
-                                <h6>Access to records anytime, anywhere, on any devices.</h6>
-                            </li>
-                        </ul>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <h2><Badge pill bg="info">Benefits</Badge></h2>
-                        <ul>
-                            <li>
-                                <h6>Enhance your data security.</h6>
-                            </li>
-                            <li>
-                                <h6>Boost your productivity.</h6>
-                            </li>
-                            <li>
-                                <h6>30-day free trial with all features.</h6>
-                            </li>
-                            <li>
-                                <h6>Cost effective. Starting at 2.95 usd for 50GB.</h6>
-                            </li>
-                        </ul>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <h2><Badge pill bg="success">Features</Badge></h2>
-                        <ul>
-                            <li>
-                                <h6>End-to-end encryption.</h6>
-                            </li>
-                            <li>
-                                <h6>Encrypt & backup with one-click.</h6>
-                            </li>
-                            <li>
-                                <h6>Built-in secure rich-text editor.</h6>
-                            </li>
-                            <li>
-                                <h6>Add photos, videos and attachments easily with drag-and-drop.</h6>
-                            </li>
-                            <li>
-                                <h6>Open multiple records with multi-tab support.</h6>
-                            </li>
-                            <li>
-                                <h6>Efficent search.</h6>
-                            </li>
-                            <li>
-                                <h6>Anonymous identity.</h6>
-                            </li>
-                            <li>
-                                <h6>Versiosn history.</h6>
-                            </li>
-
-                        </ul>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col>
-                        <h2><Badge pill bg="dark">Specifications</Badge></h2>
-                        <ul>
-                            <li>
-                                <h6>AES-256 client-side encryption.</h6>
-                            </li>
-                            <li>
-                                <h6>Argon-2 key generation.</h6>
-                            </li>
-                            <li>
-                                <h6>2 factor authentication.</h6>
-                            </li>
-                            <li>
-                                <h6>Compatiable with modern browsers on all devices.</h6>
-                            </li>
-                        </ul>
-                    </Col>
-                </Row>
-                <Row>
-                    <Col xs={12} className='text-center'>
-                        <Button variant="danger" onClick={handleUnlock}>Try me <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+                    <Col className='text-center'>
+                        <p className={BSafesStyle.footerText}>© 2020 Wu-Nan Technology Inc.</p>
+                        <p>Registered office: 16192 Coastal Highway, Lewes, Delaware 19958</p>
                     </Col>
                 </Row>
             </Container>
