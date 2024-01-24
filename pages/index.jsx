@@ -72,21 +72,6 @@ export default function Home() {
     }
 
     useEffect(() => {
-        if (process.env.NEXT_PUBLIC_platform === 'iOS') {
-            import('../lib/importCommonScripts').then(async ic => {
-                await ic.commonScripts;
-                console.log('window.bsafesNative.name: ', window.bsafesNative.name);
-                window.bsafesNative.bsafesNativeToWebCall = bsafesNativeToWebCall;
-
-                if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.toggleMessageHandler) {
-                    //alert('From js to swift');
-                    console.log('From js to swift');
-                    window.webkit.messageHandlers.toggleMessageHandler.postMessage({
-                        "message": 'From js to swift'
-                    });
-                }
-            });
-        }
     }, [])
 
     useEffect(() => {
