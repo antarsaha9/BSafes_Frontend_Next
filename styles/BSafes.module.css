@@ -66,6 +66,10 @@
 /* End of general */
 
 /*--********  Navigation bar */
+.navbarBrand {
+  margin-right: 0px;
+}
+
 .navbarTeamName {
   color: black !important;
   font-size: 2rem;

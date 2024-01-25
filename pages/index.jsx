@@ -13,6 +13,16 @@ import Carousel from 'react-bootstrap/Carousel';
 
 import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
 
+import BSafesStyle from '../styles/BSafes.module.css'
+
+import { debugLog } from '../lib/helper'
+
+import ContentPageLayout from '../components/layouts/contentPageLayout';
+import Footer from '../components/footer';
+import DialerLock from '../components/dialerLock/dialerLock';
+
+import { logInAsyncThunk } from '../reduxStore/auth'
+
 export const inter = Inter({
     subsets: ['latin'],
     display: 'swap',
@@ -42,15 +52,6 @@ export const oswald = Oswald({
     subsets: ['latin'],
     display: 'swap',
 })
-
-import BSafesStyle from '../styles/BSafes.module.css'
-
-import { debugLog } from '../lib/helper'
-
-import ContentPageLayout from '../components/layouts/contentPageLayout';
-import DialerLock from '../components/dialerLock/dialerLock';
-
-import { logInAsyncThunk } from '../reduxStore/auth'
 
 export default function Home() {
     const debugOn = false;
@@ -127,7 +128,7 @@ export default function Home() {
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
-                        <p className={BSafesStyle.descriptionText}>🔐 With military-grade (AES-256) end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
+                        <p className={BSafesStyle.descriptionText}>🔐 BSafes offers a secure writing and record-keeping platform. With AES-256 end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
                         <br />
                     </Col>
                 </Row>
@@ -293,7 +294,7 @@ export default function Home() {
                         </Col>
                     </Row>
                     <br />
-                    <Row >
+                    <Row id="aboutUs" >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
                                 <Container>
@@ -324,14 +325,8 @@ export default function Home() {
                     <br />
                 </Container>
             </div>
-            <Container className={monteserrat.className}>
-                <Row>
-                    <Col className='text-center'>
-                        <p className={BSafesStyle.footerText}>© 2020 Wu-Nan Technology Inc.</p>
-                        <p>Registered office: 16192 Coastal Highway, Lewes, Delaware 19958</p>
-                    </Col>
-                </Row>
-            </Container>
+            <Footer />
+            <br />
         </ContentPageLayout>
     )
 }
