@@ -839,6 +839,21 @@
   margin: auto;
 }
 
+.featureCardNormalIcon {
+  width: 84px;
+  display: block;
+  margin: auto;
+}
+
+.featureCardIconAndText {
+  position: relative;
+  top: 20px;
+}
+
+.featureCardTextUnderIcon {
+  font-size:1.0em;
+}
+
 .featureCardRightIcon {
   position: relative;
   width: 84px;
@@ -889,6 +904,21 @@
     width: 128px;
     display: block;
     margin: auto;
+  }
+
+  .featureCardNormalIcon {
+    width: 128px;
+    display: block;
+    margin: auto;
+  }
+
+  .featureCardIconAndText {
+    position: relative;
+    top: 80px;
+  }
+
+  .featureCardTextUnderIcon {
+    font-size:1.2em;
   }
 
   .featureCardRightIcon {
@@ -951,6 +981,21 @@
     margin-bottom: 100px;
   }
 
+  .featureCardNormalIcon {
+    width: 256px;
+    display: block;
+    margin: auto;
+  }
+
+  .featureCardIconAndText {
+    position: relative;
+    top: 100px;
+  }
+
+  .featureCardTextUnderIcon {
+    font-size:1.4em;
+  }
+
   .featureCardRightIcon {
     position: relative;
     top: 100px;
@@ -999,6 +1044,21 @@
     width: 256px;
     display: block;
     margin: auto;
+  }
+
+  .featureCardNormalIcon {
+    width: 256px;
+    display: block;
+    margin: auto;
+  }
+
+  .featureCardIconAndText {
+    position: relative;
+    top: 135px;
+  }
+
+  .featureCardTextUnderIcon {
+    font-size:1.8em;
   }
 
   .featureCardRightIcon {

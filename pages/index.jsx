@@ -124,12 +124,13 @@ export default function Home() {
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
                 </Row>
-                <Row className={BSafesStyle.descriptionRow}>
+                <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
-                        <p className={BSafesStyle.descriptionText}>🔐 BSafes offers a secure writing and record-keeping platform. With AES-256 end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
-                        <br />
+                        <p className={BSafesStyle.descriptionText}>🔰 BSafes offers a secure writing and record-keeping platform. With AES-256 end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
+                        <h2>🌐 <Badge bg="primary">GDPR</Badge> <Badge bg="primary">CCPA</Badge> <Badge bg="primary">HIPPA</Badge> <Badge bg="primary">HITECH</Badge></h2> 
+                        <p className={BSafesStyle.descriptionText}>Due to its end-to-end encryption nature, BSafes complies with data privacy and security laws & regulations worldwide, including GDPR, CCPA, HIPPA, and HITECH.</p>
                     </Col>
                 </Row>
             </Container>
@@ -182,7 +183,10 @@ export default function Home() {
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6}>
-                                            <Image className={BSafesStyle.featureCardIcon} src='/images/icon_noAI.png'></Image>
+                                            <div className={BSafesStyle.featureCardIconAndText}>
+                                                <Image className={BSafesStyle.featureCardNormalIcon} src='/images/icon_noAI.png'></Image>
+                                                <p className={`text-center ${BSafesStyle.featureCardTextUnderIcon}`}>For Sensitive Information</p>
+                                            </div>
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Generative AI needs lots of data</h1>
