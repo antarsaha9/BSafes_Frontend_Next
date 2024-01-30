@@ -124,7 +124,7 @@ export default function Home() {
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
                 </Row>
-                <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                <Row hidden className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
@@ -165,7 +165,7 @@ export default function Home() {
                 <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
-                        <p className={BSafesStyle.descriptionText}>BSafes is a safe place for writing and record keeping with visual-rich media (videos, photos, images) and additional attachments. Be bold about your creative ideas, privacy, and secrets because no one else can see them.</p>
+                        <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your creative ideas, privacy, and secrets safe..</p>
                         <h2><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>
@@ -190,7 +190,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Generative AI needs lots of data</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Microsoft 365, Google Docs, and other generative AI tools learn from your data. Configuration errors may occur even though they provide various configuration options for protecting sensitive information. It is vital to refrain from entering sensitive information into those AI tools to avoid the risks of such data being used as training data and disclosed to third parties. With BSafes, since your device encrypts all your data before sending it to the server, it can not learn from obscured data..</p>
+                                            <p className={BSafesStyle.featureCardFont}>AI tools like Microsoft 365 and Google Docs learn from your data, but can also pose a risk to sensitive information. BSafes encrypts your data on your device before sending it to the server, making it impossible for the server to learn from obscured data.</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -206,7 +206,7 @@ export default function Home() {
                     </Row>
                     <Row className={BSafesStyle.descriptionRow}>
                         <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                            <p className={BSafesStyle.descriptionText}>We designed BSafes for data privacy and security from the start. Your device encrypts all your data with a secret key known only to you and then sends the obscured data to the server. Because no one else has the key, nobody could learn your data, not even BSafes. BSafes adopts Zero-Trust & Zero-Knowledge principles.</p>
+                            <p className={BSafesStyle.descriptionText}>BSafes encrypts your data with a secret key known only to you, and then sends it to the server. No one, not even BSafes, can access your data because only you have the key. This follows the Zero-Trust & Zero-Knowledge principles.</p>
                             <p style={{ fontSize: "1.6rem" }}></p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
                             <h2><Badge pill bg="warning">Coming soon</Badge></h2>
@@ -219,7 +219,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Start with a page</h1>
-                                            <p className={BSafesStyle.featureCardFont}>You could write and embed videos and photos with a secure, rich-text editor. In addition, you could create a video gallery and a photo gallery, as well as add attachments. Your device encrypts and then backs up everything.</p>
+                                            <p className={BSafesStyle.featureCardFont}>To secure sensitive content, create a page. You can add text, videos, photos, and attachments. Everything is encrypted and backed up by your device.</p>
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardImage}>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_startAPage.png'></Image>
@@ -240,7 +240,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>One-Click Encrypt & Back Up</h1>
-                                            <p className={BSafesStyle.featureCardFont}>After writing, with one click, your device automatically encrypts and backs up your data to the server. Because the server receives the obscured data encrypted by a key known only to you, no one can see your data.</p>
+                                            <p className={BSafesStyle.featureCardFont}>With just one click, your device automatically encrypts and backs up your data to the server. The server then receives the obscured data, encrypted with a key that only you know, ensuring complete security.</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -254,8 +254,8 @@ export default function Home() {
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
-                                            <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and Attachment</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Effortlessly add visual-rich content to your writing and a record. Your device encrypts all media and uploads to the server.</p>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and Attachments</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Adding visual content is now effortless. All media is encrypted before uploading to the server.</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/LoveMacbook.png'></Image>
                                         </Col>
                                     </Row>
@@ -274,7 +274,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>More productive than a secure storage solution</h1>
-                                            <p className={BSafesStyle.featureCardFont}>{`You don't have to write with a word processor, encrypt the document, and then upload it to cloud storage in separate steps. BSafes enables you to create content with visual-rich media. Your content is encrypted and backed up to a secure cloud storage with one click. It is much quicker to update your writing because you don't have to download, edit, and then upload again.`}</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`With BSafes, you can create and store content in a single, streamlined process. You don't need to use a separate word processor, encrypt the document, and then upload it to cloud storage. With BSafes, you can create content that includes visual-rich media, with the added security of encryption and backup to a secure cloud storage - all with just one click. Updating your writing is much quicker with BSafes, as you don't have to download, edit, and then upload again.`}</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -289,7 +289,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>A Clean Space for Your Contents</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Add additional pages, notebooks, and diaries. Use boxes and folders to organize them. Search for a particular item efficiently. A clean workspace boosts your productivity.</p>
+                                            <p className={BSafesStyle.featureCardFont}>Add new pages, notebooks, or diaries in boxes or folders to efficiently search for items. A clean workspace improves productivity.</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/personalSpaceIPad.png'></Image>
                                         </Col>
                                     </Row>
@@ -305,10 +305,10 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>About Us</h1>
-                                            <p className={BSafesStyle.featureCardFont}>We started the BSafes project after a confidential record became Google searchable due to misconfiguration in a cloud service. It costs efforts to fix the issue and clear the online footprint of the leaked information.</p>
-                                            <p className={BSafesStyle.featureCardFont}>We loved the convenience of cloud services but felt we needed the most robust security controls possible to protect our confidential records, including videos, photos, documents, or any files. We searched for services to fit our needs. The closest solution is end-to-end encrypted cloud storage, such as Tresorit and Mega.</p>
-                                            <p className={BSafesStyle.featureCardFont}>End-to-end encrypted cloud storage is secure because, by default, user devices encrypt a file before sending it to the server. The server receives obscured data, and nobody can learn from it. However, to update a single piece of information in a record, we had to download the file, edit it with a separate word processor, save the work, and then upload it to the server in different steps. And it was challenging and time-consuming to do on a mobile device. Therefore, we set out to develop our solution - BSafes.</p>
-                                            <p className={BSafesStyle.featureCardFont}>In 2017, BSafes was born, and it met our goals -</p>
+                                            <p className={BSafesStyle.featureCardFont}>We started the BSafes project after a confidential record was made searchable on Google due to a misconfiguration in a cloud service. Resolving the issue and removing the leaked information online took a lot of effort.</p>
+                                            <p className={BSafesStyle.featureCardFont}>Then, we searched for a cloud service that could provide convenience and strong security controls to protect our confidential records, such as videos, photos, documents, and other files. After extensive research, we discovered that end-to-end encrypted cloud storage options, such as Tresorit and Mega, were the most suitable solutions for our needs.</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`End-to-end encrypted cloud storage is secure because the users' devices encrypt a file before sending it to the server. The server receives obscured data, which no one can access. However, updating a single piece of information in a record was previously a time-consuming process that required users to download the file, edit it using a separate word processor, save the work, and then upload it to the server in different steps. This process was even more challenging to do on a mobile device. To make things easier and more efficient, we developed a solution called BSafes.`}</p>
+                                            <p className={BSafesStyle.featureCardFont}>In 2017, we successfully launched BSafes, which met our goals -</p>
                                             <ul>
                                                 <li>It must be end-to-end encrypted;</li>
                                                 <li>It must work on any device - a computer(Windows, Mac, Linux), a phone or a tablet(IOS, Android);</li>

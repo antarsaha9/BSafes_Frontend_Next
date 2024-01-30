@@ -334,7 +334,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     />
                 </div>
             }
-    
+
             {true && showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
                 <Navbar bg="light" className={BSafesStyle.bsafesNavbar}>
                     <Container fluid>
@@ -375,9 +375,21 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                         </Dropdown>}
                         {publicPage && <>
                             <Nav className="me-auto">
-                                <Nav.Link href="#home">Company</Nav.Link>
-                                <Nav.Link href="#features">Learn</Nav.Link>
-                                <Nav.Link href="#pricing">Pricing</Nav.Link>
+                                <NavDropdown title="Company" id="collapsible-nav-dropdown" className={BSafesStyle.navLink}>
+                                    <NavDropdown.Item href="/public/aboutUs">
+                                        About Us
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Item href="/public/mission">
+                                        Mission
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
+                                    <NavDropdown.Divider />
+                                    <NavDropdown.Item href="#action/3.4">
+                                        Separated link
+                                    </NavDropdown.Item>
+                                </NavDropdown>
+                                <Nav.Link href="#features" className={BSafesStyle.navLink}>Learn</Nav.Link>
+                                <Nav.Link href="#pricing" className={BSafesStyle.navLink}>Pricing</Nav.Link>
                             </Nav>
                             <Button size='sm' variant='light' align="end" className="justify-content-end" onClick={() => publicHooks.onOpen()}>
                                 Open

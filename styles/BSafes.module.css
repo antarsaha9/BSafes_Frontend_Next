@@ -98,6 +98,28 @@
   background-color: #000;
 }
 
+.navLink {
+  font-size:0.8rem;
+}
+
+@media only screen and (min-width: 420px) {
+  .navLink {
+    font-size:1.0rem;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .navLink {
+    font-size:1.1rem;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .navLink {
+    font-size:1.2rem;
+  }
+}
+
 /* End of navigation bar */
 
 /*--***** Custom buttons */
