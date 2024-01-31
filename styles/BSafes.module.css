@@ -603,8 +603,11 @@
 /*--****** Banner *******/
 .bannerBackground {
   position: relative;
-  background-color: #080002;
-  background-image: url("/images/bright-squares.png");
+  background-color: #000000 /*#242424*/;
+  /*background-image: url("/images/bo-play.png");*/
+  /*background-image: url("/images/bright-squares.png");*/
+  background-image: url("/images/subtle-grey.png");
+  /*background-image: url("/images/3px-tile.png");*/
 }
 
 .bannerLowerRightText {
