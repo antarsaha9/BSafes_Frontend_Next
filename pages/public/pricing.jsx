@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from "next/router";
+import Link from 'next/link';
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -82,21 +83,20 @@ export default function Pricing() {
                     </Col>
                 </Row>
                 <br />
+                <br />
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <Row>
                             <Col xs={12} style={{ position: 'relative', left: '0px', top: '0px', zIndex: '500' }}>
-
-                                <div className={BSafesStyle.saleBadges}>
-                                    <p>
-                                        <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
-                                        <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
-                                        <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
-                                        <span className={BSafesStyle.saleForthLine}>30-day free trial</span><br />
-                                        <span className={BSafesStyle.saleFifthLine}>More Storage <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
-                                    </p>
-                                </div>
-
+                                    <div className={BSafesStyle.saleBadges}>
+                                        <p>
+                                            <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
+                                            <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
+                                            <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
+                                            <span className={BSafesStyle.saleForthLine}>30-day free trial</span><br />
+                                            <span className={BSafesStyle.saleFifthLine}>Try Now! <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
+                                        </p>
+                                    </div>
                             </Col>
                         </Row>
                     </Col>

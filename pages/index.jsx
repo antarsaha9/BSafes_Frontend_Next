@@ -89,7 +89,7 @@ export default function Home() {
             </div>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
-            <div className={BSafesStyle.metalBackground} style={{ padding: '20px' }}>
+            <div className={BSafesStyle.bannerBackground} style={{ padding: '20px' }}>
                 <Container>
                     <Row>
                         <Col xs={6}>
@@ -105,6 +105,7 @@ export default function Home() {
                     </Row>
                 </Container>
                 <br />
+                <p className={BSafesStyle.bannerLowerRightText}>AES-256 End-to-End Encryption</p>
             </div>
             <Container>
                 <br />
@@ -275,7 +276,7 @@ export default function Home() {
                     <br />
                     <Row >
                         <Col md={12}>
-                            <div className={BSafesStyle.featureCard}>
+                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#F5EEF8'}}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6}>
@@ -324,7 +325,7 @@ export default function Home() {
                     </Row>
                     <Row id="aboutUs" >
                         <Col md={12}>
-                            <div className={BSafesStyle.featureCard}>
+                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#FDEDEC'}}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
@@ -335,7 +336,7 @@ export default function Home() {
                                             <p className={BSafesStyle.featureCardFont}>In 2017, we successfully launched BSafes, which met our goals -</p>
                                             <ul>
                                                 <li>It must be end-to-end encrypted;</li>
-                                                <li>It must work on any device - a computer(Windows, Mac, Linux), a phone or a tablet(IOS, Android);</li>
+                                                <li>It must work on any device - a computer (Windows, Mac, Linux), a phone or a tablet (IOS, Android);</li>
                                                 <li>It must feature a rich-text editor for us to update a record easily;</li>
                                                 <li>It must allow us to easily add videos, photos, documents, and any files to a record. A video file size could be 10 GB or more and should be playable before downloading the whole video.</li>
                                                 <li>It must allow us to search for a record by title or tags;</li>
@@ -343,7 +344,7 @@ export default function Home() {
                                                 <li>{`It must retain a record's revision history;`}</li>
                                                 <li>The backend infrastructure must be reliable and scalable;</li>
                                             </ul>
-                                            <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/team_small.png'></Image>
+                                            <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/team_320.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>

@@ -74,7 +74,36 @@
   color: black !important;
   font-size: 2rem;
   font-weight: bold;
+  margin-right: 5px;
 }
+
+@media only screen and (min-width: 420px) {
+  .navbarTeamName {
+    color: black !important;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-right: 20px;
+  }
+}
+
+@media only screen and (min-width: 768px) {
+  .navbarTeamName {
+    color: black !important;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-right: 40px;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .navbarTeamName {
+    color: black !important;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-right: 60px;
+  }
+}
+
 
 .bsafesNavbar {
   padding: 0px;
@@ -571,7 +600,21 @@
 
 /* Home page */
 
-/*--****** Metal *******/
+/*--****** Banner *******/
+.bannerBackground {
+  position: relative;
+  background-color: #080002;
+  background-image: url("/images/bright-squares.png");
+}
+
+.bannerLowerRightText {
+  color: white;
+  font-size:0.8rem;
+  position: absolute;
+  bottom:0;
+  right: 20px;
+}
+
 .metalBackground {
   --u: 1.8vmin;
   --c1: #393939;
@@ -648,7 +691,7 @@
     -1px -1px 0 #fff;
 }
 
-/* End of Metal */
+/* End of Banner */
 
 /*--****** Sale Badge *******/
 .saleFirstLine {
