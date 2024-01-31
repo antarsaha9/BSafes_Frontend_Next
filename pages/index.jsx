@@ -20,6 +20,7 @@ import { debugLog } from '../lib/helper'
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Footer from '../components/footer';
 import DialerLock from '../components/dialerLock/dialerLock';
+import ComplianceBadge from '../components/complianceBadge';
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
@@ -101,35 +102,23 @@ export default function Home() {
                             <br />
                             {true && <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>}
                         </Col>
-                        <Col xs={6} style={{ position: 'relative', left: '-50px', top: '100px', zIndex: '500' }}>
-                            <Link className={BSafesStyle.noUnderline} href='/'>
-                                <div className={BSafesStyle.saleBadges}>
-                                    <p>
-                                        <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
-                                        <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
-                                        <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
-                                        <span className={BSafesStyle.saleForthLine}>30-day free trial</span>
-                                    </p>
-                                </div>
-                            </Link>
-                        </Col>
                     </Row>
                 </Container>
                 <br />
             </div>
             <Container>
                 <br />
-                <Row className={oswald.className} style={{color: 'black' }}>
-                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                <Row className={oswald.className} style={{ color: 'black' }}>
+                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
                 </Row>
                 <Row hidden className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <br />
                         <h1 className='display-6'>🗣️  📺  📷  📑</h1>
                         <p className={BSafesStyle.descriptionText}>🔰 BSafes offers a secure writing and record-keeping platform. With AES-256 end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
-                        <h2>🌐 <Badge bg="primary">GDPR</Badge> <Badge bg="primary">CCPA</Badge> <Badge bg="primary">HIPPA</Badge> <Badge bg="primary">HITECH</Badge></h2> 
+                        <h2>🌐 <Badge bg="primary">GDPR</Badge> <Badge bg="primary">CCPA</Badge> <Badge bg="primary">HIPPA</Badge> <Badge bg="primary">HITECH</Badge></h2>
                         <p className={BSafesStyle.descriptionText}>Due to its end-to-end encryption nature, BSafes complies with data privacy and security laws & regulations worldwide, including GDPR, CCPA, HIPPA, and HITECH.</p>
                     </Col>
                 </Row>
@@ -139,34 +128,34 @@ export default function Home() {
             </div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
-                <Carousel.Item interval={3000}>
-                    <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_Love_11.png"
-                        alt="BSafes Preview"
-                    />
-                </Carousel.Item>
-                <Carousel.Item interval={3000}>
-                    <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_Finance_11.png"
-                        alt="BSafes Preview"
-                    />
-                </Carousel.Item>
-                <Carousel.Item interval={3000}>
-                    <Image className={BSafesStyle.screenShotImage}
-                        src="/images/BSafesPreview_DoctorVisit_11.png"
-                        alt="BSafes Preview"
-                    />
-                </Carousel.Item>
+                    <Carousel.Item interval={3000}>
+                        <Image className={BSafesStyle.screenShotImage}
+                            src="/images/BSafesPreview_Love_11.png"
+                            alt="BSafes Preview"
+                        />
+                    </Carousel.Item>
+                    <Carousel.Item interval={3000}>
+                        <Image className={BSafesStyle.screenShotImage}
+                            src="/images/BSafesPreview_Finance_11.png"
+                            alt="BSafes Preview"
+                        />
+                    </Carousel.Item>
+                    <Carousel.Item interval={3000}>
+                        <Image className={BSafesStyle.screenShotImage}
+                            src="/images/BSafesPreview_DoctorVisit_11.png"
+                            alt="BSafes Preview"
+                        />
+                    </Carousel.Item>
                 </Carousel>
             </div>
             <Container>
                 <br />
                 <br />
                 <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
-                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
                         <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your creative ideas, privacy, and secrets safe..</p>
-                        <h2><Badge pill bg="warning">Coming soon</Badge></h2>
+                        <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>
             </Container>
@@ -200,18 +189,38 @@ export default function Home() {
                     <br />
                     <br />
                     <Row>
-                        <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Secure by Design. Secure by Default.</h1>
                         </Col>
                     </Row>
                     <Row className={BSafesStyle.descriptionRow}>
-                        <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <p className={BSafesStyle.descriptionText}>BSafes encrypts your data with a secret key known only to you, and then sends it to the server. No one, not even BSafes, can access your data because only you have the key. This follows the Zero-Trust & Zero-Knowledge principles.</p>
                             <p style={{ fontSize: "1.6rem" }}></p>
                             <p style={{ fontSize: "1.6rem" }}>2FA included.</p>
-                            <h2><Badge pill bg="warning">Coming soon</Badge></h2>
+                            <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
                     </Row>
+                    <Row >
+                        <Col md={12}>
+                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#D6EAF8'}}>
+                                <Container>
+                                    <Row style={{ paddingTop: '0px' }}>
+                                        <Col xs={12} md={6}>
+                                            <div className={BSafesStyle.featureCardIconAndText}>
+                                                <ComplianceBadge />
+                                            </div>
+                                        </Col>
+                                        <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Regulatory Compliance</h1>
+                                            <p className={BSafesStyle.featureCardFont}>{`BSafes is compliant with global data privacy and security regulations such as GDPR, CCPA, HIPAA, and HITECH, thanks to its end-to-end encryption.`}</p>
+                                        </Col>
+                                    </Row>
+                                </Container>
+                            </div>
+                        </Col>
+                    </Row>
+                    <br/>
                     <Row >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
@@ -298,6 +307,21 @@ export default function Home() {
                         </Col>
                     </Row>
                     <br />
+                    <Row>
+                        <Col xs={12} style={{ position: 'relative', left: '0px', top: '0px', zIndex: '500' }}>
+                            <Link className={BSafesStyle.noUnderline} href='/public/pricing'>
+                                <div className={BSafesStyle.saleBadges}>
+                                    <p>
+                                        <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
+                                        <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
+                                        <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
+                                        <span className={BSafesStyle.saleForthLine}>30-day free trial</span><br />
+                                        <span className={BSafesStyle.saleFifthLine}>More Storage <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
+                                    </p>
+                                </div>
+                            </Link>
+                        </Col>
+                    </Row>
                     <Row id="aboutUs" >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
@@ -319,7 +343,7 @@ export default function Home() {
                                                 <li>{`It must retain a record's revision history;`}</li>
                                                 <li>The backend infrastructure must be reliable and scalable;</li>
                                             </ul>
-                                            <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/team_small.png'></Image>
+                                            <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/team_small.png'></Image>
                                         </Col>
                                     </Row>
                                 </Container>

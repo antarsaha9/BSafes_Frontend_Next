@@ -171,7 +171,7 @@ export default function ItemPath() {
                             </Dropdown.Toggle>
                             <Dropdown.Menu>
                                 {newTabItems}
-                                <Dropdown.Item href='/teams' target='_blank'><span className='fw-bold'>Teams</span></Dropdown.Item>
+                                <Dropdown.Item href='/teams' target='_blank'><span className='fw-bold'>Spaces</span></Dropdown.Item>
                                 <Dropdown.Item href='/safe' target='_blank'><span className='fw-bold'>Personal</span></Dropdown.Item>                
                             </Dropdown.Menu>
                         </Dropdown>

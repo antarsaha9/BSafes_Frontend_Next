@@ -382,14 +382,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                     <NavDropdown.Item href="/public/mission">
                                         Mission
                                     </NavDropdown.Item>
-                                    <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
-                                    <NavDropdown.Divider />
-                                    <NavDropdown.Item href="#action/3.4">
-                                        Separated link
-                                    </NavDropdown.Item>
                                 </NavDropdown>
-                                <Nav.Link href="#features" className={BSafesStyle.navLink}>Learn</Nav.Link>
-                                <Nav.Link href="#pricing" className={BSafesStyle.navLink}>Pricing</Nav.Link>
+                                <Nav.Link href="/public/learn" className={BSafesStyle.navLink}>Learn</Nav.Link>
+                                <Nav.Link href="/public/pricing" className={BSafesStyle.navLink}>Pricing</Nav.Link>
                             </Nav>
                             <Button size='sm' variant='light' align="end" className="justify-content-end" onClick={() => publicHooks.onOpen()}>
                                 Open

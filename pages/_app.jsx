@@ -9,7 +9,7 @@ import '../lib/importStyles';
 import "../styles/froala-editor-bsafes.css"
 import '../public/css/froalaEditorCSS/video.css'
 import '../styles/bootstrapOverride.css'
-
+import '../styles/complianceBadge.css'
 
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {

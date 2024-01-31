@@ -24,9 +24,9 @@ export default function Footer() {
             </Row>
             <Row>
                 <Col className='text-center'>
-                    <span>No Cookies</span>&nbsp;&nbsp;
-                    <Link href="/public/privacyPolicy">Privacy Policy</Link>&nbsp;&nbsp;
-                    <Link href="/public/termsOfService">Terms of Service</Link>
+                    <span className={BSafesStyle.footerSmallText}>No Cookies</span>&nbsp;&nbsp;
+                    <Link className={BSafesStyle.footerSmallText} href="/public/privacyPolicy">Privacy Policy</Link>&nbsp;&nbsp;
+                    <Link className={BSafesStyle.footerSmallText} href="/public/termsOfService">Terms of Service</Link>
                 </Col>
             </Row>
         </Container>

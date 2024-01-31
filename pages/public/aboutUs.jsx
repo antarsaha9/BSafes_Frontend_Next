@@ -77,7 +77,7 @@ export default function AboutUs() {
                 <br/>
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                        <h1 className='display-1'>About Us</h1>
+                        <h1 className='display-1 text-center'>About Us</h1>
                     </Col>
                 </Row>
                 <br />
@@ -95,7 +95,7 @@ export default function AboutUs() {
                             <li>It must allow us to easily add videos, photos, documents, and any files to a record. A video file size could be 10 GB or more and should be playable before downloading the whole video.</li>
                             <li>It must allow us to search for a record by title or tags;</li>
                             <li>It must be intuitive, offering a seamless experience over physical and online workspaces. It must provide pages, notebooks, diaries, folders, and boxes for content management.</li>
-                            <li>It must retain a record's revision history;</li>
+                            <li>{`It must retain a record's revision history;`}</li>
                             <li>The backend infrastructure must be reliable and scalable;</li>
                         </ul>
                     </Col>

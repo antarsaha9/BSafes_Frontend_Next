@@ -99,24 +99,24 @@
 }
 
 .navLink {
-  font-size:0.8rem;
+  font-size: 0.8rem;
 }
 
 @media only screen and (min-width: 420px) {
   .navLink {
-    font-size:1.0rem;
+    font-size: 1.0rem;
   }
 }
 
 @media only screen and (min-width: 768px) {
   .navLink {
-    font-size:1.1rem;
+    font-size: 1.1rem;
   }
 }
 
 @media only screen and (min-width: 1200px) {
   .navLink {
-    font-size:1.2rem;
+    font-size: 1.2rem;
   }
 }
 
@@ -568,6 +568,7 @@
     padding-right: 120px;
   }
 }
+
 /* Home page */
 
 /*--****** Metal *******/
@@ -674,6 +675,13 @@
   top: -10px;
 }
 
+.saleFifthLine {
+  font-size: 10px;
+  font-weight: 300;
+  position: relative;
+  top: 0px;
+}
+
 .noUnderline {
   text-decoration: none;
 }
@@ -770,7 +778,7 @@
   width: 2px;
   height: 81px;
   border-radius: 0%;
-  background: #f6f3f3;
+  background: black;
 }
 
 @-webkit-keyframes swing {
@@ -831,6 +839,167 @@
 
 /* End of Sale Badge */
 
+/*--****** Compliance Badge *******/
+#popup_badge {
+  width: 30%;
+  margin: 0 auto;
+}
+
+
+@primaryColor: #FFB600;
+@secondaryColor: #084AA0;
+
+/*primary_color*/
+#star1,
+#star2,
+#star3,
+#ribbon,
+#badgepath_1 {
+  fill: @primaryColor;
+}
+
+/*secondary_color*/
+#badgepath_2 {
+  fill: @secondaryColor;
+}
+
+#bubble1,
+#bubble2,
+#bubble3,
+#light_blue {
+  fill: #E6E6E6;
+}
+
+#line1,
+#line2,
+#line3,
+#medal2 {
+  fill: #F2F2F2;
+}
+
+#medal {
+  fill: #cccccc;
+}
+
+#badge_white {
+  fill: #fff;
+}
+
+#star1,
+#bubble1 {
+  transform: rotate(160deg);
+  animation: shine 1.5s infinite;
+  transform-origin: 50% 50%;
+}
+
+#star2,
+#bubble2 {
+  transform: rotate(-160deg);
+  animation: shine 2s infinite;
+  transform-origin: 50% 50%;
+}
+
+#star3,
+#bubble3 {
+  transform: rotate(160deg);
+  animation: shine 3s infinite;
+  transform-origin: 50% 50%;
+}
+
+
+@keyframes shine {
+  0% {
+    transform: rotate(160deg);
+    opacity: 0;
+  }
+
+  50% {
+    transform: rotate(180deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: rotate(160deg);
+    opacity: 0;
+  }
+}
+
+
+#line1 {
+  fill: none;
+  stroke: #F2F2F2;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 50;
+  animation: animate_lines 2s infinite;
+
+}
+
+@keyframes animate_lines {
+  to {
+    stroke-dashoffset: 400;
+
+  }
+}
+
+#badge_win {
+  animation: bounce 1.5s;
+  transform: scale(1);
+  -webkit-transform-origin: center center;
+  -moz-transform-origin: center center;
+  -ms-transform-origin: center center;
+  -o-transform-origin: center center;
+}
+
+@keyframes bounce {
+  0% {
+    transform: scale(0);
+  }
+
+  50% {
+    transform: scale(1.4);
+  }
+
+  60% {
+    transform: scale(1);
+  }
+
+  80% {
+    transform: scale(1.3)
+  }
+
+  100% {
+    transform: scale(1)
+  }
+
+}
+
+#examenes {
+  display: none;
+}
+
+#horas {
+  display: none;
+}
+
+#cursos {
+  display: none;
+}
+
+#asistencia {
+  display: none;
+}
+
+#concurrencia {
+  display: initial;
+}
+
+#contenidos {
+  display: none;
+}
+
+/* End of Compliance Badge */
+
 /*--****** Feature Card *******/
 .featureCard {
   background-color: white;
@@ -873,7 +1042,7 @@
 }
 
 .featureCardTextUnderIcon {
-  font-size:1.0em;
+  font-size: 1.0em;
 }
 
 .featureCardRightIcon {
@@ -881,7 +1050,7 @@
   width: 84px;
   display: block;
   margin: auto;
-  margin-bottom: 20px ;
+  margin-bottom: 20px;
 }
 
 .featureCardImageTop {
@@ -911,7 +1080,7 @@
     padding-bottom: 80px;
     overflow: hidden
   }
-  
+
   .featureCardImage {
     padding-top: 20px;
     text-align: center;
@@ -940,16 +1109,16 @@
   }
 
   .featureCardTextUnderIcon {
-    font-size:1.2em;
+    font-size: 1.2em;
   }
 
   .featureCardRightIcon {
     position: relative;
-    top:80px;
+    top: 80px;
     width: 128px;
     display: block;
     margin: auto;
-    margin-bottom: 20px ;
+    margin-bottom: 20px;
   }
 
   .featureCardImageTop {
@@ -965,7 +1134,7 @@
     margin: auto;
     width: 80%;
   }
-  
+
   .featureCardTopImage {
     position: relative;
     top: -400px;
@@ -985,7 +1154,7 @@
     padding-bottom: 100px;
     overflow: hidden
   }
-  
+
   .featureCardImage {
     padding-top: 80px;
     text-align: center;
@@ -1015,7 +1184,7 @@
   }
 
   .featureCardTextUnderIcon {
-    font-size:1.4em;
+    font-size: 1.4em;
   }
 
   .featureCardRightIcon {
@@ -1049,9 +1218,10 @@
 
 @media only screen and (min-width: 1200px) {
   .featureCardTitle {
-    font-size:3.2rem;
-    font-weight:600;
+    font-size: 3.2rem;
+    font-weight: 600;
   }
+
   .featureCardText {
     padding-top: 135px;
     padding-left: 45px;
@@ -1080,7 +1250,7 @@
   }
 
   .featureCardTextUnderIcon {
-    font-size:1.8em;
+    font-size: 1.8em;
   }
 
   .featureCardRightIcon {
@@ -1091,7 +1261,7 @@
     margin: auto;
     margin-bottom: 100px;
   }
-  
+
   .featureCardImage {
     padding-top: 100px;
     text-align: center;
@@ -1113,7 +1283,7 @@
     margin: auto;
     width: 80%;
   }
-  
+
   .featureCardFont {
     font-size: 1.4rem;
   }
@@ -1144,7 +1314,8 @@
 @media only screen and (min-width: 768px) {
   .bannerTextH1 {
     font-size: 4rem;
-  }  
+  }
+
   .descriptionText {
     font-size: 1.3rem;
   }
@@ -1152,6 +1323,10 @@
 
 .footerText {
   font-size: 1.0rem;
+}
+
+.footerSmallText {
+  font-size: 0.8rem;
 }
 
 /* End of Fonts */

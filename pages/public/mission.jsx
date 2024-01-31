@@ -68,16 +68,10 @@ export default function Mission() {
             <Container className={monteserrat.className} style={{color: 'black' }}>
                 <br />
                 <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/dataProtection_small.png'></Image>
-                <Row hidden className={BSafesStyle.descriptionRow}>
-                    <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                        <h2>We respect your privacy! </h2>
-                        <p>Your device encrypts all your data before sending it to the server so no one can learn your content, not even BSafes.</p>
-                    </Col>
-                </Row>
                 <br/>
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                        <h1 className='display-1'>Mission</h1>
+                        <h1 className='display-1 text-center'>Mission</h1>
                     </Col>
                 </Row>
                 <br />

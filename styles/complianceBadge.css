@@ -1,0 +1,121 @@
+#popup_badge {
+    width: 60%;
+    margin: 0 auto;
+  }
+  #star1,
+  #star2,
+  #star3,
+  #ribbon,
+  #badgepath_1 {
+    fill: #FFB600;
+  }
+  #badgepath_2 {
+    fill: #084AA0;
+  }
+  #bubble1,
+  #bubble2,
+  #bubble3,
+  #light_blue {
+    fill: #E6E6E6;
+  }
+  #line1,
+  #line2,
+  #line3,
+  #medal2 {
+    fill: #F2F2F2;
+  }
+  #medal {
+    fill: #cccccc;
+  }
+  #badge_white {
+    fill: #fff;
+  }
+  #star1,
+  #bubble1 {
+    transform: rotate(160deg);
+    animation: shine 1.5s infinite;
+    transform-origin: 50% 50%;
+  }
+  #star2,
+  #bubble2 {
+    transform: rotate(-160deg);
+    animation: shine 2s infinite;
+    transform-origin: 50% 50%;
+  }
+  #star3,
+  #bubble3 {
+    transform: rotate(160deg);
+    animation: shine 3s infinite;
+    transform-origin: 50% 50%;
+  }
+  @keyframes shine {
+    0% {
+      transform: rotate(160deg);
+      opacity: 0;
+    }
+    50% {
+      transform: rotate(180deg);
+      opacity: 1;
+    }
+    100% {
+      transform: rotate(160deg);
+      opacity: 0;
+    }
+  }
+  #line1 {
+    fill: none;
+    stroke: #F2F2F2;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 50;
+    animation: animate_lines 2s infinite;
+  }
+  @keyframes animate_lines {
+    to {
+      stroke-dashoffset: 400;
+    }
+  }
+  #badge_win {
+    animation: bounce 1.5s;
+    transform: scale(1);
+    -webkit-transform-origin: center center;
+    -moz-transform-origin: center center;
+    -ms-transform-origin: center center;
+    -o-transform-origin: center center;
+  }
+  @keyframes bounce {
+    0% {
+      transform: scale(0);
+    }
+    50% {
+      transform: scale(1.4);
+    }
+    60% {
+      transform: scale(1);
+    }
+    80% {
+      transform: scale(1.3);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  #examenes {
+    display: none;
+  }
+  #horas {
+    display: none;
+  }
+  #cursos {
+    display: none;
+  }
+  #asistencia {
+    display: none;
+  }
+  #concurrencia {
+    display: initial;
+  }
+  #contenidos {
+    display: none;
+  }
+  
