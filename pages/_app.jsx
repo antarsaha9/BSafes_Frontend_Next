@@ -2,8 +2,6 @@ import { useEffect } from 'react';
 import {reduxWrapper} from '../reduxStore/store'
 import Head from "next/head";
 
-import TawkMessengerReact from '@tawk.to/tawk-messenger-react';
-
 import '../styles/materia.css'
 import '../styles/react-tagsinput-bsafes.css'
 import "../styles/react-datepicker-bsafes.css";
@@ -40,9 +38,6 @@ function MyApp({ Component, pageProps }) {
           content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
       </Head>
-      <TawkMessengerReact
-                propertyId={process.env.NEXT_PUBLIC_localhost?process.env.NEXT_PUBLIC_tawk_local_propertyId:process.env.NEXT_PUBLIC_tawk_propertyId}
-                widgetId={process.env.NEXT_PUBLIC_localhost?process.env.NEXT_PUBLIC_tawk_local_widgetId:process.env.NEXT_PUBLIC_tawk_widgetId}/>
       <Component {...pageProps} />
     </>
     

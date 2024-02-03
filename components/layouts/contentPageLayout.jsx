@@ -382,8 +382,14 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                     <NavDropdown.Item href="/public/mission">
                                         Mission
                                     </NavDropdown.Item>
+                                    <NavDropdown.Item href="/public/privacyPolicy">
+                                        Privacy Policy
+                                    </NavDropdown.Item>
+                                    <NavDropdown.Item href="/public/termsOfService">
+                                        Terms of Service
+                                    </NavDropdown.Item>
                                 </NavDropdown>
-                                <Nav.Link href="/public/learn" className={BSafesStyle.navLink}>Learn</Nav.Link>
+                                <Nav.Link href="https://support.bsafes.com" className={BSafesStyle.navLink}>Support</Nav.Link>
                                 <Nav.Link href="/public/pricing" className={BSafesStyle.navLink}>Pricing</Nav.Link>
                             </Nav>
                             <Button size='sm' variant='light' align="end" className="justify-content-end" onClick={() => publicHooks.onOpen()}>
@@ -420,6 +426,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                     <Nav className="justify-content-end flex-grow-1 pe-3">
                                         <Nav.Link onClick={mfaSetup}>2FA</Nav.Link>
                                         <Nav.Link onClick={payment}>Payment</Nav.Link>
+                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer">Support</Nav.Link>
                                     </Nav>
                                 </Offcanvas.Body>
                             </Navbar.Offcanvas>

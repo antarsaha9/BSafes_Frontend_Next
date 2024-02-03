@@ -1376,3 +1376,19 @@
 }
 
 /* End of Fonts */
+
+/*--****** Support *******/
+.supportButton {
+  position: fixed;
+  display: inline-block;
+  cursor: help;
+  bottom:12px;
+  right: 12px;
+}
+
+.supportButton:hover {
+  -ms-transform: scale(1.2); /* IE 9 */
+  -webkit-transform: scale(1.2); /* Safari 3-8 */
+  transform: scale(1.2); 
+}
+/* End of Support */

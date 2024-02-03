@@ -93,7 +93,8 @@ export default function Home() {
                 <Container>
                     <Row>
                         <Col xs={6}>
-                            <DialerLock size={120} fontSize={0.6} triangleSize={3} />
+                            {false && <DialerLock size={120} fontSize={0.6} triangleSize={3} />}
+                            <img src="/images/mySafe_Small.png" />
                             <h1 className={BSafesStyle.metalH1 + ' ' + orbitron.className}>
                                 <span>Since 2017</span>
                                 <span>Since 2017</span>
