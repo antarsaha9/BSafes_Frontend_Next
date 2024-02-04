@@ -32,6 +32,14 @@
         0px 00px 00px rgba(0, 0, 0, 0.5);
 }
 
+.ringWithoutShadow {
+    position: absolute;
+    width: 95%;
+    height: 95%;
+    border-radius: 50%;
+    background-image: linear-gradient(#E0E0E0, #A0A0A0);
+}
+
 .hole {
     position: absolute;
     width: 90%;

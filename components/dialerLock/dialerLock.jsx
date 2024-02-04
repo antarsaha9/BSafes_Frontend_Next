@@ -135,8 +135,8 @@ export default function DialerLock({size=360, fontSize=1, triangleSize=10}) {
     
 
     return (
-        <div className={dialerLockStyles.component} style={{width:`${size}px`, height:`${size}px`}}>
-            <div className={dialerLockStyles.ring}>
+        <div className={dialerLockStyles.component} style={{width:`${size}px`, height:`${size}px`, margin:'auto'}}>
+            <div className={dialerLockStyles.ringWithoutShadow}>
                 <div className={dialerLockStyles.triangle} style={{borderWidth:`${triangleSize}px ${triangleSize}px 0 ${triangleSize}px`, transform:`translateX(-${triangleSize}px)`}}></div>
                 <div className={dialerLockStyles.hole}>
                     <div className={dialerLockStyles.plate}>

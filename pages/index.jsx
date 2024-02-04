@@ -84,9 +84,6 @@ export default function Home() {
 
     return (
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
-            <div hidden className='p-2' style={{ color: 'White', backgroundColor: 'Red' }}>
-                <p className={`${BSafesStyle.topAlertText} ${monteserrat.className}`}><span style={{ fontSize: "1.6rem" }}>👩🏻‍💻</span> {`Alert! AI's potential to affect privacy rights and the protection of personal data.`}</p>
-            </div>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
             <div className={BSafesStyle.bannerBackground} style={{ padding: '20px' }}>
@@ -192,6 +189,12 @@ export default function Home() {
                     <br />
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            {true && <DialerLock size={120} fontSize={0.6} triangleSize={3} className='text-center' />}
+                        </Col>
+                    </Row>
+                    <br />
+                    <Row>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Secure by Design. Secure by Default.</h1>
                         </Col>
                     </Row>
@@ -205,7 +208,7 @@ export default function Home() {
                     </Row>
                     <Row >
                         <Col md={12}>
-                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#D6EAF8'}}>
+                            <div className={BSafesStyle.featureCard} style={{ backgroundColor: '#D6EAF8' }}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6}>
@@ -222,7 +225,7 @@ export default function Home() {
                             </div>
                         </Col>
                     </Row>
-                    <br/>
+                    <br />
                     <Row >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard}>
@@ -277,7 +280,7 @@ export default function Home() {
                     <br />
                     <Row >
                         <Col md={12}>
-                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#F5EEF8'}}>
+                            <div className={BSafesStyle.featureCard} style={{ backgroundColor: '#F5EEF8' }}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6}>
@@ -326,7 +329,7 @@ export default function Home() {
                     </Row>
                     <Row id="aboutUs" >
                         <Col md={12}>
-                            <div className={BSafesStyle.featureCard} style={{backgroundColor:'#FDEDEC'}}>
+                            <div className={BSafesStyle.featureCard} style={{ backgroundColor: '#FDEDEC' }}>
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
