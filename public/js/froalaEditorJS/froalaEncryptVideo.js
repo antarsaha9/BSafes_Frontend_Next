@@ -432,6 +432,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
     
           try {
             let result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
+            let s3Key = result.s3Key;
             let signedURL = result.signedURL;
             console.log('video snapshot signed url', signedURL );
                           
@@ -440,7 +441,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                 console.log( `Video snapshot upload progress: ${percentCompleted} `);
             }
                             
-            await uploadData(encryptedStr, signedURL, onUploadProgress);  
+            await uploadData(encryptedStr, s3Key, signedURL, onUploadProgress);  
           } catch (error) {
             console.log("uploadSnapshot failed");
           }
@@ -1428,7 +1429,7 @@ const { getEditorConfigHook, getEditorConfig } = require('./bsafesAPIHooks');
                               _setProgressMessage(editor.language.translate('Uploading'), fileUploadProgress);
                             }
                             
-                            await uploadData(data, signedURL, onUploadProgress);              
+                            await uploadData(data, s3Key, signedURL, onUploadProgress);              
                             await writeAChunkToFile(chunkIndex, binaryData);
                             resolve();
                         } catch(error) {

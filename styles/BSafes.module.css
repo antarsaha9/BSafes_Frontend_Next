@@ -603,7 +603,9 @@
 /*--****** Banner *******/
 .bannerBackground {
   position: relative;
-  background-color: #000000 /*#242424*/;
+  background-color: #000000
+    /*#242424*/
+  ;
   /*background-image: url("/images/bo-play.png");*/
   background-image: url("/images/bright-squares.png");
   /*background-image: url("/images/subtle-grey.png");*/
@@ -612,9 +614,9 @@
 
 .bannerLowerRightText {
   color: white;
-  font-size:0.8rem;
+  font-size: 0.8rem;
   position: absolute;
-  bottom:0;
+  bottom: 0;
   right: 20px;
 }
 
@@ -1046,6 +1048,70 @@
 
 /* End of Compliance Badge */
 
+/*--****** BSafes Preview *******/
+.previewImageLove {
+  width: 100%;
+  height: 300px;
+  margin: auto;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  background-image: url('/images/BSafesPreview_Love_840.png');
+}
+
+.previewImageFinance {
+  width: 100%;
+  height: 300px;
+  margin: auto;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  background-image: url('/images/BSafesPreview_Finance_840.png');
+}
+
+.previewImageDoctorVisit {
+  width: 100%;
+  height: 300px;
+  margin: auto;
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  background-image: url('/images/BSafesPreview_DoctorVisit_840.png');
+}
+
+@media only screen and (min-width: 840px) {
+  .previewImageLove {
+    width: 100%;
+    height: 520px;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    background-image: url('/images/BSafesPreview_Love_1360.png');
+  }
+  
+  .previewImageFinance {
+    width: 100%;
+    height: 520px;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    background-image: url('/images/BSafesPreview_Finance_1360.png');
+  }
+  
+  .previewImageDoctorVisit {
+    width: 100%;
+    height: 520px;
+    margin: auto;
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center;
+    background-image: url('/images/BSafesPreview_DoctorVisit_1360.png');
+  }
+}
+
+/* End of BSafes Preview */
 /*--****** Feature Card *******/
 .featureCard {
   background-color: white;
@@ -1382,13 +1448,16 @@
   position: fixed;
   display: inline-block;
   cursor: help;
-  bottom:12px;
+  bottom: 12px;
   right: 12px;
 }
 
 .supportButton:hover {
-  -ms-transform: scale(1.2); /* IE 9 */
-  -webkit-transform: scale(1.2); /* Safari 3-8 */
-  transform: scale(1.2); 
+  -ms-transform: scale(1.2);
+  /* IE 9 */
+  -webkit-transform: scale(1.2);
+  /* Safari 3-8 */
+  transform: scale(1.2);
 }
+
 /* End of Support */

@@ -128,22 +128,17 @@ export default function Home() {
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
-                        <Image className={BSafesStyle.screenShotImage}
-                            src="/images/BSafesPreview_Love_11.png"
-                            alt="BSafes Preview"
-                        />
+                        <div className={BSafesStyle.previewImageLove}>
+
+                        </div>
                     </Carousel.Item>
                     <Carousel.Item interval={3000}>
-                        <Image className={BSafesStyle.screenShotImage}
-                            src="/images/BSafesPreview_Finance_11.png"
-                            alt="BSafes Preview"
-                        />
+                        <div className={BSafesStyle.previewImageFinance}>
+                        </div>
                     </Carousel.Item>
                     <Carousel.Item interval={3000}>
-                        <Image className={BSafesStyle.screenShotImage}
-                            src="/images/BSafesPreview_DoctorVisit_11.png"
-                            alt="BSafes Preview"
-                        />
+                        <div className={BSafesStyle.previewImageDoctorVisit}>
+                        </div>
                     </Carousel.Item>
                 </Carousel>
             </div>

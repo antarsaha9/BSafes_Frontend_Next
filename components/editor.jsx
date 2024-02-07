@@ -8,13 +8,13 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 
 import jquery from "jquery"
 
-const axios = require('axios');
 const forge = require('node-forge');
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getEditorConfig } from "../lib/bSafesCommonUI";
 import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
+import { putS3Object } from "../lib/s3Helper";
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage } from '../lib/wnImage';
 
@@ -368,7 +368,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         });
     }
 
-    const uploadDataHook = (data, signedURL, onProgress) => {
+    const uploadDataHook = (data, s3Key, signedURL, onProgress) => {
         return new Promise( async (resolve, reject) => {
             const config = {
                 onUploadProgress: async (progressEvent) => {
@@ -379,7 +379,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 }
             }
             try {
-                const result = await axios.put(signedURL, Buffer.from(data, 'binary'), config);  
+                const result = await putS3Object(s3Key, signedURL, data, config, null);
                 resolve(result);
             } catch (error) {
                 reject(error);

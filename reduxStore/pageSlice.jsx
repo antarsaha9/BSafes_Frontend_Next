@@ -2,7 +2,6 @@ import { createSlice } from '@reduxjs/toolkit';
 
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
-const axios = require('axios');
 
 import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
@@ -2838,8 +2837,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                             timeout: 0,
                             signal: controller.signal
                         }
-                        //setUploadTimeout();
-                        await axios.put(signedURL, Buffer.from(data, 'binary'), config);
+                        await putS3Object(s3Key, signedURL, data, config, dispatch);
                         if (timer) clearTimeout(timer);
                         dispatch(setAbortController(null));
                         debugLog(debugOn, `uploadAChunk done: ${index}`);

@@ -42,8 +42,8 @@ export async function postS3Upload(s3Object) {
     return  window.bsafesFroala.postS3Upload(s3Object);
 }
 
-export function uploadData(data, signedURL, onProgress) {
-    return window.bsafesFroala.uploadData(data, signedURL, onProgress);    
+export function uploadData(data, s3Key, signedURL, onProgress) {
+    return window.bsafesFroala.uploadData(data, s3Key, signedURL, onProgress);    
 }
 
 export function getBrowserInfo() {

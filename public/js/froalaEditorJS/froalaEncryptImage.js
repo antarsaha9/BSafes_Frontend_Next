@@ -980,7 +980,7 @@
 							totalUploadedSize += data.length;
 
               try {
-                await uploadData(data, signedURL, _uploadProgress);
+                await uploadData(data, s3Key, signedURL, _uploadProgress);
 
                 $img.addClass('bSafesImage');
                 var id = s3Key + "&" + imageWidth + "x" + imageHeight + "&"+ totalUploadedSize;
