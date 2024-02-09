@@ -2,10 +2,10 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, createAccountRecoveryPhrase, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
-import { cleanAccountSlice, setAccountState } from './accountSlice';
+import { cleanAccountSlice, setNewAccountCreated, setAccountState } from './accountSlice';
 import { cleanV1AccountSlice, setNextAuthStep, setKeyMeta } from './v1AccountSlice';
 import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
@@ -31,6 +31,7 @@ const initialState = {
     privateKey: null,
     searchKey: null,
     searchIV: null,
+    clientEncryptionKey: null,
     froalaLicenseKey: null,
     v2NextAuthStep: null,
 }
@@ -104,11 +105,14 @@ const authSlice = createSlice({
         },
         setV2NextAuthStep: (state, action) => {
             state.v2NextAuthStep = action.payload;
+        },
+        setClientEncryptionKey: (state, action) => {
+            state.clientEncryptionKey = action.payload;
         }
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -123,7 +127,8 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.KeySetup, () => {
         return new Promise(async (resolve, reject) => {
             const credentials = await calculateCredentials(data.nickname, data.keyPassword);
-    
+            const nickname = data.nickname;
+            const keyPassword = data.keyPassword;
             if(credentials) {
                 debugLog(debugOn, "credentials: ", credentials);
 
@@ -134,11 +139,14 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                 }).then( data => {
                     debugLog(debugOn, data);
                     if(data.status === 'ok') {
+                        let auth = getState().auth;
+                        const accountRecoveryPhrase = createAccountRecoveryPhrase(nickname, keyPassword, auth.clientEncryptionKey);
                         localStorage.setItem("authToken", data.authToken);
                         credentials.memberId = data.memberId;
                         credentials.displayName = data.displayName;
                         saveLocalCredentials(credentials, data.sessionKey, data.sessionIV);      
                         localStorage.setItem("authState", "Unlocked"); 
+                        dispatch(setNewAccountCreated({accountRecoveryPhrase}));
                         dispatch(setAccountVersion('v2'));
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV}));
                         resolve();
@@ -364,6 +372,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                         dispatch(loggedOut);
                     }
                 } 
+                dispatch(setClientEncryptionKey(data.clientEncryptionKey || '01234567890123456789012345678901'));
                 dispatch(setPreflightReady(true));
                 resolve();
             }).catch( error => {

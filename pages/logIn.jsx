@@ -86,11 +86,11 @@ export default function LogIn() {
                                         </Col>
                                     </Row>
                                     <Row className='p-2'>
-                                        <h4>New user ?
-                                            <Button variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"}>
-                                                Create
+                                        <p>New user ?
+                                            <Button variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{textTransform:'none', textDecoration:'none'}}>
+                                                Own Your BSafes
                                             </Button>
-                                        </h4>
+                                        </p>
                                     </Row>
                                 </Card>
                             </Col>

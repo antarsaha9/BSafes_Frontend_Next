@@ -9,6 +9,7 @@ const initialState = {
     activity: 0,  
     activityErrors: 0,
     activityErrorMessages: {},
+    newAccountCreated: null,
     accountState: null,
     apiCount: 0,
     braintreeClientToken: null,
@@ -46,6 +47,9 @@ const accountSlice = createSlice({
             state.activityErrors |= action.payload.type;
             state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
+        setNewAccountCreated: (state, action) => {
+            state.newAccountCreated = action.payload;
+        },
         showApiActivity: (state, action) => {
             state.activity |= accountActivity.apiCall;
         },
@@ -80,7 +84,7 @@ const accountSlice = createSlice({
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded} = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

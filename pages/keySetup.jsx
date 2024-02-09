@@ -97,7 +97,7 @@ export default function KeySetup() {
                 <Row>
                     <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
                         <Card className='p-3'> 
-                            <h1>Create Your BSafes</h1>
+                            <h1>Own Your BSafes</h1>
                             <hr></hr>
                             <Form>
                                 <Form.Group className="mb-3" controlId="Nickname">
@@ -108,7 +108,7 @@ export default function KeySetup() {
                                     <Form.Label>Key Password</Form.Label>
                                     <KeyInput onKeyChanged={keyPasswordChanged}/>
                                     <ProgressBar variant={keyStrengthColor} now={keyStrengthProgress} />
-                                    <p class={`text-${keyStrengthColor}`}>{keyStrength}</p>
+                                    <p className={`text-${keyStrengthColor}`}>{keyStrength}</p>
                                     <Form.Text id="passwordHelpBlock" muted>
                                      . Your key must contain 8-32 characters, at least one number, one uppercase, one lowercase character; <br/>
                                      . It may contain space and special characters; <br />
@@ -124,7 +124,7 @@ export default function KeySetup() {
                             <br />
                             <Row>
                                 <Col className='text-center'>
-                                    <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Submit</Button>
+                                    <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>
                                 </Col>
                             </Row>
                         </Card>
