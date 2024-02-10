@@ -455,7 +455,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />
-            {newAccountCreated &&
+            {(newAccountCreated) &&
                 <SaveAccountRecoveryModal />
             }
         </div>

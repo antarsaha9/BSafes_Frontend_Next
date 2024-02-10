@@ -372,7 +372,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                         dispatch(loggedOut);
                     }
                 } 
-                dispatch(setClientEncryptionKey(data.clientEncryptionKey || '01234567890123456789012345678901'));
+                dispatch(setClientEncryptionKey(data.clientEncryptionKey));
                 dispatch(setPreflightReady(true));
                 resolve();
             }).catch( error => {
