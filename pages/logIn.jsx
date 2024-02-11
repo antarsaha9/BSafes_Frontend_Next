@@ -15,6 +15,7 @@ import { debugLog } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import KeyInput from "../components/keyInput";
+import RecoverAccountModal from '../components/recoverAccountModal';
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
@@ -24,6 +25,8 @@ export default function LogIn() {
     const dispatch = useDispatch();
 
     const [keyPassword, setKeyPassword] = useState("");
+    const [recovery, setRecovery] = useState(false);
+
     const nicknameRef = useRef(null);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
@@ -37,6 +40,10 @@ export default function LogIn() {
         debugLog(debugOn, "handleSubmit");
 
         dispatch(logInAsyncThunk({ nickname: nicknameRef.current.value, keyPassword: keyPassword }));
+    }
+
+    const handleRecover = () => {
+        setRecovery(true);
     }
 
     const handleCreate = () => {
@@ -66,7 +73,7 @@ export default function LogIn() {
                         <Row>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
-                                    <h1>Your BSafes</h1>
+                                    <h1 className='text-center'>Open</h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
@@ -85,12 +92,20 @@ export default function LogIn() {
                                             </Button>
                                         </Col>
                                     </Row>
-                                    <Row className='p-2'>
-                                        <p>New user ?
-                                            <Button variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{textTransform:'none', textDecoration:'none'}}>
+                                    <Row>
+                                        <Col className='text-center'>
+                                            <Button variant='link' onClick={handleRecover} disabled={activity === "LoggingIn"} style={{ color: 'gray', textTransform: 'none', textDecoration: 'none' }}>
+                                                Recover
+                                            </Button>
+                                        </Col>
+                                    </Row>
+                                    {recovery && <RecoverAccountModal/>}
+                                    <Row>
+                                        <Col className='text-center'>
+                                            <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
                                                 Own Your BSafes
                                             </Button>
-                                        </p>
+                                        </Col>
                                     </Row>
                                 </Card>
                             </Col>

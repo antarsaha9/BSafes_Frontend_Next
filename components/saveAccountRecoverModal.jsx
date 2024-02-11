@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -41,12 +40,12 @@ export default function SaveAccountRecoveryModal(show = false) {
         <>
             <Modal show={show} fullscreen={true} onHide={handleHide}>
                 <Modal.Header closeButton>
-                    <Modal.Title>Save Your Account Recovery Code </Modal.Title>
+                    <Modal.Title><i class="fa fa-ambulance" aria-hidden="true"></i> Save Your Account Recovery Code </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Container>
-                        <p>Store your account recovery phrase in a secure location. If you forget your Nickname and Key Password, using account recovery phrase is the only way to recover your account.</p>
-                        <p>You can either copy the following recovery phrase and paste it to a safe location</p>
+                        <p>Store your account recovery phrase in a secure location. If you forget your Nickname and Key Password, using account recovery code is the only way to recover your account.</p>
+                        <p>You can either copy the following recovery code and paste it to a safe location</p>
                         <hr />
                         <Row>
                             <Col style={{ overflowX: 'auto', overflowY: 'hidden', textOverflow: 'ellipsis' }}>
@@ -63,7 +62,7 @@ export default function SaveAccountRecoveryModal(show = false) {
                         <p>or download the following file, rename it, and save it in a secure location.</p>
                         <Row>
                             <Col className="d-flex justify-content-center">
-                                {downloadUrl && <a href={downloadUrl} download="abc.txt">abc.txt</a>}
+                                {downloadUrl && <a href={downloadUrl} download="account.txt">account.txt</a>}
                             </Col>
                         </Row>
                     </Container>
