@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, createAccountRecoveryPhrase, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
 import { cleanAccountSlice, setNewAccountCreated, setAccountState } from './accountSlice';
@@ -140,7 +140,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, data);
                     if(data.status === 'ok') {
                         let auth = getState().auth;
-                        const accountRecoveryPhrase = createAccountRecoveryPhrase(nickname, keyPassword, auth.clientEncryptionKey);
+                        const accountRecoveryPhrase = createAccountRecoveryCode(nickname, keyPassword, auth.clientEncryptionKey);
                         localStorage.setItem("authToken", data.authToken);
                         credentials.memberId = data.memberId;
                         credentials.displayName = data.displayName;

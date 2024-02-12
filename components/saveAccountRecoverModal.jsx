@@ -40,7 +40,7 @@ export default function SaveAccountRecoveryModal(show = false) {
         <>
             <Modal show={show} fullscreen={true} onHide={handleHide}>
                 <Modal.Header closeButton>
-                    <Modal.Title><i class="fa fa-ambulance" aria-hidden="true"></i> Save Your Account Recovery Code </Modal.Title>
+                    <Modal.Title><i className="fa fa-ambulance" aria-hidden="true"></i> Save Your Account Recovery Code </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Container>

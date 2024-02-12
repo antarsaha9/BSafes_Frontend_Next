@@ -11,26 +11,45 @@ import Form from 'react-bootstrap/Form';
 import { debugLog } from '../lib/helper'
 import { setNewAccountCreated } from '../reduxStore/accountSlice'
 
-export default function RecoverAccountModal(show = false) {
+export default function RecoverAccountModal({ callback }) {
     const debugOn = false;
     const dispatch = useDispatch();
 
     const newAccountCreated = useSelector(state => state.account.newAccountCreated);
-    const [copied, setCopied] = useState(false);
+    const [recoveryCode, setRecoveryCode] = useState("");
     const [downloadUrl, setDownloadUrl] = useState(null);
     const recoveryFileInputRef = useRef(null);
 
     const handleHide = () => {
-        const result = confirm("Did you save your account recovery code? Close this?")
-        if (result) dispatch(setNewAccountCreated(null));
+        callback({ recover: false });
     }
+
     const handleRecover = () => {
-        navigator.clipboard.writeText(newAccountCreated.accountRecoveryPhrase);
-        setCopied(true);
+        callback({ recover: true, recoveryCode });
+    }
+
+    const handleRecoveryCodeChange = (e) => {
+        setRecoveryCode(e.target.value);
     }
 
     const handleRecoveryFile = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleRecoveryFile: ", e.target.id);
+        const file = e.target.files[0];
+        const reader = new FileReader();
 
+        reader.addEventListener(
+            "load",
+            () => {
+                // this will then display a text file
+                callback({ recover: true, recoveryCode: reader.result });
+            },
+            false,
+        );
+
+        if (file) {
+            reader.readAsText(file);
+        }
     }
 
     const handleRecoveryFileButton = (e) => {
@@ -53,9 +72,9 @@ export default function RecoverAccountModal(show = false) {
 
     return (
         <>
-            <Modal show={show} fullscreen={true} onHide={handleHide}>
+            <Modal show={true} fullscreen={true} onHide={handleHide}>
                 <Modal.Header closeButton>
-                    <Modal.Title><i class="fa fa-ambulance" aria-hidden="true"></i> Recover Your Account</Modal.Title>
+                    <Modal.Title><i className="fa fa-ambulance" aria-hidden="true"></i> Recover Your Account</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <Container>
@@ -64,7 +83,7 @@ export default function RecoverAccountModal(show = false) {
 
                         <Row>
                             <Col>
-                                <Form.Control type="text" placeholder="Account Recovery Code" />
+                                <Form.Control type="text" placeholder="Account Recovery Code" onChange={handleRecoveryCodeChange} value={recoveryCode} />
                             </Col>
                         </Row>
                         <br />
@@ -76,7 +95,7 @@ export default function RecoverAccountModal(show = false) {
                         <br />
                         <p>or open your account recovery file.</p>
                         <div className="recoveryFile">
-                            <input ref={recoveryFileInputRef} onChange={handleRecoveryFile} type="file" id="recoveryFile" className="d-none editControl"/>
+                            <input ref={recoveryFileInputRef} onChange={handleRecoveryFile} type="file" id="recoveryFile" className="d-none editControl" />
                             <Row>
                                 <Col id="recoveryFile" sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center`}>
                                     <Button id="recoveryFile" onClick={handleRecoveryFileButton} variant="link" className="text-dark btn btn-labeled">

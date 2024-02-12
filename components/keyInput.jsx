@@ -8,7 +8,7 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from '../lib/helper'
 
-export default function KeyInput({onKeyChanged}) {
+export default function KeyInput({onKeyChanged, recoveredKeyPassword}) {
     const debugOn = false;
     const [keyValue, setKeyValue] = useState('');
     const [hidden, setHidden] = useState(true);
@@ -21,6 +21,12 @@ export default function KeyInput({onKeyChanged}) {
     const handleClick = (e) => {
         setHidden(!hidden);
     }
+
+    useEffect(()=> {
+        if(recoveredKeyPassword) {
+            setKeyValue(recoveredKeyPassword);
+        }
+    }, [recoveredKeyPassword])
 
     return (
         <>
