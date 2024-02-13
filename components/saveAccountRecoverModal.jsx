@@ -27,7 +27,7 @@ export default function SaveAccountRecoveryModal(show = false) {
 
     useEffect(() => {
         if (newAccountCreated) {
-            const file = new File([newAccountCreated.accountRecoveryPhrase], 'abc.txt', {
+            const file = new File([newAccountCreated.accountRecoveryPhrase], 'account.txt', {
                 type: 'text/plain',
             })
 
@@ -44,7 +44,7 @@ export default function SaveAccountRecoveryModal(show = false) {
                 </Modal.Header>
                 <Modal.Body>
                     <Container>
-                        <p>Store your account recovery phrase in a secure location. If you forget your Nickname and Key Password, using account recovery code is the only way to recover your account.</p>
+                        <p>Store your account recovery code in a secure location. If you forget your Nickname and Key Password, using account recovery code is the only way to recover your account.</p>
                         <p>You can either copy the following recovery code and paste it to a safe location</p>
                         <hr />
                         <Row>

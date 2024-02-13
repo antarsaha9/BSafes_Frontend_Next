@@ -35,6 +35,7 @@ const initialState = {
     clientEncryptionKey: null,
     froalaLicenseKey: null,
     v2NextAuthStep: null,
+    mfa: null
 }
 
 const authSlice = createSlice({
@@ -79,6 +80,8 @@ const authSlice = createSlice({
         loggedIn: (state, action) => {   
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
             if(!credentials) return;
+            state.activityErrors = 0;
+            state.activityErrorCodes = {};
             state.isLoggedIn = true;
             state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
@@ -110,11 +113,14 @@ const authSlice = createSlice({
         },
         setClientEncryptionKey: (state, action) => {
             state.clientEncryptionKey = action.payload;
+        },
+        setMfa: (state, action) => {
+            state.mfa = action.payload;
         }
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -270,6 +276,7 @@ export const verifyMFATokenThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "loggedIn dispatched.");
                 } else {
                     debugLog(debugOn, "woo... verifyMFAToken failed: ", data.error);
+                    dispatch(setMfa({passed:false}));
                     reject("112");
                 }
             }).catch(error => {
@@ -297,7 +304,8 @@ export const recoverMFAThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "loggedIn dispatched.");
                 } else {
                     debugLog(debugOn, "woo... recoverMFAThunk failed: ", data.error);
-                    reject(data.error);
+                    dispatch(setMfa({passed:false}));
+                    reject(114);
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... recoverMFAThunk failed.")

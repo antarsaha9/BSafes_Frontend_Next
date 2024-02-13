@@ -34,6 +34,7 @@ export default function MFASetup() {
     const [token, setToken] = useState('');
     const [showRecoveryWords, setShowRecoveryWords] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [downloadUrl, setDownloadUrl] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
     const confirmInputRef = useRef(null);
@@ -67,6 +68,11 @@ export default function MFASetup() {
 
     }
 
+    const handleHide = () => {
+        const result = confirm("Did you save your account recovery code? Close this?")
+        if(result) setShowRecoveryWords(false)
+    }
+
     const handleCopy = () => {
         navigator.clipboard.writeText(mfa.recoveryWords);
         setCopied(true);
@@ -81,7 +87,7 @@ export default function MFASetup() {
         setShowDeleteModal(false);
     }
     const handleDelete = async () => {
-        dispatch(deleteMFAThunk({accountHash}));
+        dispatch(deleteMFAThunk({ accountHash }));
         handleCloseDeleteTrigger();
     }
     useEffect(() => {
@@ -108,12 +114,19 @@ export default function MFASetup() {
     useEffect(() => {
         if (!mfa) return;
         if (mfa.mfaSetup) {
-            setShowRecoveryWords(true);
+            const file = new File([mfa.recoveryWords], '2FA.txt', {
+                type: 'text/plain',
+            })
+
+            const url = URL.createObjectURL(file)
+            setDownloadUrl(url);
+            setCopied(false);
+            setShowRecoveryWords(true);     
         } else {
-            if(mfa.error === 'InvalidToken'){
+            if (mfa.error === 'InvalidToken') {
                 setToken('');
                 return;
-            }    
+            }
         }
         if (mfa.mfaEnabled) {
             setExtraMFAEnabled(true);
@@ -164,7 +177,7 @@ export default function MFASetup() {
                             </Col>
                         </Row>
                         <Row>
-                            { (mfa && !mfa.mfaSetup && (mfa.error==='InvalidToken')) &&
+                            {(mfa && !mfa.mfaSetup && (mfa.error === 'InvalidToken')) &&
                                 <p style={{ color: 'red' }}>Invalid Token</p>
                             }
                         </Row>
@@ -197,17 +210,27 @@ export default function MFASetup() {
                                     </Button>
                                 </Modal.Body>
                             </Modal>
-                            <Modal show={showRecoveryWords} fullscreen={true} onHide={() => setShowRecoveryWords(false)}>
+                            <Modal show={showRecoveryWords} fullscreen={true} onHide={handleHide}>
                                 <Modal.Header closeButton>
                                     <Modal.Title>2FA Recovery Words</Modal.Title>
                                 </Modal.Header>
                                 <Modal.Body>
-                                    <p>Store your recovery words in a secure location. If you lost your 2FA authenticator account, using recovery words is the only way to pass the 2FA step.</p>
+                                    <p>Store your recovery words in a secure location. If you lose your 2FA authenticator account, using recovery words is the only way to pass the 2FA step.</p>
+                                    <p>You can either copy the following recovery words and paste it to a safe location</p>
                                     <hr />
                                     <h3>{mfa && mfa.recoveryWords}</h3>
                                     <hr />
                                     <Row>
-                                        <Button variant="primary" onClick={handleCopy}>{copied ? `Copied` : `Copy`}</Button>
+                                        <Col className='text-center'>
+                                            <Button variant="primary" onClick={handleCopy}>{copied ? `Copied` : `Copy`}</Button>
+                                        </Col>
+                                    </Row>
+                                    <br />
+                                    <p>or download the following file, rename it, and save it in a secure location.</p>
+                                    <Row>
+                                        <Col className="d-flex justify-content-center">
+                                            {downloadUrl && <a href={downloadUrl} download="2FA.txt">2FA.txt</a>}
+                                        </Col>
                                     </Row>
                                 </Modal.Body>
                             </Modal>

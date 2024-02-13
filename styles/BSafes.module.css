@@ -1450,6 +1450,7 @@
   cursor: help;
   bottom: 12px;
   right: 12px;
+  z-index:1000;
 }
 
 .supportButton:hover {
