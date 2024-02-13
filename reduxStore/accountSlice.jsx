@@ -6,7 +6,7 @@ import { accountActivity } from '../lib/activities';
 const debugOn = false;
 
 const initialState = {
-    activity: 0,  
+    activity: 0,
     activityErrors: 0,
     activityErrorMessages: {},
     newAccountCreated: null,
@@ -15,11 +15,12 @@ const initialState = {
     braintreeClientToken: null,
     storageUsage: 0,
     totoalStorage50GBRequired: 0,
-    nextDueTime:null,
+    nextDueTime: null,
     monthlyPrice: 0,
     dues: [],
     planOptions: null,
     transactions: [],
+    accountHashVerified: null,
     mfa: null
 }
 
@@ -29,14 +30,14 @@ const accountSlice = createSlice({
     reducers: {
         cleanAccountSlice: (state, action) => {
             const stateKeys = Object.keys(initialState);
-            for(let i=0; i<stateKeys.length; i++) {
+            for (let i = 0; i < stateKeys.length; i++) {
                 let key = stateKeys[i];
                 state[key] = initialState[key];
             }
         },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
-            state.activityErrorMessages[action.payload]='';
+            state.activityErrorMessages[action.payload] = '';
             state.activity |= action.payload;
         },
         activityDone: (state, action) => {
@@ -57,7 +58,7 @@ const accountSlice = createSlice({
             state.activity &= ~accountActivity.apiCall;
         },
         incrementAPICount: (state, action) => {
-            state.apiCount ++;
+            state.apiCount++;
         },
         setAccountState: (state, action) => {
             state.accountState = action.payload;
@@ -74,9 +75,12 @@ const accountSlice = createSlice({
             state.planOptions = action.payload.planOptions;
         },
         transactionsLoaded: (state, action) => {
-            state.transactions = action.payload.hits.map((transaction, i)=>{
+            state.transactions = action.payload.hits.map((transaction, i) => {
                 return transaction._source;
             })
+        },
+        setAccountHashVerified: (state, action) => {
+            state.accountHashVerified = action.payload;
         },
         MFALoaded: (state, action) => {
             state.mfa = action.payload;
@@ -84,15 +88,15 @@ const accountSlice = createSlice({
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded} = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, MFALoaded } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
     try {
         await activity();
         dispatch(activityDone(type));
-    } catch(error) {
-        dispatch(activityError({type, error}));
+    } catch (error) {
+        dispatch(activityError({ type, error }));
     }
 }
 
@@ -118,25 +122,51 @@ export const getMFADataThunk = () => async (dispatch, getState) => {
     });
 }
 
+export const verifyAccountHashThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.VerifyAccountHash, () => {
+        return new Promise((resolve, reject) => {
+            const accountHash = data.accountHash;
+            PostCall({
+                api: '/memberAPI/verifyAccountHash',
+                body: { accountHash }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setAccountHashVerified({verified:true, accountHash}));
+                    resolve();
+                } else {
+                    dispatch(setAccountHashVerified({verified:false}));
+                    debugLog(debugOn, "woo... verifyAccountHash failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... verifyAccountHash failed.")
+            })
+        });
+    })
+}
+
 export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.VerifyMFASetupToken, () => {
         return new Promise((resolve, reject) => {
             const token = data.token;
+            const accountHash = data.accountHash;
             PostCall({
                 api: '/memberAPI/verifyMFASetupToken',
-                body: { token }
+                body: { token, accountHash }
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(MFALoaded({ mfaSetup: true, recoveryWords:data.recoveryWords, mfaEnabled: true }));
+                    dispatch(MFALoaded({ mfaSetup: true, recoveryWords: data.recoveryWords, mfaEnabled: true }));
                     resolve();
                 } else {
+                    dispatch(MFALoaded({ mfaSetup: false, error:data.error }));
                     debugLog(debugOn, "woo... verifyMFASetupToken failed: ", data.error);
                     reject(data.error);
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... verifyMFASetupToken failed.")
-            })   
+            })
         })
     });
 }
@@ -144,12 +174,14 @@ export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => 
 export const deleteMFAThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.DeleteMFA, () => {
         return new Promise((resolve, reject) => {
+            const accountHash = data.accountHash;
             PostCall({
                 api: '/memberAPI/deleteMFA',
+                body: {accountHash}
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(MFALoaded({mfaEnabled: false}));
+                    dispatch(MFALoaded({ mfaEnabled: false }));
                     resolve()
                 } else {
                     debugLog(debugOn, "woo... deleteMFA failed: ", data.error);
@@ -210,24 +242,24 @@ export const getPaymentClientTokenThunk = () => async (dispatch, getState) => {
 export const payThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.pay, () => {
         return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/pay',
-            body: {
-                plan: data.plan,
-                paymentMethodNonce: data.paymentMethodNonce
-            }
-        }).then(async data => {
-            debugLog(debugOn, data);
-            if (data.status === 'ok') {
-                resolve();
-            } else {
-                debugLog(debugOn, "payThunk failed: ", data.error);
-                reject("payThunk failed.");
-            }
-        }).catch(error => {
-            debugLog(debugOn, "subscribe failed: ", error)
-            reject("payThunk failed!");
-        })
+            PostCall({
+                api: '/memberAPI/pay',
+                body: {
+                    plan: data.plan,
+                    paymentMethodNonce: data.paymentMethodNonce
+                }
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    resolve();
+                } else {
+                    debugLog(debugOn, "payThunk failed: ", data.error);
+                    reject("payThunk failed.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, "subscribe failed: ", error)
+                reject("payThunk failed!");
+            })
         });
     });
 }
@@ -242,7 +274,7 @@ export const getTransactionsThunk = () => async (dispatch, getState) => {
                 if (data.status === 'ok') {
                     debugLog(debugOn, "getTransactionsThunk ok. ");
                     const hits = data.hits.hits;
-                    dispatch(transactionsLoaded({hits}))
+                    dispatch(transactionsLoaded({ hits }))
                     resolve();
                 } else {
                     debugLog(debugOn, "getTransactionsThunk failed: ", data.error);
@@ -259,4 +291,3 @@ export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;
 
- 

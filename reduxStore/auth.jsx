@@ -26,6 +26,7 @@ const initialState = {
     memberId: null,
     displayName: null,
     isLoggedIn: false,
+    keySalt: null,
     expandedKey: null,
     publicKey: null,
     privateKey: null,
@@ -82,6 +83,7 @@ const authSlice = createSlice({
             state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
+            state.keySalt = credentials.secret.keySalt;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
