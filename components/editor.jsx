@@ -407,7 +407,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 <Row>
                     <Col xs={6}>
                         {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
-                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Content</h6>}
+                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Write</h6>}
                     </Col>
                     <Col xs={6}>
                         <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>

@@ -21,7 +21,7 @@ import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
 import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk, setListingDone } from '../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
+import { abort, initPage, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
 export default function Workspace({ readyToList = false }) {
@@ -139,6 +139,7 @@ export default function Workspace({ readyToList = false }) {
         debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
         if (!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
         debugLog(debugOn, "listItemsThunk");
+        dispatch(initPage());
         dispatch(clearPage());
         const itemPath = [{ _id: workspaceId }];
         dispatch(itemPathLoaded(itemPath));
