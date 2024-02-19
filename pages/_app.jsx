@@ -6,6 +6,7 @@ import '../styles/materia.css'
 import '../styles/react-tagsinput-bsafes.css'
 import "../styles/react-datepicker-bsafes.css";
 import '../lib/importStyles';
+import '../lib/importFonts';
 import "../styles/froala-editor-bsafes.css"
 import '../public/css/froalaEditorCSS/video.css'
 import '../styles/bootstrapOverride.css'

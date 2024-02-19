@@ -36,14 +36,11 @@ export default function KeySetup() {
         debugLog(debugOn, "Checking key strength:", key.length);
 
         const strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{8,})");
-        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})"); ; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
+        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{12,})"); ; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
         const isMedium = mediumRegex.test(key);
         let thisKeyStrength, thisKeyStrengthColor;
         if(key.length === 0) {
             thisKeyStrength = '';
-        } else if(key.length >32) {
-            thisKeyStrength = 'Invalid';
-            thisKeyStrengthColor = 'danger';
         } else {
             thisKeyStrength = 'Invalid';
             thisKeyStrengthColor = 'danger';
@@ -110,9 +107,8 @@ export default function KeySetup() {
                                     <ProgressBar variant={keyStrengthColor} now={keyStrengthProgress} />
                                     <p className={`text-${keyStrengthColor}`}>{keyStrength}</p>
                                     <Form.Text id="passwordHelpBlock" muted>
-                                     . Your key must contain 8-32 characters, at least one number, one uppercase, one lowercase character; <br/>
-                                     . It may contain space and special characters; <br />
-                                     . Key of 16 or more characters in length is strong.
+                                     . Your password must be at least 12 characters long, with at least one number, one uppercase, one lowercase character, and one symbol; <br/>
+                                     . A key of 16 or more characters in length is better.
                                     </Form.Text>
                                 </Form.Group>
                                 

@@ -2,7 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall } from '../lib/helper'
-import { calculateCredentials, saveLocalCredentials, createAccountRecoveryPhrase, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
+import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
 import { cleanAccountSlice, setNewAccountCreated, setAccountState } from './accountSlice';
@@ -26,6 +26,7 @@ const initialState = {
     memberId: null,
     displayName: null,
     isLoggedIn: false,
+    keySalt: null,
     expandedKey: null,
     publicKey: null,
     privateKey: null,
@@ -34,6 +35,7 @@ const initialState = {
     clientEncryptionKey: null,
     froalaLicenseKey: null,
     v2NextAuthStep: null,
+    mfa: null
 }
 
 const authSlice = createSlice({
@@ -78,10 +80,13 @@ const authSlice = createSlice({
         loggedIn: (state, action) => {   
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
             if(!credentials) return;
+            state.activityErrors = 0;
+            state.activityErrorCodes = {};
             state.isLoggedIn = true;
             state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
             state.displayName = credentials.displayName;
+            state.keySalt = credentials.secret.keySalt;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
             state.privateKey = credentials.secret.privateKey;
@@ -109,11 +114,14 @@ const authSlice = createSlice({
         },
         setClientEncryptionKey: (state, action) => {
             state.clientEncryptionKey = action.payload;
+        },
+        setMfa: (state, action) => {
+            state.mfa = action.payload;
         }
     }
 });
 
-export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey} = authSlice.actions;
+export const {cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa} = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -141,7 +149,7 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, data);
                     if(data.status === 'ok') {
                         let auth = getState().auth;
-                        const accountRecoveryPhrase = createAccountRecoveryPhrase(nickname, keyPassword, auth.clientEncryptionKey);
+                        const accountRecoveryPhrase = createAccountRecoveryCode(nickname, keyPassword, auth.clientEncryptionKey);
                         localStorage.setItem("authToken", data.authToken);
                         credentials.memberId = data.memberId;
                         credentials.displayName = data.displayName;
@@ -269,6 +277,7 @@ export const verifyMFATokenThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "loggedIn dispatched.");
                 } else {
                     debugLog(debugOn, "woo... verifyMFAToken failed: ", data.error);
+                    dispatch(setMfa({passed:false}));
                     reject("112");
                 }
             }).catch(error => {
@@ -296,7 +305,8 @@ export const recoverMFAThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "loggedIn dispatched.");
                 } else {
                     debugLog(debugOn, "woo... recoverMFAThunk failed: ", data.error);
-                    reject(data.error);
+                    dispatch(setMfa({passed:false}));
+                    reject(114);
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... recoverMFAThunk failed.")
@@ -373,7 +383,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                         dispatch(loggedOut);
                     }
                 } 
-                dispatch(setClientEncryptionKey(data.clientEncryptionKey || '01234567890123456789012345678901'));
+                dispatch(setClientEncryptionKey(data.clientEncryptionKey));
                 dispatch(setPreflightReady(true));
                 resolve();
             }).catch( error => {

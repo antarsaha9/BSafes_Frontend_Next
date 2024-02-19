@@ -15,19 +15,30 @@ import { debugLog } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import KeyInput from "../components/keyInput";
+import RecoverAccountModal from '../components/recoverAccountModal';
 
 import { logInAsyncThunk } from '../reduxStore/auth'
+
+import { readAccountRecoveryCode } from '../lib/crypto';
 
 export default function LogIn() {
     const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
 
+    const [nickname, setNickname] = useState("");
     const [keyPassword, setKeyPassword] = useState("");
+    const [recovery, setRecovery] = useState(false);
+
     const nicknameRef = useRef(null);
+    const clientEncryptionKey = useSelector(state=> state.auth.clientEncryptionKey);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const dataCenterSelected = !!useSelector(state=>state.auth.dataCenterKey);
+
+    const nicknameChanged = (e) => {
+        setNickname(e.target.value);
+    }
 
     const keyPasswordChanged = (password) => {
         debugLog(debugOn, "keyPassword: ", password);
@@ -37,7 +48,20 @@ export default function LogIn() {
     const handleSubmit = async e => {
         debugLog(debugOn, "handleSubmit");
 
-        dispatch(logInAsyncThunk({ nickname: nicknameRef.current.value, keyPassword: keyPassword }));
+        dispatch(logInAsyncThunk({ nickname/*: nicknameRef.current.value*/, keyPassword }));
+    }
+
+    const handleRecover = () => {
+        setRecovery(true);
+    }
+
+    const handleRecoverCallback = (data) => {
+        if(data.recover) {
+            const result = readAccountRecoveryCode(data.recoveryCode, clientEncryptionKey);
+            setNickname(result.nickname);
+            setKeyPassword(result.keyPassword);
+        }
+        setRecovery(false);
     }
 
     const handleCreate = () => {
@@ -70,16 +94,16 @@ export default function LogIn() {
                         <Row>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
-                                    <h1>Your BSafes</h1>
+                                    <h1 className='text-center'>Open</h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
                                             <Form.Label>Nickname</Form.Label>
-                                            <Form.Control ref={nicknameRef} type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox} />
+                                            <Form.Control /*ref={nicknameRef}*/ type="text" placeholder='' autoComplete="off" className={BSafesStyle.inputBox} value={nickname} onChange={nicknameChanged} />
                                         </Form.Group>
                                         <Form.Group className="mb-3" controlId="keyPassword">
                                             <Form.Label>Key Password</Form.Label>
-                                            <KeyInput onKeyChanged={keyPasswordChanged} />
+                                            <KeyInput onKeyChanged={keyPasswordChanged} recoveredKeyPassword={keyPassword} />
                                         </Form.Group>
                                     </Form>
                                     <Row className='p-2'>
@@ -89,12 +113,20 @@ export default function LogIn() {
                                             </Button>
                                         </Col>
                                     </Row>
-                                    <Row className='p-2'>
-                                        <p>New user ?
-                                            <Button variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{textTransform:'none', textDecoration:'none'}}>
+                                    <Row>
+                                        <Col className='text-center'>
+                                            <Button variant='link' onClick={handleRecover} disabled={activity === "LoggingIn"} style={{ color: 'gray', textTransform: 'none', textDecoration: 'none' }}>
+                                                Recover
+                                            </Button>
+                                        </Col>
+                                    </Row>
+                                    {recovery && <RecoverAccountModal callback={handleRecoverCallback}/>}
+                                    <Row>
+                                        <Col className='text-center'>
+                                            <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
                                                 Own Your BSafes
                                             </Button>
-                                        </p>
+                                        </Col>
                                     </Row>
                                 </Card>
                             </Col>

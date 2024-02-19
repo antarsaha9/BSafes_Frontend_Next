@@ -70,20 +70,16 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
-                    //toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
-                        'Georgia,serif': 'Georgia', 'Impact,Charcoal,sans-serif': 'Impact',
-                        'Tahoma,Geneva,sans-serif': 'Tahoma',
+                        "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',
+                        'Georgia,serif': 'Georgia', 
+                        'Impact,Charcoal,sans-serif': 'Impact',
+                        "'Montserrat Variable', sans-serif": 'Montserrat',
+                        "'Noto Serif Variable', serif": 'Noto Serif',
+                        "'Oswald Variable', sans-serif": 'Oswald',
+                        "'Roboto Flex Variable', sans-serif": 'Roboto Flex',
                         "'Times New Roman',Times,serif": 'Times New Roman',
-                        'Verdana,Geneva,sans-serif': 'Verdana',
-                        "Open Sans, serif": 'Open Sans',
-                        "La Belle Aurore": 'La Belle Aurore',
-                        "Cormorant Garamond": 'Cormorant Garamond',
-                        "Roboto,sans-serif": 'Roboto',
-                        "Oswald,sans-serif": 'Oswald',
-                        "Montserrat,sans-serif": 'Montserrat',
-                        "'Open Sans Condensed',sans-serif": 'Open Sans Condensed'
                     },
                     fontFamilySelection: false,
                     tableStyles: {
@@ -407,7 +403,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 <Row>
                     <Col xs={6}>
                         {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
-                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Content</h6>}
+                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Write</h6>}
                     </Col>
                     <Col xs={6}>
                         <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>

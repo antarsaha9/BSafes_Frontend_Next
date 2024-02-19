@@ -35,7 +35,7 @@ export default function ItemPath() {
         (index!==(pathItems.length-1))?
         <Breadcrumb.Item key={index} onClick={()=>router.push(item.link)} /*href={item.link}*/ active={ false }>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>  
         : 
-        <Breadcrumb.Item key={index} active={true}>{item.icon && <i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
+        <Breadcrumb.Item key={index} active={true}>{item.icon &&<i className={`${item.icon} px-1`} />}{item.title}</Breadcrumb.Item>
     );
 
     const getNewTabItems = () => {
@@ -57,12 +57,12 @@ export default function ItemPath() {
                 let pathItemIcon, pathItemLink, encodedTitle, title, temp, itemTitleText, itemKey, itemIV;
                 switch(pathItemType) {
                     case 'u':
-                        pathItemIcon = null;
+                        pathItemIcon = "";
                         itemTitleText = workspaceName;
                         pathItemLink = '/safe';
                         break;
                     case 't1':
-                        pathItemIcon = null;
+                        pathItemIcon = "";
                         itemTitleText = workspaceName;
                         const teamId = item._id.slice(0, -4)
                         pathItemLink = '/team/' + teamId;

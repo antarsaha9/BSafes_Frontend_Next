@@ -90,7 +90,7 @@ export default function Home() {
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
-            <div className={BSafesStyle.bannerBackground} style={{ padding: '20px' }}>
+            <div hidden className={BSafesStyle.bannerBackground} style={{ padding: '20px' }}>
                 <Container>
                     <Row>
                         <Col xs={6}>
@@ -109,26 +109,27 @@ export default function Home() {
                 <br />
                 <p className={BSafesStyle.bannerLowerRightText}>AES-256 End-to-End Encryption</p>
             </div>
+            <br />
+            <div>
+                <Container>
+                    <Row>
+                        <Col>
+                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
+                        </Col>
+                    </Row>
+                    <Row>
+                        <p className='text-center' style={{ fontSize: '0.8rem' }}>AES-256 End-to-End Encryption. Since 2017</p>
+                    </Row>
+                </Container>
+            </div>
             <Container>
                 <br />
-                <Row className={oswald.className} style={{ color: 'black' }}>
+                <Row className={oswald.className} style={{ padding:'10px', color: 'black' }}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
                 </Row>
-                <Row hidden className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <br />
-                        <h1 className='display-6'>🗣️  📺  📷  📑</h1>
-                        <p className={BSafesStyle.descriptionText}>🔰 BSafes offers a secure writing and record-keeping platform. With AES-256 end-to-end encryption, no one can see your private writings, videos, photos, and files.</p>
-                        <h2>🌐 <Badge bg="primary">GDPR</Badge> <Badge bg="primary">CCPA</Badge> <Badge bg="primary">HIPPA</Badge> <Badge bg="primary">HITECH</Badge></h2>
-                        <p className={BSafesStyle.descriptionText}>Due to its end-to-end encryption nature, BSafes complies with data privacy and security laws & regulations worldwide, including GDPR, CCPA, HIPPA, and HITECH.</p>
-                    </Col>
-                </Row>
             </Container>
-            <div hidden className='p-2' style={{ color: 'black', backgroundColor: 'lightgrey' }}>
-                <p className={`${BSafesStyle.hintText} ${monteserrat.className}`}> {`🧑🏿‍💻 Your device encrypts your data with a secret key known only to you, the server receives obscured data. Nobody, including BSafes, learns your data.`}</p>
-            </div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -145,6 +146,17 @@ export default function Home() {
                         </div>
                     </Carousel.Item>
                 </Carousel>
+            </div>
+            <br />
+            <Container>
+                <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                        <p >Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                    </Col>
+                </Row>
+            </Container>
+            <div className="text-center">
+                <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
             </div>
             <Container>
                 <br />

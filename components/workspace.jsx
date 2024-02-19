@@ -20,29 +20,29 @@ import ItemCard from './itemCard'
 import PaginationControl from './paginationControl';
 
 import { getItemLink } from '../lib/bSafesCommonUI'
-import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk, setListingDone} from '../reduxStore/containerSlice';
-import { abort, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
+import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchItemsThunk, setListingDone } from '../reduxStore/containerSlice';
+import { abort, initPage, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
-export default function Workspace({readyToList = false}) {
+export default function Workspace({ readyToList = false }) {
     const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
     const router = useRouter();
     const dispatch = useDispatch();
-    
-    const workspaceId = useSelector( state => state.container.workspace);
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceKeyReady = useSelector( state => state.container.workspaceKeyReady);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
-    const container = useSelector( state => state.container.container);
-    const mode = useSelector( state => state.container.mode);
-    const listingDone = useSelector( state => state.container.listingDone);
+
+    const workspaceId = useSelector(state => state.container.workspace);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceKeyReady = useSelector(state => state.container.workspaceKeyReady);
+    const workspaceSearchKey = useSelector(state => state.container.searchKey);
+    const workspaceSearchIV = useSelector(state => state.container.searchIV);
+    const container = useSelector(state => state.container.container);
+    const mode = useSelector(state => state.container.mode);
+    const listingDone = useSelector(state => state.container.listingDone);
 
     const [searchValue, setSearchValue] = useState("");
 
-    const itemsState = useSelector( state => state.container.items);
-    const newItem = useSelector( state => state.container.newItem);
+    const itemsState = useSelector(state => state.container.items);
+    const newItem = useSelector(state => state.container.newItem);
     const pageNumber = useSelector(state => state.container.pageNumber);
     const itemsPerPage = useSelector(state => state.container.itemsPerPage);
     const total = useSelector(state => state.container.total);
@@ -55,21 +55,21 @@ export default function Workspace({readyToList = false}) {
 
     const handleAdd = (type, action, target, position) => {
         debugLog(debugOn, `${type} ${action} ${target} ${position}`);
-        addAnItem(type, action, target, position );
+        addAnItem(type, action, target, position);
     }
 
-    const items = itemsState.map( (item, index) => 
-        <ItemCard key={index} itemIndex={index} item={item} onAdd={handleAdd}/>
+    const items = itemsState.map((item, index) =>
+        <ItemCard key={index} itemIndex={index} item={item} onAdd={handleAdd} />
     );
 
     const addAnItem = (itemType, addAction, targetItem = null, targetPosition = null) => {
-    
+
         setSelectedItemType(itemType);
         setAddAction(addAction);
         setTargetItem(targetItem);
         setTargetPosition(targetPosition);
         setShowNewItemModal(true);
-        
+
     }
 
     const handleClose = () => setShowNewItemModal(false);
@@ -78,8 +78,8 @@ export default function Workspace({readyToList = false}) {
         debugLog(debugOn, "createANewItem", titleStr);
         setShowNewItemModal(false);
 
-        dispatch(createANewItemThunk({titleStr, currentContainer:workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey:workspaceSearchKey, searchIV:workspaceSearchIV}));
-    
+        dispatch(createANewItemThunk({ titleStr, currentContainer: workspaceId, selectedItemType, addAction, targetItem, targetPosition, workspaceKey, searchKey: workspaceSearchKey, searchIV: workspaceSearchIV }));
+
     }
 
     const onSearchValueChanged = (e) => {
@@ -89,13 +89,13 @@ export default function Workspace({readyToList = false}) {
 
     const onSubmit = (e) => {
         e.preventDefault();
-        dispatch(searchItemsThunk({searchValue, pageNumber:1}));
+        dispatch(searchItemsThunk({ searchValue, pageNumber: 1 }));
     }
 
     const onCancelSearch = (e) => {
         e.preventDefault();
         setSearchValue('');
-        dispatch(listItemsThunk({pageNumber: 1}));
+        dispatch(listItemsThunk({ pageNumber: 1 }));
     }
 
     const listItems = ({ pageNumber = 1, searchMode }) => {
@@ -107,48 +107,48 @@ export default function Workspace({readyToList = false}) {
     }
 
     useEffect(() => {
-        
+
         const handleRouteChange = (url, { shallow }) => {
-          console.log(
-            `App is changing to ${url} ${
-              shallow ? 'with' : 'without'
-            } shallow routing`
-          )
-          dispatch(setListingDone(false));
-          dispatch(abort());
-          dispatch(clearPage());
-          dispatch(clearItems());
+            console.log(
+                `App is changing to ${url} ${shallow ? 'with' : 'without'
+                } shallow routing`
+            )
+            dispatch(setListingDone(false));
+            dispatch(abort());
+            dispatch(clearPage());
+            dispatch(clearItems());
         }
-    
+
         const handleRouteChangeComplete = () => {
-          debugLog(debugOn, "handleRouteChangeComplete");
+            debugLog(debugOn, "handleRouteChangeComplete");
         }
 
         router.events.on('routeChangeStart', handleRouteChange)
         router.events.on('routeChangeComplete', handleRouteChangeComplete)
-    
+
         // If the component is unmounted, unsubscribe
         // from the event with the `off` method:
         return () => {
-          router.events.off('routeChangeStart', handleRouteChange)
-          router.events.off('routeChangeComplete', handleRouteChangeComplete)
+            router.events.off('routeChangeStart', handleRouteChange)
+            router.events.off('routeChangeComplete', handleRouteChangeComplete)
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
         debugLog(debugOn, `workspaceKeyReady: ${workspaceKeyReady} `);
-        if(!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
+        if (!readyToList || !workspaceId || !workspaceKeyReady || container !== 'root') return;
         debugLog(debugOn, "listItemsThunk");
+        dispatch(initPage());
         dispatch(clearPage());
-        const itemPath = [{_id: workspaceId}];
+        const itemPath = [{ _id: workspaceId }];
         dispatch(itemPathLoaded(itemPath));
-        dispatch(listItemsThunk({pageNumber: 1}));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [readyToList, container, workspaceId, workspaceKeyReady ]);
+        dispatch(listItemsThunk({ pageNumber: 1 }));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [readyToList, container, workspaceId, workspaceKeyReady]);
 
-    useEffect(()=> {
-        if(newItem) {
+    useEffect(() => {
+        if (newItem) {
             const link = getItemLink(newItem, true);
             dispatch(clearNewItem());
             router.push(link);
@@ -158,52 +158,52 @@ export default function Workspace({readyToList = false}) {
     return (
         <Container className={BSafesStyle.container}>
             <Row>
-            <Form onSubmit={onSubmit}>
-                <InputGroup className="mb-3">
-                    <Form.Control size="lg" type="text"
-                        value={searchValue} 
-                        onChange={onSearchValueChanged}
-                    />
-                    <Button variant="link">
-                        <i id="1" className="fa fa-search fa-lg text-dark" aria-hidden="true" onClick={onSubmit}></i>
-                    </Button>
-                </InputGroup>
-            </Form>
+                <Form onSubmit={onSubmit}>
+                    <InputGroup className="mb-3">
+                        <Form.Control size="lg" type="text"
+                            value={searchValue}
+                            onChange={onSearchValueChanged}
+                        />
+                        <Button variant="link">
+                            <i id="1" className="fa fa-search fa-lg text-dark" aria-hidden="true" onClick={onSubmit}></i>
+                        </Button>
+                    </InputGroup>
+                </Form>
             </Row>
-            <Row className="justify-content-center">     
-                <AddAnItemButton addAnItem={addAnItem}/>
+            <Row className="justify-content-center">
+                <AddAnItemButton addAnItem={addAnItem} />
             </Row>
 
-            <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem}/>
+            <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} />
             <br />
             <br />
-            { mode ==='search' &&
-            <>
-                <Row>
-                    <Col>
-                        <Button variant="default" className={`${BSafesStyle.btnCircle} pull-right`} onClick={onCancelSearch}>
-                            <i id="1" className="fa fa-times fa-lg" aria-hidden="true"></i>
-                        </Button>
-                    </Col>
-                </Row>
-                <br />
-            </>
-            }     
-            { (listingDone && (mode !== 'search') && (items.length === 0)) &&
+            {mode === 'search' &&
+                <>
+                    <Row>
+                        <Col>
+                            <Button variant="default" className={`${BSafesStyle.btnCircle} pull-right`} onClick={onCancelSearch}>
+                                <i id="1" className="fa fa-times fa-lg" aria-hidden="true"></i>
+                            </Button>
+                        </Col>
+                    </Row>
+                    <br />
+                </>
+            }
+            {(listingDone && (mode !== 'search') && (items.length === 0)) &&
                 <Row className='justify-content-center'>
                     <Col sm={8}>
                         <Card>
                             <Card.Header>😊 Welcome!</Card.Header>
                             <Card.Body>
                                 <Card.Title>Instructions</Card.Title>
-                                <Card.Text>
-                                    <ul>
-                                        <li><strong>Adding records</strong> - Click on the central blue button, then select an item type.</li>
-                                        <li><strong>Searching for records</strong> - Enter keywords in central field, then click on search button.</li>
-                                        <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
-                                        <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
-                                    </ul>
-                                </Card.Text>            
+
+                                <ul>
+                                    <li><strong>Adding records</strong> - Click on the central blue button, then select an item type.</li>
+                                    <li><strong>Searching for records</strong> - Enter keywords in central field, then click on search button.</li>
+                                    <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
+                                    <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
+                                </ul>
+
                             </Card.Body>
                         </Card>
                     </Col>
@@ -220,7 +220,7 @@ export default function Workspace({readyToList = false}) {
                                 total={total}
                                 limit={itemsPerPage}
                                 changePage={(page) => {
-                                    listItems({pageNumber:page})
+                                    listItems({ pageNumber: page })
                                 }}
                                 ellipsis={1}
                             />
