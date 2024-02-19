@@ -93,7 +93,7 @@ export default function Teams() {
                                 </Link>
 					        </Card>
                             <br/>
-					        <p className="text-muted">Only you can access items in your personal workspace.</p>
+					        <p hidden className="text-muted">Only you can access items in your personal workspace.</p>
 				        </Col>
 			        </Row>  
                     <Row className="justify-content-center">

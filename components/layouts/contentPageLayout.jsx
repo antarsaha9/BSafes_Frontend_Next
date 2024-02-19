@@ -27,8 +27,8 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 import { getErrorMessages } from '../../lib/activities';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk, setAccountVersion } from '../../reduxStore/auth';
-import { setNewAccountCreated } from '../../reduxStore/accountSlice';
+import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
+import { setAccountHashVerified } from '../../reduxStore/accountSlice';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
@@ -217,6 +217,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     useEffect(() => {
 
         dispatch(setPreflightReady(false));
+        dispatch(setAccountHashVerified(null));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
         dispatch(preflightAsyncThunk());
 
