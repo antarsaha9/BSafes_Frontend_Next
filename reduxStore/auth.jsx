@@ -90,6 +90,7 @@ const authSlice = createSlice({
                 state.searchIV = credentials.secret.searchIV;
             }
             state.froalaLicenseKey = action.payload.froalaLicenseKey;
+            state.dataCenterKey = action.payload.dataCenterKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
@@ -363,7 +364,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                             dispatch(setNextAuthStep(data.nextStep))
                         } 
                     } else {
-                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey, dataCenterKey:data.dataCenterKey}));
                         dispatch(setAccountState(data.accountState));
                     }
                 } else { 

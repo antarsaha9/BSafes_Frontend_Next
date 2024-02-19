@@ -31,6 +31,7 @@ export default function MFA() {
     const wordsRef = useRef(null);
 
     const isLoggedIn = useSelector(state=>state.auth.isLoggedIn);
+    const dataCenterSelected = !!useSelector(state=>state.auth.dataCenterKey);
 
     const handleVerify = () => {
         try {
@@ -53,7 +54,10 @@ export default function MFA() {
 
     useEffect(()=> {
         if(isLoggedIn) {
-            router.push('/safe');
+            if (dataCenterSelected)
+                router.push('/safe');
+            else
+               router.push('/services/dataCenterSetup');
         }
     }, [isLoggedIn]);
 

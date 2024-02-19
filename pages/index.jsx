@@ -63,6 +63,7 @@ export default function Home() {
     const nicknameRef = useRef(null);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const dataCenterSelected = !!useSelector(state=>state.auth.dataCenterKey);
 
     const bsafesNativeToWebCall = () => {
         console.log('bsafesNativeToWebCall');
@@ -78,7 +79,10 @@ export default function Home() {
 
     useEffect(() => {
         if (isLoggedIn) {
-            router.push('/safe');
+            if (dataCenterSelected)
+                router.push('/safe');
+            else
+               router.push('/services/dataCenterSetup');
         }
     }, [isLoggedIn])
 

@@ -81,10 +81,14 @@ const accountSlice = createSlice({
         MFALoaded: (state, action) => {
             state.mfa = action.payload;
         },
+        dataCentersLoaded: (state, action) => {
+            state.dataCenters = action.payload.dataCenters;
+            state.nearestDC = action.payload.nearestDC;
+        },
     }
 });
 
-export const {cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded} = accountSlice.actions;
+export const {cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, MFALoaded, dataCentersLoaded} = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -118,6 +122,52 @@ export const getMFADataThunk = () => async (dispatch, getState) => {
     });
 }
 
+export const getDataCentersThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.GetDataCenters, () => {
+        return new Promise(async (resolve, reject) => {
+            const myTimeZoneOffset = getTimezoneOffset(Intl.DateTimeFormat().resolvedOptions().timeZone);
+            PostCall({
+                api: '/memberAPI/getDataCenters',
+                body: {myTimeZoneOffset: myTimeZoneOffset}
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(dataCentersLoaded({dataCenters:data.dataCenters, nearestDC:data.nearestDC}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getDataCentersThunk failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getDataCentersThunk failed: ", error)
+                reject("getDataCentersThunk failed!");
+            })
+        });
+    });
+}
+
+export const changeDataCenterThunk = (data, successCallback) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.ChangeDataCenter, () => {
+        return new Promise((resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/changeDataCenter',
+                body:{dcId:data.id}
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    // dispatch(getDataCentersThunk());
+                    successCallback();
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... change data center failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... change data center failed.", error)
+            });
+        })
+    });
+}
 export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.VerifyMFASetupToken, () => {
         return new Promise((resolve, reject) => {
@@ -259,4 +309,12 @@ export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;
 
- 
+function getTimezoneOffset(timeZone) {
+    const now = new Date();
+    const tzString = now.toLocaleString('en-US', { timeZone });
+    const localString = now.toLocaleString('en-US');
+    const diff = (Date.parse(localString) - Date.parse(tzString)) / 3600000;
+    const offset = diff + now.getTimezoneOffset() / 60;
+
+    return -offset;
+}

@@ -78,6 +78,10 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         router.push('/services/payment');
     }
 
+    const dataCenter = (e) => {
+        router.push('/services/dataCenterSetup');
+    }
+
     const logOut = (e) => {
         debugLog(debugOn, "Log out");
         //changePage('/logOut');
@@ -429,6 +433,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                     <Nav className="justify-content-end flex-grow-1 pe-3">
                                         <Nav.Link onClick={mfaSetup}>2FA</Nav.Link>
                                         <Nav.Link onClick={payment}>Payment</Nav.Link>
+                                        <Nav.Link onClick={dataCenter}>Data Center</Nav.Link>
                                         <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer">Support</Nav.Link>
                                     </Nav>
                                 </Offcanvas.Body>
