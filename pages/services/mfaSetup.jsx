@@ -69,7 +69,7 @@ export default function MFASetup() {
     }
 
     const handleHide = () => {
-        const result = confirm("Did you save your account recovery code? Close this?")
+        const result = confirm("Did you save your 2FA recovery phase? Close this?")
         if(result) setShowRecoveryWords(false)
     }
 

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from "next/router";
-import Link from 'next/link';
 
 import { SafeArea } from 'capacitor-plugin-safe-area';
 
@@ -17,7 +16,6 @@ import { Blocks } from 'react-loader-spinner';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-import SaveAccountRecoveryModal from '../saveAccountRecoverModal';
 import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
@@ -48,7 +46,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const [nextRoute, setNextRoute] = useState(null);
 
-    const newAccountCreated = useSelector(state => state.account.newAccountCreated);
     const accountState = useSelector(state => state.account.accountState);
     const accountActivity = useSelector(state => state.account.activity);
     const authActivity = useSelector(state => state.auth.activity);
@@ -456,9 +453,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />
-            {(newAccountCreated) &&
-                <SaveAccountRecoveryModal />
-            }
         </div>
     )
 

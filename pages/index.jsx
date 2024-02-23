@@ -86,25 +86,6 @@ export default function Home() {
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
-            <div hidden className={BSafesStyle.bannerBackground} style={{ padding: '20px' }}>
-                <Container>
-                    <Row>
-                        <Col xs={6}>
-                            {false && <DialerLock size={120} fontSize={0.6} triangleSize={3} />}
-                            <img src="/images/mySafe_Small.png" />
-                            <h1 className={BSafesStyle.metalH1 + ' ' + orbitron.className}>
-                                <span>Since 2017</span>
-                                <span>Since 2017</span>
-                            </h1>
-                            <br />
-                            <br />
-                            {true && <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>}
-                        </Col>
-                    </Row>
-                </Container>
-                <br />
-                <p className={BSafesStyle.bannerLowerRightText}>AES-256 End-to-End Encryption</p>
-            </div>
             <br />
             <div>
                 <Container>
@@ -113,8 +94,9 @@ export default function Home() {
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
                         </Col>
                     </Row>
-                    <Row>
-                        <p className='text-center' style={{ fontSize: '0.8rem' }}>AES-256 End-to-End Encryption. Since 2017</p>
+                    <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>BSafes - Bit Safes with AES-256 End-to-End Encryption.</p>
+                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in Taiwan, USA, France & India. Since 2017</p>
                     </Row>
                 </Container>
             </div>
@@ -160,7 +142,7 @@ export default function Home() {
                 <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
-                        <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your creative ideas, privacy, and secrets safe..</p>
+                        <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
                         <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                     </Col>
                 </Row>

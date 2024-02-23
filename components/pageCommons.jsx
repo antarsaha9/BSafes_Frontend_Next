@@ -743,7 +743,7 @@ export default function PageCommons() {
             <br />
             { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
                 <div className="videos">
-                    <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
+                    <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" multiple className="d-none editControl" id="videos" />
                     <Row>
                         <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${videosDragActive?BSafesStyle.videosDragDropZoneActive:BSafesStyle.videosDragDropZone}`}>
                             <Button id="videos" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
@@ -796,7 +796,7 @@ export default function PageCommons() {
             </Row>
             <br />
             {photoSwipeGallery()}
-            {itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
+            {false && itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
             {true &&
                 <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
             }

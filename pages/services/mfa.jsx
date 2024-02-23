@@ -113,7 +113,7 @@ export default function MFA() {
                             </Row>}
                         <Row>
                             <Col>
-                                <Button size='sm' className='pull-left' variant="link" onClick={() => setLostMFA(true)}>lost ?</Button>
+                                <Button size='sm' className='pull-left' variant="link" onClick={() => setLostMFA(true)}>Recover</Button>
                             </Col>
                         </Row>
                         <Modal show={lostMFA} fullscreen={true} onHide={() => setLostMFA(false)}>
@@ -121,8 +121,8 @@ export default function MFA() {
                                 <Modal.Title>2FA Recovery Words</Modal.Title>
                             </Modal.Header>
                             <Modal.Body>
-                                <p>If you lose your 2FA authenticator account, using recovery words is the only way to pass the 2FA step.</p>
-                                <p>You can either enter your account recovery words below</p>
+                                <p>If you lose your 2FA authenticator account, using recovery phrase is the only way to pass the 2FA step.</p>
+                                <p>You can either enter your account recovery phrase below</p>
                                 <Row>
                                     <Col>
                                         <Form.Control ref={wordsRef} className={BSafesStyle.inputBox} size="lg" type="text" placeholder="" value={recoveryWords} onChange={e => setRecoveryWords(e.target.value)} />

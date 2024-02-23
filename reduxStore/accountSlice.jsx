@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
 const debugOn = false;
@@ -21,7 +21,11 @@ const initialState = {
     planOptions: null,
     transactions: [],
     accountHashVerified: null,
-    mfa: null
+    mfa: null,
+    dataCenterModal: false,
+    currentDataCenter: null,
+    dataCenters: null,
+    nearestDataCenter: null
 }
 
 const accountSlice = createSlice({
@@ -85,10 +89,18 @@ const accountSlice = createSlice({
         MFALoaded: (state, action) => {
             state.mfa = action.payload;
         },
+        setDataCenterModal: (state, action) => {
+            state.dataCenterModal = action.payload;
+        },
+        dataCentersLoaded: (state, action) => {
+            state.currentDataCenter = action.payload.currentDataCenter;
+            state.dataCenters = action.payload.dataCenters;
+            state.nearestDataCenter = action.payload.nearestDataCenter;
+        },
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, MFALoaded } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -287,6 +299,31 @@ export const getTransactionsThunk = () => async (dispatch, getState) => {
         });
     });
 }
+
+export const getDataCentersThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.GetDataCenters, () => {
+        return new Promise(async (resolve, reject) => {
+            const myTimeZoneOffset = getTimeZoneOffset(Intl.DateTimeFormat().resolvedOptions().timeZone);
+            PostCall({
+                api: '/memberAPI/getDataCenters',
+                body: {myTimeZoneOffset}
+            }).then(async data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(dataCentersLoaded({currentDataCenter:data.currentDataCenter, dataCenters:data.dataCenters, nearestDataCenter:data.nearestDataCenter}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "getDataCentersThunk failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "getDataCentersThunk failed: ", error)
+                reject("getDataCentersThunk failed!");
+            })
+        });
+    });
+}
+ 
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

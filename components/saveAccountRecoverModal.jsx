@@ -9,7 +9,7 @@ import Button from 'react-bootstrap/Button'
 
 import { setNewAccountCreated } from '../reduxStore/accountSlice'
 
-export default function SaveAccountRecoveryModal(show = false) {
+export default function SaveAccountRecoveryModal({show = false, onHide}) {
     const dispatch = useDispatch();
 
     const newAccountCreated = useSelector(state => state.account.newAccountCreated);
@@ -18,7 +18,10 @@ export default function SaveAccountRecoveryModal(show = false) {
 
     const handleHide = () => {
         const result = confirm("Did you save your account recovery code? Close this?")
-        if(result) dispatch(setNewAccountCreated(null));
+        if(result) {
+            dispatch(setNewAccountCreated(null));
+            onHide();
+        }
     }
     const handleCopy = () => {
         navigator.clipboard.writeText(newAccountCreated.accountRecoveryPhrase);

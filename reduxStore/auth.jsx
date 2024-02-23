@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials} from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
@@ -139,10 +139,10 @@ export const keySetupAsyncThunk = (data) => async (dispatch, getState) => {
             const keyPassword = data.keyPassword;
             if(credentials) {
                 debugLog(debugOn, "credentials: ", credentials);
-
+                const myTimeZoneOffset = getTimeZoneOffset(Intl.DateTimeFormat().resolvedOptions().timeZone);
                 PostCall({
                     api:'/keySetup',
-                    body: credentials.keyPack,
+                    body: {...credentials.keyPack, myTimeZoneOffset},
                     dispatch
                 }).then( data => {
                     debugLog(debugOn, data);
