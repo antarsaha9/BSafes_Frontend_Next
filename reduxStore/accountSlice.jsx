@@ -97,10 +97,13 @@ const accountSlice = createSlice({
             state.dataCenters = action.payload.dataCenters;
             state.nearestDataCenter = action.payload.nearestDataCenter;
         },
+        setCurrentDataCenter: (state, action) => {
+            state.currentDataCenter = action.payload;
+        }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -144,10 +147,10 @@ export const verifyAccountHashThunk = (data) => async (dispatch, getState) => {
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(setAccountHashVerified({verified:true, accountHash}));
+                    dispatch(setAccountHashVerified({ verified: true, accountHash }));
                     resolve();
                 } else {
-                    dispatch(setAccountHashVerified({verified:false}));
+                    dispatch(setAccountHashVerified({ verified: false }));
                     debugLog(debugOn, "woo... verifyAccountHash failed: ", data.error);
                     reject(data.error);
                 }
@@ -172,7 +175,7 @@ export const verifyMFASetupTokenThunk = (data) => async (dispatch, getState) => 
                     dispatch(MFALoaded({ mfaSetup: true, recoveryWords: data.recoveryWords, mfaEnabled: true }));
                     resolve();
                 } else {
-                    dispatch(MFALoaded({ mfaSetup: false, error:data.error }));
+                    dispatch(MFALoaded({ mfaSetup: false, error: data.error }));
                     debugLog(debugOn, "woo... verifyMFASetupToken failed: ", data.error);
                     reject(data.error);
                 }
@@ -189,7 +192,7 @@ export const deleteMFAThunk = (data) => async (dispatch, getState) => {
             const accountHash = data.accountHash;
             PostCall({
                 api: '/memberAPI/deleteMFA',
-                body: {accountHash}
+                body: { accountHash }
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
@@ -306,11 +309,11 @@ export const getDataCentersThunk = (data) => async (dispatch, getState) => {
             const myTimeZoneOffset = getTimeZoneOffset(Intl.DateTimeFormat().resolvedOptions().timeZone);
             PostCall({
                 api: '/memberAPI/getDataCenters',
-                body: {myTimeZoneOffset}
+                body: { myTimeZoneOffset }
             }).then(async data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(dataCentersLoaded({currentDataCenter:data.currentDataCenter, dataCenters:data.dataCenters, nearestDataCenter:data.nearestDataCenter}));
+                    dispatch(dataCentersLoaded({ currentDataCenter: data.currentDataCenter, dataCenters: data.dataCenters, nearestDataCenter: data.nearestDataCenter }));
                     resolve();
                 } else {
                     debugLog(debugOn, "getDataCentersThunk failed: ", data.error);
@@ -323,7 +326,29 @@ export const getDataCentersThunk = (data) => async (dispatch, getState) => {
         });
     });
 }
- 
+export const changeDataCenterThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.ChangeDataCenter, () => {
+        const dataCenter = data.dataCenter;
+        return new Promise((resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/changeDataCenter',
+                body: { dataCenterId: data.dataCenter.id }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setCurrentDataCenter(dataCenter))
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... change data center failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... change data center failed.", error)
+            });
+        })
+    });
+}
+
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;
