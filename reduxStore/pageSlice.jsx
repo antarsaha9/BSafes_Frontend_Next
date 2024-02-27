@@ -983,7 +983,7 @@ function getItemPath(id, dispatch, getState) {
                 dispatch(itemPathLoaded(result.itemPath));
                 resolve();
             } else {
-                reject(error);
+                reject(result.error);
                 debugLog(debugOn, "woo... failed to get the item path.!", result.status);
             }
         }).catch(error => {
