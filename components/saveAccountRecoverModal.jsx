@@ -68,6 +68,13 @@ export default function SaveAccountRecoveryModal({show = false, onHide}) {
                                 {downloadUrl && <a href={downloadUrl} download="account.txt">account.txt</a>}
                             </Col>
                         </Row>
+                        <br/>
+                        <hr />
+                        <Row>
+                            <Col className="d-flex justify-content-center">
+                                <Button className='text-center' variant="warning" onClick={handleHide}>Done</Button>
+                            </Col>
+                        </Row>
                     </Container>
                 </Modal.Body>
             </Modal>

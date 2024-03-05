@@ -102,7 +102,7 @@ export default function Home() {
             </div>
             <Container>
                 <br />
-                <Row className={oswald.className} style={{ padding:'10px', color: 'black' }}>
+                <Row className={oswald.className} style={{ padding: '10px', color: 'black' }}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
                     </Col>
