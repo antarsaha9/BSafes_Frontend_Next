@@ -195,7 +195,6 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.encryptChunkBinaryStringToBinaryStringAsync = encryptChunkBinaryStringToBinaryStringAsyncHook;
         window.bsafesFroala.preS3Upload = preS3UploadHook;
         window.bsafesFroala.preS3ChunkUpload = preS3ChunkUploadHook;
-        window.bsafesFroala.postS3Upload = postS3UploadHook;
         window.bsafesFroala.uploadData = uploadDataHook;
         window.bsafesFroala.getBrowserInfo = getBrowserInfoHook;
         window.bsafesFroala.arraryBufferToStr = arraryBufferToStrHook;
@@ -340,28 +339,6 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
               reject(error);
             })
         });;
-    }
-
-    const postS3UploadHook = (s3Object) => {
-        return new Promise( async (resolve, reject) => {
-            s3Object.keyEnvelope = forge.util.encode64(s3Object.keyEnvelope);
-            PostCall({
-                api:'/memberAPI/postS3Upload',
-                body: s3Object,
-                dispatch
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {                                  
-                    resolve({status:"ok"});
-                } else {
-                    debugLog(debugOn, "postS3Upload failed: ", data.error);
-                    reject(data.error);
-                }
-            }).catch( error => {
-                debugLog(debugOn, "postS3Upload failed: ", error)
-                reject(error);
-            })
-        });
     }
 
     const uploadDataHook = (data, s3Key, signedURL, onProgress) => {

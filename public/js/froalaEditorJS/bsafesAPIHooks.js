@@ -38,10 +38,6 @@ export function preS3ChunkUpload(itemId, chunkIndex, timeStamp){
     return window.bsafesFroala.preS3ChunkUpload(itemId, chunkIndex, timeStamp);
 }
 
-export async function postS3Upload(s3Object) {
-    return  window.bsafesFroala.postS3Upload(s3Object);
-}
-
 export function uploadData(data, s3Key, signedURL, onProgress) {
     return window.bsafesFroala.uploadData(data, s3Key, signedURL, onProgress);    
 }
