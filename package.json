@@ -18,6 +18,8 @@
     "@fontsource-variable/oswald": "^5.0.18",
     "@fontsource-variable/roboto-flex": "^5.0.8",
     "@reduxjs/toolkit": "^1.8.2",
+    "@stripe/react-stripe-js": "^2.5.1",
+    "@stripe/stripe-js": "^3.0.7",
     "@tawk.to/tawk-messenger-react": "^2.0.2",
     "argon2-browser": "^1.15.4",
     "axios": "^0.27.2",

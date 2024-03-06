@@ -12,7 +12,6 @@ const initialState = {
     newAccountCreated: null,
     accountState: null,
     apiCount: 0,
-    braintreeClientToken: null,
     storageUsage: 0,
     totoalStorage50GBRequired: 0,
     nextDueTime: null,
@@ -25,7 +24,8 @@ const initialState = {
     dataCenterModal: false,
     currentDataCenter: null,
     dataCenters: null,
-    nearestDataCenter: null
+    nearestDataCenter: null,
+    stripeClientSecret: null,
 }
 
 const accountSlice = createSlice({
@@ -67,9 +67,6 @@ const accountSlice = createSlice({
         setAccountState: (state, action) => {
             state.accountState = action.payload;
         },
-        clientTokenLoaded: (state, action) => {
-            state.braintreeClientToken = action.payload.clientToken;
-        },
         invoiceLoaded: (state, action) => {
             state.storageUsage = action.payload.storageUsage;
             state.totoalStorage50GBRequired = action.payload.totoalStorage50GBRequired;
@@ -99,11 +96,14 @@ const accountSlice = createSlice({
         },
         setCurrentDataCenter: (state, action) => {
             state.currentDataCenter = action.payload;
+        },
+        setStripeClientSecret: (state, action) => {
+            state.stripeClientSecret = action.payload.stripeClientSecret;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, clientTokenLoaded, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setStripeClientSecret } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -232,53 +232,6 @@ export const getInvoiceThunk = () => async (dispatch, getState) => {
     });
 }
 
-export const getPaymentClientTokenThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.getBraintreeClientToken, () => {
-        return new Promise(async (resolve, reject) => {
-            PostCall({
-                api: '/memberAPI/getBraintreeClientToken',
-            }).then(async data => {
-                debugLog(debugOn, data);
-                if (data.status === 'ok') {
-                    dispatch(clientTokenLoaded({ clientToken: data.clientToken }));
-                    resolve();
-                } else {
-                    debugLog(debugOn, "getPaymentClientTokenThunk failed: ", data.error);
-                    reject("getPaymentClientTokenThunk failed.");
-                }
-            }).catch(error => {
-                debugLog(debugOn, "getPaymentClientTokenThunk failed: ", error)
-                reject("getPaymentClientTokenThunk failed!");
-            })
-        });
-    });
-}
-
-export const payThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.pay, () => {
-        return new Promise(async (resolve, reject) => {
-            PostCall({
-                api: '/memberAPI/pay',
-                body: {
-                    plan: data.plan,
-                    paymentMethodNonce: data.paymentMethodNonce
-                }
-            }).then(async data => {
-                debugLog(debugOn, data);
-                if (data.status === 'ok') {
-                    resolve();
-                } else {
-                    debugLog(debugOn, "payThunk failed: ", data.error);
-                    reject("payThunk failed.");
-                }
-            }).catch(error => {
-                debugLog(debugOn, "subscribe failed: ", error)
-                reject("payThunk failed!");
-            })
-        });
-    });
-}
-
 export const getTransactionsThunk = () => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.getTransactions, () => {
         return new Promise(async (resolve, reject) => {
@@ -344,6 +297,27 @@ export const changeDataCenterThunk = (data) => async (dispatch, getState) => {
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... change data center failed.", error)
+            });
+        })
+    });
+}
+
+export const createPaymentIntentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.CreatePaymentIntent, () => {
+        return new Promise((resolve, reject) => {
+            PostCall({
+                api: '/memberAPI/createPaymentIntent'
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setStripeClientSecret({stripeClientSecret: data.client_secret}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... create payment intent failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... create payment intent failed.", error)
             });
         })
     });

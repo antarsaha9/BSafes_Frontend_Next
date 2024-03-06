@@ -34,6 +34,7 @@ const initialState = {
     searchIV: null,
     clientEncryptionKey: null,
     froalaLicenseKey: null,
+    stripePublishableKey: null,
     v2NextAuthStep: null,
     mfa: null
 }
@@ -95,6 +96,7 @@ const authSlice = createSlice({
                 state.searchIV = credentials.secret.searchIV;
             }
             state.froalaLicenseKey = action.payload.froalaLicenseKey;
+            state.stripePublishableKey = action.payload.stripePublishableKey;
         },
         loggedOut: (state, action) => {
             state.isLoggedIn = false;
@@ -104,6 +106,7 @@ const authSlice = createSlice({
             state.searchKey = null;
             state.searchIV = null;
             state.froalaLicenseKey = null;
+            state.stripePublishableKey = null;
         },
         setAccountVersion: (state, action) => {
             state.accountVersion = action.payload;
@@ -373,7 +376,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                             dispatch(setNextAuthStep(data.nextStep))
                         } 
                     } else {
-                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey}));
+                        dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey, stripePublishableKey:data.stripePublishableKey}));
                         dispatch(setAccountState(data.accountState));
                     }
                 } else { 
