@@ -14,6 +14,7 @@ import {Elements} from '@stripe/react-stripe-js';
 import format from "date-fns/format";
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
+import LoadStripe from '../../components/loadStripe'
 import CheckoutForm from '../../components/checkoutForm'
 
 import { getInvoiceThunk, getTransactionsThunk, createPaymentIntentThunk } from '../../reduxStore/accountSlice';
@@ -29,7 +30,6 @@ export default function Payment() {
     const [plan, setPlan] = useState('yearly');
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
-    const stripePublishableKey = useSelector(state => state.auth.stripePublishableKey);
     const storageUsage = useSelector(state => state.account.storageUsage);
     const totoalStorage50GBRequired = useSelector(state => state.account.totoalStorage50GBRequired);
     const nextDueTime = useSelector(state => state.account.nextDueTime);
@@ -88,13 +88,6 @@ export default function Payment() {
             dispatch(getTransactionsThunk());
         }
     }, [isLoggedIn])
-
-    useEffect(() => {
-        if (stripePublishableKey) {
-            console.log('stripePublishableKey');
-            setStripePromise(loadStripe(stripePublishableKey));
-        }
-    }, [stripePublishableKey]);
 
     return (
         <ContentPageLayout>
@@ -210,6 +203,7 @@ export default function Payment() {
                     </Col>
                 </Row>
             </Container>
+            <LoadStripe setStripePromise={setStripePromise}/>
         </ContentPageLayout>
     )
 }

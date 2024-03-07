@@ -28,7 +28,7 @@ export default function CheckoutForm() {
             elements,
             confirmParams: {
                 // Make sure to change this to your payment completion page
-                return_url: `${window.location.origin}/completion`,
+                return_url: `${window.location.origin}/services/paymentCompletion`,
             },
         });
 
@@ -48,7 +48,7 @@ export default function CheckoutForm() {
 
     return (
         <form id="payment-form" onSubmit={handleSubmit}>
-            <LinkAuthenticationElement id="link-authentication-element"
+            { false && <LinkAuthenticationElement  id="link-authentication-element"
             // Access the email value like so:
             // onChange={(event) => {
             //  setEmail(event.value.email);
@@ -56,7 +56,7 @@ export default function CheckoutForm() {
             //
             // Prefill the email field like so:
             // options={{defaultValues: {email: 'foo@bar.com'}}}
-            />
+            />}
             <PaymentElement id="payment-element" />
             <button disabled={isLoading || !stripe || !elements} id="submit">
                 <span id="button-text">
