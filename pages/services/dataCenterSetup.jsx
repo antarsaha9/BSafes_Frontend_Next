@@ -44,7 +44,7 @@ export default function DataCenterSetup() {
                 <div className='mt-2'>
                     <Row>
                         <Col>
-                            <h2><i className="fa fa-globe" aria-hidden="true"></i> Select your preferred Data Center</h2>
+                            <h2><i className="fa fa-globe" aria-hidden="true"></i> Select Your Preferred Data Center</h2>
                             <hr />
                             <p>You can access your data much faster with a data center nearby.</p>
                         </Col>

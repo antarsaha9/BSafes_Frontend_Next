@@ -27,7 +27,7 @@ export default function PaymentCompletion() {
         <ContentPageLayout>
             <Container>
                 <h1>Thank you!</h1>
-                <a href="/">home</a>
+
                 <div id="messages" role="alert" style={messageBody ? { display: 'block' } : {}}>{messageBody}</div>
             </Container>
             <LoadStripe setStripePromise={setStripePromise} />

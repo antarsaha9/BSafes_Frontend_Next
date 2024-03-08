@@ -129,7 +129,7 @@ export default function Home() {
             <Container>
                 <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <p >Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                        <p>Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                     </Col>
                 </Row>
             </Container>
