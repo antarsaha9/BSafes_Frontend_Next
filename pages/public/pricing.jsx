@@ -104,7 +104,7 @@ export default function Pricing() {
                 <br />
                 <Row>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <p>You only need to pay for the storage size you require, and all the features are already included in the package.</p>
+                        <p>You only pay for the storage you need, yet still enjoy all features.</p>
                     </Col>
                 </Row>
                 <Row>
@@ -120,6 +120,10 @@ export default function Pricing() {
                                 <tr>
                                     <td>50GB</td>
                                     <td>$2.95</td>
+                                </tr>
+                                <tr>
+                                    <td>200GB</td>
+                                    <td>$4.95</td>
                                 </tr>
                                 <tr>
                                     <td>500GB</td>

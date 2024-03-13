@@ -19,6 +19,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
+import PaymentBanner from '../paymentBanner';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -458,9 +459,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />
+            { router.asPath !== '/services/payment' && accountState === 'paymentRequired' && <PaymentBanner />}
         </div>
     )
-
 };
 
 export default ContentPageLayout;

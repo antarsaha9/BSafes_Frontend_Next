@@ -65,7 +65,8 @@ const accountSlice = createSlice({
             state.apiCount++;
         },
         setAccountState: (state, action) => {
-            state.accountState = action.payload;
+            state.accountState = action.payload.accountState;
+            state.nextDueTime = action.payload.nextDueTime;
         },
         invoiceLoaded: (state, action) => {
             state.storageUsage = action.payload.storageUsage;

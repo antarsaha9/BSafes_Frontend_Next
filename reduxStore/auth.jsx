@@ -377,7 +377,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                         } 
                     } else {
                         dispatch(loggedIn({sessionKey: data.sessionKey, sessionIV: data.sessionIV, froalaLicenseKey:data.froalaLicenseKey, stripePublishableKey:data.stripePublishableKey}));
-                        dispatch(setAccountState(data.accountState));
+                        dispatch(setAccountState({accountState: data.accountState, nextDueTime: data.nextDueTime}));
                     }
                 } else { 
                     if(data.error === 'SessionNotExisted'){
