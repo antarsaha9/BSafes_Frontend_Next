@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
+import { useRouter } from 'next/router'
 
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
@@ -8,45 +9,42 @@ import Form from 'react-bootstrap/Form'
 import Button from 'react-bootstrap/Button'
 import Table from 'react-bootstrap/Table'
 
-import { loadStripe } from '@stripe/stripe-js';
-import {Elements} from '@stripe/react-stripe-js';
-
 import format from "date-fns/format";
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
-import LoadStripe from '../../components/loadStripe'
-import CheckoutForm from '../../components/checkoutForm'
 
-import { getInvoiceThunk, getTransactionsThunk, createPaymentIntentThunk } from '../../reduxStore/accountSlice';
+import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
 export default function Payment() {
     const debugOn = false;
 
+    const router = useRouter();
     const dispatch = useDispatch();
 
-    const [stripePromise, setStripePromise] = useState(null);
     const [plan, setPlan] = useState('yearly');
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
-    const storageUsage = useSelector(state => state.account.storageUsage);
-    const totoalStorage50GBRequired = useSelector(state => state.account.totoalStorage50GBRequired);
-    const nextDueTime = useSelector(state => state.account.nextDueTime);
-    const monthlyPrice = useSelector(state => state.account.monthlyPrice);
-    const dues = useSelector(state => state.account.dues);
-    const stripeClientSecret = useSelector(state => state.account.stripeClientSecret);
-    const planOptions = useSelector(state => state.account.planOptions);
+    const invoice = useSelector(state => state.account.invoice);
     const transactions = useSelector(state => state.account.transactions);
 
+    const dueTime = invoice && invoice.dueTime;
+    const dues = invoice && invoice.dues;
+    const planOptions = invoice && invoice.planOptions;
+    const storageUsage = invoice && invoice.monthlyInvoice.storageUsage;
+    const requiredStorage = invoice && invoice.monthlyInvoice.requiredStorage;
+    const monthlyPrice = invoice && invoice.monthlyInvoice.monthlyPrice;
     let storageUsageString;
-    if (storageUsage < 1000000) {
-        storageUsageString = (storageUsage / (1000000)).toFixed(3) + ' MB';
-    } else {
-        storageUsageString = (storageUsage / (1000000000)).toFixed(3) + ' GB';
+    if (storageUsage) {
+        if (storageUsage < 1000000) {
+            storageUsageString = (storageUsage / (1000000)).toFixed(3) + ' MB';
+        } else {
+            storageUsageString = (storageUsage / (1000000000)).toFixed(3) + ' GB';
+        }
     }
 
-    let monthlyDuesDuration, yearlyDuesDuration, storageRequired;
+    let monthlyDuesDuration, yearlyDuesDuration;
     if (planOptions) {
         if (planOptions.monthly.firstDue === planOptions.monthly.lastDue) {
             monthlyDuesDuration = format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy');
@@ -56,11 +54,11 @@ export default function Payment() {
         yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.yearly.lastDue), 'MM/dd/yyyy')}`
     }
 
-    const dueItems = (dues.length !== 0) && dues.toReversed().map((item, i) =>
+    const dueItems = dues && (dues.length !== 0) && dues.toReversed().map((item, i) =>
         <tr key={i}>
-            <td>{format(new Date(item.newDueTime), 'MM/dd/yyyy')}</td>
-            <td>{item.totoalStorage50GBRequired}</td>
-            <td>${item.monthlyPrice}</td>
+            <td>{format(new Date(item.dueTime), 'MM/dd/yyyy')}</td>
+            <td>{item.monthlyInvoice.requiredStorage}</td>
+            <td>${item.monthlyInvoice.monthlyPrice}</td>
         </tr>
     )
 
@@ -77,14 +75,14 @@ export default function Payment() {
         setPlan(e.target.value);
     }
 
-    const handlePay = (e) => [
-
-    ]
+    const handleCheckout = (e) => {
+        dispatch(setCheckoutPlan(plan));
+        router.push('/services/checkout');
+    }
 
     useEffect(() => {
         if (isLoggedIn) {
             dispatch(getInvoiceThunk());
-            dispatch(createPaymentIntentThunk());
             dispatch(getTransactionsThunk());
         }
     }, [isLoggedIn])
@@ -97,25 +95,17 @@ export default function Payment() {
                 <Row>
                     <Col sm={{ span: 8, offset: 2 }}>
                         <p>Your current storage usage is {storageUsageString}. </p>
-                        <p> {totoalStorage50GBRequired}GB storage is required, ${monthlyPrice} USD per month.</p>
-                        {(dues.length === 0) &&
-                            <p>Next due date is {format(new Date(nextDueTime), 'MM/dd/yyyy')}</p>
+                        <p> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
+                        {dues && (dues.length === 0) &&
+                            <p>Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
                         }
                     </Col>
                 </Row>
-                <Row>
-                    {stripeClientSecret && stripePromise && (
-                        <Elements stripe={stripePromise} options={{ clientSecret: stripeClientSecret, }}>
-                            <CheckoutForm />
-                        </Elements>
-                    )}
-                </Row>
-                {(dues.length !== 0) &&
+                {dues && (dues.length !== 0) &&
                     <Row>
                         <Col sm={{ span: 8, offset: 2 }}>
                             <hr />
                             <h1>Invoice</h1>
-                            <h5>Dues:</h5>
                             <Table>
                                 <thead>
                                     <tr>
@@ -132,10 +122,10 @@ export default function Payment() {
                         </Col>
                     </Row>
                 }
-                {(dues.length !== 0) && <>
+                {dues && (dues.length !== 0) && <>
                     <Row>
                         <Col sm={{ span: 8, offset: 2 }}>
-                            <h1>Payment</h1>
+                            <h1>Total : {`$${planOptions.monthly.totalDues} USD`}</h1>
                         </Col>
                     </Row>
 
@@ -147,22 +137,28 @@ export default function Payment() {
                                     <Form.Check
                                         type='radio'
                                         id='payYearly'
-                                        label='Pay Yearly, get 2 months free.'
+                                        label='Pay yearly, get 2 months free.'
                                         value='yearly'
                                         onChange={changePlan}
                                         checked={plan === 'yearly'}
                                     />
-                                    {planOptions && `$${planOptions.yearly.totalDues} USD. For ${yearlyDuesDuration}. Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}
+                                    <br />
+                                    <h4>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
+                                    <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
+                                    <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                     <hr />
                                     <Form.Check
                                         type='radio'
                                         id='payMonthly'
-                                        label='Pay Monthly'
+                                        label='Pay monthly.'
                                         value='monthly'
                                         onChange={changePlan}
                                         checked={plan === 'monthly'}
                                     />
-                                    {planOptions && `$${planOptions.monthly.totalDues} USD. For ${monthlyDuesDuration}. Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}
+                                    <br />
+                                    <h4>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
+                                    <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
+                                    <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                     <hr />
                                 </Form.Group>
                             </Form>
@@ -170,8 +166,8 @@ export default function Payment() {
                         </Col>
                     </Row>
                     <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <Button className='pull-right' onClick={handlePay}>Pay</Button>
+                        <Col sm={{ span: 8, offset: 2 }} className='text-center'>
+                            <Button onClick={handleCheckout}>Checkout</Button>
                         </Col>
                     </Row>
                 </>}
@@ -203,7 +199,6 @@ export default function Payment() {
                     </Col>
                 </Row>
             </Container>
-            <LoadStripe setStripePromise={setStripePromise}/>
         </ContentPageLayout>
     )
 }

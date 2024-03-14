@@ -12,12 +12,9 @@ const initialState = {
     newAccountCreated: null,
     accountState: null,
     apiCount: 0,
-    storageUsage: 0,
-    totoalStorage50GBRequired: 0,
-    nextDueTime: null,
-    monthlyPrice: 0,
-    dues: [],
-    planOptions: null,
+    invoice: null,
+    checkoutPlan: null,
+    checkoutItem:null,
     transactions: [],
     accountHashVerified: null,
     mfa: null,
@@ -69,12 +66,10 @@ const accountSlice = createSlice({
             state.nextDueTime = action.payload.nextDueTime;
         },
         invoiceLoaded: (state, action) => {
-            state.storageUsage = action.payload.storageUsage;
-            state.totoalStorage50GBRequired = action.payload.totoalStorage50GBRequired;
-            state.nextDueTime = action.payload.nextDueTime;
-            state.monthlyPrice = action.payload.monthlyPrice;
-            state.dues = action.payload.dues;
-            state.planOptions = action.payload.planOptions;
+            state.invoice = action.payload;
+        },
+        setCheckoutPlan: (state, action) => {
+            state.checkoutPlan = action.payload;
         },
         transactionsLoaded: (state, action) => {
             state.transactions = action.payload.hits.map((transaction, i) => {
@@ -98,13 +93,14 @@ const accountSlice = createSlice({
         setCurrentDataCenter: (state, action) => {
             state.currentDataCenter = action.payload;
         },
-        setStripeClientSecret: (state, action) => {
+        setPaymentIntentData: (state, action) => {
             state.stripeClientSecret = action.payload.stripeClientSecret;
+            state.checkoutItem = action.payload.checkoutItem;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setStripeClientSecret } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -307,11 +303,14 @@ export const createPaymentIntentThunk = (data) => async (dispatch, getState) => 
     newActivity(dispatch, accountActivity.CreatePaymentIntent, () => {
         return new Promise((resolve, reject) => {
             PostCall({
-                api: '/memberAPI/createPaymentIntent'
+                api: '/memberAPI/createPaymentIntent',
+                body: {
+                    checkoutPlan:data.checkoutPlan
+                }
             }).then(data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(setStripeClientSecret({stripeClientSecret: data.client_secret}));
+                    dispatch(setPaymentIntentData({stripeClientSecret: data.client_secret, checkoutItem:data.checkoutItem}));
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... create payment intent failed: ", data.error);

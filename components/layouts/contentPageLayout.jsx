@@ -68,6 +68,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
+    const displayPaymentBanner = !(router.asPath.startsWith('/services/'));
+
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
     }
@@ -459,7 +461,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />
-            { router.asPath !== '/services/payment' && accountState === 'paymentRequired' && <PaymentBanner />}
+            { displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
         </div>
     )
 };
