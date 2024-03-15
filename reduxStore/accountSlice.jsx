@@ -23,6 +23,7 @@ const initialState = {
     dataCenters: null,
     nearestDataCenter: null,
     stripeClientSecret: null,
+    lastPaymentIntentTime: null,
 }
 
 const accountSlice = createSlice({
@@ -96,11 +97,14 @@ const accountSlice = createSlice({
         setPaymentIntentData: (state, action) => {
             state.stripeClientSecret = action.payload.stripeClientSecret;
             state.checkoutItem = action.payload.checkoutItem;
+        },
+        setLastPaymentIntentTime: (state, action) => {
+            state.lastPaymentIntentTime = action.payload;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -302,6 +306,14 @@ export const changeDataCenterThunk = (data) => async (dispatch, getState) => {
 export const createPaymentIntentThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.CreatePaymentIntent, () => {
         return new Promise((resolve, reject) => {
+            const accountState = getState().account;
+            const currentTime = Date.now();
+            const timeDiff = currentTime - (accountState.lastPaymentIntentTime || 0);
+            if(accountState.lastPaymentIntentTime && timeDiff <10000 ) {
+                resolve();
+                return;
+            }
+            dispatch(setLastPaymentIntentTime(currentTime));
             PostCall({
                 api: '/memberAPI/createPaymentIntent',
                 body: {
