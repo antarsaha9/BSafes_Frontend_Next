@@ -96,7 +96,8 @@ export default function Home() {
                     </Row>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>BSafes - Bit Safes with AES-256 End-to-End Encryption.</p>
-                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in Taiwan, USA, France & India. Since 2017</p>
+                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in USA, Taiwan, France & India. Since 2017</p>
+                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem'}}>🌎</span>  Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore </p>
                     </Row>
                 </Container>
             </div>

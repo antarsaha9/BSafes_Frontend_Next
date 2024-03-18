@@ -335,6 +335,23 @@ export const createPaymentIntentThunk = (data) => async (dispatch, getState) => 
     });
 }
 
+export const paymentCompletedThunk = (data) => async (dispatch, getState) => {
+    PostCall({
+        api: '/memberAPI/paymentCompleted',
+    }).then(data => {
+        debugLog(debugOn, data);
+        if (data.status === 'ok') {
+            dispatch(setAccountState({accountState: data.accountState, nextDueTime: data.nextDueTime}));
+            resolve();
+        } else {
+            debugLog(debugOn, "woo... payment completed failed: ", data.error);
+            reject();
+        }
+    }).catch(error => {
+        debugLog(debugOn, "woo... payment completed failed.", error)
+    });
+}
+
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

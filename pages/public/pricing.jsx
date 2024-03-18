@@ -88,6 +88,7 @@ export default function Pricing() {
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <Row>
                             <Col xs={12} style={{ position: 'relative', left: '0px', top: '0px', zIndex: '500' }}>
+                                <Link className={BSafesStyle.noUnderline} onClick={handleUnlock} href='/login'>
                                     <div className={BSafesStyle.saleBadges}>
                                         <p>
                                             <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
@@ -97,6 +98,7 @@ export default function Pricing() {
                                             <span className={BSafesStyle.saleFifthLine}>Try Now! <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
                                         </p>
                                     </div>
+                                </Link>
                             </Col>
                         </Row>
                     </Col>
@@ -131,19 +133,19 @@ export default function Pricing() {
                                 </tr>
                                 <tr>
                                     <td>1TB</td>
-                                    <td>$19.95</td>
+                                    <td>$14.95</td>
                                 </tr>
                                 <tr>
                                     <td>2TB</td>
-                                    <td>$34.95</td>
+                                    <td>$24.95</td>
                                 </tr>
                                 <tr>
                                     <td>3TB</td>
-                                    <td>$49.95</td>
+                                    <td>$34.95</td>
                                 </tr>
                                 <tr>
                                     <td>Extra TB</td>
-                                    <td>$15.00</td>
+                                    <td>$10.00</td>
                                 </tr>
                             </tbody>
                         </Table>

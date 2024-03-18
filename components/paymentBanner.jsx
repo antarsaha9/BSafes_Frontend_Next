@@ -32,6 +32,7 @@ export default function PaymentBanner({ }) {
     return (
         <>
             <Offcanvas show={true} placement='bottom' scroll={true} backdrop={false} style={{ backgroundColor: '#fdf1bc', zIndex: '20000' }}>
+                <div style={{height:'1px', backgroundColor:'grey'}}></div>
                 <Offcanvas.Header >
                     <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
                 </Offcanvas.Header>
