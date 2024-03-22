@@ -1,23 +1,17 @@
-import { useEffect, useState, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { useRouter } from 'next/router';
-
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Button from "react-bootstrap/Button";
 
 import format from "date-fns/format";
 
-import BSafesStyle from '../styles/BSafes.module.css'
 
 import { debugLog } from "../lib/helper";
 
-export default function PaymentBanner({ }) {
+export default function PaymentBanner({ upgradeRequired = false }) {
     const debugOn = false;
     const router = useRouter();
-    const dispatch = useDispatch();
 
     const nextDueTime = useSelector(state => state.account.nextDueTime);
     let dueDateString = null;
@@ -32,17 +26,30 @@ export default function PaymentBanner({ }) {
     return (
         <>
             <Offcanvas show={true} placement='bottom' scroll={true} backdrop={false} style={{ backgroundColor: '#fdf1bc', zIndex: '20000' }}>
-                <div style={{height:'1px', backgroundColor:'grey'}}></div>
-                <Offcanvas.Header >
-                    <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
-                </Offcanvas.Header>
-                <Offcanvas.Body>
-                    {dueDateString && <p>{`Hello, just wanted to remind you that your account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
-                    <div className="text-center">
-                        <Button onClick={handlePay}>Pay</Button>
-                    </div>
-                </Offcanvas.Body>
-            </Offcanvas>
+                <div style={{ height: '1px', backgroundColor: 'grey' }}></div>
+                {!upgradeRequired && <>
+                    <Offcanvas.Header >
+                        <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
+                    </Offcanvas.Header>
+                    <Offcanvas.Body>
+                        {dueDateString && <p>{`Hello, just wanted to remind you that your account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
+                        <div className="text-center">
+                            <Button onClick={handlePay}>Pay</Button>
+                        </div>
+                    </Offcanvas.Body>
+                </>}
+                {upgradeRequired && <>
+                    <Offcanvas.Header >
+                        <Offcanvas.Title>Upgrade Required</Offcanvas.Title>
+                    </Offcanvas.Header>
+                    <Offcanvas.Body>
+                        {true && <p>{`Hello, just wanted to remind you that your cuurent storage usage exceeds your storage quota. Please upgrade as soon as possible.`}</p>}
+                        <div className="text-center">
+                            <Button onClick={handlePay}>Upgrade</Button>
+                        </div>
+                    </Offcanvas.Body>
+                </>}
+            </Offcanvas >
         </>
     )
 }

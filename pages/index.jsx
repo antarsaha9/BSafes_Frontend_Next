@@ -95,7 +95,7 @@ export default function Home() {
                         </Col>
                     </Row>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>BSafes - Bit Safes with AES-256 End-to-End Encryption.</p>
+                        <h3 className='text-center m-0'>Bit Safes with AES-256 End-to-End Encryption.</h3>
                         <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in USA, Taiwan, France & India. Since 2017</p>
                         <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem'}}>🌎</span>  Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore </p>
                     </Row>
@@ -168,7 +168,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Generative AI needs lots of data</h1>
-                                            <p className={BSafesStyle.featureCardFont}>AI tools like Microsoft 365 and Google Docs learn from your data, but can also pose a risk to sensitive information. BSafes encrypts your data on your device before sending it to the server, making it impossible for the server to learn from obscured data.</p>
+                                            <p className={BSafesStyle.featureCardFont}>AI-powered tools like Microsoft 365 and Google Docs learn from your data, but can also pose a risk to sensitive information. BSafes encrypts your data on your device before sending it to the server, making it impossible for the server to learn from obscured data.</p>
                                         </Col>
                                     </Row>
                                 </Container>

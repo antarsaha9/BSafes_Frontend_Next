@@ -462,6 +462,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsMovingProgress />
             <ItemsToolbar />
             { displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
+            { displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true}/>}
         </div>
     )
 };

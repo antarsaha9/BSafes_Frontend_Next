@@ -35,6 +35,11 @@ export default function Payment() {
     const storageUsage = invoice && invoice.monthlyInvoice.storageUsage;
     const requiredStorage = invoice && invoice.monthlyInvoice.requiredStorage;
     const monthlyPrice = invoice && invoice.monthlyInvoice.monthlyPrice;
+
+    const remainingDays = invoice && invoice.remainingDays;
+    const upgradePrice = invoice && invoice.upgradePrice;
+    const waived = invoice && invoice.waived;
+
     let storageUsageString;
     if (storageUsage) {
         if (storageUsage < 1000000) {
@@ -80,6 +85,11 @@ export default function Payment() {
         router.push('/services/checkout');
     }
 
+    const handleUpgrade = (e) => {
+        dispatch(setCheckoutPlan('upgrade'));
+        router.push('/services/checkout');
+    }
+
     useEffect(() => {
         if (isLoggedIn) {
             dispatch(getInvoiceThunk());
@@ -92,84 +102,108 @@ export default function Payment() {
             <Container>
                 <br />
                 <br />
-                <Row>
-                    <Col sm={{ span: 8, offset: 2 }}>
-                        <p>Your current storage usage is {storageUsageString}. </p>
-                        <p> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
-                        {dues && (dues.length === 0) &&
+                {dues && <>
+                    <Row>
+                        <Col sm={{ span: 8, offset: 2 }}>
+                            <p>Your current storage usage is {storageUsageString}. </p>
+                            <p> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
+                            {(dues.length === 0) &&
+                                <p>Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
+                            }
+                        </Col>
+                    </Row>
+                    {(dues.length !== 0) &&
+                        <Row>
+                            <Col sm={{ span: 8, offset: 2 }}>
+                                <hr />
+                                <h1>Invoice</h1>
+                                <Table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Storage(GB)</th>
+                                            <th>Due(USD)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {dueItems}
+                                    </tbody>
+                                </Table>
+                                <hr />
+                            </Col>
+                        </Row>
+                    }
+                    {(dues.length !== 0) && <>
+                        <Row>
+                            <Col sm={{ span: 8, offset: 2 }}>
+                                <h1>Total : {`$${planOptions.monthly.totalDues} USD`}</h1>
+                            </Col>
+                        </Row>
+
+                        <Row>
+                            <Col sm={{ span: 8, offset: 2 }}>
+                                <Form>
+                                    <Form.Group controlId='plan'>
+                                        <hr />
+                                        <Form.Check
+                                            type='radio'
+                                            id='payYearly'
+                                            label='Pay yearly, get 2 months free.'
+                                            value='yearly'
+                                            onChange={changePlan}
+                                            checked={plan === 'yearly'}
+                                        />
+                                        <br />
+                                        <h4>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
+                                        <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
+                                        <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
+                                        <hr />
+                                        <Form.Check
+                                            type='radio'
+                                            id='payMonthly'
+                                            label='Pay monthly.'
+                                            value='monthly'
+                                            onChange={changePlan}
+                                            checked={plan === 'monthly'}
+                                        />
+                                        <br />
+                                        <h4>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
+                                        <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
+                                        <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
+                                        <hr />
+                                    </Form.Group>
+                                </Form>
+
+                            </Col>
+                        </Row>
+                        <Row>
+                            <Col sm={{ span: 8, offset: 2 }} className='text-center'>
+                                <Button onClick={handleCheckout}>Checkout</Button>
+                            </Col>
+                        </Row>
+                    </>}
+                </>}
+                {upgradePrice && <>
+                    <Row>
+                        <Col sm={{ span: 8, offset: 2 }}>
+                            <p>Your current storage usage is {storageUsageString}. </p>
+                            <p>You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
                             <p>Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
-                        }
-                    </Col>
-                </Row>
-                {dues && (dues.length !== 0) &&
-                    <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <hr />
-                            <h1>Invoice</h1>
-                            <Table>
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Storage(GB)</th>
-                                        <th>Due(USD)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {dueItems}
-                                </tbody>
-                            </Table>
-                            <hr />
-                        </Col>
-                    </Row>
-                }
-                {dues && (dues.length !== 0) && <>
-                    <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <h1>Total : {`$${planOptions.monthly.totalDues} USD`}</h1>
-                        </Col>
-                    </Row>
-
-                    <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <Form>
-                                <Form.Group controlId='plan'>
-                                    <hr />
-                                    <Form.Check
-                                        type='radio'
-                                        id='payYearly'
-                                        label='Pay yearly, get 2 months free.'
-                                        value='yearly'
-                                        onChange={changePlan}
-                                        checked={plan === 'yearly'}
-                                    />
-                                    <br />
-                                    <h4>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
-                                    <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
-                                    <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
-                                    <hr />
-                                    <Form.Check
-                                        type='radio'
-                                        id='payMonthly'
-                                        label='Pay monthly.'
-                                        value='monthly'
-                                        onChange={changePlan}
-                                        checked={plan === 'monthly'}
-                                    />
-                                    <br />
-                                    <h4>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
-                                    <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
-                                    <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
-                                    <hr />
-                                </Form.Group>
-                            </Form>
+                            <p>Upgrade price for the remaining {remainingDays} days until the next due date - </p>
+                            <p>{upgradePrice}</p>
+                            {waived ?
+                                <p>The fee is waived because it is less than one dollar.</p>
+                                :
+                                <Row>
+                                    <Col sm={{ span: 8, offset: 2 }} className='text-center'>
+                                        <Button onClick={handleUpgrade}>Upgrade</Button>
+                                    </Col>
+                                </Row>
+                            }
 
                         </Col>
                     </Row>
-                    <Row>
-                        <Col sm={{ span: 8, offset: 2 }} className='text-center'>
-                            <Button onClick={handleCheckout}>Checkout</Button>
-                        </Col>
-                    </Row>
+
                 </>}
 
                 <Row>
