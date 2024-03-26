@@ -11,6 +11,7 @@ import Badge from 'react-bootstrap/Badge';
 import Image from 'react-bootstrap/Image';
 import Carousel from 'react-bootstrap/Carousel';
 
+
 import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
 
 import BSafesStyle from '../styles/BSafes.module.css'
@@ -86,8 +87,8 @@ export default function Home() {
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <div style={{ height: '1px', backgroundColor: 'Grey' }}>
             </div>
-            <br />
             <div>
+                <br />
                 <Container>
                     <Row>
                         <Col>
@@ -97,18 +98,18 @@ export default function Home() {
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <h3 className='text-center m-0'>Bit Safes with AES-256 End-to-End Encryption.</h3>
                         <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in USA, Taiwan, France & India. Since 2017</p>
-                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem'}}>🌎</span>  Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore </p>
+                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span>  Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore </p>
+                    </Row>
+                </Container>
+                <Container>
+                    <br />
+                    <Row className={oswald.className} style={{ padding: '10px', color: 'black' }}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
+                        </Col>
                     </Row>
                 </Container>
             </div>
-            <Container>
-                <br />
-                <Row className={oswald.className} style={{ padding: '10px', color: 'black' }}>
-                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
-                    </Col>
-                </Row>
-            </Container>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -127,30 +128,30 @@ export default function Home() {
                 </Carousel>
             </div>
             <br />
-            <Container>
-                <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <p>Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
-                    </Col>
-                </Row>
-            </Container>
-            <div className="text-center">
-                <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+            <div className={BSafesStyle.serviceIntroBackground}>
+                <br/>
+                <Container>
+                    <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <p style={{ color: 'black' }}><span style={{fontSize:'2rem'}}> 📝 📺 📷 </span> Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                        </Col>
+                    </Row>
+                </Container>
+                <div className="text-center">
+                    <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+                </div>
+                <br/>
+                <Container>
+                    <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Take Control of Your Data</h1>
+                            <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
+                            <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
+                        </Col>
+                    </Row>
+                </Container>
+                <br/>
             </div>
-            <Container>
-                <br />
-                <br />
-                <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
-                    <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                        <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Be Bold</h1>
-                        <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
-                        <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
-                    </Col>
-                </Row>
-            </Container>
-            <br />
-            <br />
-            <br />
             <div className={monteserrat.className} style={{ backgroundColor: '#f4f4f4' }}>
                 <Container>
                     <br />
@@ -293,7 +294,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>A Clean Space for Your Contents</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Add new pages, notebooks, or diaries in boxes or folders to efficiently search for items. A clean workspace improves productivity.</p>
+                                            <p className={BSafesStyle.featureCardFont}><span style={{fontSize:'2rem'}}> 📋 📔 🗓️ 📁 🗃️ </span>Add new pages, notebooks, or diaries in boxes or folders to efficiently search for items. A clean workspace improves productivity.</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/personalSpaceIPad.png'></Image>
                                         </Col>
                                     </Row>

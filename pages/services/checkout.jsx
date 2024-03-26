@@ -44,7 +44,7 @@ export default function Checkout() {
                             {checkoutItem && (
                                 <>
                                     <p>Total Amount:</p>
-                                    <h4>{`$${(checkoutItem.amount / 100).toFixed(2)} ${checkoutItem.currency}`}</h4>
+                                    <h4>{`$${(checkoutItem.amount / 100).toFixed(2)} ${checkoutItem.currency.toUpperCase()}`}</h4>
                                 </>
                             )}
                         </div>

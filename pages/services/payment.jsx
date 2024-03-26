@@ -35,6 +35,7 @@ export default function Payment() {
     const storageUsage = invoice && invoice.monthlyInvoice.storageUsage;
     const requiredStorage = invoice && invoice.monthlyInvoice.requiredStorage;
     const monthlyPrice = invoice && invoice.monthlyInvoice.monthlyPrice;
+    const currency = invoice && invoice.monthlyInvoice.currency;
 
     const remainingDays = invoice && invoice.remainingDays;
     const upgradePrice = invoice && invoice.upgradePrice;
@@ -71,8 +72,12 @@ export default function Payment() {
         <tr key={i}>
             <td>{format(new Date(item.time), 'MM/dd/yyyy')}</td>
             <td>{`$${item.amount} ${item.currency}`}</td>
-            <td>{item.plan}</td>
-            <td>{item.firstDue === item.lastDue ? format(new Date(item.firstDue), 'MM/dd/yyyy') : `${format(new Date(item.firstDue), 'MM/dd/yyyy')} - ${format(new Date(item.lastDue), 'MM/dd/yyyy')}`}</td>
+            <td>{item.requiredStorage}, {item.plan}</td>
+            {item.plan === 'upgrade' ?
+                <td></td> :
+                <td>{item.firstDue === item.lastDue ? format(new Date(item.firstDue), 'MM/dd/yyyy') : `${format(new Date(item.firstDue), 'MM/dd/yyyy')} - ${format(new Date(item.lastDue), 'MM/dd/yyyy')}`}</td>
+            }
+
         </tr>
     )
 
@@ -105,10 +110,10 @@ export default function Payment() {
                 {dues && <>
                     <Row>
                         <Col sm={{ span: 8, offset: 2 }}>
-                            <p>Your current storage usage is {storageUsageString}. </p>
-                            <p> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is {storageUsageString}. </p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
                             {(dues.length === 0) &&
-                                <p>Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
+                                <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
                             }
                         </Col>
                     </Row>
@@ -186,13 +191,13 @@ export default function Payment() {
                 {upgradePrice && <>
                     <Row>
                         <Col sm={{ span: 8, offset: 2 }}>
-                            <p>Your current storage usage is {storageUsageString}. </p>
-                            <p>You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
-                            <p>Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
-                            <p>Upgrade price for the remaining {remainingDays} days until the next due date - </p>
-                            <p>{upgradePrice}</p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is {storageUsageString}. </p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
+                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Upgrade price for the remaining {remainingDays} days until the next due date - </p>
+                            <h5 className='p-3'>{`$${upgradePrice} ${currency.toUpperCase()}`}</h5>
                             {waived ?
-                                <p>The fee is waived because it is less than one dollar.</p>
+                                <h5>🙂 The fee is waived because it is less than one dollar.</h5>
                                 :
                                 <Row>
                                     <Col sm={{ span: 8, offset: 2 }} className='text-center'>
@@ -216,7 +221,7 @@ export default function Payment() {
                                     <th>Date</th>
                                     <th>Amount</th>
                                     <th>Plan</th>
-                                    <th>Paid Duration</th>
+                                    <th>Paid Dues</th>
                                 </tr>
                             </thead>
                             {(transactions.length !== 0) &&
