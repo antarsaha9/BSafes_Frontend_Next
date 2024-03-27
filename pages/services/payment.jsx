@@ -6,6 +6,7 @@ import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Form from 'react-bootstrap/Form'
+import FormCheck from 'react-bootstrap/FormCheck'
 import Button from 'react-bootstrap/Button'
 import Table from 'react-bootstrap/Table'
 
@@ -57,7 +58,11 @@ export default function Payment() {
         } else {
             monthlyDuesDuration = `${format(new Date(planOptions.monthly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.monthly.lastDue), 'MM/dd/yyyy')}`
         }
-        yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.yearly.lastDue), 'MM/dd/yyyy')}`
+        if (planOptions.yearly.firstDue === planOptions.yearly.lastDue) {
+            yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')}`;
+        } else {
+            yearlyDuesDuration = `${format(new Date(planOptions.yearly.firstDue), 'MM/dd/yyyy')} ... ${format(new Date(planOptions.yearly.lastDue), 'MM/dd/yyyy')}`;
+        }
     }
 
     const dueItems = dues && (dues.length !== 0) && dues.toReversed().map((item, i) =>
@@ -107,19 +112,19 @@ export default function Payment() {
             <Container>
                 <br />
                 <br />
-                {dues && <>
+                {dues && <div>
                     <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is {storageUsageString}. </p>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
+                        <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the <span className='fw-bold'>{requiredStorage}</span> storage, <span className='fw-bold'>${monthlyPrice} USD</span> per month.</p>
                             {(dues.length === 0) &&
-                                <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
+                                <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is <span className='fw-bold'>{format(new Date(dueTime), 'MM/dd/yyyy')}</span></p>
                             }
                         </Col>
                     </Row>
                     {(dues.length !== 0) &&
                         <Row>
-                            <Col sm={{ span: 8, offset: 2 }}>
+                            <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EBF5FB' }}>
                                 <hr />
                                 <h1>Invoice</h1>
                                 <Table>
@@ -135,66 +140,52 @@ export default function Payment() {
                                     </tbody>
                                 </Table>
                                 <hr />
+                                <h1>Total : {`$${planOptions.monthly.totalDues} USD`}</h1>
                             </Col>
                         </Row>
                     }
                     {(dues.length !== 0) && <>
                         <Row>
                             <Col sm={{ span: 8, offset: 2 }}>
-                                <h1>Total : {`$${planOptions.monthly.totalDues} USD`}</h1>
-                            </Col>
-                        </Row>
-
-                        <Row>
-                            <Col sm={{ span: 8, offset: 2 }}>
                                 <Form>
                                     <Form.Group controlId='plan'>
                                         <hr />
-                                        <Form.Check
-                                            type='radio'
-                                            id='payYearly'
-                                            label='Pay yearly, get 2 months free.'
-                                            value='yearly'
-                                            onChange={changePlan}
-                                            checked={plan === 'yearly'}
-                                        />
+                                        <FormCheck>
+                                            <FormCheck.Input type='radio' value='yearly' onChange={changePlan} checked={plan === 'yearly'} />
+                                            <FormCheck.Label><h5 className='px-3' style={{ backgroundColor: '#48C9B0' }}>Pay yearly, get 2 months free.</h5></FormCheck.Label>
+                                        </FormCheck>
                                         <br />
-                                        <h4>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
+                                        <h4 className='px-4'>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
+                                        <br/>
                                         <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
-                                        <Form.Check
-                                            type='radio'
-                                            id='payMonthly'
-                                            label='Pay monthly.'
-                                            value='monthly'
-                                            onChange={changePlan}
-                                            checked={plan === 'monthly'}
-                                        />
+                                        <FormCheck>
+                                            <FormCheck.Input type='radio' value='monthly' onChange={changePlan} checked={plan === 'monthly'} />
+                                            <FormCheck.Label><h5 className='px-3' style={{ backgroundColor: '#F7DC6F' }}>Pay monthly.</h5></FormCheck.Label>
+                                        </FormCheck>
                                         <br />
-                                        <h4>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
+                                        <h4 className='px-4'>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
+                                        <br/>
                                         <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
                                     </Form.Group>
                                 </Form>
-
-                            </Col>
-                        </Row>
-                        <Row>
-                            <Col sm={{ span: 8, offset: 2 }} className='text-center'>
-                                <Button onClick={handleCheckout}>Checkout</Button>
+                                <div className='text-center'>
+                                    <Button onClick={handleCheckout}>Checkout</Button>
+                                </div>
                             </Col>
                         </Row>
                     </>}
-                </>}
+                </div>}
                 {upgradePrice && <>
                     <Row>
-                        <Col sm={{ span: 8, offset: 2 }}>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is {storageUsageString}. </p>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, ${monthlyPrice} USD per month.</p>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is {format(new Date(dueTime), 'MM/dd/yyyy')}</p>
-                            <p><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Upgrade price for the remaining {remainingDays} days until the next due date - </p>
+                        <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, <span className='fw-bold'>${monthlyPrice}</span> USD per month.</p>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is <span className='fw-bold'>{format(new Date(dueTime), 'MM/dd/yyyy')}</span></p>
+                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Upgrade price for the remaining <span className='fw-bold'>{remainingDays}</span> days until the next due date - </p>
                             <h5 className='p-3'>{`$${upgradePrice} ${currency.toUpperCase()}`}</h5>
                             {waived ?
                                 <h5>🙂 The fee is waived because it is less than one dollar.</h5>
@@ -210,11 +201,10 @@ export default function Payment() {
                     </Row>
 
                 </>}
-
+                <br />
                 <Row>
-                    <Col sm={{ span: 8, offset: 2 }}>
-                        <hr />
-                        <h1>Transactions</h1>
+                    <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED' }}>
+                        <h1>Transaction History</h1>
                         <Table>
                             <thead>
                                 <tr>
@@ -237,6 +227,7 @@ export default function Payment() {
                         }
                     </Col>
                 </Row>
+                <br />
             </Container>
         </ContentPageLayout>
     )

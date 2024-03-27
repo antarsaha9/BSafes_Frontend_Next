@@ -91,25 +91,23 @@ export default function Home() {
                 <br />
                 <Container>
                     <Row>
-                        <Col>
-                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
-                        </Col>
-                    </Row>
-                    <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                        <h3 className='text-center m-0'>Bit Safes with AES-256 End-to-End Encryption.</h3>
-                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Made in USA, Taiwan, France & India. Since 2017</p>
-                        <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span>  Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore </p>
-                    </Row>
-                </Container>
-                <Container>
-                    <br />
-                    <Row className={oswald.className} style={{ padding: '10px', color: 'black' }}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h1 className={`${BSafesStyle.bannerTextH1}`}>Protecting Sensitive Information in an AI-Driven World</h1>
+                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
+                            <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                                <h3 className='fw-bold text-center m-0'>🎉 Bit Safes</h3>
+                                <h3 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h3>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderColor: 'red' }}>Made in USA, Taiwan, France & India. Since 2017</span></p>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span></p>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore.</p>
+                            </div>
+                            <div className={oswald.className} style={{ padding: '10px', color: 'black' }}>
+                                <h1 className={BSafesStyle.bannerTextH1} style={{ borderLeft: 'solid', borderWidth: '12px', borderColor: 'blue', paddingLeft: '12px' }}>Protecting Sensitive Information in an AI-Driven World</h1>
+                            </div>
                         </Col>
                     </Row>
                 </Container>
             </div>
+            <div className={BSafesStyle.ribbonBanner}>Any Device, <span style={{color:'#DFFF00'}}>Any Media</span>, Anytime, Anywhere</div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -129,18 +127,18 @@ export default function Home() {
             </div>
             <br />
             <div className={BSafesStyle.serviceIntroBackground}>
-                <br/>
+                <br />
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <p style={{ color: 'black' }}><span style={{fontSize:'2rem'}}> 📝 📺 📷 </span> Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>
                 </Container>
                 <div className="text-center">
                     <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
                 </div>
-                <br/>
+                <br />
                 <Container>
                     <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
@@ -150,7 +148,7 @@ export default function Home() {
                         </Col>
                     </Row>
                 </Container>
-                <br/>
+                <br />
             </div>
             <div className={monteserrat.className} style={{ backgroundColor: '#f4f4f4' }}>
                 <Container>
@@ -294,7 +292,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>A Clean Space for Your Contents</h1>
-                                            <p className={BSafesStyle.featureCardFont}><span style={{fontSize:'2rem'}}> 📋 📔 🗓️ 📁 🗃️ </span>Add new pages, notebooks, or diaries in boxes or folders to efficiently search for items. A clean workspace improves productivity.</p>
+                                            <p className={BSafesStyle.featureCardFont}><span style={{ fontSize: '2rem' }}> 📋 📔 🗓️ 📁 🗃️ </span>Add new pages, notebooks, or diaries in boxes or folders to efficiently search for items. A clean workspace improves productivity.</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/personalSpaceIPad.png'></Image>
                                         </Col>
                                     </Row>

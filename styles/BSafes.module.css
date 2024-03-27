@@ -601,6 +601,47 @@
 /* Home page */
 
 /*--****** Banner *******/
+/* HTML: <div class="ribbon">Your text content</div> */
+.ribbonBanner {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+}
+@media only screen and (min-width: 768px) {
+  .ribbonBanner {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+@media only screen and (min-width: 992px) {
+  .ribbonBanner {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+@media only screen and (min-width: 1200px) {
+  .ribbonBanner {
+    font-size: 26px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+
+.ribbonBanner {
+  --r: .8em; /* control the cutout */
+  
+  border-block: .5em solid #0000;
+  padding-inline: .5em calc(var(--r) + .25em);
+  line-height: 1.8;
+  clip-path: polygon(100% 0,0 0,0 100%,100% 100%,100% calc(100% - .25em),calc(100% - var(--r)) 50%,100% .25em);
+  background:
+   radial-gradient(.2em 50% at left,#000a,#0000) border-box,
+   red padding-box; /* the color  */
+  width: fit-content;
+}
+
 .bannerBackground {
   position: relative;
   background-color: #ffffff;

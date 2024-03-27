@@ -62,6 +62,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const v2NextAuthStep = useSelector(state => state.auth.v2NextAuthStep);
 
     const accountVersion = useSelector(state => state.auth.accountVersion);
+    const memberId = useSelector(state => state.auth.memberId);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const displayName = useSelector(state => state.auth.displayName);
     const nextAuthStep = useSelector(state => state.v1Account.nextAuthStep);
@@ -424,18 +425,21 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                 id={`offcanvasNavbar-expand-false`}
                                 aria-labelledby={`offcanvasNavbarLabel-expand-false`}
                                 placement="start"
+                                style={{border:'solid'}}
                             >
-                                {true && <Offcanvas.Header closeButton>
+                                {true && <Offcanvas.Header closeButton style={{backgroundColor:'#abdbe3'}}>
                                     <Offcanvas.Title id={`offcanvasNavbarLabel-expand-false`}>
-                                        Services
+                                        <h4><i className="fa fa-info-circle" aria-hidden="true" style={{width:'32px'}}></i> Services</h4>
                                     </Offcanvas.Title>
                                 </Offcanvas.Header>}
                                 <Offcanvas.Body>
                                     <Nav className="justify-content-end flex-grow-1 pe-3">
-                                        <Nav.Link onClick={mfaSetup}>2FA</Nav.Link>
-                                        <Nav.Link onClick={payment}>Payment</Nav.Link>
-                                        <Nav.Link onClick={dataCenter}>Data Center</Nav.Link>
-                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer">Support</Nav.Link>
+                                        <p>Your ID</p>
+                                        <p style={{borderBottom:'solid', backgroundColor:'#EBF5FB', color:'#063970'}}>{memberId}</p>
+                                        <Nav.Link onClick={payment} style={{borderBottom:'solid'}}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{width:'32px'}}></i> Payment</h5></Nav.Link>
+                                        <Nav.Link onClick={mfaSetup} style={{borderBottom:'solid'}}><h5><i className="fa fa-shield" aria-hidden="true" style={{width:'32px'}}></i> 2FA</h5></Nav.Link>
+                                        <Nav.Link onClick={dataCenter} style={{borderBottom:'solid'}}><h5><i className="fa fa-globe" aria-hidden="true" style={{width:'32px'}}></i> Data Center</h5></Nav.Link>
+                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{borderBottom:'solid'}}><h5><i className="fa fa-question" aria-hidden="true" style={{width:'32px'}}></i> Support</h5></Nav.Link>
                                     </Nav>
                                 </Offcanvas.Body>
                             </Navbar.Offcanvas>
@@ -461,8 +465,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />
-            { displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
-            { displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true}/>}
+            {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
+            {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
         </div>
     )
 };
