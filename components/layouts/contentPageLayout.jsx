@@ -20,6 +20,7 @@ import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
 import PaymentBanner from '../paymentBanner';
+import SuspendedModal from '../suspendedModal';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -467,6 +468,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
             {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
+            {displayPaymentBanner && accountState === 'overflow' && <SuspendedModal overflow={true} />}
         </div>
     )
 };

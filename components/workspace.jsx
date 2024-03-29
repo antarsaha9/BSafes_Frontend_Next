@@ -193,13 +193,13 @@ export default function Workspace({ readyToList = false }) {
                 <Row className='justify-content-center'>
                     <Col sm={8}>
                         <Card>
-                            <Card.Header>😊 Welcome!</Card.Header>
+                            <Card.Header>🔰 Welcome!</Card.Header>
                             <Card.Body>
                                 <Card.Title>Instructions</Card.Title>
 
                                 <ul>
-                                    <li><strong>Adding records</strong> - Click on the central blue button, then select an item type.</li>
-                                    <li><strong>Searching for records</strong> - Enter keywords in central field, then click on search button.</li>
+                                    <li><strong>Adding items</strong> - Click on the central blue button, then select an item type.</li>
+                                    <li><strong>Searching for items</strong> - Enter keywords in central field, then click on search button.</li>
                                     <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
                                     <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
                                 </ul>

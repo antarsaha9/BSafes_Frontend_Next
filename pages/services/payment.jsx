@@ -43,7 +43,9 @@ export default function Payment() {
     const waived = invoice && invoice.waived;
 
     let storageUsageString;
-    if (storageUsage) {
+    if(storageUsage === 0) {
+        storageUsageString = '0.000 MB';
+    } else if (storageUsage) {
         if (storageUsage < 1000000) {
             storageUsageString = (storageUsage / (1000000)).toFixed(3) + ' MB';
         } else {
@@ -109,7 +111,7 @@ export default function Payment() {
 
     return (
         <ContentPageLayout>
-            <Container>
+            <Container className='px-4'>
                 <br />
                 <br />
                 {dues && <div>

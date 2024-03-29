@@ -40,8 +40,8 @@ export default function DataCenterSetup() {
 
     return (
         <ContentPageLayout showNaveBar={!dataCenterModal} showPathRow={!dataCenterModal}>
-            <Container>
-                <div className='mt-2'>
+            <Container style={{border:'solid'}}>
+                <div className='mt-2 p-1' >
                     <Row>
                         <Col>
                             <h2><i className="fa fa-globe" aria-hidden="true"></i> Select Your Preferred Data Center</h2>
@@ -52,7 +52,7 @@ export default function DataCenterSetup() {
                     <Row>
                         <Col>
                             <p>Your current data center is in</p>
-                            <h1 className='text-center'><Badge bg="light">{currentDataCenter && currentDataCenter.location}</Badge></h1>
+                            <h1 className='text-center'><Badge bg="success">{currentDataCenter && currentDataCenter.location}</Badge></h1>
                             <br/>
                             <div hidden={!dataCenterModal} className='text-center'>
                                 <Button onClick={handleAccept}>Accept</Button>

@@ -35,8 +35,7 @@ export default function KeySetup() {
     function checkKeyStrength(key) {
         debugLog(debugOn, "Checking key strength:", key.length);
 
-        const strongRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{8,})");
-        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{12,})"); ; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
+        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{8,})"); ; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
         const isMedium = mediumRegex.test(key);
         let thisKeyStrength, thisKeyStrengthColor;
         if(key.length === 0) {
@@ -88,10 +87,7 @@ export default function KeySetup() {
         <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
         <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}> 
             <Container>
-                <br />
-                <br />
-                <br />  
-                <Row>
+                <Row className={BSafesStyle.keyPanel}>
                     <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
                         <Card className='p-3'> 
                             <h1>Own Your BSafes</h1>
@@ -107,7 +103,7 @@ export default function KeySetup() {
                                     <ProgressBar variant={keyStrengthColor} now={keyStrengthProgress} />
                                     <p className={`text-${keyStrengthColor}`}>{keyStrength}</p>
                                     <Form.Text id="passwordHelpBlock" muted>
-                                     . Your password must be at least 12 characters long, with at least one number, one uppercase, one lowercase character, and one symbol; <br/>
+                                     . Your password must be at least 8 characters long, with at least one number, one uppercase, one lowercase character, and one symbol; <br/>
                                      . A key of 16 or more characters in length is better.
                                     </Form.Text>
                                 </Form.Group>

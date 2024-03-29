@@ -12,7 +12,7 @@ import Image from 'react-bootstrap/Image';
 import Carousel from 'react-bootstrap/Carousel';
 
 
-import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
+import { Montserrat, Tourney, Oswald, Tilt_Warp, Outfit } from 'next/font/google'
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -25,22 +25,7 @@ import ComplianceBadge from '../components/complianceBadge';
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
-export const inter = Inter({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const roboto_mono = Roboto_Mono({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
 export const monteserrat = Montserrat({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const orbitron = Orbitron({
     subsets: ['latin'],
     display: 'swap',
 })
@@ -51,6 +36,16 @@ export const tourney = Tourney({
 })
 
 export const oswald = Oswald({
+    subsets: ['latin'],
+    display: 'swap',
+})
+
+export const tiltWarp = Tilt_Warp({
+    subsets: ['latin'],
+    display: 'swap',
+})
+
+export const bannerFont = Outfit({
     subsets: ['latin'],
     display: 'swap',
 })
@@ -93,21 +88,21 @@ export default function Home() {
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
+                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontStyle: 'bold', fontSize: '5.0rem' }}>🎉 Bit Safes</h1>
                             <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
-                                <h3 className='fw-bold text-center m-0'>🎉 Bit Safes</h3>
-                                <h3 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h3>
-                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderColor: 'red' }}>Made in USA, Taiwan, France & India. Since 2017</span></p>
+                                <h5 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h5>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderWidth: '1px', borderColor: '#5499C7' }}>Made in USA, Taiwan, France & India. Since 2017</span></p>
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span></p>
-                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Global Secure Data Centers: US, Canada, UK, France, Netherlands, Germany, Australia, Japan, Singapore.</p>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Global Privacy Infrastructure with Secure Data Centers in US, Canada, UK, France, Netherlands, Germany, Australia, Japan, and Singapore.</p>
                             </div>
-                            <div className={oswald.className} style={{ padding: '10px', color: 'black' }}>
-                                <h1 className={BSafesStyle.bannerTextH1} style={{ borderLeft: 'solid', borderWidth: '12px', borderColor: 'blue', paddingLeft: '12px' }}>Protecting Sensitive Information in an AI-Driven World</h1>
+                            <div className={bannerFont.className} style={{ padding: '10px', color: 'black' }}>
+                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight:'900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{backgroundColor:'yellow'}}>Sensitive Information</span> in an <span style={{backgroundColor:'orange'}}>AI-Driven World</span></h1>
                             </div>
                         </Col>
                     </Row>
                 </Container>
             </div>
-            <div className={BSafesStyle.ribbonBanner}>Any Device, <span style={{color:'#DFFF00'}}>Any Media</span>, Anytime, Anywhere</div>
+            <div className={BSafesStyle.ribbonBanner}>Any Device, <span style={{ color: '#DFFF00' }}>Any Media</span>, Anytime, Anywhere</div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -131,7 +126,7 @@ export default function Home() {
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Text, Videos, and Images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finances, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span>Create text, videos, and images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>
                 </Container>

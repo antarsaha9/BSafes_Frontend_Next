@@ -31,7 +31,7 @@ export default function LogIn() {
     const [recovery, setRecovery] = useState(false);
 
     const nicknameRef = useRef(null);
-    const clientEncryptionKey = useSelector(state=> state.auth.clientEncryptionKey);
+    const clientEncryptionKey = useSelector(state => state.auth.clientEncryptionKey);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
@@ -55,7 +55,7 @@ export default function LogIn() {
     }
 
     const handleRecoverCallback = (data) => {
-        if(data.recover) {
+        if (data.recover) {
             const result = readAccountRecoveryCode(data.recoveryCode, clientEncryptionKey);
             setNickname(result.nickname);
             setKeyPassword(result.keyPassword);
@@ -82,12 +82,7 @@ export default function LogIn() {
             <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
                 <div>
                     <Container>
-                        <br />
-                        <br />
-                        <br />
-                        <br />
-                        <br />
-                        <Row>
+                        <Row className={BSafesStyle.keyPanel}>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
                                     <h1 className='text-center'>Open</h1>
@@ -116,9 +111,10 @@ export default function LogIn() {
                                             </Button>
                                         </Col>
                                     </Row>
-                                    {recovery && <RecoverAccountModal callback={handleRecoverCallback}/>}
+                                    {recovery && <RecoverAccountModal callback={handleRecoverCallback} />}
                                     <Row>
                                         <Col className='text-center'>
+                                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{width:'52px'}} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
                                                 Own Your BSafes
                                             </Button>
