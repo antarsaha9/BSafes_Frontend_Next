@@ -15,7 +15,7 @@ import '../styles/complianceBadge.css'
 function MyApp({ Component, pageProps }) {
   useEffect(()=> {
     if("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV193.js?v206", {
+      navigator.serviceWorker.register("/serviceWorkerV210.js?v210", {
         scope: "/",
       }).then(
           function(registration) {
