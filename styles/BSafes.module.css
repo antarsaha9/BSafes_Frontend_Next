@@ -128,12 +128,12 @@
 }
 
 .navLink {
-  font-size: 0.8rem;
+  font-size: 0.5rem;
 }
 
-@media only screen and (min-width: 420px) {
+@media only screen and (min-width: 360px) {
   .navLink {
-    font-size: 1.0rem;
+    font-size: 0.6rem;
   }
 }
 
@@ -147,6 +147,10 @@
   .navLink {
     font-size: 1.2rem;
   }
+}
+
+.navlink a {
+  padding:0px;
 }
 
 /* End of navigation bar */

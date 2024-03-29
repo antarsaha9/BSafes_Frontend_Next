@@ -116,7 +116,7 @@ export default function Payment() {
                 <br />
                 {dues && <div>
                     <Row>
-                        <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
+                        <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
                             <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
                             <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the <span className='fw-bold'>{requiredStorage}</span> storage, <span className='fw-bold'>${monthlyPrice} USD</span> per month.</p>
                             {(dues.length === 0) &&
@@ -126,7 +126,7 @@ export default function Payment() {
                     </Row>
                     {(dues.length !== 0) &&
                         <Row>
-                            <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EBF5FB' }}>
+                            <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EBF5FB' }}>
                                 <hr />
                                 <h1>Invoice</h1>
                                 <Table>
@@ -148,7 +148,7 @@ export default function Payment() {
                     }
                     {(dues.length !== 0) && <>
                         <Row>
-                            <Col sm={{ span: 8, offset: 2 }}>
+                            <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }}>
                                 <Form>
                                     <Form.Group controlId='plan'>
                                         <hr />
@@ -183,7 +183,7 @@ export default function Payment() {
                 </div>}
                 {upgradePrice && <>
                     <Row>
-                        <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
+                        <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
                             <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
                             <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, <span className='fw-bold'>${monthlyPrice}</span> USD per month.</p>
                             <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is <span className='fw-bold'>{format(new Date(dueTime), 'MM/dd/yyyy')}</span></p>
@@ -205,7 +205,7 @@ export default function Payment() {
                 </>}
                 <br />
                 <Row>
-                    <Col sm={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED' }}>
+                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow:'auto' }}>
                         <h1>Transaction History</h1>
                         <Table>
                             <thead>
