@@ -113,7 +113,7 @@ export const authenticateManagedMemberAsyncThunk = (data) => async (dispatch, ge
     newActivity(dispatch, v1AccountActivity.AuthenticateManagedMember, () => {
         return new Promise(async (resolve, reject) => {
             const masterId = data.masterId;
-            const memberName = data.memberName;
+            const memberName = forge.util.encodeUtf8(data.memberName);
             const password = data.password;
 
             const username = 'm' + ':' + masterId + ':' + memberName;

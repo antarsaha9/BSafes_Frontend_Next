@@ -76,7 +76,7 @@ const authSlice = createSlice({
             state.localSessionState = action.payload;
         },
         setDisplayName: (state, action) => {
-            state.displayName = action.payload;
+            state.displayName = forge.util.decodeUtf8(action.payload);
         },
         loggedIn: (state, action) => {
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
@@ -86,7 +86,7 @@ const authSlice = createSlice({
             state.isLoggedIn = true;
             state.accountVersion = credentials.accountVersion;
             state.memberId = credentials.memberId;
-            state.displayName = credentials.displayName;
+            state.displayName = forge.util.decodeUtf8(credentials.displayName);
             state.keySalt = credentials.secret.keySalt;
             state.expandedKey = credentials.secret.expandedKey;
             state.publicKey = credentials.keyPack.publicKey;
