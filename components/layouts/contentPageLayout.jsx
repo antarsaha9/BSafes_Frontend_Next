@@ -468,7 +468,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
             {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
-            {displayPaymentBanner && accountState === 'overflow' && <SuspendedModal overflow={true} />}
+            {(displayPaymentBanner && accountState === 'suspended') && <SuspendedModal />}
+            {(displayPaymentBanner && accountState === 'overflow') && <SuspendedModal overflow={true} />}
         </div>
     )
 };

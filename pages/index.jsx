@@ -179,7 +179,7 @@ export default function Home() {
                     <br />
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Secure by Design. Secure by Default.</h1>
+                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Privacy Protectuin by Design & by Default.</h1>
                         </Col>
                     </Row>
                     <Row className={BSafesStyle.descriptionRow}>

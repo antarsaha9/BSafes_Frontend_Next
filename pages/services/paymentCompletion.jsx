@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useRouter } from 'next/router';
 
 import Container from 'react-bootstrap/Container'
+import Button from 'react-bootstrap/Button'
 
 import LoadStripe from '../../components/loadStripe';
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
@@ -10,9 +12,11 @@ import { paymentCompletedThunk } from '../../reduxStore/accountSlice';
 
 export default function PaymentCompletion() {
     const dispatch = useDispatch();
+    const router = useRouter();
 
     const [stripePromise, setStripePromise] = useState(null);
-    const [messageBody, setMessageBody] = useState('');
+    const [paymentIntentData, setPaymentIntentData] = useState(null);
+    const [paymentError, setPaymentError] = useState(null);
 
     useEffect(() => {
         if (!stripePromise) return;
@@ -21,19 +25,55 @@ export default function PaymentCompletion() {
             const url = new URL(window.location);
             const clientSecret = url.searchParams.get('payment_intent_client_secret');
             const { error, paymentIntent } = await stripe.retrievePaymentIntent(clientSecret);
-            dispatch(paymentCompletedThunk());
-            setMessageBody(error ? `> ${error.message}` : (
-                <>&gt; Payment {paymentIntent.status}: <a href={`https://dashboard.stripe.com/test/payments/${paymentIntent.id}`} target="_blank" rel="noreferrer">{paymentIntent.id}</a></>
-            ));
+            if (error) {
+                setPaymentError(error);
+            } else {
+                setPaymentIntentData(paymentIntent);
+                dispatch(paymentCompletedThunk());
+            }
         });
     }, [stripePromise]);
 
     return (
         <ContentPageLayout>
             <Container>
-                <h1>Thank you!</h1>
+                {paymentError &&
+                    <div>
+                        <div className='text-center'>
+                            <img src='/images/sorry_196.png' />
+                        </div>
+                        <h3>We're sorry, but the payment has failed.</h3>
+                        <p>{paymentError && paymentError.message}</p>
+                        <div className='text-center'>
+                            <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
+                        </div>
+                    </div>
+                }
+                {!paymentError && paymentIntentData && paymentIntentData.status === 'succeeded' &&
+                    <div>
+                        <div className='text-center'>
+                            <img src='/images/thank_196.png' />
+                        </div>
+                        <h1>Thank you!</h1>
+                        <h3>Payment succeeded.</h3>
+                        <div className='text-center'>
+                            <Button onClick={() => { router.push('/safe') }}>Done</Button>
+                        </div>
+                    </div>
+                }
+                {!paymentError && paymentIntentData && paymentIntentData.status !== 'succeeded' &&
+                    <div>
+                        <div className='text-center'>
+                            <img src='/images/sorry_196.png' />
+                        </div>
+                        <h3>We're sorry, the payment did not succeed. Status</h3>
+                        <h4>Status: {paymentIntentData.status}</h4>
+                        <div className='text-center'>
+                            <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
+                        </div>
+                    </div>
+                }
 
-                <div id="messages" role="alert" style={messageBody ? { display: 'block' } : {}}>{messageBody}</div>
             </Container>
             <LoadStripe setStripePromise={setStripePromise} />
         </ContentPageLayout>

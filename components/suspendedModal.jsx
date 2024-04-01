@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from 'next/router';
 
@@ -12,11 +13,16 @@ import { debugLog } from "../lib/helper";
 export default function SuspendedModal({ overflow = false }) {
     const debugOn = false;
     const router = useRouter();
+    const [show, setShow] = useState(true);
 
     const nextDueTime = useSelector(state => state.account.nextDueTime);
     let dueDateString = null;
     if (nextDueTime) {
         dueDateString = format(nextDueTime, 'MMMM do')
+    }
+
+    const handleClose = () => {
+        setShow(false);
     }
 
     const handleCheck = () => {
@@ -25,13 +31,21 @@ export default function SuspendedModal({ overflow = false }) {
 
     return (
         <>
-            <Modal show={true} fullscreen={true} style={{ zIndex: '100000' }}>
+            <Modal show={show} fullscreen={true} style={{ zIndex: '100000' }}>
                 <div style={{ height: '1px', backgroundColor: 'grey' }}></div>
                 {true && <>
-                    <Modal.Header style={{ backgroundColor: '#F9E79F' }}>
-                        <Modal.Title>🔰 Please check for any outstanding payments. Thank you!</Modal.Title>
+                    <Modal.Header closeButton onHide={handleClose} style={{ backgroundColor: '#F9E79F' }}>
+                        <Modal.Title></Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+                        <div className="text-center">
+                            <img src='/images/message_128.png'/>
+                        </div>
+                        {overflow ?
+                            <p>🔰 You may have outstanding payments due to exceeding storage quota.
+                                Please check!</p> :
+                            <p>🔰 You may be overdue. Please check!</p>
+                        }
                         <div className="text-center">
                             <Button onClick={handleCheck}>Check</Button>
                         </div>
