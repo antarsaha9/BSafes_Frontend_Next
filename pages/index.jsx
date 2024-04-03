@@ -10,6 +10,8 @@ import Button from 'react-bootstrap/Button';
 import Badge from 'react-bootstrap/Badge';
 import Image from 'react-bootstrap/Image';
 import Carousel from 'react-bootstrap/Carousel';
+import Accordion from 'react-bootstrap/Accordion';
+import Table from 'react-bootstrap/Table';
 
 
 import { Montserrat, Tourney, Oswald, Tilt_Warp, Outfit } from 'next/font/google'
@@ -88,21 +90,22 @@ export default function Home() {
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
-                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontStyle: 'bold', fontSize: '5.0rem' }}>🎉 Bit Safes</h1>
+                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontSize: '5.0rem' }}>🎉 Bit Safes</h1>
                             <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                                 <h5 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h5>
-                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderWidth: '1px', borderColor: '#5499C7' }}>Made in USA, Taiwan, France & India. Since 2017</span></p>
+                                <div hidden className={BSafesStyle.ribbonBannerRight}>Powered by <span style={{ fontSize: '24px' }}>15-Million-Download-Per-Week, Open-Source Forge Crypto</span> Module.</div>
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span></p>
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Global Privacy Infrastructure with Secure Data Centers in US, Canada, UK, France, Netherlands, Germany, Australia, Japan, and Singapore.</p>
+                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderWidth: '1px', borderColor: '#5499C7' }}>Software made in USA, Taiwan, France & India. Since 2017</span></p>
                             </div>
                             <div className={bannerFont.className} style={{ padding: '10px', color: 'black' }}>
-                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight:'900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{backgroundColor:'yellow'}}>Sensitive Information</span> in an <span style={{backgroundColor:'orange'}}>AI-Driven World</span></h1>
+                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight: '900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{ backgroundColor: 'yellow' }}>Sensitive Information</span> in an <span style={{ backgroundColor: 'orange' }}>AI-Driven World</span></h1>
                             </div>
                         </Col>
                     </Row>
                 </Container>
             </div>
-            <div className={BSafesStyle.ribbonBanner}>Any Device, <span style={{ color: '#DFFF00' }}>Any Media</span>, Anytime, Anywhere</div>
+            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: '#DFFF00' }}>Any Media</span>, Anytime, Anywhere</div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -120,25 +123,181 @@ export default function Home() {
                     </Carousel.Item>
                 </Carousel>
             </div>
+            <p className={`text-center ${monteserrat.className}`}>Actual Screenshots</p>
             <br />
             <div className={BSafesStyle.serviceIntroBackground}>
                 <br />
+                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. BSafes Makes it Simple!&nbsp;</div>
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span>Create text, videos, and images on the same page. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                        </Col>
+                    </Row>
+                    <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <Accordion defaultActiveKey="0">
+                                <Accordion.Item eventKey="0">
+                                    <Accordion.Header>Specification</Accordion.Header>
+                                    <Accordion.Body>
+                                        <Table striped bordered hover size="sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Feature</th>
+                                                    <th>Value</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Rich Text Editor</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Upload and Embed Media in Text</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Upload Images</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Upload Videos</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Video Playback Without a Full Download</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Video Gallery</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Image Gallery</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Attach Files</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Video and File Size</td>
+                                                    <td>Unlimited, Bound by Your Device's Storage</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Tags</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Search</td>
+                                                    <td>By Tags and Titles</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Page</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Folder</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Notebook</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Diary</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Box</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Workspace</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>End-to-End Encryption</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Key Derivation</td>
+                                                    <td>Argon2id</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Client-Side Encryption</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Encryption in Transit</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Encryption at Rest</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Encryption Alogrithm</td>
+                                                    <td>AES-256-GCM</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Storage Size</td>
+                                                    <td>Unlimted, Pay for Required Storage.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Revision History</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Data Centers</td>
+                                                    <td>US, Canada, UK, France, Netherlands, Germany, Australia, Japan, and Singapore.</td>
+                                                </tr>
+                                            </tbody>
+                                        </Table>
+                                    </Accordion.Body>
+                                </Accordion.Item>
+                            </Accordion>
                         </Col>
                     </Row>
                 </Container>
+                <br />
                 <div className="text-center">
                     <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
                 </div>
                 <br />
+
                 <Container>
                     <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Take Control of Your Data</h1>
-                            <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and attachments. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
+                            <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and any files. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
                             <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
                     </Row>
@@ -217,7 +376,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Start with a page</h1>
-                                            <p className={BSafesStyle.featureCardFont}>To secure sensitive content, create a page. You can add text, videos, photos, and attachments. Everything is encrypted and backed up by your device.</p>
+                                            <p className={BSafesStyle.featureCardFont}>To secure sensitive content, create a page. You can add text, videos, photos, and any files. Everything is encrypted and backed up by your device.</p>
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardImage}>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_startAPage.png'></Image>
@@ -252,8 +411,8 @@ export default function Home() {
                                 <Container>
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
-                                            <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and Attachments</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Adding visual content is now effortless. All media is encrypted before uploading to the server.</p>
+                                            <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and any Files</h1>
+                                            <p className={BSafesStyle.featureCardFont}>Uploading visual content is very simple. All media is encrypted before being uploaded to the server. There are virtually no limits on file size; it is only bound by your device's storage. You can easily view the video later on any device without the need for a full download.</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/LoveMacbook.png'></Image>
                                         </Col>
                                     </Row>
@@ -320,7 +479,7 @@ export default function Home() {
                                             <h1 className={BSafesStyle.featureCardTitle}>About Us</h1>
                                             <p className={BSafesStyle.featureCardFont}>We started the BSafes project after a confidential record was made searchable on Google due to a misconfiguration in a cloud service. Resolving the issue and removing the leaked information online took a lot of effort.</p>
                                             <p className={BSafesStyle.featureCardFont}>Then, we searched for a cloud service that could provide convenience and strong security controls to protect our confidential records, such as videos, photos, documents, and other files. After extensive research, we discovered that end-to-end encrypted cloud storage options, such as Tresorit and Mega, were the most suitable solutions for our needs.</p>
-                                            <p className={BSafesStyle.featureCardFont}>{`End-to-end encrypted cloud storage is secure because the users' devices encrypt a file before sending it to the server. The server receives obscured data, which no one can access. However, updating a single piece of information in a record was previously a time-consuming process that required users to download the file, edit it using a separate word processor, save the work, and then upload it to the server in different steps. This process was even more challenging to do on a mobile device. To make things easier and more efficient, we developed a solution called BSafes.`}</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`End-to-end encrypted cloud storage is secure because the users' devices encrypt a file before sending it to the server. The server receives obscured data, which no one can access. However,`} <span>updating a single piece of information in a record was previously a time-consuming process that required users to download the file, edit it using a separate word processor, save the work, and then upload it to the server in different steps. This process was even more challenging to do on a mobile device. To make things easier and more efficient, we developed a solution called BSafes</span></p>
                                             <p className={BSafesStyle.featureCardFont}>In 2017, we successfully launched BSafes, which met our goals -</p>
                                             <ul>
                                                 <li>It must be end-to-end encrypted;</li>

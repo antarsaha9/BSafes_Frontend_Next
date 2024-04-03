@@ -646,6 +646,43 @@
   width: fit-content;
 }
 
+/* HTML: <div class="ribbon">Your text content</div> */
+.ribbonBannerRight {
+  font-size: 20px;
+  font-weight: bold;
+  color: #fff;
+}
+@media only screen and (min-width: 768px) {
+  .ribbonBannerRight {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+@media only screen and (min-width: 992px) {
+  .ribbonBannerRight {
+    font-size: 22px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+@media only screen and (min-width: 1200px) {
+  .ribbonBannerRight {
+    font-size: 26px;
+    font-weight: bold;
+    color: #fff;
+  }
+}
+.ribbonBannerRight {
+  --r: .8em; /* control the cutout */
+  
+  padding-left: calc(var(--r) + .25em);
+  line-height: 1.8;
+  clip-path: polygon(100vw 0,var(--r) 0,0 50%,var(--r) 100%,100vw 100%);
+  border-image: conic-gradient(#bd1550 0 0) fill 0//100vw;
+  width: fit-content;
+}
+
 .bannerBackground {
   position: relative;
   background-color: #ffffff;

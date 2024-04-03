@@ -42,8 +42,8 @@ export default function PaymentCompletion() {
                         <div className='text-center'>
                             <img src='/images/sorry_196.png' />
                         </div>
-                        <h3>We're sorry, but the payment has failed.</h3>
-                        <p>{paymentError && paymentError.message}</p>
+                        <h3 className="text-center">We're sorry, but the payment has failed.</h3>
+                        <p className="text-center">{paymentError && paymentError.message}</p>
                         <div className='text-center'>
                             <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
                         </div>
@@ -54,8 +54,8 @@ export default function PaymentCompletion() {
                         <div className='text-center'>
                             <img src='/images/thank_196.png' />
                         </div>
-                        <h1>Thank you!</h1>
-                        <h3>Payment succeeded.</h3>
+                        <h1 className="text-center">Thank you!</h1>
+                        <h3 className="text-center">Payment succeeded.</h3>
                         <div className='text-center'>
                             <Button onClick={() => { router.push('/safe') }}>Done</Button>
                         </div>
@@ -66,8 +66,8 @@ export default function PaymentCompletion() {
                         <div className='text-center'>
                             <img src='/images/sorry_196.png' />
                         </div>
-                        <h3>We're sorry, the payment did not succeed. Status</h3>
-                        <h4>Status: {paymentIntentData.status}</h4>
+                        <h3 className="text-center">We're sorry, the payment did not succeed.</h3>
+                        <h4 className="text-center">Status: {paymentIntentData.status}</h4>
                         <div className='text-center'>
                             <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
                         </div>
