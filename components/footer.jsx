@@ -16,29 +16,30 @@ import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function Footer() {
     return (
-        <Container className={monteserrat.className}>
-            <Row>
-                <Col className='text-center'>
-                    <p className={BSafesStyle.footerText}>© 2024 Wu-Nan Technology Inc.</p>
-                    <p>Registered office: 16192 Coastal Highway, Lewes, Delaware 19958</p>
-                </Col>
-            </Row>
-            <Row>
-                <Col className='text-center'>
-                    <Link className={BSafesStyle.footerSmallText} href="/public/privacyPolicy">Privacy Policy</Link>&nbsp;&nbsp;
-                    <Link className={BSafesStyle.footerSmallText} href="/public/termsOfService">Terms of Service</Link>
-                </Col>
-            </Row>
-            <Row>
-                <Col className='text-center'>
-                    <span className={BSafesStyle.footerSmallText}>BSafes only uses strictly necessary cookies for its support pages.</span>&nbsp;&nbsp;
-                </Col>
-            </Row>
-
-            <Link href="https://support.bsafes.com">
-                <img src="/images/supportIcon_120.png" className={BSafesStyle.supportButton} />
-            </Link>
-
-        </Container>
+        <div style={{ backgroundColor: 'white', borderTop: 'solid' }}>
+            <Container className={monteserrat.className}>
+                <br />
+                <Row>
+                    <Col className='text-center'>
+                        <p className={BSafesStyle.footerText}>© 2024 Wu-Nan Technology Inc.</p>
+                        <p>Registered office: 16192 Coastal Highway, Lewes, Delaware 19958</p>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col className='text-center'>
+                        <Link className={BSafesStyle.footerSmallText} href="/public/privacyPolicy">Privacy Policy</Link>&nbsp;&nbsp;
+                        <Link className={BSafesStyle.footerSmallText} href="/public/termsOfService">Terms of Service</Link>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col className='text-center'>
+                        <span className={BSafesStyle.footerSmallText}>BSafes only uses strictly necessary cookies for its support pages.</span>&nbsp;&nbsp;
+                    </Col>
+                </Row>
+                <Link href="https://support.bsafes.com">
+                    <img src="/images/supportIcon_120.png" className={BSafesStyle.supportButton} />
+                </Link>
+            </Container>
+        </div>
     )
 }

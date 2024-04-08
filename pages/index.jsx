@@ -124,19 +124,23 @@ export default function Home() {
                 </Carousel>
             </div>
             <p className={`text-center ${monteserrat.className}`}>Actual Screenshots</p>
+            <div className='text-center'>
+                <Link className='text-center' href='/public/screenshots'>See more ...</Link>
+            </div>
             <br />
             <div className={BSafesStyle.serviceIntroBackground}>
                 <br />
-                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. BSafes Makes it Simple!&nbsp;</div>
+                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. BSafes Makes it Simple!&nbsp;</div>
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization. Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <Accordion defaultActiveKey="0">
+                            <Accordion defaultActiveKey="1">
                                 <Accordion.Item eventKey="0">
                                     <Accordion.Header>Specification</Accordion.Header>
                                     <Accordion.Body>
@@ -192,7 +196,7 @@ export default function Home() {
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>Video and File Size</td>
-                                                    <td>Unlimited, Bound by Your Device's Storage</td>
+                                                    <td>{`Unlimited, Bound by Your Device's Storage`}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
@@ -321,7 +325,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Generative AI needs lots of data</h1>
-                                            <p className={BSafesStyle.featureCardFont}>AI-powered tools like Microsoft 365 and Google Docs learn from your data, but can also pose a risk to sensitive information. BSafes encrypts your data on your device before sending it to the server, making it impossible for the server to learn from obscured data.</p>
+                                            <p className={BSafesStyle.featureCardFont}>AI-powered tools learn from your data, but can also pose a risk to sensitive information. BSafes encrypts your data on your device before sending it to the server, making it extremely difficult, if not impossible, for anyone else to learn from obscured data.</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -412,7 +416,7 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Drag-and-Drop Videos, Photos and any Files</h1>
-                                            <p className={BSafesStyle.featureCardFont}>Uploading visual content is very simple. All media is encrypted before being uploaded to the server. There are virtually no limits on file size; it is only bound by your device's storage. You can easily view the video later on any device without the need for a full download.</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`Uploading visual content is very simple. All media is encrypted before being uploaded to the server. There are virtually no limits on file size; it is only bound by your device's storage. You can easily view the video later on any device without the need for a full download.`}</p>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/LoveMacbook.png'></Image>
                                         </Col>
                                     </Row>

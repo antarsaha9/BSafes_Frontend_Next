@@ -7,39 +7,14 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Image from 'react-bootstrap/Image';
 
-import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
+import { Montserrat } from 'next/font/google'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import Footer from '../../components/footer';
 
-export const inter = Inter({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const roboto_mono = Roboto_Mono({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
 export const monteserrat = Montserrat({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const orbitron = Orbitron({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const tourney = Tourney({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const oswald = Oswald({
     subsets: ['latin'],
     display: 'swap',
 })

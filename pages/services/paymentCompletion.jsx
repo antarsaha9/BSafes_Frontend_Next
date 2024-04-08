@@ -42,7 +42,7 @@ export default function PaymentCompletion() {
                         <div className='text-center'>
                             <img src='/images/sorry_196.png' />
                         </div>
-                        <h3 className="text-center">We're sorry, but the payment has failed.</h3>
+                        <h3 className="text-center">{`We're sorry, but the payment has failed.`}</h3>
                         <p className="text-center">{paymentError && paymentError.message}</p>
                         <div className='text-center'>
                             <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
@@ -66,7 +66,7 @@ export default function PaymentCompletion() {
                         <div className='text-center'>
                             <img src='/images/sorry_196.png' />
                         </div>
-                        <h3 className="text-center">We're sorry, the payment did not succeed.</h3>
+                        <h3 className="text-center">{`We're sorry, the payment did not succeed.`}</h3>
                         <h4 className="text-center">Status: {paymentIntentData.status}</h4>
                         <div className='text-center'>
                             <Button onClick={() => { router.push('/services/payment') }}>Please retry</Button>
