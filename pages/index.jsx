@@ -130,12 +130,12 @@ export default function Home() {
             <br />
             <div className={BSafesStyle.serviceIntroBackground}>
                 <br />
-                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. BSafes Makes it Simple!&nbsp;</div>
+                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'yellow' }}>BSafes Makes it Simple!</span>&nbsp;</div>
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization.</p>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your personal information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
@@ -153,6 +153,16 @@ export default function Home() {
                                                 </tr>
                                             </thead>
                                             <tbody>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>End-to-End Encryption</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>More than Storage</td>
+                                                    <td>✅</td>
+                                                </tr>
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>Rich Text Editor</td>
@@ -176,7 +186,12 @@ export default function Home() {
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>Video Playback Without a Full Download</td>
-                                                    <td>✅</td>
+                                                    <td>✅  Short Buffering Time.</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Video Seeking</td>
+                                                    <td>✅  Short Buffering Time.</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
@@ -196,7 +211,7 @@ export default function Home() {
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>Video and File Size</td>
-                                                    <td>{`Unlimited, Bound by Your Device's Storage`}</td>
+                                                    <td>{`10GB and More, Bound by Your Device's Storage.`}</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
@@ -207,6 +222,11 @@ export default function Home() {
                                                     <td>✦</td>
                                                     <td>Search</td>
                                                     <td>By Tags and Titles</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>More than Files and Folders</td>
+                                                    <td>✅</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
@@ -235,12 +255,17 @@ export default function Home() {
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
-                                                    <td>Workspace</td>
+                                                    <td>Any Item in Box</td>
                                                     <td>✅</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
-                                                    <td>End-to-End Encryption</td>
+                                                    <td>Box in Box</td>
+                                                    <td>✅</td>
+                                                </tr>
+                                                <tr>
+                                                    <td>✦</td>
+                                                    <td>Workspace</td>
                                                     <td>✅</td>
                                                 </tr>
                                                 <tr>
@@ -271,7 +296,7 @@ export default function Home() {
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>Storage Size</td>
-                                                    <td>Unlimted, Pay for Required Storage.</td>
+                                                    <td>Unlimted, Pay by Required Storage.</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>

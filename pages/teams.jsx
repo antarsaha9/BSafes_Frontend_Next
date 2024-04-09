@@ -79,13 +79,13 @@ export default function Teams() {
 
     return (
         <div className={BSafesStyle.spaceBackground}>
-            <div className={BSafesStyle.bannerBackground}>
+            <div className={BSafesStyle.teamsBackground}>
                 <ContentPageLayout>
                     <Container fluid>
                         <br />
                         <Row>
                             <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                <Card>
+                                <Card style={{borderColor:'black', borderStyle:'double', borderWidth:'2px'}}>
                                     <Link href='/safe' legacyBehavior>
                                         <Card.Body>
                                             <i className="fa fa-heart text-danger"></i>

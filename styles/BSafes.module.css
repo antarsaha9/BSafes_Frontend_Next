@@ -155,6 +155,16 @@
 
 /* End of navigation bar */
 
+/*--****** Background *******/
+.teamsBackground {
+  position: relative;
+  min-height: 100vh;
+  background-color: #f8f9f9;
+  background-image: url("/images/noisy-net.png");
+}
+
+/* End of Background */
+
 /*--***** Custom buttons */
 .btnCircle {
   width: 48px;
@@ -761,13 +771,6 @@
   clip-path: polygon(-100vw 0, calc(100% - var(--r)) 0, 100% 50%, calc(100% - var(--r)) 100%, -100vw 100%);
   border-image: conic-gradient(#ff5800 0 0) fill 0;
   width: fit-content;
-}
-
-.bannerBackground {
-  position: relative;
-  min-height: 100vh;
-  background-color: #f8f9f9;
-  background-image: url("https://www.transparenttextures.com/patterns/carbon-fibre.png");
 }
 
 .serviceIntroBackground {

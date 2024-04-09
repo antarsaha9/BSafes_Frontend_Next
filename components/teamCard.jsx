@@ -14,7 +14,7 @@ import { debugLog } from '../lib/helper'
 export default function TeamCard({ index, team, onAdd }) {
     const debugOn = false;
 
-    const cardStyle = BSafesStyle.safeItem;
+    const cardStyle = '';
     const cardBodyStyle = '';
     const cardRowStyle = ''    
 
@@ -65,15 +65,8 @@ export default function TeamCard({ index, team, onAdd }) {
 
     return (
         <>
-        { false && 
-        <Card style={{ cursor: 'pointer' }}>
-            <Card.Body>
-                Hello
-            </Card.Body>
-        </Card>
-        }
         { true &&
-        <Card className={cardStyle} style={{ cursor: 'pointer' }}>
+        <Card className={cardStyle} style={{cursor: 'pointer', borderColor:'black', borderStyle:'double', borderWidth:'2px'}}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
                     <Link href={`/team/${team.id}`} legacyBehavior>
