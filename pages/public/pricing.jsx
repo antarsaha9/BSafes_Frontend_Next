@@ -44,7 +44,7 @@ export default function Pricing() {
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <Container className={monteserrat.className} style={{ color: 'black' }}>
                 <br />
-                <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/dataProtection_small.png'></Image>
+                <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/coin_320.png'></Image>
                 <Row hidden className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h2>We respect your privacy! </h2>

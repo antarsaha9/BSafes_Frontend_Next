@@ -159,8 +159,8 @@
 .teamsBackground {
   position: relative;
   min-height: 100vh;
-  background-color: #f8f9f9;
-  background-image: url("/images/noisy-net.png");
+  background-color: #FDFEFE ;
+  /*background-image: url("/images/noisy-net.png");*/
 }
 
 /* End of Background */

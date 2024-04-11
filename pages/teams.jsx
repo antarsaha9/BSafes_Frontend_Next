@@ -78,62 +78,60 @@ export default function Teams() {
     }, [containerCleared]);
 
     return (
-        <div className={BSafesStyle.spaceBackground}>
-            <div className={BSafesStyle.teamsBackground}>
-                <ContentPageLayout>
-                    <Container fluid>
-                        <br />
+        <div className={BSafesStyle.teamsBackground}>
+            <ContentPageLayout>
+                <Container fluid>
+                    <br />
+                    <Row>
+                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                            <Card>
+                                <Link href='/safe' legacyBehavior>
+                                    <Card.Body>
+                                        <i className="fa fa-heart text-danger"></i>
+                                        <h2>Personal</h2>
+                                    </Card.Body>
+                                </Link>
+                            </Card>
+                            <br />
+                            <p hidden className="text-muted">Only you can access items in your personal workspace.</p>
+                        </Col>
+                    </Row>
+                    <Row className="justify-content-center">
+                        <Col lg={8}>
+                            <Row className="justify-content-center">
+                                <AddATeamButton addATeam={addATeam} />
+                            </Row>
+                            <NewTeamModal show={showNewTeamModal} handleClose={handleClose} handleCreateANewTeam={handleCreateANewTeam} />
+                        </Col>
+                    </Row>
+                    <br />
+                    <br />
+                    <Row>
+                        <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
+                            {teams.map((team, index) => {
+                                return <TeamCard key={index} index={index} team={team} onAdd={addATeam} />
+                            })}
+                        </Col>
+                    </Row>
+                    {teams && teams.length > 0 &&
                         <Row>
                             <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                <Card style={{borderColor:'black', borderStyle:'double', borderWidth:'2px'}}>
-                                    <Link href='/safe' legacyBehavior>
-                                        <Card.Body>
-                                            <i className="fa fa-heart text-danger"></i>
-                                            <h2>Personal</h2>
-                                        </Card.Body>
-                                    </Link>
-                                </Card>
-                                <br />
-                                <p hidden className="text-muted">Only you can access items in your personal workspace.</p>
+                                <div className='mt-4 d-flex justify-content-center'>
+                                    <PaginationControl
+                                        page={pageNumber}
+                                        // between={4}
+                                        total={total}
+                                        limit={itemsPerPage}
+                                        changePage={(page) => {
+                                            loadTeams(page)
+                                        }}
+                                        ellipsis={1}
+                                    />
+                                </div>
                             </Col>
-                        </Row>
-                        <Row className="justify-content-center">
-                            <Col lg={8}>
-                                <Row className="justify-content-center">
-                                    <AddATeamButton addATeam={addATeam} />
-                                </Row>
-                                <NewTeamModal show={showNewTeamModal} handleClose={handleClose} handleCreateANewTeam={handleCreateANewTeam} />
-                            </Col>
-                        </Row>
-                        <br />
-                        <br />
-                        <Row>
-                            <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                {teams.map((team, index) => {
-                                    return <TeamCard key={index} index={index} team={team} onAdd={addATeam} />
-                                })}
-                            </Col>
-                        </Row>
-                        {teams && teams.length > 0 &&
-                            <Row>
-                                <Col sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }}>
-                                    <div className='mt-4 d-flex justify-content-center'>
-                                        <PaginationControl
-                                            page={pageNumber}
-                                            // between={4}
-                                            total={total}
-                                            limit={itemsPerPage}
-                                            changePage={(page) => {
-                                                loadTeams(page)
-                                            }}
-                                            ellipsis={1}
-                                        />
-                                    </div>
-                                </Col>
-                            </Row>}
-                    </Container>
-                </ContentPageLayout>
-            </div>
+                        </Row>}
+                </Container>
+            </ContentPageLayout>
         </div>
     );
 }

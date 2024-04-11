@@ -66,7 +66,7 @@ export default function TeamCard({ index, team, onAdd }) {
     return (
         <>
         { true &&
-        <Card className={cardStyle} style={{cursor: 'pointer', borderColor:'black', borderStyle:'double', borderWidth:'2px'}}>
+        <Card className={cardStyle} style={{cursor: 'pointer'}}>
             <Card.Body className={cardBodyStyle}>
                 <Row className={cardRowStyle}>
                     <Link href={`/team/${team.id}`} legacyBehavior>

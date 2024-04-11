@@ -226,7 +226,7 @@ export default function ItemsToolbar() {
             </Modal>
             <Modal show={showTrashModal} onEntered={handleTrashModalOnEntered} onHide={handleCloseTrashTrigger}>
                 <Modal.Body>
-                    <h3>Are you Sure?</h3>
+                    <h3>Are you sure?</h3>
                     <Form >
                         <InputGroup className="mb-3">
                             <Form.Control ref={confirmInputRef} size="lg" type="text"
