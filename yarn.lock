@@ -344,6 +344,11 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
+"@excalidraw/excalidraw@^0.17.3":
+  version "0.17.3"
+  resolved "https://registry.npmjs.org/@excalidraw/excalidraw/-/excalidraw-0.17.3.tgz"
+  integrity sha512-t+0sR30AboKcINt0WUJmSAC1cJy6npO37j/zONvuWvSh6XDOGoL1E0L+WYKJMBzp4wnOQhRIghQJmdfktQlO8w==
+
 "@fontsource-variable/edu-sa-beginner@^5.0.8":
   version "5.0.8"
   resolved "https://registry.npmjs.org/@fontsource-variable/edu-sa-beginner/-/edu-sa-beginner-5.0.8.tgz"

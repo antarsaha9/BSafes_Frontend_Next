@@ -19,7 +19,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setPageType} from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -175,8 +175,9 @@ export default function PageCommons() {
             playVideo.remove();
         });
         
-        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
-        setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html');
+        if (contentByDOM)
+            setcontentEditorContentWithImagesAndVideos(contentByDOM.innerHTML);
         dispatch(getS3SignedUrlForContentUploadThunk());
         setContentEditorMode("Writing");
         
@@ -199,9 +200,13 @@ export default function PageCommons() {
         
     }
 
-    const handlePenClicked = (editorId) => {
-        debugLog(debugOn, `pen ${editorId} clicked`);
+    const handlePenClicked = (editorId, purpose) => {
+        debugLog(debugOn, `pen ${editorId} clicked ${purpose}`);
         let thisReadyForSaving = true;
+        if (purpose === 'froala')
+            dispatch(setPageType('WritingPage'));
+        else if (purpose === 'excalidraw')
+            dispatch(setPageType('DrawingPage'));
         if(editorId === 'content'){
             beforeWritingContent();
             setEditingEditorId("content");
@@ -736,7 +741,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete}/>
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawicon={true} uploadImages={uploadImages}/>
                 </Col> 
             </Row>
             <br />

@@ -8,8 +8,6 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 
 import jquery from "jquery"
 
-const forge = require('node-forge');
-
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getEditorConfig } from "../lib/bSafesCommonUI";
@@ -21,7 +19,8 @@ import { rotateImage } from '../lib/wnImage';
 import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
+let Excalidraw = null;
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null, showDrawicon=false, uploadImages}) {
     const debugOn = false;    
     const dispatch = useDispatch();
 
@@ -34,14 +33,19 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const itemKey = useSelector( state => state.page.itemKey);
     const itemIV = useSelector( state => state.page.itemIV);
     const draft = useSelector( state=>state.page.draft);
+    const pageType = useSelector( state=>state.page.pageType) || 'WritingPage';
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
    
     const [ editorOn, setEditorOn ] = useState(false);
     const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
     const [ originalContent, setOriginalContent] = useState(null);
+    const [excalidrawElements, setExcalidrawElements] = useState(null);
+    const [excalidrawApi, setExcalidrawApi] = useState(null);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
+
+    const drawing = () => { }
     
     const writing = () => {
         if(!scriptsLoaded) return;
@@ -121,11 +125,38 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     const saving = () => {
-        let content = $(editorRef.current).froalaEditor('html.get');
-        debugLog(debugOn, "editor content: ", content );
-        setTimeout(()=> {
-            onContentChanged(editorId, content);
-        }, 0) 
+        if (pageType === "WritingPage") {
+            let content = $(editorRef.current).froalaEditor('html.get');
+            debugLog(debugOn, "editor content: ", content);
+            setTimeout(() => {
+                onContentChanged(editorId, content);
+            }, 0)
+        }
+        else if (pageType === "DrawingPage") {
+            if (!excalidrawApi) {
+                return
+            }
+            const elements = excalidrawElements;
+            if (!elements || !elements.length) {
+                return
+            }
+            Excalidraw.exportToCanvas({
+                elements,
+                appState: {
+                    // ...initialData.appState,
+                    exportWithDarkMode: false,
+                },
+                files: excalidrawApi.getFiles(),
+                // getDimensions: () => { return {width: 350, height: 350}}
+            }).then(canvas => {
+                // const ctx = canvas.getContext("2d");
+                // setCanvasUrl(canvas.toDataURL());
+                canvas.toBlob(blob => {
+                    blob.name = "excalidraw.png";
+                    uploadImages([blob], 'top');
+                })
+            });
+        }
     }
 
     const readOnly = () => {
@@ -150,7 +181,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 readOnly();
                 break;
             case "Writing":
-                writing();
+                if (pageType === "WritingPage")
+                    writing();
+                else if (pageType === "DrawingPage")
+                    drawing();
                 break;
             case "Saving":
                 saving();
@@ -176,6 +210,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             await ic.Codemirror;
             await ic.Photoswipe;
             await ic.Others;
+            Excalidraw = (await ic.Excalidraw)[0];
 
             setScriptsLoaded(true);
 
@@ -236,8 +271,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         }
     }, [intervalState])
 
-    const handlePenClicked = () => {
-        onPenClicked(editorId);
+    const handlePenClicked = (purpose) => {
+        onPenClicked(editorId, purpose);
     }
 
     const bSafesPreflightHook = (fn) => {
@@ -383,7 +418,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                         {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Write</h6>}
                     </Col>
                     <Col xs={6}>
-                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                        {showDrawicon && <Button variant="link" className="text-dark pull-right p-0 mx-2" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button>}
                         {(editorId==='content' && draft !== null) &&
                             <ButtonGroup className='pull-right mx-3' size="sm">
                                 <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
@@ -396,11 +432,19 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 ""
                 
             }
-            { ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0))) &&
+            { (pageType==="WritingPage" && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
                 <Row className={`${(editorId ==='title')?BSafesStyle.titleEditorRow:BSafesStyle.editorRow} fr-element fr-view`}>
                     <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}} style={{overflowX:'auto'}}>
                     </div>
                 </Row>
+            }
+            {
+                (pageType==='DrawingPage' && mode=='Writing'|| mode === 'Saving') && 
+                <>
+                <Row className={`${BSafesStyle.editorRow} w-100`} style={{height:'80vh'}}>
+                    <Excalidraw.Excalidraw excalidrawAPI={setExcalidrawApi} onChange={setExcalidrawElements} />
+                </Row>
+                </>
             }
             </>:""
         }
