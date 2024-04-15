@@ -95,7 +95,7 @@ export default function KeySetup() {
                             <Form>
                                 <Form.Group className="mb-3" controlId="Nickname">
                                     <Form.Label>Nickname</Form.Label>
-                                    <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Plase choose a nickname' />
+                                    <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Please give it a nickname' />
                                 </Form.Group>
                                 <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
                                     <Form.Label>Key Password</Form.Label>

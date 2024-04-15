@@ -42,9 +42,9 @@ export default function SuspendedModal({ overflow = false }) {
                             <img src='/images/message_128.png'/>
                         </div>
                         {overflow ?
-                            <p>🔰 You may have outstanding payments due to exceeding storage quota.
+                            <p className="text-center">🔰 You may have outstanding payments due to exceeding storage quota.
                                 Please check!</p> :
-                            <p>🔰 You may be overdue. Please check!</p>
+                            <p className="text-center">🔰 You may be overdue. Please check!</p>
                         }
                         <div className="text-center">
                             <Button onClick={handleCheck}>Check</Button>

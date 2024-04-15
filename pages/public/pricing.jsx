@@ -9,39 +9,14 @@ import Col from 'react-bootstrap/Col'
 import Image from 'react-bootstrap/Image';
 import Table from 'react-bootstrap/Table';
 
-import { Inter, Roboto_Mono, Montserrat, Orbitron, Tourney, Oswald } from 'next/font/google'
+import { Montserrat } from 'next/font/google'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 import Footer from '../../components/footer';
 
-export const inter = Inter({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const roboto_mono = Roboto_Mono({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
 export const monteserrat = Montserrat({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const orbitron = Orbitron({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const tourney = Tourney({
-    subsets: ['latin'],
-    display: 'swap',
-})
-
-export const oswald = Oswald({
     subsets: ['latin'],
     display: 'swap',
 })
@@ -69,7 +44,7 @@ export default function Pricing() {
         <ContentPageLayout publicPage={true} publicHooks={{ onOpen: handleUnlock }} showNavbarMenu={false} showPathRow={false}>
             <Container className={monteserrat.className} style={{ color: 'black' }}>
                 <br />
-                <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/dataProtection_small.png'></Image>
+                <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/coin_320.png'></Image>
                 <Row hidden className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                         <h2>We respect your privacy! </h2>
