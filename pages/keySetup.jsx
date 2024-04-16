@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useDispatch } from 'react-redux'
+import Link from 'next/link';
 
 import Container from 'react-bootstrap/Container'
 import Card from 'react-bootstrap/Card'
@@ -114,6 +115,7 @@ export default function KeySetup() {
                                 </Form.Group>
                             </Form>
                             <br />
+                            <p className='text-cent'>You agree to our <Link href='/public/privacyPolicy'>Privacy Policy</Link> and <Link href='/public/termsOfService'>Terms of Service</Link> by clicking GO.</p>
                             <Row>
                                 <Col className='text-center'>
                                     <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>

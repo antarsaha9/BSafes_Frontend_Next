@@ -90,6 +90,9 @@ export default function Home() {
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
+                            <div className="text-center">
+                                <Button variant='danger' size='sm' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+                            </div>
                             <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontSize: '5.0rem' }}>🎉 Bit Safes</h1>
                             <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                                 <h5 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h5>
@@ -125,7 +128,9 @@ export default function Home() {
             </div>
             <p className={`text-center ${monteserrat.className}`}>Actual Screenshots</p>
             <div className='text-center'>
-                <Link className='text-center' href='/public/screenshots'>See more ...</Link>
+                <Link className='text-center' href='/public/licenses' target='_blank'>Licenses</Link>
+                <span> | </span>
+                <Link className='text-center' href='/public/screenshots' target='_blank'>See more ...</Link>
             </div>
             <br />
             <div className={BSafesStyle.serviceIntroBackground}>
@@ -149,7 +154,7 @@ export default function Home() {
                                                 <tr>
                                                     <th>#</th>
                                                     <th>Feature</th>
-                                                    <th>Value</th>
+                                                    <th></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -161,7 +166,7 @@ export default function Home() {
                                                 <tr>
                                                     <td>✦</td>
                                                     <td>More than Storage</td>
-                                                    <td>✅</td>
+                                                    <td>✅ Write, Add Media, Encrypt & Backup</td>
                                                 </tr>
                                                 <tr>
                                                     <td>✦</td>
@@ -367,7 +372,7 @@ export default function Home() {
                     <br />
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Privacy Protectuin by Design & by Default.</h1>
+                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Privacy & Security by Design & by Default.</h1>
                         </Col>
                     </Row>
                     <Row className={BSafesStyle.descriptionRow}>
@@ -390,7 +395,7 @@ export default function Home() {
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Regulatory Compliance</h1>
-                                            <p className={BSafesStyle.featureCardFont}>{`BSafes is compliant with global data privacy and security regulations such as GDPR, CCPA, HIPAA, and HITECH, thanks to its end-to-end encryption.`}</p>
+                                            <p className={BSafesStyle.featureCardFont}>{`BSafes is compliant with global data privacy and security regulations such as GDPR, CCPA, HIPAA, PCI, and HITECH, thanks to its end-to-end encryption.`}</p>
                                         </Col>
                                     </Row>
                                 </Container>
@@ -405,7 +410,8 @@ export default function Home() {
                                     <Row style={{ paddingTop: '0px' }}>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardText}>
                                             <h1 className={BSafesStyle.featureCardTitle}>Start with a page</h1>
-                                            <p className={BSafesStyle.featureCardFont}>To secure sensitive content, create a page. You can add text, videos, photos, and any files. Everything is encrypted and backed up by your device.</p>
+                                            <p className={BSafesStyle.featureCardFont}>To secure sensitive content, create a page. You can write, add videos, photos, and any files. Everything is encrypted and backed up by your device.</p>
+                                            <Link href='https://support.bsafes.com/article/start' target='_blank'>Details</Link>
                                         </Col>
                                         <Col xs={12} md={6} className={BSafesStyle.featureCardImage}>
                                             <Image className={BSafesStyle.featureCardNormalImage} src='/images/feature_startAPage.png'></Image>
@@ -499,6 +505,12 @@ export default function Home() {
                             </Link>
                         </Col>
                     </Row>
+                    <br />
+                    <br />
+                    <div className="text-center">
+                        <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
+                    </div>
+                    <br />
                     <Row id="aboutUs" >
                         <Col md={12}>
                             <div className={BSafesStyle.featureCard} style={{ backgroundColor: '#FDEDEC' }}>
