@@ -25,6 +25,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);
+    const ExcalidrawRef = useRef(null);
     const [draftInterval, setDraftInterval] = useState(null);
     const [intervalState, setIntervalState] = useState(null);
     const expandedKey = useSelector( state => state.auth.expandedKey);
@@ -34,18 +35,38 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const itemIV = useSelector( state => state.page.itemIV);
     const draft = useSelector( state=>state.page.draft);
     const pageType = useSelector( state=>state.page.pageType) || 'WritingPage';
+    const imagePanelsState = useSelector(state => state.page.imagePanels);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
    
     const [ editorOn, setEditorOn ] = useState(false);
     const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
     const [ originalContent, setOriginalContent] = useState(null);
-    const [excalidrawElements, setExcalidrawElements] = useState(null);
-    const [excalidrawApi, setExcalidrawApi] = useState(null);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
 
-    const drawing = () => { }
+    const drawing = () => {
+        const match = /image_(?<index>\d+)/gm.exec(editorId);
+        if (match && match.groups) {
+            const ImagePanelIndex = parseInt(match.groups.index, 10);
+            const savedJSON = JSON.parse(imagePanelsState[ImagePanelIndex].file?.metadata?.ExcalidrawSerializedJSON);
+            const res = Excalidraw.restore(savedJSON);
+            function restoreExcalidraw(params) {
+                if (!ExcalidrawRef.current) {
+                    debugLog(debugOn, 'excalidrawApi not defined, rechecking');
+                    setTimeout(() => {
+                        restoreExcalidraw(params);
+                    }, 500);
+                } else {
+                    ExcalidrawRef.current.updateScene(res);
+                    ExcalidrawRef.current.scrollToContent();
+                }
+            }
+            setTimeout(() => {
+                restoreExcalidraw(res);
+            }, 500);
+        }
+    }
     
     const writing = () => {
         if(!scriptsLoaded) return;
@@ -70,10 +91,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 $(editorRef.current).html(content);
                 froalaOptions = {
                     key: froalaKey,
-                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'myButton'/*, 'html'*/],
+                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'myButton'/*, 'html'*/],
+                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'myButton'/*, 'html'*/],
+                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'myButton'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',
@@ -133,10 +154,11 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             }, 0)
         }
         else if (pageType === "DrawingPage") {
-            if (!excalidrawApi) {
+            debugLog(debugOn, 'saving drawing page');
+            if (!ExcalidrawRef.current) {
                 return
             }
-            const elements = excalidrawElements;
+            const elements = ExcalidrawRef.current.getSceneElements();
             if (!elements || !elements.length) {
                 return
             }
@@ -146,14 +168,26 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     // ...initialData.appState,
                     exportWithDarkMode: false,
                 },
-                files: excalidrawApi.getFiles(),
+                files: ExcalidrawRef.current.getFiles(),
                 // getDimensions: () => { return {width: 350, height: 350}}
             }).then(canvas => {
                 // const ctx = canvas.getContext("2d");
                 // setCanvasUrl(canvas.toDataURL());
                 canvas.toBlob(blob => {
                     blob.name = "excalidraw.png";
-                    uploadImages([blob], 'top');
+                    const serialized =  Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState());
+
+                    blob.metadata = {
+                        ExcalidrawExportedImage:true,
+                        ExcalidrawSerializedJSON:serialized
+                    };
+
+                    const match = /image_(?<index>\d+)/gm.exec(editorId);
+                    if (match && match.groups) {
+                        uploadImages([blob], `image_replace_${parseInt(match.groups.index, 10)}`);
+                    } else {
+                        uploadImages([blob], 'top');
+                    }
                 })
             });
         }
@@ -179,6 +213,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         switch (mode) {
             case "ReadOnly":
                 readOnly();
+                if (ExcalidrawRef.current){
+                    ExcalidrawRef.current.resetScene();
+                }
                 break;
             case "Writing":
                 if (pageType === "WritingPage")
@@ -442,7 +479,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 (pageType==='DrawingPage' && mode=='Writing'|| mode === 'Saving') && 
                 <>
                 <Row className={`${BSafesStyle.editorRow} w-100`} style={{height:'80vh'}}>
-                    <Excalidraw.Excalidraw excalidrawAPI={setExcalidrawApi} onChange={setExcalidrawElements} />
+                    <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi)=>{
+                        ExcalidrawRef.current = excalidrawApi;
+                    }}
+                    />
                 </Row>
                 </>
             }

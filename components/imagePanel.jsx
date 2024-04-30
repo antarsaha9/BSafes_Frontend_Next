@@ -24,8 +24,8 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
         onImageClicked(panel.queueId);
     }
 
-    const handlePenClicked = () => {
-        onPenClicked(panelIndex);
+    const handlePenClicked = (purpose) => {
+        onPenClicked(panelIndex, purpose);
     }
 
     const handleDelete = () => {
@@ -73,7 +73,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
             <Row>
                 <Col xs={8} sm={9}>
                     <div className="pt-2">
-                        <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} />
+                        <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} uploadImages={uploadImages}/>
                     </div>   
                 </Col>
                 <Col xs={4} sm={3} className="p-0">
@@ -97,7 +97,11 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
                                     :""
                                 }
                                 { editable?
-                                    <Button variant="link" onClick={handlePenClicked} className="px-1 text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                                    <Button variant="link" onClick={handlePenClicked.bind(null, 'froala')} className="px-1 text-dark pull-right"><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                                    :""
+                                }
+                                { editable && panel.file?.metadata?.ExcalidrawExportedImage?
+                                    <Button variant="link" onClick={handlePenClicked.bind(null, 'excalidraw')} className="px-1 text-dark pull-right"><i className="fa fa-paint-brush" aria-hidden="true"></i></Button>
                                     :""
                                 }
                     

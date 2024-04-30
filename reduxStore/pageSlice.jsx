@@ -11,7 +11,7 @@ import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
-
+const embeddJSONSeperator = '=#=#=embeddJSON=';
 const debugOn = false;
 
 const initialState = {
@@ -575,7 +575,8 @@ const pageSlice = createSlice({
                 const newPanel = {
                     queueId: queueId,
                     status: "WaitingForUpload",
-                    progress: 0
+                    progress: 0,
+                    file: files[i]
                 }
                 newPanels.push(newPanel);
             }
@@ -585,7 +586,10 @@ const pageSlice = createSlice({
                     break;
                 default:
                     let index = parseInt(action.payload.where.split('_').pop());
-                    state.imagePanels.splice(index + 1, 0, ...newPanels);
+                    if (action.payload.where.indexOf('replace') && files.length===1) 
+                        state.imagePanels.splice(index, 1, ...newPanels);
+                    else
+                        state.imagePanels.splice(index + 1, 0, ...newPanels);
             }
         },
         uploadingImage: (state, action) => {
@@ -638,6 +642,7 @@ const pageSlice = createSlice({
             panel.width = action.payload.width;
             panel.height = action.payload.height;
             panel.editorMode = "ReadOnly";
+            panel.file = action.payload.file;
 
         },
         imageDownloadFailed: (state, action) => {
@@ -1188,14 +1193,16 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                             return;
                         };
 
-                        let decryptedImageStr
+                        let decryptedImageStr, embeddJSON
 
                         const buffer = Buffer.from(response, 'binary');
                         const downloadedBinaryString = buffer.toString('binary');
                         debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                         decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                         debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-
+                        if (decryptedImageStr.indexOf(embeddJSONSeperator)){
+                            [decryptedImageStr, embeddJSON] = decryptedImageStr.split(embeddJSONSeperator);
+                        }
                         const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                         const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                             type: 'image/*'
@@ -1205,11 +1212,21 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                         img.src = link;
 
                         img.onload = () => {
-                            dispatch(imageDownloaded({ itemId, link, width: img.width, height: img.height }));
+                            dispatch(imageDownloaded({ itemId, link, width: img.width, height: img.height, file:img }));
+                            if (embeddJSON){
+                                img.metadata = {
+                                    ExcalidrawExportedImage:true,
+                                    ExcalidrawSerializedJSON:embeddJSON
+                                };
+                            }
                             resolve();
                         }
-
-
+                        
+                        img.onerror = (error) => {
+                            dispatch(imageDownloadFailed({ itemId }));
+                            debugLog(debugOn, 'downloadFromS3 error: ', error)
+                            resolve("Failed to download an image.");
+                        }
                     } catch (error) {
                         dispatch(imageDownloadFailed({ itemId }));
                         debugLog(debugOn, 'downloadFromS3 error: ', error)
@@ -2464,7 +2481,7 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     }
 }
 
-const uploadAnImage = async (dispatch, state, file) => {
+const uploadAnImage = async (dispatch, state, file, embeddJSON) => {
     let img;
     let exifOrientation;
     let imageDataInBinaryString;
@@ -2473,7 +2490,7 @@ const uploadAnImage = async (dispatch, state, file) => {
     const downscaleImgAndEncryptInUint8Array = (size) => {
         return new Promise(async (resolve, reject) => {
             try {
-                const originalStr = await downScaleImage(img, exifOrientation, size);
+                const originalStr = (await downScaleImage(img, exifOrientation, size)) + (embeddJSON ? `${embeddJSONSeperator}${embeddJSON}` : '');
                 const encryptedStr = encryptLargeBinaryString(originalStr, state.itemKey);
                 resolve(encryptedStr);
             } catch (error) {
@@ -2672,9 +2689,10 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
                 const file = state.imageUploadQueue[state.imageUploadIndex].file;
                 try {
-                    const uploadResult = await uploadAnImage(dispatch, state, file);
+                    const uploadResult = await uploadAnImage(dispatch, state, file, file?.metadata?.ExcalidrawExportedImage ? file.metadata.ExcalidrawSerializedJSON : null);
                     dispatch(imageUploaded(uploadResult));
                 } catch (error) {
+                    debugLog(debugOn, 'Uploading failed: ', error);
                     alert("Network failure, retry?")
                 }
 
