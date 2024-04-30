@@ -114,12 +114,13 @@ export default function LogIn() {
                                     {recovery && <RecoverAccountModal callback={handleRecoverCallback} />}
                                     <Row>
                                         <Col className='text-center'>
-                                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{width:'52px'}} />
+                                            <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
                                                 Own Your BSafes
                                             </Button>
                                         </Col>
                                     </Row>
+                                    <p className='text-center'>30-Day Free</p>
                                 </Card>
                             </Col>
                         </Row>
