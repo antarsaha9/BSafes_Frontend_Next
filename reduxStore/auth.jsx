@@ -1,7 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
-import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
+import { debugLog, PostCall, getTimeZoneOffset, clearLocalData } from '../lib/helper'
 import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials } from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
@@ -355,7 +355,7 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "woo... failed to log out.")
                 reject("Failed to log out.");
             })
-            localStorage.clear();
+            clearLocalData();
             try {
                 await clearIndexDB();
             } catch (error) {
@@ -391,7 +391,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                             if (data.accountVersion === 'v1') {
                                 clearLocalCredentials('v1');
                             } else {
-                                localStorage.clear();
+                                clearLocalData();
                                 dispatch(loggedOut());
 
                             }
@@ -403,7 +403,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                     }
                 } else {
                     if (data.error === 'SessionNotExisted') {
-                        localStorage.clear();
+                        clearLocalData();
                         dispatch(loggedOut());
                     }
                 }
