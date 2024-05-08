@@ -68,7 +68,7 @@ export default function LogIn() {
     }
 
     useEffect(() => {
-        //nicknameRef.current.focus();
+        alert(process.env.NEXT_PUBLIC_platform)
     }, []);
 
     useEffect(() => {
@@ -85,6 +85,10 @@ export default function LogIn() {
                         <Row className={BSafesStyle.keyPanel}>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
+                                    {process.env.NEXT_PUBLIC_app === 'colors' &&
+                                        <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                    }
+                                    <hr/>
                                     <h1 className='text-center'>Open Your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
@@ -120,7 +124,7 @@ export default function LogIn() {
                                             </Button>
                                         </Col>
                                     </Row>
-                                    <p className='text-center'>30-Day Free</p>
+                                    <p hidden={process.env.NEXT_PUBLIC_platform !== 'Web'} className='text-center'>30-Day Free</p>
                                 </Card>
                             </Col>
                         </Row>
