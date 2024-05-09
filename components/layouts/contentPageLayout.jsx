@@ -31,6 +31,8 @@ import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createChe
 import { setAccountHashVerified } from '../../reduxStore/accountSlice';
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
+const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
+
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
     const debugOn = false;
     debugLog(false, "Rendering ContentPageLayout");
@@ -119,6 +121,32 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 path.startsWith('/v3')));
     }
 
+    const ifRedirectToHome = (path) => {
+        if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
+            return true;
+        } else return false;
+    }
+
+    const goHome = () => {
+        switch (process.env.NEXT_PUBLIC_app) {
+            case 'colors':
+                changePage('/apps/colors');
+                break;
+            default:
+                changePage('/');
+        }
+    }
+
+    const goLogin = () => {
+        switch (process.env.NEXT_PUBLIC_app) {
+            case 'colors':
+                changePage('/apps/colors');
+                break;
+            default:
+                changePage('/login');
+        }
+    }
+
     const errorNotice = (errorMessage) => {
         toast.error(errorMessage, {
             position: "bottom-center",
@@ -199,18 +227,18 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                         dispatch(signedOut());
                         changePage(`/`);
                     } else {
-                        changePage('/logIn');
+                        goLogin();
                     }
                 } else {
                     const path = router.asPath;
-                    if ((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
-                        changePage('/');
+                    if (ifRedirectToHome(path)) {
+                        goHome();
                     }
                 }
             } else {
                 const path = router.asPath;
-                if ((path !== '/') && (!path.startsWith('/public/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
-                    changePage('/');
+                if (ifRedirectToHome(path)) {
+                    goHome();
                 }
             }
         }
@@ -426,21 +454,21 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                 id={`offcanvasNavbar-expand-false`}
                                 aria-labelledby={`offcanvasNavbarLabel-expand-false`}
                                 placement="start"
-                                style={{border:'solid'}}
+                                style={{ border: 'solid' }}
                             >
-                                {true && <Offcanvas.Header closeButton style={{backgroundColor:'#abdbe3'}}>
+                                {true && <Offcanvas.Header closeButton style={{ backgroundColor: '#abdbe3' }}>
                                     <Offcanvas.Title id={`offcanvasNavbarLabel-expand-false`}>
-                                        <h4><i className="fa fa-info-circle" aria-hidden="true" style={{width:'32px'}}></i> Services</h4>
+                                        <h4><i className="fa fa-info-circle" aria-hidden="true" style={{ width: '32px' }}></i> Services</h4>
                                     </Offcanvas.Title>
                                 </Offcanvas.Header>}
                                 <Offcanvas.Body>
                                     <Nav className="justify-content-end flex-grow-1 pe-3">
                                         <p>Your ID</p>
-                                        <p style={{borderBottom:'solid', backgroundColor:'#EBF5FB', color:'#063970'}}>{memberId}</p>
-                                        <Nav.Link onClick={payment} style={{borderBottom:'solid'}}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{width:'32px'}}></i> Payment</h5></Nav.Link>
-                                        <Nav.Link onClick={mfaSetup} style={{borderBottom:'solid'}}><h5><i className="fa fa-shield" aria-hidden="true" style={{width:'32px'}}></i> 2FA</h5></Nav.Link>
-                                        <Nav.Link onClick={dataCenter} style={{borderBottom:'solid'}}><h5><i className="fa fa-globe" aria-hidden="true" style={{width:'32px'}}></i> Data Center</h5></Nav.Link>
-                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{borderBottom:'solid'}}><h5><i className="fa fa-question" aria-hidden="true" style={{width:'32px'}}></i> Support</h5></Nav.Link>
+                                        <p style={{ borderBottom: 'solid', backgroundColor: '#EBF5FB', color: '#063970' }}>{memberId}</p>
+                                        <Nav.Link onClick={payment} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{ width: '32px' }}></i> Payment</h5></Nav.Link>
+                                        <Nav.Link onClick={mfaSetup} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-shield" aria-hidden="true" style={{ width: '32px' }}></i> 2FA</h5></Nav.Link>
+                                        <Nav.Link onClick={dataCenter} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-globe" aria-hidden="true" style={{ width: '32px' }}></i> Data Center</h5></Nav.Link>
+                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{ borderBottom: 'solid' }}><h5><i className="fa fa-question" aria-hidden="true" style={{ width: '32px' }}></i> Support</h5></Nav.Link>
                                     </Nav>
                                 </Offcanvas.Body>
                             </Navbar.Offcanvas>
@@ -462,7 +490,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     theme="light"
                 />
             </div>
-            {isLoggedIn && showPathRow && <ItemPath />}
+            {!hideFunction && isLoggedIn && showPathRow && <ItemPath />}
             {children}
             <ItemsMovingProgress />
             <ItemsToolbar />

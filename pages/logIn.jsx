@@ -68,7 +68,7 @@ export default function LogIn() {
     }
 
     useEffect(() => {
-        alert(process.env.NEXT_PUBLIC_platform)
+        //alert(process.env.NEXT_PUBLIC_platform)
     }, []);
 
     useEffect(() => {

@@ -1,1 +1,1 @@
-NEXT_PUBLIC_platform='iOS' NEXT_PUBLIC_app='colors' npm run build
+NEXT_PUBLIC_platform='iOS' NEXT_PUBLIC_app='colors' NEXT_PUBLIC_functions='hide;default;' npm run build

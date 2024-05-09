@@ -1,6 +1,8 @@
 import { useState } from "react";
-import {useRouter} from "next/router";
+import { useRouter } from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
+
+import Button from 'react-bootstrap/Button'
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -17,7 +19,9 @@ import { setNavigationInSameContainer } from "../../reduxStore/containerSlice";
 import { newCommentAdded, setChangingPage } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
-import { getCoverAndContentsLink, getAnotherItem} from "../../lib/bSafesCommonUI"
+import { getCoverAndContentsLink, getAnotherItem } from "../../lib/bSafesCommonUI"
+
+const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
 export default function Page() {
     const debugOn = false;
@@ -35,27 +39,27 @@ export default function Page() {
 
 
     const handleCoverClicked = () => {
-        if(!container) return;
+        if (!container) return;
         let newLink = getCoverAndContentsLink(container).converLink;
         router.push(newLink);
     }
 
     const handleContentsClicked = () => {
-        if(!container) return;
+        if (!container) return;
         let newLink = getCoverAndContentsLink(container).contentsLink;
         router.push(newLink);
     }
 
     async function gotoAnotherItem(anotherItemNumber) {
         debugLog(debugOn, `gotoAnotherItem ${changingPage} ${pageItemId} ${container} ${position}`);
-        if(changingPage || !(pageItemId || !container || !position)) return;
+        if (changingPage || !(pageItemId || !container || !position)) return;
         setChangingPage(true);
         let anotherItemId, anotherItemLink = null;
-        
+
         const getAnotherItemLink = (itemId) => {
             const itemType = itemId.split(':')[0];
             let itemLink;
-            switch(itemType) {
+            switch (itemType) {
                 case 'b':
                     itemLink = '/box/' + itemId;
                     break;
@@ -72,26 +76,26 @@ export default function Page() {
 
         switch (anotherItemNumber) {
             case '-1':
-                try{
+                try {
                     anotherItemId = await getAnotherItem('getPreviousItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
                         setEndOfContainer(true);
                     } else {
-                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                        anotherItemLink = getAnotherItemLink(anotherItemId);
                     }
-                } catch(error) {
+                } catch (error) {
 
                 }
                 break;
             case '+1':
-                try{
+                try {
                     anotherItemId = await getAnotherItem('getNextItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
                         setEndOfContainer(true);
                     } else {
-                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                        anotherItemLink = getAnotherItemLink(anotherItemId);
                     }
-                } catch(error) {
+                } catch (error) {
 
                 }
                 break;
@@ -116,26 +120,36 @@ export default function Page() {
         debugLog(debugOn, "Previous item ");
         gotoAnotherItem('-1');
     }
-    
+
+    const onHide = () => {
+        router.push('/safe');
+    }
 
     debugLog(debugOn, "router.query.itemId: ", router.query.itemId);
 
     return (
         <div className={BSafesStyle.pageBackground}>
-            <ContentPageLayout>            
-                <PageItemWrapper itemId={router.query.itemId}> 
+            <ContentPageLayout>
+                <PageItemWrapper itemId={router.query.itemId}>
                     <br />
-                    <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
-                    <br />  
+                    {hideFunction &&
+                            <Button variant='warning' onClick={onHide} className='float-end' style={{textTransform:'uppercase', color:'black'}}>
+                                Hide This page
+                            </Button>    
+                    }
+                    {!hideFunction &&
+                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
+                    }
+                    <br />
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />
                         <PageCommons />
                     </div>
-                    <TurningPageControls onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={()=>setEndOfContainer(false)}/>
-                </PageItemWrapper>           
+                    <TurningPageControls onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={() => setEndOfContainer(false)} />
+                </PageItemWrapper>
             </ContentPageLayout>
             <Scripts />
         </div>
-        
+
     )
 }
