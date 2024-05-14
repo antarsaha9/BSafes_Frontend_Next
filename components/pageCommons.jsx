@@ -57,6 +57,7 @@ export default function PageCommons() {
     const draftLoaded = useSelector(state=>state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
     const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
+    const pageType = useSelector( state=>state.page.pageType);
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
@@ -350,6 +351,8 @@ export default function PageCommons() {
         }
         dispatch(setDraftLoaded(false));
         setReadyForSaving(false);
+        if (!contentEditorContent && !imagePanelsState.find(eachPanel=>!!eachPanel.file?.metadata?.ExcalidrawExportedImage))
+            dispatch(setPageType(null));
     }
 
     const handleVideoButton = (e) => {
@@ -741,7 +744,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawicon={true} uploadImages={uploadImages}/>
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawIcon={!pageType || pageType==='DrawingPage'} showWriteIcon={!pageType || pageType==='WritingPage'} uploadImages={uploadImages}/>
                 </Col> 
             </Row>
             <br />

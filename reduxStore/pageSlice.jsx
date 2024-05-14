@@ -91,7 +91,7 @@ const dataFetchedFunc = (state, action) => {
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
-
+    state.pageType = item.pageType;
 }
 
 function findMediasInContent(state, content) {
@@ -2109,7 +2109,8 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                             "content": 's3Object/' + forge.util.encode64(s3Key),
                             "contentSize": encryptedContent.length,
                             "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
-                            "s3ObjectsSizeInContent": s3ObjectsSize
+                            "s3ObjectsSizeInContent": s3ObjectsSize,
+                            "pageType": state.pageType,
                         };
 
                         updatedState = {
@@ -2135,6 +2136,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
                     itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
+                    itemCopy.pageType = state.pageType
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({

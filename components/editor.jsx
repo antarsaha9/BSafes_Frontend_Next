@@ -20,7 +20,7 @@ import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
 
 let Excalidraw = null;
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null, showDrawicon=false, uploadImages}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null, showDrawIcon=false, showWriteIcon=false, uploadImages}) {
     const debugOn = false;    
     const dispatch = useDispatch();
 
@@ -452,11 +452,11 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 <Row>
                     <Col xs={6}>
                         {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
-                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Write</h6>}
+                        {(editorId==='content' && content === null && showWriteIcon) &&<h6 className='m-0 text-secondary'>Write</h6>}
                     </Col>
                     <Col xs={6}>
-                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
-                        {showDrawicon && <Button variant="link" className="text-dark pull-right p-0 mx-2" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button>}
+                        {showWriteIcon && <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button>}
+                        {showDrawIcon && <Button variant="link" className="text-dark pull-right p-0 mx-2" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button>}
                         {(editorId==='content' && draft !== null) &&
                             <ButtonGroup className='pull-right mx-3' size="sm">
                                 <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
@@ -476,15 +476,13 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 </Row>
             }
             {
-                (pageType==='DrawingPage' && mode=='Writing'|| mode === 'Saving') && 
-                <>
+                (pageType==='DrawingPage' && (mode=='Writing' || mode === 'Saving')) && 
                 <Row className={`${BSafesStyle.editorRow} w-100`} style={{height:'80vh'}}>
                     <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi)=>{
                         ExcalidrawRef.current = excalidrawApi;
                     }}
                     />
                 </Row>
-                </>
             }
             </>:""
         }
