@@ -24,6 +24,8 @@ import { clearItems, createANewItemThunk, clearNewItem, listItemsThunk, searchIt
 import { abort, initPage, clearPage, itemPathLoaded } from '../reduxStore/pageSlice';
 import { debugLog } from '../lib/helper'
 
+const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
+
 export default function Workspace({ readyToList = false }) {
     const debugOn = false;
     debugLog(debugOn, "Rendering Workspace");
@@ -141,9 +143,11 @@ export default function Workspace({ readyToList = false }) {
         debugLog(debugOn, "listItemsThunk");
         dispatch(initPage());
         dispatch(clearPage());
-        const itemPath = [{ _id: workspaceId }];
-        dispatch(itemPathLoaded(itemPath));
-        dispatch(listItemsThunk({ pageNumber: 1 }));
+        if (!hideFunction) {
+            const itemPath = [{ _id: workspaceId }];
+            dispatch(itemPathLoaded(itemPath));
+            dispatch(listItemsThunk({ pageNumber: 1 }));
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [readyToList, container, workspaceId, workspaceKeyReady]);
 
@@ -157,7 +161,14 @@ export default function Workspace({ readyToList = false }) {
 
     return (
         <Container className={BSafesStyle.container}>
-            <Row>
+            {(hideFunction) && 
+                <>
+                    <br/>
+                    <br/>
+                    <br/>
+                </>
+            }
+            <Row hidden={hideFunction}>
                 <Form onSubmit={onSubmit}>
                     <InputGroup className="mb-3">
                         <Form.Control size="lg" type="text"
@@ -171,7 +182,7 @@ export default function Workspace({ readyToList = false }) {
                 </Form>
             </Row>
             <Row className="justify-content-center">
-                <AddAnItemButton addAnItem={addAnItem} />
+                <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
             </Row>
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} />
@@ -230,7 +241,7 @@ export default function Workspace({ readyToList = false }) {
             <br />
             <br />
             <br />
-            {workspaceId && <Row>
+            {!hideFunction && workspaceId && <Row>
                 <Col xs={12}>
                     <Link href={"/trashBox/" + workspaceId} legacyBehavior>
                         <Button variant="light" className='pull-right border-0 shadow-none'>

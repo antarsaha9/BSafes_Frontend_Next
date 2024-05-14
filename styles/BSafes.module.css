@@ -587,12 +587,22 @@
 
 /*--****** Home page ********/
 .carouselRow {
+  margin-top: -50px;
   padding-left: 0px;
   padding-right: 0px;
 }
 
-@media only screen and (min-width: 768px) {
+@media only screen and (min-width: 400px) {
   .carouselRow {
+    margin-top: -20px;
+    padding-left: 0px;
+    padding-right: 0px;
+  }
+}
+
+@media only screen and (min-width: 560px) {
+  .carouselRow {
+    margin-top: 0px;
     padding-left: 0px;
     padding-right: 0px;
   }
@@ -600,6 +610,7 @@
 
 @media only screen and (min-width: 992px) {
   .carouselRow {
+    margin-top: 0px;
     padding-left: 0px;
     padding-right: 0px;
   }
@@ -607,6 +618,7 @@
 
 @media only screen and (min-width: 1200px) {
   .carouselRow {
+    margin-top: 0px;
     padding-left: 120px;
     padding-right: 120px;
   }

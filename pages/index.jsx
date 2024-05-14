@@ -108,7 +108,12 @@ export default function Home() {
                     </Row>
                 </Container>
             </div>
+            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'yellow' }}>BSafes Makes it Simple!</span>&nbsp;</div>
             <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: '#DFFF00' }}>Any Media</span>, Anytime, Anywhere</div>
+            <div className='mt-3 mb-3 text-center'>
+                <h1 style={{ fontSize: '48px' }}>📖</h1>
+                <Link href='https://support.bsafes.com/category/get-started' target='_blank' style={{ textDecoration: 'none', fontSize: '1.0rem', backgroundColor: '#006bce', color: 'white', padding: '10px', position: 'relative', zIndex: '1000' }}>Get Started Guide <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>
+            </div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
                     <Carousel.Item interval={3000}>
@@ -128,19 +133,35 @@ export default function Home() {
             </div>
             <p className={`text-center ${monteserrat.className}`}>Actual Screenshots</p>
             <div className='text-center'>
-                <Link className='text-center' href='/public/licenses' target='_blank'>Licenses</Link>
+                <Link className='text-center' href='/public/licenses' target='_blank' style={{ textDecoration: 'none' }}>Licenses</Link>
                 <span> | </span>
-                <Link className='text-center' href='/public/screenshots' target='_blank'>See more ...</Link>
+                <Link className='text-center' href='/public/screenshots' target='_blank' style={{ textDecoration: 'none' }}>See More Screenshots ...</Link>
             </div>
             <br />
-            <div className={BSafesStyle.serviceIntroBackground}>
+            <div className={BSafesStyle.serviceIntroBackground} style={{ topB: 'solid' }}>
                 <br />
-                <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'yellow' }}>BSafes Makes it Simple!</span>&nbsp;</div>
+                <Container>
+                    <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <h3 className='text-center display-3' style={{ fontWeight: '450', color: 'black' }}>Write, Add Media, and <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>One-Click</span> <span style={{ backgroundColor: 'red', color: 'white', padding: '3px' }}>Encryption+Backup</span></h3>
+                            <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and any files. No one else can see your data, including BSafes staff and server machines.</p>
+                            <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
+                        </Col>
+                    </Row>
+                </Container>
+                <br />
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization.</p>
+                            <h3 className='text-center display-6' style={{ fontWeight: '450', color: 'black' }}>Your <span style={{ textDecoration: 'underline yellow', textDecorationThickness: '10px' }}>Private Story</span> Deserves Absolution Protection</h3>
                             <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                        </Col>
+                    </Row>
+                    <br />
+                    <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
+                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
+                            <h3 className='text-center display-5' style={{ fontWeight: '450', color: 'black' }}>Simplicity & Productivity</h3>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 📝 📺 📷 </span> Consolidate all relevant text, videos, images, and files on the same page for streamlined access and efficient organization.</p>
                         </Col>
                     </Row>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
@@ -325,17 +346,6 @@ export default function Home() {
                 <div className="text-center">
                     <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
                 </div>
-                <br />
-
-                <Container>
-                    <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
-                        <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h1 className='text-center display-1' style={{ fontWeight: '450', color: 'black' }}>Take Control of Your Data</h1>
-                            <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and any files. Keep your valuables, creative ideas, privacy, and secrets safe.</p>
-                            <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
-                        </Col>
-                    </Row>
-                </Container>
                 <br />
             </div>
             <div className={monteserrat.className} style={{ backgroundColor: '#f4f4f4' }}>

@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 const argon2 = require('argon2-browser');
 
-import { debugLog, PostCall } from '../lib/helper'
+import { debugLog, PostCall, clearLocalData } from '../lib/helper'
 import { decryptBinaryString, saveLocalCredentials, clearLocalCredentials } from '../lib/crypto';
 import { v1AccountActivity } from '../lib/activities';
 
@@ -337,7 +337,7 @@ export const signOutAsyncThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "lock failed: ", error)
                 reject('Failed to sign out.');
             }) 
-            localStorage.clear();
+            clearLocalData();
             dispatch(cleanMemoryThunk());
         })
     })

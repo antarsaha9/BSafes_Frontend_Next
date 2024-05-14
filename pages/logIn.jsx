@@ -68,7 +68,7 @@ export default function LogIn() {
     }
 
     useEffect(() => {
-        //nicknameRef.current.focus();
+        //alert(process.env.NEXT_PUBLIC_platform)
     }, []);
 
     useEffect(() => {
@@ -85,7 +85,11 @@ export default function LogIn() {
                         <Row className={BSafesStyle.keyPanel}>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
-                                    <h1 className='text-center'>Open</h1>
+                                    {process.env.NEXT_PUBLIC_app === 'colors' &&
+                                        <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                    }
+                                    <hr/>
+                                    <h1 className='text-center'>Open Your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
@@ -116,11 +120,11 @@ export default function LogIn() {
                                         <Col className='text-center'>
                                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
-                                                Own Your BSafes
+                                                Own Your <span style={{fontWeight:'bold'}}>BSafes</span>
                                             </Button>
                                         </Col>
                                     </Row>
-                                    <p className='text-center'>30-Day Free</p>
+                                    <p hidden={process.env.NEXT_PUBLIC_platform !== 'Web'} className='text-center'>30-Day Free</p>
                                 </Card>
                             </Col>
                         </Row>

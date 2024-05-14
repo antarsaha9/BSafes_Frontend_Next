@@ -36,18 +36,18 @@ export default function KeySetup() {
     function checkKeyStrength(key) {
         debugLog(debugOn, "Checking key strength:", key.length);
 
-        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{8,})"); ; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
+        const mediumRegex = new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[, !@#\$%\^&\*])(?=.{8,})");; //new RegExp("^(((?=.*[a-z])(?=.*[A-Z]))|((?=.*[a-z])(?=.*[0-9]))|((?=.*[A-Z])(?=.*[0-9])))(?=.{8,})");
         const isMedium = mediumRegex.test(key);
         let thisKeyStrength, thisKeyStrengthColor;
-        if(key.length === 0) {
+        if (key.length === 0) {
             thisKeyStrength = '';
         } else {
             thisKeyStrength = 'Invalid';
             thisKeyStrengthColor = 'danger';
             if (isMedium) {
-                thisKeyStrength = 'Weak';  
+                thisKeyStrength = 'Weak';
                 thisKeyStrengthColor = 'warning';
-                const isStrong = (key.length > 15) ; //strongRegex.test(key);
+                const isStrong = (key.length > 15); //strongRegex.test(key);
                 if (isStrong) {
                     thisKeyStrength = 'Strong';
                     thisKeyStrengthColor = 'success';
@@ -57,27 +57,27 @@ export default function KeySetup() {
         const strengthProgress = key.length / 16 * 100;
         setKeyStrength(thisKeyStrength);
         setKeyStrengthColor(thisKeyStrengthColor);
-        setKeyStrengthProgress(strengthProgress); 
+        setKeyStrengthProgress(strengthProgress);
     }
 
-    const keyPasswordChanged = ( password ) => {
+    const keyPasswordChanged = (password) => {
         debugLog(debugOn, "keyPassword: ", password);
         setKeyPassword(password);
         checkKeyStrength(password);
     }
 
-    const confirmPasswordChanged = ( password) => {
+    const confirmPasswordChanged = (password) => {
         debugLog(debugOn, "confirmPassword: ", password);
         setConfirmPassword(password);
     }
 
-    const handleSubmit = async e => { 
-        debugLog(debugOn,  "handleSubmit");
-        dispatch(keySetupAsyncThunk({nickname: nicknameRef.current.value, keyPassword: keyPassword}));
+    const handleSubmit = async e => {
+        debugLog(debugOn, "handleSubmit");
+        dispatch(keySetupAsyncThunk({ nickname: nicknameRef.current.value, keyPassword: keyPassword }));
     }
 
-    useEffect(()=>{
-        if((keyPassword === confirmPassword) && (keyStrength === 'Weak' || keyStrength === 'Strong')){
+    useEffect(() => {
+        if ((keyPassword === confirmPassword) && (keyStrength === 'Weak' || keyStrength === 'Strong')) {
             setKeyReady(true);
         } else {
             setKeyReady(false);
@@ -86,50 +86,55 @@ export default function KeySetup() {
 
     return (
         <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
-        <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}> 
-            <Container>
-                <Row className={BSafesStyle.keyPanel}>
-                    <Col sm={{ span:10, offset:1 }} lg={{ span: 6, offset: 3 }}>
-                        <Card className='p-3'> 
-                            <h1>Own Your BSafes</h1>
-                            <hr></hr>
-                            <Form>
-                                <Form.Group className="mb-3" controlId="Nickname">
-                                    <Form.Label>Nickname</Form.Label>
-                                    <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Please give it a nickname' />
-                                </Form.Group>
-                                <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
-                                    <Form.Label>Key Password</Form.Label>
-                                    <KeyInput onKeyChanged={keyPasswordChanged}/>
-                                    <ProgressBar variant={keyStrengthColor} now={keyStrengthProgress} />
-                                    <p className={`text-${keyStrengthColor}`}>{keyStrength}</p>
-                                    <Form.Text id="passwordHelpBlock" muted>
-                                     . Your password must be at least 8 characters long, with at least one number, one uppercase, one lowercase character, and one symbol; <br/>
-                                     . A key of 16 or more characters in length is better.
-                                    </Form.Text>
-                                </Form.Group>
-                                
-                                <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
-                                    <Form.Label>Please retype to confirm</Form.Label>
-                                    <KeyInput onKeyChanged={confirmPasswordChanged}/>
-                                </Form.Group>
-                            </Form>
-                            <br />
-                            <p className='text-cent'>You agree to our <Link href='/public/privacyPolicy'>Privacy Policy</Link> and <Link href='/public/termsOfService'>Terms of Service</Link> by clicking GO.</p>
-                            <Row>
-                                <Col className='text-center'>
-                                    <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>
-                                </Col>
-                            </Row>
-                        </Card>
-                    </Col>           
-                </Row>
-                <br />
-                <br />
-                <br />
-            </Container>
-            <Scripts />
-        </ContentPageLayout>
+            <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
+                <Container>
+                    <Row className={BSafesStyle.keyPanel}>
+                        <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
+                            <Card className='p-3'>
+                                <h1>Own Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
+                                <hr></hr>
+                                <Form>
+                                    <Form.Group className="mb-3" controlId="Nickname">
+                                        <Form.Label>Nickname</Form.Label>
+                                        <Form.Control ref={nicknameRef} size="lg" type="text" placeholder='Please give it a nickname' />
+                                    </Form.Group>
+                                    <Form.Group key='keyPassword' className="mb-3" controlId="keyPassword">
+                                        <Form.Label>Key Password</Form.Label>
+                                        <KeyInput onKeyChanged={keyPasswordChanged} />
+                                        <ProgressBar variant={keyStrengthColor} now={keyStrengthProgress} />
+                                        <p className={`text-${keyStrengthColor}`}>{keyStrength}</p>
+                                        <Form.Text id="passwordHelpBlock" muted>
+                                            . Your password must be at least 8 characters long, with at least one number, one uppercase, one lowercase character, and one symbol; <br />
+                                            . A key of 16 or more characters in length is better.
+                                        </Form.Text>
+                                    </Form.Group>
+
+                                    <Form.Group key='ConfirmkeyPassword' className="mb-3" controlId="ConfirmkeyPassword">
+                                        <Form.Label>Please retype to confirm</Form.Label>
+                                        <KeyInput onKeyChanged={confirmPasswordChanged} />
+                                    </Form.Group>
+                                </Form>
+                                <br />
+                                <p className='text-cent'>You agree to our <Link href='/public/privacyPolicy' style={{textDecoration: 'none'}}>Privacy Policy</Link> and <Link href='/public/termsOfService' style={{textDecoration: 'none'}}>Terms of Service</Link> by clicking GO.</p>
+                                <Row>
+                                    <Col className='text-center'>
+                                        <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>
+                                    </Col>
+                                </Row>
+                                <Row>
+                                    <Col className='text-end'>
+                                        <Link href='/logIn' style={{textDecoration: 'none', fontSize:'0.8rem'}}>Open Your BSafes</Link>
+                                    </Col>
+                                </Row>
+                            </Card>
+                        </Col>
+                    </Row>
+                    <br />
+                    <br />
+                    <br />
+                </Container>
+                <Scripts />
+            </ContentPageLayout>
         </div>
     )
 }

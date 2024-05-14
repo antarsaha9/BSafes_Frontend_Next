@@ -79,7 +79,7 @@ export default function Safe() {
         <Container fluid>
           <br />
           <br />
-          <Row>
+          <Row hidden={ (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)}>
             <Col className="text-center">
               <Link href={`/activities/${workspaceId}`}>Activities</Link>
             </Col>
