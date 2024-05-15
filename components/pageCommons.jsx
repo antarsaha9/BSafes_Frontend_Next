@@ -206,8 +206,11 @@ export default function PageCommons() {
         let thisReadyForSaving = true;
         if (purpose === 'froala')
             dispatch(setPageType('WritingPage'));
-        else if (purpose === 'excalidraw')
+        else if (purpose === 'excalidraw'){
             dispatch(setPageType('DrawingPage'));
+            if (editorId === 'content')
+                editorId = "image_"+firstExcalidrawImageIndex;
+        }
         if(editorId === 'content'){
             beforeWritingContent();
             setEditingEditorId("content");
@@ -280,9 +283,13 @@ export default function PageCommons() {
     const videoPanels = videoPanelsState.map((item, index) =>
         <VideoPanel key={item.queueId} panelIndex={"video_" + index} panel={item} onVideoClicked={onVideoClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
+    const firstExcalidrawImageIndex = imagePanelsState.findIndex(eachPanel => !!eachPanel.file?.metadata?.ExcalidrawExportedImage);
 
-    const imagePanels = imagePanelsState.map((item, index) =>
-        <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+    const imagePanels = imagePanelsState.flatMap((item, index) => {
+        if (index === firstExcalidrawImageIndex)
+            return [];
+        return <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+    }
     )
 
     const handleWrite = () =>{
@@ -745,6 +752,9 @@ export default function PageCommons() {
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
                     <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawIcon={!pageType || pageType==='DrawingPage'} showWriteIcon={!pageType || pageType==='WritingPage'} uploadImages={uploadImages}/>
+                    {pageType === 'DrawingPage' && contentEditorMode === 'ReadOnly' && firstExcalidrawImageIndex>=0 && <>
+                        <ImagePanel panelIndex={"image_" + firstExcalidrawImageIndex} panel={imagePanelsState[firstExcalidrawImageIndex]} onImageClicked={onImageClicked} editorMode={imagePanelsState[firstExcalidrawImageIndex].editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+                    </>}
                 </Col> 
             </Row>
             <br />

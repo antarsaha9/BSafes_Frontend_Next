@@ -2736,6 +2736,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 try {
                     itemCopy.images = images;
                     itemCopy.update = "images";
+                    itemCopy.pageType = state.pageType;
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy
