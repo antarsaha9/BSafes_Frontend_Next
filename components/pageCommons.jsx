@@ -209,7 +209,7 @@ export default function PageCommons() {
         else if (purpose === 'excalidraw'){
             dispatch(setPageType('DrawingPage'));
             if (editorId === 'content')
-                editorId = "image_"+firstExcalidrawImageIndex;
+                editorId = firstExcalidrawImageIndex===-1?editorId:"image_"+firstExcalidrawImageIndex;
         }
         if(editorId === 'content'){
             beforeWritingContent();
