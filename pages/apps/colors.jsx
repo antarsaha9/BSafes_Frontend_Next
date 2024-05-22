@@ -25,21 +25,21 @@ export default function Colors() {
     const router = useRouter();
 
     const colors = [
-        '#FFFFFF', '#C0C0C0', '#808080', '#000000',
-        '#FF0000', '#800000', '#FFFF00', '#808000',
-        '#00FF00', '#008000', '#00FFFF', '#008080',
-        '#0000FF', '#000080', '#FF00FF', '#800080',
-        '#491313', '#e57f3f', '#d4d1ca', '#ce555c',
-        '#a44479', '#9e3957', '#962b2b', '#a46d51',
-        '#355453', '#4e6041', '#a1b65e', '#a5a850',
-        '#31fdc9', '#30e9ba', '#25d9ab', '#b8e8dc',
-        '#3d7625', '#479227', '#6ec747', '#88e260',
-        '#a536ed', '#f8ed5b', '#200867', '#4cd8ff',
-        '#24755b', '#4fa06a', '#38ceac', '#ffc2d4'
+        'FFFFFF', 'C0C0C0', '808080', '000000',
+        'FF0000', '800000', 'FFFF00', '808000',
+        '00FF00', '008000', '00FFFF', '008080',
+        '0000FF', '000080', 'FF00FF', '800080',
+        '491313', 'e57f3f', 'd4d1ca', 'ce555c',
+        'a44479', '9e3957', '962b2b', 'a46d51',
+        '355453', '4e6041', 'a1b65e', 'a5a850',
+        '31fdc9', '30e9ba', '25d9ab', 'b8e8dc',
+        '3d7625', '479227', '6ec747', '88e260',
+        'a536ed', 'f8ed5b', '200867', '4cd8ff',
+        '24755b', '4fa06a', '38ceac', 'ffc2d4'
     ];
 
     const [searchValue, setSearchValue] = useState("");
-    const [targetColor, setTargetColor] = useState("#FFFFFF");
+    const [targetColor, setTargetColor] = useState("FFFFFF");
     const [showModal, setShowModal] = useState(false);
     const [selectedColor, setSelectedColor] = useState("white")
     const [secretColor, setSecretColor] = useState(null);
@@ -92,7 +92,7 @@ export default function Colors() {
 
     useEffect(() => {
         if (searchValue.length === 6) {
-            setTargetColor('#' + searchValue)
+            setTargetColor(searchValue)
         }
     }, [searchValue])
 
@@ -137,7 +137,7 @@ export default function Colors() {
                     <Col xs={{ span: 8, offset: 2 }} sm={{ span: 6, offset: 3 }} md={{ span: 4, offset: 4 }}>
                         <Card className='m-2' onClick={() => selectColor(targetColor)}>
                             <Card.Body className='p-1'>
-                                <div style={{ height: '64px', backgroundColor: `${targetColor}` }}>
+                                <div style={{ height: '64px', backgroundColor: `#${targetColor}` }}>
                                 </div>
                                 {targetColor}
                             </Card.Body>
@@ -150,7 +150,7 @@ export default function Colors() {
             </Container>
             <Modal show={showModal} onHide={handleClose} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Remember this color? <span style={{ backgroundColor: `${selectedColor}` }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></Modal.Title>
+                    <Modal.Title>Remember this color? <span style={{ backgroundColor: `#${selectedColor}` }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span></Modal.Title>
                 </Modal.Header>
                 <Modal.Body>Once the app remembers your color, you must tap the same color next time to start using this app. And this note will disappear.</Modal.Body>
                 <Modal.Footer>
@@ -170,9 +170,9 @@ function Color({ hexCode, selecColor }) {
     return (
         <Card className='m-2' onClick={() => { selecColor(hexCode) }}>
             <Card.Body className='p-1'>
-                <div style={{ height: '64px', backgroundColor: hexCode }}>
+                <div style={{ height: '64px', backgroundColor: `#${hexCode}` }}>
                 </div>
-                {hexCode}
+                {hexCode.toUpperCase()}
             </Card.Body>
         </Card>
     )

@@ -161,11 +161,11 @@ export default function Workspace({ readyToList = false }) {
 
     return (
         <Container className={BSafesStyle.container}>
-            {(hideFunction) && 
+            {(hideFunction) &&
                 <>
-                    <br/>
-                    <br/>
-                    <br/>
+                    <br />
+                    <br />
+                    <br />
                 </>
             }
             <Row hidden={hideFunction}>
@@ -199,6 +199,24 @@ export default function Workspace({ readyToList = false }) {
                     </Row>
                     <br />
                 </>
+            }
+            {(hideFunction) &&
+                <Row className='justify-content-center'>
+                    <Col sm={8}>
+                        <Card>
+                            <Card.Header>🔰 Welcome!</Card.Header>
+                            <Card.Body>
+                                <Card.Title>Instructions</Card.Title>
+
+                                <ul>
+                                    <li><strong>Hide</strong> - Click the blue + button to hide a page full of words, videos, photos, and files.</li>
+                                    <li><strong>View</strong> - You can access your hidden pages on any device with a browser. Go to bsafes.com and open your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span>.</li>
+                                </ul>
+
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
             }
             {(listingDone && (mode !== 'search') && (items.length === 0)) &&
                 <Row className='justify-content-center'>

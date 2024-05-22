@@ -297,9 +297,17 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         let nextPage = null;
         switch (v2NextAuthStep.step) {
             case 'Home':
+                let homePath;
+                switch (process.env.NEXT_PUBLIC_app) {
+                    case 'colors':
+                        homePath = '/apps/colors'
+                        break;
+                    default:
+                        homePath = '/'
+                }
                 const path = router.asPath;
-                if (path === '/') break;
-                nextPage = '/';
+                if (path === homePath) break;
+                nextPage = homePath;
                 break;
             case 'MFARequired':
                 nextPage = '/services/mfa';
@@ -320,9 +328,17 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         let nextPage = null;
         switch (nextAuthStep.step) {
             case 'Home':
+                let homePath;
+                switch (process.env.NEXT_PUBLIC_app) {
+                    case 'colors':
+                        homePath = '/apps/colors'
+                        break;
+                    default:
+                        homePath = '/'
+                }
                 const path = router.asPath;
                 if (path === '/logIn' || path.startsWith('/n/')) break;
-                nextPage = '/';
+                nextPage = homePath;
                 break;
             case 'SignIn':
                 nextPage = `/n/${nextAuthStep.nickname}`;
