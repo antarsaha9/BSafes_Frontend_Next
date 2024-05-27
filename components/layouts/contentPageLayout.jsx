@@ -34,7 +34,7 @@ import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '.
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(false, "Rendering ContentPageLayout");
 
     SafeArea.getSafeAreaInsets().then(({ insets }) => {
@@ -72,7 +72,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
-    const displayPaymentBanner = !(router.asPath.startsWith('/services/'));
+    const displayPaymentBanner = !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
 
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
@@ -122,7 +122,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     }
 
     const ifRedirectToHome = (path) => {
-        if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
+        if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && !path.startsWith('/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
             return true;
         } else return false;
     }

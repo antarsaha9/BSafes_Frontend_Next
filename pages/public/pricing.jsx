@@ -66,8 +66,8 @@ export default function Pricing() {
                                 <Link className={BSafesStyle.noUnderline} onClick={handleUnlock} href='/login'>
                                     <div className={BSafesStyle.saleBadges}>
                                         <p>
-                                            <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
-                                            <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
+                                            <span className={BSafesStyle.saleFirstLine}>20GB</span><br />
+                                            <span className={BSafesStyle.saleSecondLine}>$2.99</span><br />
                                             <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
                                             <span className={BSafesStyle.saleForthLine}>30-day free trial</span><br />
                                             <span className={BSafesStyle.saleFifthLine}>Try Now! <i className="fa fa-arrow-right" aria-hidden="true"></i></span>
@@ -95,28 +95,28 @@ export default function Pricing() {
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>50GB</td>
-                                    <td>$2.95</td>
+                                    <td>20GB</td>
+                                    <td>$2.99</td>
                                 </tr>
                                 <tr>
                                     <td>200GB</td>
-                                    <td>$4.95</td>
+                                    <td>$4.99</td>
                                 </tr>
                                 <tr>
                                     <td>500GB</td>
-                                    <td>$9.95</td>
+                                    <td>$9.99</td>
                                 </tr>
                                 <tr>
                                     <td>1TB</td>
-                                    <td>$14.95</td>
+                                    <td>$14.99</td>
                                 </tr>
                                 <tr>
                                     <td>2TB</td>
-                                    <td>$24.95</td>
+                                    <td>$24.99</td>
                                 </tr>
                                 <tr>
                                     <td>3TB</td>
-                                    <td>$34.95</td>
+                                    <td>$34.99</td>
                                 </tr>
                                 <tr>
                                     <td>Extra TB</td>

@@ -37,3 +37,4 @@ buildAndAddSri
 buildForIOS
 buildForIOSColors
 runForIOS
+runForWebColors

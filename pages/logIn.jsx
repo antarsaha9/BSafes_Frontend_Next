@@ -25,7 +25,7 @@ export default function LogIn() {
     const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
-
+    
     const [nickname, setNickname] = useState("");
     const [keyPassword, setKeyPassword] = useState("");
     const [recovery, setRecovery] = useState(false);
@@ -34,6 +34,7 @@ export default function LogIn() {
     const clientEncryptionKey = useSelector(state => state.auth.clientEncryptionKey);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const [toPath, setToPath] = useState(null);
 
     const nicknameChanged = (e) => {
         setNickname(e.target.value);
@@ -68,12 +69,23 @@ export default function LogIn() {
     }
 
     useEffect(() => {
-        //alert(process.env.NEXT_PUBLIC_platform)
+        const queryString = window.location.search;
+        if(queryString) {
+            const params = new URLSearchParams(queryString);
+            const path = params.get("toPath");
+            if(path) {
+                setToPath(path);
+            }
+        }
     }, []);
 
     useEffect(() => {
         if (isLoggedIn) {
-            router.push('/safe');
+            if(toPath) {
+                router.push(toPath);
+            } else {
+                router.push('/safe');
+            }
         }
     }, [isLoggedIn])
 

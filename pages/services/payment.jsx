@@ -43,7 +43,7 @@ export default function Payment() {
     const waived = invoice && invoice.waived;
 
     let storageUsageString;
-    if(storageUsage === 0) {
+    if (storageUsage === 0) {
         storageUsageString = '0.000 MB';
     } else if (storageUsage) {
         if (storageUsage < 1000000) {
@@ -94,7 +94,11 @@ export default function Payment() {
 
     const handleCheckout = (e) => {
         dispatch(setCheckoutPlan(plan));
-        router.push('/services/checkout');
+        if(process.env.NEXT_PUBLIC_platform === 'iOS') {
+            window.location.href = '/services/checkout?' + planOptions[plan].planId;
+        } else {
+            router.push('/services/checkout');
+        }
     }
 
     const handleUpgrade = (e) => {
@@ -158,7 +162,7 @@ export default function Payment() {
                                         </FormCheck>
                                         <br />
                                         <h4 className='px-4'>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
-                                        <br/>
+                                        <br />
                                         <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
@@ -168,69 +172,73 @@ export default function Payment() {
                                         </FormCheck>
                                         <br />
                                         <h4 className='px-4'>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
-                                        <br/>
+                                        <br />
                                         <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
                                     </Form.Group>
                                 </Form>
                                 <div className='text-center'>
-                                    <Button onClick={handleCheckout}>Checkout</Button>
-                                </div>
-                            </Col>
-                        </Row>
-                    </>}
-                </div>}
-                {upgradePrice && <>
-                    <Row>
-                        <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
-                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
-                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, <span className='fw-bold'>${monthlyPrice}</span> USD per month.</p>
-                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is <span className='fw-bold'>{format(new Date(dueTime), 'MM/dd/yyyy')}</span></p>
-                            <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Upgrade price for the remaining <span className='fw-bold'>{remainingDays}</span> days until the next due date - </p>
-                            <h5 className='p-3'>{`$${upgradePrice} ${currency.toUpperCase()}`}</h5>
-                            {waived ?
-                                <h5>🙂 The fee is waived because it is less than one dollar.</h5>
-                                :
-                                <Row>
-                                    <Col sm={{ span: 8, offset: 2 }} className='text-center'>
-                                        <Button onClick={handleUpgrade}>Upgrade</Button>
-                                    </Col>
-                                </Row>
-                            }
-
+                                    {process.env.NEXT_PUBLIC_platform === 'iOS'?
+                                        < Button href={'/services/checkout?' + planOptions[plan].planId}>Checkout</Button>
+                                        :
+                                        < Button onClick={handleCheckout}>Checkout</Button>
+                                    }
+                            </div>
                         </Col>
                     </Row>
-
                 </>}
-                <br />
+            </div>}
+            {upgradePrice && <>
                 <Row>
-                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow:'auto' }}>
-                        <h1>Transaction History</h1>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Plan</th>
-                                    <th>Paid Dues</th>
-                                </tr>
-                            </thead>
-                            {(transactions.length !== 0) &&
-                                <tbody>
-                                    {
-                                        transactionItems
-                                    }
-                                </tbody>
-                            }
-                        </Table>
-                        {(transactions.length === 0) &&
-                            <p>Empty</p>
+                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#FEF9E7' }}>
+                        <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Your current storage usage is <span className='fw-bold'>{storageUsageString}</span>. </p>
+                        <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> You need the {requiredStorage} storage, <span className='fw-bold'>${monthlyPrice}</span> USD per month.</p>
+                        <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Next due date is <span className='fw-bold'>{format(new Date(dueTime), 'MM/dd/yyyy')}</span></p>
+                        <p className='fw-light'><i className="fa fa-dot-circle-o" aria-hidden="true"></i> Upgrade price for the remaining <span className='fw-bold'>{remainingDays}</span> days until the next due date - </p>
+                        <h5 className='p-3'>{`$${upgradePrice} ${currency.toUpperCase()}`}</h5>
+                        {waived ?
+                            <h5>🙂 The fee is waived because it is less than one dollar.</h5>
+                            :
+                            <Row>
+                                <Col sm={{ span: 8, offset: 2 }} className='text-center'>
+                                    <Button onClick={handleUpgrade}>Upgrade</Button>
+                                </Col>
+                            </Row>
                         }
+
                     </Col>
                 </Row>
-                <br />
-            </Container>
-        </ContentPageLayout>
+
+            </>}
+            <br />
+            <Row>
+                <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
+                    <h1>Transaction History</h1>
+                    <Table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Plan</th>
+                                <th>Paid Dues</th>
+                            </tr>
+                        </thead>
+                        {(transactions.length !== 0) &&
+                            <tbody>
+                                {
+                                    transactionItems
+                                }
+                            </tbody>
+                        }
+                    </Table>
+                    {(transactions.length === 0) &&
+                        <p>Empty</p>
+                    }
+                </Col>
+            </Row>
+            <br />
+        </Container>
+        </ContentPageLayout >
     )
 }
