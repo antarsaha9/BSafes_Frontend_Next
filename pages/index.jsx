@@ -62,11 +62,6 @@ export default function Home() {
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
-    const bsafesNativeToWebCall = () => {
-        console.log('bsafesNativeToWebCall');
-        //alert('bsafesNativeToWebCall');
-    }
-
     const handleUnlock = () => {
         router.push("/logIn");
     }

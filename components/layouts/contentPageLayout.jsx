@@ -34,7 +34,7 @@ import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '.
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
-    const debugOn = true;
+    const debugOn = false;
     debugLog(false, "Rendering ContentPageLayout");
 
     SafeArea.getSafeAreaInsets().then(({ insets }) => {

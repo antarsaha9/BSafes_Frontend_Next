@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import {reduxWrapper} from '../reduxStore/store'
+import { reduxWrapper } from '../reduxStore/store'
 import Head from "next/head";
 
 import '../styles/materia.css'
@@ -13,21 +13,26 @@ import '../styles/bootstrapOverride.css'
 import '../styles/complianceBadge.css'
 
 function MyApp({ Component, pageProps }) {
-  useEffect(()=> {
-    if("serviceWorker" in navigator) {
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_platform === 'iOS') {
+      window.bsafesNative = {
+        name: "bsafeNative"
+      }
+    }
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceWorkerV210.js?v210", {
         scope: "/",
       }).then(
-          function(registration) {
-            console.log("Service worker registration successful with scope: ", registration.scope);
-              //registration.active.postMessage(
-              //  "Test message sent immediately after creation"
-              //);
-          },
-          function(err) {
-            console.log("Service worker registration failed: ", err)
-          }
-      )  
+        function (registration) {
+          console.log("Service worker registration successful with scope: ", registration.scope);
+          //registration.active.postMessage(
+          //  "Test message sent immediately after creation"
+          //);
+        },
+        function (err) {
+          console.log("Service worker registration failed: ", err)
+        }
+      )
     }
   }, [])
   return (
@@ -41,7 +46,7 @@ function MyApp({ Component, pageProps }) {
       </Head>
       <Component {...pageProps} />
     </>
-    
+
   )
 }
 
