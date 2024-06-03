@@ -14,7 +14,8 @@ import format from "date-fns/format";
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
-import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan } from '../../reduxStore/accountSlice';
+import { accountActivity } from '../../lib/activities'
+import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan, activityStart, activityDone, activityError } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -94,10 +95,11 @@ export default function Payment() {
     }
 
     const handleCheckout = (e) => {
-        dispatch(setCheckoutPlan(plan));
         if (process.env.NEXT_PUBLIC_platform === 'iOS') {
-            window.location.href = '/services/checkout?' + planOptions[plan].planId;
+            dispatch(setCheckoutPlan(plan));
+            dispatch(activityStart(accountActivity.IOSInAppPurchase))
         } else {
+            dispatch(setCheckoutPlan(plan));
             router.push('/services/checkout');
         }
     }
@@ -106,17 +108,11 @@ export default function Payment() {
         dispatch(setCheckoutPlan('upgrade'));
         router.push('/services/checkout');
     }
-    
+
     useEffect(() => {
         if (isLoggedIn) {
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
-            if (process.env.NEXT_PUBLIC_platform === 'iOS') {
-                const transactionWebCall = (data) => {
-                    debugLog(debugOn, 'transactionWebCall', data);
-                }
-                window.bsafesNative.transactionWebCall = transactionWebCall;
-            }
         }
     }, [isLoggedIn])
 
@@ -186,8 +182,8 @@ export default function Payment() {
                                     </Form.Group>
                                 </Form>
                                 <div className='text-center'>
-                                    {process.env.NEXT_PUBLIC_platform === 'iOS' ?
-                                        < Button href={'/services/checkout?' + planOptions[plan].planId}>Checkout</Button>
+                                    {(process.env.NEXT_PUBLIC_platform === 'iOS') ?
+                                        < Button onClick={handleCheckout} href={'/services/checkout?' + planOptions[plan].planId}>Checkout</Button>
                                         :
                                         < Button onClick={handleCheckout}>Checkout</Button>
                                     }

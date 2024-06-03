@@ -3,7 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: 0,
@@ -54,10 +54,10 @@ const accountSlice = createSlice({
             state.newAccountCreated = action.payload;
         },
         showApiActivity: (state, action) => {
-            state.activity |= accountActivity.apiCall;
+            state.activity |= accountActivity.ApiCall;
         },
         hideApiActivity: (state, action) => {
-            state.activity &= ~accountActivity.apiCall;
+            state.activity &= ~accountActivity.ApiCall;
         },
         incrementAPICount: (state, action) => {
             state.apiCount++;
@@ -211,7 +211,7 @@ export const deleteMFAThunk = (data) => async (dispatch, getState) => {
 }
 
 export const getInvoiceThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.getInvoice, () => {
+    newActivity(dispatch, accountActivity.GetInvoice, () => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/getInvoice',
@@ -234,7 +234,7 @@ export const getInvoiceThunk = () => async (dispatch, getState) => {
 }
 
 export const getTransactionsThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.getTransactions, () => {
+    newActivity(dispatch, accountActivity.GetTransactions, () => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/getTransactions',
