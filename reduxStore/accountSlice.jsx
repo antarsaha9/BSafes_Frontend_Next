@@ -352,6 +352,30 @@ export const paymentCompletedThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.ReportAnAppleTransaction, () => {
+        return new Promise((resolve, reject) => {
+            debugLog(debugOn, "transaction: ", data.transaction)
+            PostCall({
+                api: '/memberAPI/reportAnAppleTransaction',
+                body: {
+                    transaction: data.transaction
+                }
+            }).then(data => {
+                debugLog(debugOn, 'reportAnAppleTransaction: ', data);
+                if (data.status === 'ok') {
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... reportAnAppleTransaction failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... reportAnAppleTransaction failed.", error)
+            });
+        })
+    });    
+}
+
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

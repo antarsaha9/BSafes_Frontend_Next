@@ -25,15 +25,6 @@ function MyApp({ Component, pageProps }) {
       window.bsafesNative = {
         name: "bsafeNative"
       }
-      const transactionWebCall = (data) => {
-        debugLog(debugOn, 'transactionWebCall', data);
-        if (data.status === 'ok') {
-          alert('ok')
-        }
-        dispatch(activityDone(accountActivity.IOSInAppPurchase))
-      }
-      window.bsafesNative.transactionWebCall = transactionWebCall;
-
     }
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceWorkerV210.js?v210", {

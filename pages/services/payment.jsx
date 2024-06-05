@@ -15,7 +15,7 @@ import format from "date-fns/format";
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import { accountActivity } from '../../lib/activities'
-import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan, activityStart, activityDone, activityError } from '../../reduxStore/accountSlice';
+import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan, activityStart, activityDone, activityError, reportAnAppleTransactionThunk } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -109,10 +109,27 @@ export default function Payment() {
         router.push('/services/checkout');
     }
 
+    const transactionWebCallFromIOS = (data) => {
+        debugLog(debugOn, 'transactionWebCall', data);
+        let transaction = data.transaction;
+        transaction = {
+            time: 1717571400459,
+            id: "2000000619251013",
+            originalId: "2000000619251013"
+        }
+        if (data.status === 'ok') {
+            dispatch(reportAnAppleTransactionThunk({transaction}))
+        }
+        dispatch(activityDone(accountActivity.IOSInAppPurchase))
+      }
+
     useEffect(() => {
         if (isLoggedIn) {
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
+            if (process.env.NEXT_PUBLIC_platform === 'iOS') {           
+                window.bsafesNative.transactionWebCall = transactionWebCallFromIOS;
+            }
         }
     }, [isLoggedIn])
 
