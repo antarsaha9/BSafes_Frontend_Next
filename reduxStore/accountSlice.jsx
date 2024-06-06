@@ -4,6 +4,7 @@ import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
 const debugOn = true;
+const minimumPaymentWaitingTime = 3000;
 
 const initialState = {
     activity: 0,
@@ -24,6 +25,7 @@ const initialState = {
     nearestDataCenter: null,
     stripeClientSecret: null,
     lastPaymentIntentTime: null,
+    appleClientSecret: null,
 }
 
 const accountSlice = createSlice({
@@ -100,11 +102,15 @@ const accountSlice = createSlice({
         },
         setLastPaymentIntentTime: (state, action) => {
             state.lastPaymentIntentTime = action.payload;
+        },
+        setApplePaymentIntentData: (state, action) => {
+            if(action.payload.appleClientSecret) state.appleClientSecret = action.payload.appleClientSecret;
+            if(action.payload.checkoutItem) state.checkoutItem = action.payload.checkoutItem;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -349,6 +355,40 @@ export const paymentCompletedThunk = (data) => async (dispatch, getState) => {
         }
     }).catch(error => {
         debugLog(debugOn, "woo... payment completed failed.", error)
+    });
+}
+
+export const createApplePaymentIntentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.CreateApplePaymentIntent, () => {
+        return new Promise((resolve, reject) => {
+            const accountState = getState().account;
+            const currentTime = Date.now();
+            const timeDiff = currentTime - (accountState.lastPaymentIntentTime || 0);
+            if(accountState.lastPaymentIntentTime && timeDiff < minimumPaymentWaitingTime ) {
+                debugLog(debugOn, 'duplicated createApplePaymentIntentThunk')
+                resolve();
+                return;
+            }
+            dispatch(setLastPaymentIntentTime(currentTime));
+            dispatch(setApplePaymentIntentData({appleClientSecret: null, checkoutItem:null}))
+            PostCall({
+                api: '/memberAPI/createApplePaymentIntent',
+                body: {
+                    checkoutPlan:data.checkoutPlan
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setApplePaymentIntentData({appleClientSecret: data.client_secret, checkoutItem:data.checkoutItem}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... create Apple payment intent failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... create Apple payment intent failed.", error)
+            });
+        })
     });
 }
 

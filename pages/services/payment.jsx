@@ -15,7 +15,7 @@ import format from "date-fns/format";
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
 import { accountActivity } from '../../lib/activities'
-import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan, activityStart, activityDone, activityError, reportAnAppleTransactionThunk } from '../../reduxStore/accountSlice';
+import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -94,14 +94,9 @@ export default function Payment() {
         setPlan(e.target.value);
     }
 
-    const handleCheckout = (e) => {
-        if (process.env.NEXT_PUBLIC_platform === 'iOS') {
-            dispatch(setCheckoutPlan(plan));
-            dispatch(activityStart(accountActivity.IOSInAppPurchase))
-        } else {
-            dispatch(setCheckoutPlan(plan));
-            router.push('/services/checkout');
-        }
+    const handleCheckout = (e) => {    
+        dispatch(setCheckoutPlan(plan));
+        router.push('/services/checkout');
     }
 
     const handleUpgrade = (e) => {
@@ -109,27 +104,11 @@ export default function Payment() {
         router.push('/services/checkout');
     }
 
-    const transactionWebCallFromIOS = (data) => {
-        debugLog(debugOn, 'transactionWebCall', data);
-        let transaction = data.transaction;
-        transaction = {
-            time: 1717571400459,
-            id: "2000000619251013",
-            originalId: "2000000619251013"
-        }
-        if (data.status === 'ok') {
-            dispatch(reportAnAppleTransactionThunk({transaction}))
-        }
-        dispatch(activityDone(accountActivity.IOSInAppPurchase))
-      }
-
     useEffect(() => {
         if (isLoggedIn) {
+            dispatch(setCheckoutPlan(null));
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
-            if (process.env.NEXT_PUBLIC_platform === 'iOS') {           
-                window.bsafesNative.transactionWebCall = transactionWebCallFromIOS;
-            }
         }
     }, [isLoggedIn])
 
@@ -199,11 +178,7 @@ export default function Payment() {
                                     </Form.Group>
                                 </Form>
                                 <div className='text-center'>
-                                    {(process.env.NEXT_PUBLIC_platform === 'iOS') ?
-                                        < Button onClick={handleCheckout} href={'/services/checkout?' + planOptions[plan].planId}>Checkout</Button>
-                                        :
-                                        < Button onClick={handleCheckout}>Checkout</Button>
-                                    }
+                                    < Button onClick={handleCheckout}>Checkout</Button>
                                 </div>
                             </Col>
                         </Row>
