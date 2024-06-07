@@ -13,7 +13,7 @@ import LoadStripe from '../../components/loadStripe'
 import CheckoutForm from '../../components/checkoutForm'
 
 import { accountActivity } from '../../lib/activities'
-import { createPaymentIntentThunk, createApplePaymentIntentThunk, setApplePaymentIntentData, reportAnAppleTransactionThunk, activityStart, activityDone } from '../../reduxStore/accountSlice';
+import { createPaymentIntentThunk, createApplePaymentIntentThunk, setApplePaymentIntentData, reportAnAppleTransactionThunk, activityStart, activityDone, clearAppleClientSecret } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -32,18 +32,14 @@ export default function Checkout() {
     const invoice = useSelector(state => state.account.invoice);
     const checkoutPlan = useSelector(state => state.account.checkoutPlan);
     const planOptions = invoice && invoice.planOptions;
-    const planId = planOptions[checkoutPlan].planId;
+    const planId = planOptions && planOptions[checkoutPlan].planId;
 
     debugLog(debugOn, `isLoggedIn: ${isLoggedIn}, checkoutPlan: ${checkoutPlan}`)
 
     const transactionWebCallFromIOS = (data) => {
         debugLog(debugOn, 'transactionWebCall', data);
         let transaction = data.transaction;
-        transaction = {
-            time: 1717571400459,
-            id: "2000000619251013",
-            originalId: "2000000619251013"
-        }
+        transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
         if (data.status === 'ok') {
             dispatch(reportAnAppleTransactionThunk({ transaction }))
         } else {
@@ -76,7 +72,7 @@ export default function Checkout() {
                     "appleClientSecret": appleClientSecret
                 });
             }
-            dispatch(setApplePaymentIntentData({appleClientSecret: null}))
+            dispatch(clearAppleClientSecret())
         }
     }, [appleClientSecret])
 
@@ -111,7 +107,10 @@ export default function Checkout() {
                     </Row>
                 }
             </Container>
-            <LoadStripe setStripePromise={setStripePromise} />
+            {(process.env.NEXT_PUBLIC_platform === 'Web') &&
+                <LoadStripe setStripePromise={setStripePromise} />
+            }
+
         </ContentPageLayout>
     )
 }

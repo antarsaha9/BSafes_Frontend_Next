@@ -104,13 +104,16 @@ const accountSlice = createSlice({
             state.lastPaymentIntentTime = action.payload;
         },
         setApplePaymentIntentData: (state, action) => {
-            if(action.payload.appleClientSecret) state.appleClientSecret = action.payload.appleClientSecret;
-            if(action.payload.checkoutItem) state.checkoutItem = action.payload.checkoutItem;
+            state.appleClientSecret = action.payload.appleClientSecret;
+            state.checkoutItem = action.payload.checkoutItem;
+        },
+        clearAppleClientSecret: (state, action) => {
+            state.appleClientSecret = null;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
