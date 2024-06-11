@@ -39,7 +39,7 @@ export default function Checkout() {
     const transactionWebCallFromIOS = (data) => {
         debugLog(debugOn, 'transactionWebCall', data);
         let transaction = data.transaction;
-        transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
+        //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
         if (data.status === 'ok') {
             dispatch(reportAnAppleTransactionThunk({ transaction }))
         } else {
