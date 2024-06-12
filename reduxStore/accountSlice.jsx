@@ -399,6 +399,7 @@ export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState
     newActivity(dispatch, accountActivity.ReportAnAppleTransaction, () => {
         return new Promise((resolve, reject) => {
             debugLog(debugOn, "transaction: ", data.transaction)
+            const reportAnAppleTransactionCallback = data.callback;
             PostCall({
                 api: '/memberAPI/reportAnAppleTransaction',
                 body: {
@@ -407,6 +408,7 @@ export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState
             }).then(data => {
                 debugLog(debugOn, 'reportAnAppleTransaction: ', data);
                 if (data.status === 'ok') {
+                    reportAnAppleTransactionCallback();
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... reportAnAppleTransaction failed: ", data.error);

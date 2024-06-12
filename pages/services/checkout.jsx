@@ -36,12 +36,20 @@ export default function Checkout() {
 
     debugLog(debugOn, `isLoggedIn: ${isLoggedIn}, checkoutPlan: ${checkoutPlan}`)
 
+    const reportAnAppleTransactionCallback  = () => {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.toggleMessageHandler) {
+            window.webkit.messageHandlers.toggleMessageHandler.postMessage({
+                "action": 'finishTransaction',
+            });
+        }
+    }
+
     const transactionWebCallFromIOS = (data) => {
         debugLog(debugOn, 'transactionWebCall', data);
         let transaction = data.transaction;
         //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
         if (data.status === 'ok') {
-            dispatch(reportAnAppleTransactionThunk({ transaction }))
+            dispatch(reportAnAppleTransactionThunk({ transaction, callback: reportAnAppleTransactionCallback }))
         } else {
             router.push('/services/payment')
         }
