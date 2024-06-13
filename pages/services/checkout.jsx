@@ -5,6 +5,7 @@ import { useRouter } from 'next/router'
 import Container from 'react-bootstrap/Container'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
+import Button from 'react-bootstrap/Button'
 
 import { Elements } from '@stripe/react-stripe-js';
 
@@ -24,8 +25,12 @@ export default function Checkout() {
     const dispatch = useDispatch();
 
     const [stripePromise, setStripePromise] = useState(null);
+    const [pendingAppleTransaction, setPendingAppleTransaction] = useState(null);
+    const [reportAnAppleTransactionError, setReportAnAppleTransactionError] = useState(null)
+    const [appleTransactionCompleted, setAppleTransactionCompleted] = useState(false);
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const memberId = useSelector(state => state.auth.memberId);
     const stripeClientSecret = useSelector(state => state.account.stripeClientSecret);
     const appleClientSecret = useSelector(state => state.account.appleClientSecret)
     const checkoutItem = useSelector(state => state.account.checkoutItem);
@@ -36,11 +41,51 @@ export default function Checkout() {
 
     debugLog(debugOn, `isLoggedIn: ${isLoggedIn}, checkoutPlan: ${checkoutPlan}`)
 
-    const reportAnAppleTransactionCallback  = () => {
-        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.toggleMessageHandler) {
-            window.webkit.messageHandlers.toggleMessageHandler.postMessage({
-                "action": 'finishTransaction',
-            });
+    const savePendingAppleTransaction = (transaction) => {
+        debugLog(debugOn, "savePendingAppleTransaction - ")
+        setPendingAppleTransaction(transaction);
+        let pendingAppleTransactions = localStorage.getItem('pendingAppleTransactions');
+        if (pendingAppleTransactions) {
+            pendingAppleTransactions = JSON.parse(pendingAppleTransactions);
+        } else {
+            pendingAppleTransactions = {};
+        }
+        pendingAppleTransactions[memberId] = transaction;
+        pendingAppleTransactions = JSON.stringify(pendingAppleTransactions)
+        localStorage.setItem('pendingAppleTransactions', pendingAppleTransactions);
+    }
+
+    const clearPendingApppleTransaction = () => {
+        debugLog(debugOn, "clearPendingApppleTransaction - ")
+        setPendingAppleTransaction(null);
+        let pendingAppleTransactions = localStorage.getItem('pendingAppleTransactions');
+        if (pendingAppleTransactions) {
+            pendingAppleTransactions = JSON.parse(pendingAppleTransactions);
+        } else {
+            pendingAppleTransactions = {};
+        }
+        pendingAppleTransactions[memberId] = null;
+        pendingAppleTransactions = JSON.stringify(pendingAppleTransactions)
+        localStorage.setItem('pendingAppleTransactions', pendingAppleTransactions);
+    }
+
+    const handleFixIt = () => {
+        setReportAnAppleTransactionError(null);
+        dispatch(reportAnAppleTransactionThunk({ transaction: pendingAppleTransaction, callback: reportAnAppleTransactionCallback }))
+    }
+
+    const reportAnAppleTransactionCallback = (response) => {
+        if (response.status === 'ok') {
+            if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.toggleMessageHandler) {
+                window.webkit.messageHandlers.toggleMessageHandler.postMessage({
+                    "action": 'finishTransaction',
+                });
+            }
+            clearPendingApppleTransaction();
+            setAppleTransactionCompleted(true);
+        } else {
+            console.log("reportAnAppleTransactionCallback returns error, pending: ", pendingAppleTransaction)
+            setReportAnAppleTransactionError(response.error);
         }
     }
 
@@ -49,7 +94,7 @@ export default function Checkout() {
         let transaction = data.transaction;
         //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
         if (data.status === 'ok') {
-            dispatch(reportAnAppleTransactionThunk({ transaction, callback: reportAnAppleTransactionCallback }))
+            savePendingAppleTransaction(transaction);
         } else {
             router.push('/services/payment')
         }
@@ -68,6 +113,19 @@ export default function Checkout() {
     }, [isLoggedIn, checkoutPlan])
 
     useEffect(() => {
+        if (pendingAppleTransaction) {
+            debugLog(debugOn, "useEffect - pendingAppleTransaction: ", pendingAppleTransaction)
+            dispatch(reportAnAppleTransactionThunk({ transaction: pendingAppleTransaction, callback: reportAnAppleTransactionCallback }))
+        }
+    }, [pendingAppleTransaction])
+
+    useEffect(() => {
+        if (reportAnAppleTransactionError) {
+            debugLog(debugOn, "useEffect - reportAnAppleTransactionErrorn: ", reportAnAppleTransactionError)
+        }
+    }, [reportAnAppleTransactionError])
+
+    useEffect(() => {
         debugLog(debugOn, 'appleCientSecret: ', appleClientSecret)
         if (appleClientSecret) {
             if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.toggleMessageHandler) {
@@ -84,8 +142,15 @@ export default function Checkout() {
         }
     }, [appleClientSecret])
 
+    useEffect(() => {
+        if(appleTransactionCompleted) {
+            debugLog(debugOn, "Apple transaction is completed.")
+            router.push('/services/appleTransactionCompletion')
+        }
+    }, [appleTransactionCompleted])
+
     return (
-        <ContentPageLayout>
+        <ContentPageLayout showNaveBar={false}>
             <Container>
                 <br />
                 <br />
@@ -110,6 +175,19 @@ export default function Checkout() {
                                         <CheckoutForm />
                                     </Elements>
                                 )}
+                            </div>
+                        </Col>
+                    </Row>
+                }
+                <br />
+                {(process.env.NEXT_PUBLIC_platform === 'iOS') && reportAnAppleTransactionError && !reportAnAppleTransactionError.startsWith('Invalid transaction') &&
+                    <Row>
+                        <Col xs={{ span: 12 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} lg={{ span: 6, offset: 3 }}>
+                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a <span style={{fontWeight:'bold'}}>${reportAnAppleTransactionError}</span>. Please try again, and you will not be re-charged.`}
+                            <br/>
+                            <br/>
+                            <div class="text-center">
+                                <Button onClick={handleFixIt}>Fix It</Button>
                             </div>
                         </Col>
                     </Row>

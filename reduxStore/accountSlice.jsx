@@ -398,7 +398,7 @@ export const createApplePaymentIntentThunk = (data) => async (dispatch, getState
 export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, accountActivity.ReportAnAppleTransaction, () => {
         return new Promise((resolve, reject) => {
-            debugLog(debugOn, "transaction: ", data.transaction)
+            debugLog(debugOn, "reportAnAppleTransactionThunk, transaction: ", data.transaction)
             const reportAnAppleTransactionCallback = data.callback;
             PostCall({
                 api: '/memberAPI/reportAnAppleTransaction',
@@ -408,14 +408,17 @@ export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState
             }).then(data => {
                 debugLog(debugOn, 'reportAnAppleTransaction: ', data);
                 if (data.status === 'ok') {
-                    reportAnAppleTransactionCallback();
+                    reportAnAppleTransactionCallback({status:'ok'});
                     resolve();
                 } else {
                     debugLog(debugOn, "woo... reportAnAppleTransaction failed: ", data.error);
+                    reportAnAppleTransactionCallback({status:'error', error:data.error});
                     reject();
                 }
             }).catch(error => {
                 debugLog(debugOn, "woo... reportAnAppleTransaction failed.", error)
+                reportAnAppleTransactionCallback({status:'error', error:'Network Error.'});
+                reject();
             });
         })
     });    
