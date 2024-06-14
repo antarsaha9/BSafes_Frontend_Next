@@ -92,7 +92,7 @@ export default function Checkout() {
     const transactionWebCallFromIOS = (data) => {
         debugLog(debugOn, 'transactionWebCall', data);
         let transaction = data.transaction;
-        //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}
+        //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}; // TestWarning
         if (data.status === 'ok') {
             savePendingAppleTransaction(transaction);
         } else {
@@ -183,10 +183,10 @@ export default function Checkout() {
                 {(process.env.NEXT_PUBLIC_platform === 'iOS') && reportAnAppleTransactionError && !reportAnAppleTransactionError.startsWith('Invalid transaction') &&
                     <Row>
                         <Col xs={{ span: 12 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} lg={{ span: 6, offset: 3 }}>
-                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a <span style={{fontWeight:'bold'}}>${reportAnAppleTransactionError}</span>. Please try again, and you will not be re-charged.`}
+                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{fontWeight:'bold'}}>{reportAnAppleTransactionError}</span>. {`Please try again, and you will not be re-charged.`}
                             <br/>
                             <br/>
-                            <div class="text-center">
+                            <div className="text-center">
                                 <Button onClick={handleFixIt}>Fix It</Button>
                             </div>
                         </Col>
