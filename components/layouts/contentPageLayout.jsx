@@ -20,6 +20,7 @@ import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
 import PaymentBanner from '../paymentBanner';
+import VisitPaymentBanner from '../visitPaymentBanner';
 import SuspendedModal from '../suspendedModal';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
@@ -72,7 +73,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
-    const displayPaymentBanner = !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
+    const displayPaymentBanner = !(router.asPath.startsWith('/login')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
 
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
@@ -114,8 +115,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const checkIfPublicOrAuthPages = (path) => {
         return (path === '/' ||
-            path === '/logIn' ||
-            path === '/keySetup' ||
+            path.startsWith('/logIn') ||
+            path.startsWith('/keySetup') ||
             path.startsWith('/n/') ||
             path.startsWith('/v1/' ||
                 path.startsWith('/v3')));
@@ -511,9 +512,20 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsMovingProgress />
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
-            {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
-            {(displayPaymentBanner && accountState === 'suspended') && <SuspendedModal />}
-            {(displayPaymentBanner && accountState === 'overflow') && <SuspendedModal overflow={true} />}
+            {(true || (process.env.NEXT_PUBLIC_platform === 'iOS')) &&
+                <>
+                    {((displayPaymentBanner && accountState === 'upgradeRequired')) && <VisitPaymentBanner upgradeRequired={true} />}
+                    {((displayPaymentBanner && accountState === 'suspended')) && <VisitPaymentBanner suspended={true} />}
+                    {((displayPaymentBanner && accountState === 'overflow')) && <VisitPaymentBanner overflow={true} />}
+                </>
+            }
+            {(process.env.NEXT_PUBLIC_platform === 'Web') &&
+                <>
+                    {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
+                    {(displayPaymentBanner && accountState === 'suspended') && <SuspendedModal />}
+                    {(displayPaymentBanner && accountState === 'overflow') && <SuspendedModal overflow={true} />}
+                </>
+            }
         </div>
     )
 };
