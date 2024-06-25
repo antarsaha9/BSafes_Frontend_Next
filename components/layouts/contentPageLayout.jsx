@@ -52,6 +52,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const [nextRoute, setNextRoute] = useState(null);
 
     const accountState = useSelector(state => state.account.accountState);
+    debugLog(debugOn, "accountState: ", accountState);
     const accountActivity = useSelector(state => state.account.activity);
     const authActivity = useSelector(state => state.auth.activity);
     const authActivityErrors = useSelector(state => state.auth.activityErrors);
@@ -73,7 +74,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
-    const displayPaymentBanner = !(router.asPath.startsWith('/login')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
+    const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
 
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
@@ -130,6 +131,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const goHome = () => {
         switch (process.env.NEXT_PUBLIC_app) {
+            case 'bsafes':
+                changePage('/apps/bsafes');
+                break;
             case 'colors':
                 changePage('/apps/colors');
                 break;
@@ -140,11 +144,14 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const goLogin = () => {
         switch (process.env.NEXT_PUBLIC_app) {
+            case 'bsafes':
+                changePage('/apps/bsafes');
+                break;
             case 'colors':
                 changePage('/apps/colors');
                 break;
             default:
-                changePage('/login');
+                changePage('/logIn');
         }
     }
 
@@ -512,7 +519,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsMovingProgress />
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
-            {(true || (process.env.NEXT_PUBLIC_platform === 'iOS')) &&
+            {((process.env.NEXT_PUBLIC_platform === 'iOS')) &&
                 <>
                     {((displayPaymentBanner && accountState === 'upgradeRequired')) && <VisitPaymentBanner upgradeRequired={true} />}
                     {((displayPaymentBanner && accountState === 'suspended')) && <VisitPaymentBanner suspended={true} />}
