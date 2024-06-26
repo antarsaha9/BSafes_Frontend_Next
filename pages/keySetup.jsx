@@ -15,6 +15,8 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { debugLog } from '../lib/helper'
 
 import ContentPageLayout from '../components/layouts/contentPageLayout';
+import PrivacyPolicyModal from '../components/privacyPolicyModal';
+import TermsOfServiceModal from '../components/termsOfServiceModal';
 import Scripts from '../components/scripts'
 
 import KeyInput from "../components/keyInput";
@@ -31,6 +33,8 @@ export default function KeySetup() {
     const [keyStrengthColor, setKeyStrengthColor] = useState('danger');
     const [keyStrengthProgress, setKeyStrengthProgress] = useState();
     const [keyReady, setKeyReady] = useState(false);
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
     const nicknameRef = useRef(null);
 
     function checkKeyStrength(key) {
@@ -69,6 +73,24 @@ export default function KeySetup() {
     const confirmPasswordChanged = (password) => {
         debugLog(debugOn, "confirmPassword: ", password);
         setConfirmPassword(password);
+    }
+
+    const handlePrivacy = (e) => {
+        e.preventDefault();
+        setShowPrivacy(true);
+    }
+
+    const handlePrivacyCallback = () => {
+        setShowPrivacy(false);
+    }
+
+    const handleTerms = (e) => {
+        e.preventDefault();
+        setShowTerms(true);
+    }
+
+    const handleTermsCallback = () => {
+        setShowTerms(false);
     }
 
     const handleSubmit = async e => {
@@ -115,7 +137,7 @@ export default function KeySetup() {
                                     </Form.Group>
                                 </Form>
                                 <br />
-                                <p className='text-cent'>You agree to our <Link href='/public/privacyPolicy' style={{textDecoration: 'none'}}>Privacy Policy</Link> and <Link href='/public/termsOfService' style={{textDecoration: 'none'}}>Terms of Service</Link> by clicking GO.</p>
+                                <p className='text-cent'>You agree to our <Link onClick={handlePrivacy} href='/public/privacyPolicy' style={{textDecoration: 'none'}}>Privacy Policy</Link> and <Link onClick={handleTerms} href='/public/termsOfService' style={{textDecoration: 'none'}}>Terms of Service</Link> by clicking GO.</p>
                                 <Row>
                                     <Col className='text-center'>
                                         <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>
@@ -126,6 +148,8 @@ export default function KeySetup() {
                                         <Link href='/logIn' style={{textDecoration: 'none', fontSize:'0.8rem'}}>Open Your BSafes</Link>
                                     </Col>
                                 </Row>
+                                {showPrivacy && <PrivacyPolicyModal callback={handlePrivacyCallback} />}
+                                {showTerms && <TermsOfServiceModal callback={handleTermsCallback} />}
                             </Card>
                         </Col>
                     </Row>
