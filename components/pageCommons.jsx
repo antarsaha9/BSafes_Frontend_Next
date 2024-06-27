@@ -4,8 +4,9 @@ import { useSelector, useDispatch } from 'react-redux'
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button'
+import Alert from 'react-bootstrap/Alert';
 
-import { Blocks } from  'react-loader-spinner';
+import { Blocks } from 'react-loader-spinner';
 
 import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
@@ -19,42 +20,42 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk} from "../reduxStore/pageSlice";
+import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
     const debugOn = false;
     const dispatch = useDispatch();
 
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector(state => state.container.searchKey);
+    const workspaceSearchIV = useSelector(state => state.container.searchIV);
 
-    const activity = useSelector( state => state.page.activity);
+    const activity = useSelector(state => state.page.activity);
 
     const pageItemId = useSelector(state => state.page.id);
-    const itemCopy = useSelector(state=>state.page.itemCopy);
-    const oldVersion = useSelector(state=>state.page.oldVersion);
+    const itemCopy = useSelector(state => state.page.itemCopy);
+    const oldVersion = useSelector(state => state.page.oldVersion);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
     const [contentEditorMode, setContentEditorMode] = useState("ReadOnly");
     const contentEditorContent = useSelector(state => state.page.content);
     const [contentEditorContentWithImagesAndVideos, setcontentEditorContentWithImagesAndVideos] = useState(null);
-    
+
     const [editingEditorId, setEditingEditorId] = useState(null);
     const [readyForSaving, setReadyForSaving] = useState(false);
 
-    const S3SignedUrlForContentUpload = useSelector( state => state.page.S3SignedUrlForContentUpload);
-    const contentImagesDownloadQueue = useSelector( state => state.page.contentImagesDownloadQueue);
-    const contentImagesDisplayIndex = useSelector( state => state.page.contentImagesDisplayIndex);
-    const contentImagesAllDownloaded = useSelector( state=> state.page.contentImagesAllDownloaded);
+    const S3SignedUrlForContentUpload = useSelector(state => state.page.S3SignedUrlForContentUpload);
+    const contentImagesDownloadQueue = useSelector(state => state.page.contentImagesDownloadQueue);
+    const contentImagesDisplayIndex = useSelector(state => state.page.contentImagesDisplayIndex);
+    const contentImagesAllDownloaded = useSelector(state => state.page.contentImagesAllDownloaded);
     const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
-    const contentVideosDownloadQueue = useSelector( state => state.page.contentVideosDownloadQueue);
+    const contentVideosDownloadQueue = useSelector(state => state.page.contentVideosDownloadQueue);
     const videoPanelsState = useSelector(state => state.page.videoPanels);
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
-    const draftLoaded = useSelector(state=>state.page.draftLoaded);
+    const draftLoaded = useSelector(state => state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
     const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
 
@@ -69,15 +70,15 @@ export default function PageCommons() {
 
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
-    
+
     const onVideoClicked = (queueId) => {
         debugLog(debugOn, "onVideoClicked: ", queueId);
         for (const thisPanel of videoPanelsState) {
-            if(thisPanel.queueId === queueId) {
+            if (thisPanel.queueId === queueId) {
                 const id = thisPanel.queueId;
                 const s3KeyPrefix = thisPanel.s3KeyPrefix;
                 const numberOfChunks = thisPanel.numberOfChunks;
-                dispatch(downloadVideoThunk({id, s3KeyPrefix, numberOfChunks, fileName:thisPanel.fileName, fileType: thisPanel.fileType, fileSize:thisPanel.fileSize}));
+                dispatch(downloadVideoThunk({ id, s3KeyPrefix, numberOfChunks, fileName: thisPanel.fileName, fileType: thisPanel.fileType, fileSize: thisPanel.fileSize }));
                 break;
             }
         }
@@ -88,15 +89,15 @@ export default function PageCommons() {
 
         const slides = [];
         let startingIndex;
-        for(let i=0; i< imagePanelsState.length; i++) {
+        for (let i = 0; i < imagePanelsState.length; i++) {
             const thisPanel = imagePanelsState[i];
-            if(thisPanel.status !== "Uploaded" &&  thisPanel.status !== "Downloaded") continue;
+            if (thisPanel.status !== "Uploaded" && thisPanel.status !== "Downloaded") continue;
             const item = {};
             item.src = thisPanel.src;
             item.w = thisPanel.width;
             item.h = thisPanel.height;
             slides.push(item);
-            if(thisPanel.queueId === queueId) {
+            if (thisPanel.queueId === queueId) {
                 startingIndex = slides.length - 1;
             }
         }
@@ -113,30 +114,30 @@ export default function PageCommons() {
 
     const handleVideoClick = (e) => {
         let playVideoElement = e.target;
-        if(e.target.tagName === 'I') {
+        if (e.target.tagName === 'I') {
             playVideoElement = e.target.parentNode;
         }
-        const videoId = playVideoElement.id.replace('playVideoCenter_',"");
+        const videoId = playVideoElement.id.replace('playVideoCenter_', "");
         const containerElement = playVideoElement.parentNode;
         playVideoElement.remove();
-        
+
         let spinnerElement = createSpinnerForImage(videoId);
         containerElement.appendChild(spinnerElement);
-        const id =  videoId;
+        const id = videoId;
         const idParts = id.split('&');
-        if(idParts[0] === 'chunks') {
+        if (idParts[0] === 'chunks') {
             let s3KeyPrefix = idParts[3];
             let numberOfChunks = parseInt(idParts[1]);
             let fileName = idParts[2];
             let fileSize = parseInt(idParts[5]);
             let fileType = idParts[4];
-            dispatch(downloadVideoThunk({fromContent: true, id, s3KeyPrefix, numberOfChunks, fileName, fileType, fileSize}));
+            dispatch(downloadVideoThunk({ fromContent: true, id, s3KeyPrefix, numberOfChunks, fileName, fileType, fileSize }));
         } else {
             let s3Key = idParts[0];
-            dispatch(downloadVideoThunk({id, s3Key}));
+            dispatch(downloadVideoThunk({ id, s3Key }));
         }
-        
-    }; 
+
+    };
 
     function createSpinnerForImage(imageId) {
         let spinnerElement = spinnerRef.current.cloneNode(true);
@@ -148,7 +149,7 @@ export default function PageCommons() {
         return spinnerElement;
     }
 
-    function createPlayVideoButton(image) {        
+    function createPlayVideoButton(image) {
         let playVideoCenterElement = document.createElement('div');
         let playVideoId = 'playVideoCenter_' + image.id;
         let playVideoButtonId = 'playVideoButton_' + image.id;
@@ -169,22 +170,22 @@ export default function PageCommons() {
         spinners.forEach((spinner) => {
             spinner.remove();
         });
-        
+
         const playVideos = document.querySelectorAll('.bsafesPlayVideo');
         playVideos.forEach((playVideo) => {
             playVideo.remove();
         });
-        
+
         let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
         setcontentEditorContentWithImagesAndVideos(contentByDOM);
         dispatch(getS3SignedUrlForContentUploadThunk());
         setContentEditorMode("Writing");
-        
+
     }
 
     const handleDraftSample = (content) => {
-        debugLog(debugOn, "draft content: ", content );
-        dispatch(saveDraftThunk({content}))
+        debugLog(debugOn, "draft content: ", content);
+        dispatch(saveDraftThunk({ content }))
     }
 
     const handleDraftClicked = () => {
@@ -196,79 +197,79 @@ export default function PageCommons() {
     }
 
     function afterContentReadOnly() {
-        
+
     }
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
         let thisReadyForSaving = true;
-        if(editorId === 'content'){
+        if (editorId === 'content') {
             beforeWritingContent();
             setEditingEditorId("content");
             thisReadyForSaving = false;
-        } else if(editorId === 'title') {
+        } else if (editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
-        } else if(editorId.startsWith("video_")) {
+        } else if (editorId.startsWith("video_")) {
             const videoIndex = parseInt(editorId.split("_")[1]);
-            dispatch(setVideoWordsMode({index: videoIndex, mode: "Writing"}));
+            dispatch(setVideoWordsMode({ index: videoIndex, mode: "Writing" }));
             setEditingEditorId(editorId);
-        } else if(editorId.startsWith("image_")) {
+        } else if (editorId.startsWith("image_")) {
             const imageIndex = parseInt(editorId.split("_")[1]);
-            dispatch(setImageWordsMode({index: imageIndex, mode: "Writing"}));
+            dispatch(setImageWordsMode({ index: imageIndex, mode: "Writing" }));
             setEditingEditorId(editorId);
-        } else if(editorId.startsWith("comment_")) {
-            dispatch(setCommentEditorMode({index: editorId, mode: "Writing"}));
+        } else if (editorId.startsWith("comment_")) {
+            dispatch(setCommentEditorMode({ index: editorId, mode: "Writing" }));
             setEditingEditorId(editorId);
         }
         setReadyForSaving(thisReadyForSaving);
     }
-    
+
     const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
-        
-        if(editingEditorId === "content") {
-            if(content !== contentEditorContent) {
-                dispatch(saveContentThunk({content, workspaceKey}));
+
+        if (editingEditorId === "content") {
+            if (content !== contentEditorContent) {
+                dispatch(saveContentThunk({ content, workspaceKey }));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        } else if(editingEditorId === "title") {
-            if(content !== titleEditorContent) {
+        } else if (editingEditorId === "title") {
+            if (content !== titleEditorContent) {
                 dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        } else if(editingEditorId.startsWith("video_")){
+        } else if (editingEditorId.startsWith("video_")) {
             const videoIndex = parseInt(editingEditorId.split("_")[1]);
             console.log(content, videoPanelsState[videoIndex].words)
-            if(content !== videoPanelsState[videoIndex].words) {
-                dispatch(saveVideoWordsThunk({index: videoIndex, content: content}));
+            if (content !== videoPanelsState[videoIndex].words) {
+                dispatch(saveVideoWordsThunk({ index: videoIndex, content: content }));
             } else {
-                dispatch(setVideoWordsMode({index: videoIndex, mode: "ReadOnly"}));
+                dispatch(setVideoWordsMode({ index: videoIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
-        } else if(editingEditorId.startsWith("image_")){
+        } else if (editingEditorId.startsWith("image_")) {
             const imageIndex = parseInt(editingEditorId.split("_")[1]);
-            if(content !== imagePanelsState[imageIndex].words) {
-                dispatch(saveImageWordsThunk({index: imageIndex, content: content}));
+            if (content !== imagePanelsState[imageIndex].words) {
+                dispatch(saveImageWordsThunk({ index: imageIndex, content: content }));
             } else {
-                dispatch(setImageWordsMode({index: imageIndex, mode: "ReadOnly"}));
+                dispatch(setImageWordsMode({ index: imageIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
-        } else if(editingEditorId.startsWith("comment_")){
-            if(editingEditorId !== 'comment_New') {
+        } else if (editingEditorId.startsWith("comment_")) {
+            if (editingEditorId !== 'comment_New') {
                 let index = parseInt(editingEditorId.split('_')[1]);
-                if(comments[index].content === content){ 
-                    dispatch(setCommentEditorMode({index: editingEditorId, mode: "ReadOnly"}));
+                if (comments[index].content === content) {
+                    dispatch(setCommentEditorMode({ index: editingEditorId, mode: "ReadOnly" }));
                     setEditingEditorId(null);
                     return;
-                }         
+                }
             }
-            dispatch(saveCommentThunk({index: editingEditorId, content}));
-        }    
+            dispatch(saveCommentThunk({ index: editingEditorId, content }));
+        }
     }
 
     const videoPanels = videoPanelsState.map((item, index) =>
@@ -279,14 +280,14 @@ export default function PageCommons() {
         <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
 
-    const handleWrite = () =>{
+    const handleWrite = () => {
         debugLog(debugOn, "handleWrite");
         beforeWritingContent();
         setEditingEditorId("content");
     }
 
     const setEditingEditorMode = (mode) => {
-        switch(editingEditorId) {
+        switch (editingEditorId) {
             case 'content':
                 setContentEditorMode(mode);
                 break;
@@ -294,31 +295,31 @@ export default function PageCommons() {
                 setTitleEditorMode(mode);
                 break;
             default:
-                if(editingEditorId.startsWith("video_")){
+                if (editingEditorId.startsWith("video_")) {
                     const videoIndex = parseInt(editingEditorId.split("_")[1]);
-                    switch(mode) {
+                    switch (mode) {
                         case "Saving":
                         case "ReadOnly":
-                            dispatch(setVideoWordsMode({index: videoIndex, mode}))
-                            break;
-                        default:
-                    }     
-                } else if(editingEditorId.startsWith("image_")){
-                    const imageIndex = parseInt(editingEditorId.split("_")[1]);
-                    switch(mode) {
-                        case "Saving":
-                        case "ReadOnly":
-                            dispatch(setImageWordsMode({index: imageIndex, mode}))
+                            dispatch(setVideoWordsMode({ index: videoIndex, mode }))
                             break;
                         default:
                     }
-                    
-                } else if(editingEditorId.startsWith("comment_")){
-                    switch(mode) {
+                } else if (editingEditorId.startsWith("image_")) {
+                    const imageIndex = parseInt(editingEditorId.split("_")[1]);
+                    switch (mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setImageWordsMode({ index: imageIndex, mode }))
+                            break;
+                        default:
+                    }
+
+                } else if (editingEditorId.startsWith("comment_")) {
+                    switch (mode) {
                         case "Writing":
                         case "Saving":
                         case "ReadOnly":
-                            dispatch(setCommentEditorMode({index: editingEditorId, mode}))
+                            dispatch(setCommentEditorMode({ index: editingEditorId, mode }))
                             break;
                         default:
                     }
@@ -330,7 +331,7 @@ export default function PageCommons() {
 
     const handleSave = () => {
         debugLog(debugOn, "handleSave");
-        setEditingEditorMode("Saving"); 
+        setEditingEditorMode("Saving");
         dispatch(setDraftLoaded(false));
         setReadyForSaving(false);
     }
@@ -340,7 +341,7 @@ export default function PageCommons() {
         dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
-        if(draftLoaded) {
+        if (draftLoaded) {
             dispatch(loadOriginalContentThunk());
         }
         dispatch(setDraftLoaded(false));
@@ -355,14 +356,14 @@ export default function PageCommons() {
     };
 
     const uploadVideos = (files, where) => {
-        dispatch(uploadVideosThunk({files, where, workspaceKey}));
+        dispatch(uploadVideosThunk({ files, where, workspaceKey }));
     };
 
     const handleVideoFiles = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleVideoFiles: ", e.target.id);
         const files = e.target.files;
-        if(files.length) {
+        if (files.length) {
             uploadVideos(files, 'top');
         }
     }
@@ -373,16 +374,16 @@ export default function PageCommons() {
         imageFilesInputRef.current.value = null;
         imageFilesInputRef.current?.click();
     };
-    
+
     const uploadImages = (files, where) => {
-        dispatch(uploadImagesThunk({files, where, workspaceKey}));
+        dispatch(uploadImagesThunk({ files, where, workspaceKey }));
     };
 
     const handleImageFiles = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleImageFiles: ", e.target.id);
         const files = e.target.files;
-	    if (files.length) {
+        if (files.length) {
             uploadImages(files, 'top');
         }
     }
@@ -399,22 +400,22 @@ export default function PageCommons() {
     };
 
     const uploadAttachments = (files) => {
-        dispatch(uploadAttachmentsThunk({files, workspaceKey}));
+        dispatch(uploadAttachmentsThunk({ files, workspaceKey }));
     };
 
     const handleAttachments = (e) => {
         e.preventDefault();
         debugLog(debugOn, "handleAttachments: ", e.target.id);
         const files = e.target.files;
-	    if (files.length) {
+        if (files.length) {
             uploadAttachments(files);
         }
     }
 
     const setDragActive = (e, active) => {
-        if(e.target.id === "videos") {
+        if (e.target.id === "videos") {
             setVideosDragActive(active);
-        } else if(e.target.id === "images") {
+        } else if (e.target.id === "images") {
             setImagesDragActive(active);
         } else {
             setAttachmentsDragActive(active);
@@ -425,37 +426,37 @@ export default function PageCommons() {
         debugLog(debugOn, "handleDrag");
         e.preventDefault();
         e.stopPropagation();
-        if (e.type === "dragenter" || e.type === "dragover") {      
+        if (e.type === "dragenter" || e.type === "dragover") {
             setDragActive(e, true);
         } else if (e.type === "dragleave") {
             setDragActive(e, false);
         }
     }
 
-    const handleDrop = function(e) {
+    const handleDrop = function (e) {
         debugLog(debugOn, "handleDrop: ", e.target.id);
         e.preventDefault();
         e.stopPropagation();
-        setDragActive(e,false);
+        setDragActive(e, false);
 
         if (e.dataTransfer.files && e.dataTransfer.files[0]) {
             debugLog(debugOn, "handleDrop, at least one file.");
-          // at least one file has been dropped so do something
-          // handleFiles(e.dataTransfer.files);
-            if(e.target.id === 'videos') {
+            // at least one file has been dropped so do something
+            // handleFiles(e.dataTransfer.files);
+            if (e.target.id === 'videos') {
                 const videoType = /video.*/;
                 const videos = [];
-                for(const file of e.dataTransfer.files) {
+                for (const file of e.dataTransfer.files) {
                     if (!file.type.match(videoType)) {
                         debugLog(debugOn, "Not an image.");
                     }
                     else videos.push(file);
                 }
                 uploadVideos(videos, 'top');
-            } else if(e.target.id === 'images') {
+            } else if (e.target.id === 'images') {
                 const imageType = /image.*/;
                 const images = [];
-                for(const file of e.dataTransfer.files) {
+                for (const file of e.dataTransfer.files) {
                     if (!file.type.match(imageType)) {
                         debugLog(debugOn, "Not an image.");
                     }
@@ -465,13 +466,13 @@ export default function PageCommons() {
             } else if (e.target.id === 'attachments') {
                 debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
                 const attachments = [];
-                for(const file of e.dataTransfer.files) {
+                for (const file of e.dataTransfer.files) {
                     attachments.push(file);
                 }
                 uploadAttachments(attachments);
             }
         }
-        setDragActive(e,false);
+        setDragActive(e, false);
     };
 
     const handleContentWritingModeReady = (e) => {
@@ -480,7 +481,7 @@ export default function PageCommons() {
 
     const handleContentReadOnlyModeReady = (e) => {
         const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
-        for(let i=0; i<bSafesDownloadVideoImages.length; i++){
+        for (let i = 0; i < bSafesDownloadVideoImages.length; i++) {
             let image = bSafesDownloadVideoImages[i];
             let containerElement = image.parentNode;
             let playVideoElement = createPlayVideoButton(image);
@@ -489,55 +490,55 @@ export default function PageCommons() {
         }
         return;
     }
-    
+
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
     }, []);
 
-    useEffect(()=> {
+    useEffect(() => {
         setcontentEditorContentWithImagesAndVideos(null);
     }, [pageItemId])
 
     useEffect(() => {
-        if(activity === 0) {
-            if(editingEditorId) {
+        if (activity === 0) {
+            if (editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
         } else if (activity === "Error") {
-            if(editingEditorId) {
+            if (editingEditorId) {
                 setEditingEditorMode("Writing");
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
-    useEffect(()=>{
-        if(contentEditorContent === null) return;
+    useEffect(() => {
+        if (contentEditorContent === null) return;
         afterContentReadOnly();
         setcontentEditorContentWithImagesAndVideos(contentEditorContent);
-    // eslint-disable-next-line react-hooks/exhaustive-deps    
+        // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentEditorContent]);
 
-    useEffect(()=> {
-        if(draftLoaded && !renderingDraft) return;
+    useEffect(() => {
+        if (draftLoaded && !renderingDraft) return;
         let image, imageElement, containerElement;
         let i = contentImagesDisplayIndex;
-        
-        const videoControlsElements = document.querySelectorAll(".videoControls");
-            videoControlsElements.forEach((item) => {
-            item.remove();
-        }); 
 
-        if(i < contentImagesDownloadQueue.length) {
+        const videoControlsElements = document.querySelectorAll(".videoControls");
+        videoControlsElements.forEach((item) => {
+            item.remove();
+        });
+
+        if (i < contentImagesDownloadQueue.length) {
             image = contentImagesDownloadQueue[i];
             imageElement = document.getElementById(image.id);
-            if(!imageElement) {
-                dispatch(updateContentImagesDisplayIndex(i+1));
+            if (!imageElement) {
+                dispatch(updateContentImagesDisplayIndex(i + 1));
                 return;
             }
 
-            if(!imageElement.parentNode.classList.contains('bsafesMediaContainer')){
+            if (!imageElement.parentNode.classList.contains('bsafesMediaContainer')) {
                 containerElement = document.createElement('div');
                 containerElement.className = 'bsafesMediaContainer';
                 containerElement.style.display = 'flex';
@@ -551,62 +552,62 @@ export default function PageCommons() {
                 containerElement.appendChild(spinnerElement);
             } else {
                 containerElement = imageElement.parentNode;
-                let spinnerElement =  document.getElementById('spinner_' + image.id);
-                if(!spinnerElement) {
+                let spinnerElement = document.getElementById('spinner_' + image.id);
+                if (!spinnerElement) {
                     let spinnerElement = createSpinnerForImage(image.id);
                     containerElement.appendChild(spinnerElement);
                 }
             }
-            if(image.status === "Downloading") {
-  
+            if (image.status === "Downloading") {
+
                 return;
-            } else if((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
-             
-                let spinnerElement =  document.getElementById('spinner_' + image.id);
-                if(spinnerElement) spinnerElement.remove();
-                if(image.status === "Downloaded") {
+            } else if ((image.status === "Downloaded") || (image.status === "DownloadFailed")) {
+
+                let spinnerElement = document.getElementById('spinner_' + image.id);
+                if (spinnerElement) spinnerElement.remove();
+                if (image.status === "Downloaded") {
                     imageElement.src = image.src;
                 }
-                if(imageElement.classList.contains('bSafesDownloadVideo')){
+                if (imageElement.classList.contains('bSafesDownloadVideo')) {
                     let playVideoCenterElement = null;
                     playVideoCenterElement = document.getElementById('playVideoCenter_' + image.id)
-                    
-                    if(!playVideoCenterElement && contentEditorMode === 'ReadOnly') {
+
+                    if (!playVideoCenterElement && contentEditorMode === 'ReadOnly') {
                         playVideoCenterElement = createPlayVideoButton(image);
                         containerElement.appendChild(playVideoCenterElement);
 
-                    } 
-                    if(contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
+                    }
+                    if (contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
                 }
-                dispatch(updateContentImagesDisplayIndex(i+1));
-            } 
-            
+                dispatch(updateContentImagesDisplayIndex(i + 1));
+            }
+
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps    
+        // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentImagesDownloadQueue, renderingDraft]);
 
-    useEffect(()=> {
+    useEffect(() => {
         let video, videoElement;
-        
-        for(let i=0; i< contentVideosDownloadQueue.length; i++) {
+
+        for (let i = 0; i < contentVideosDownloadQueue.length; i++) {
             video = contentVideosDownloadQueue[i];
             const videoId = video.id;
             videoElement = document.getElementById(videoId);
 
-            if(video.status === "Downloading") {                    
+            if (video.status === "Downloading") {
 
-            } else if((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
+            } else if ((video.status === "Downloaded") || (video.status === "DownloadedFromServiceWorker")) {
                 let spinnerElement = document.getElementById('spinner_' + videoId);
-                if(spinnerElement) spinnerElement.remove();
-                if(!videoElement.classList.contains('fr-video')){
-                    const videoSpan = document.createElement('span'); 
-                
+                if (spinnerElement) spinnerElement.remove();
+                if (!videoElement.classList.contains('fr-video')) {
+                    const videoSpan = document.createElement('span');
+
                     videoSpan.className = 'fr-video';
                     videoSpan.classList.add('fr-draggable');
-                
+
                     videoSpan.setAttribute('contenteditable', 'true');
                     videoSpan.setAttribute('draggable', 'true');
-                
+
                     const newVideoElement = document.createElement('video');
                     newVideoElement.className = 'bSafesVideo';
                     newVideoElement.classList.add('fr-draggable');
@@ -617,55 +618,55 @@ export default function PageCommons() {
                     newVideoElement.id = videoId;
                     newVideoElement.src = video.src;
                     newVideoElement.style = videoElement.style;
-                    
+
                     newVideoElement.addEventListener("loadeddata", (event) => {
-                        newVideoElement.play();  
+                        newVideoElement.play();
                     });
 
-	                if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
-	                if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
-	                if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
-	                if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
-	                if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
+                    if (videoElement.classList.contains('fr-dib')) videoSpan.classList.add('fr-dvb');
+                    if (videoElement.classList.contains('fr-dii')) videoSpan.classList.add('fr-dvi');
+                    if (videoElement.classList.contains('fr-fil')) videoSpan.classList.add('fr-fvl');
+                    if (videoElement.classList.contains('fr-fic')) videoSpan.classList.add('fr-fvc');
+                    if (videoElement.classList.contains('fr-fir')) videoSpan.classList.add('fr-fvr');
 
                     videoSpan.appendChild(newVideoElement);
                     videoElement.replaceWith(videoSpan);
-                    dispatch(playingContentVideo({itemId: pageItemId, indexInQueue: i}));
+                    dispatch(playingContentVideo({ itemId: pageItemId, indexInQueue: i }));
                 }
-                
+
             }
         }
-        
-    // eslint-disable-next-line react-hooks/exhaustive-deps    
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps    
     }, [contentVideosDownloadQueue]);
 
-    useEffect(()=>{
-        if(contentEditorMode === "ReadOnly"){
+    useEffect(() => {
+        if (contentEditorMode === "ReadOnly") {
             debugLog(debugOn, "ReadOnly");
             afterContentReadOnly();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [contentEditorMode]);
 
-    useEffect(()=> {
-        if(!draftLoaded) return;
+    useEffect(() => {
+        if (!draftLoaded) return;
         setRenderingDraft(true);
     }, [draftLoaded]);
 
-    useEffect(()=>{
-        if(renderingDraft) {
+    useEffect(() => {
+        if (renderingDraft) {
             dispatch(startDownloadingContentImagesForDraftThunk());
         }
     }, [renderingDraft]);
 
-    useEffect(()=> {
-        if(contentImagesAllDownloaded && draftLoaded){
+    useEffect(() => {
+        if (contentImagesAllDownloaded && draftLoaded) {
             handleWrite();
             setWritingAfterDraftLoaded(false);
             setRenderingDraft(false);
         }
     }, [contentImagesAllDownloaded, draftLoaded]);
-    
+
     const photoSwipeGallery = () => {
         return (
             //<!-- Root element of PhotoSwipe. Must have class pswp. -->
@@ -680,28 +681,28 @@ export default function PageCommons() {
                         <div className="pswp__item"></div>
                         <div className="pswp__item"></div>
                     </div>
-    
+
                     {/*<!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->*/}
                     <div className="pswp__ui pswp__ui--hidden">
                         <div className="pswp__top-bar">
-                        {/*<!--  Controls are self-explanatory. Order can be changed. -->*/}
+                            {/*<!--  Controls are self-explanatory. Order can be changed. -->*/}
                             <div className="pswp__counter"></div>
                             <button className="pswp__button pswp__button--close" title="Close (Esc)"></button>
                             <button className="pswp__button pswp__button--share" title="Share"></button>
                             <button className="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
                             <button className="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
-                        {/*<!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->*/}
-                        {/*<!-- element will get class pswp__preloader active when preloader is running -->*/}
+                            {/*<!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->*/}
+                            {/*<!-- element will get class pswp__preloader active when preloader is running -->*/}
                             <div className="pswp__preloader">
                                 <div className="pswp__preloader__icn">
                                     <div className="pswp__preloader__cut">
-                                    <div className="pswp__preloader__donut"></div>
+                                        <div className="pswp__preloader__donut"></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div className="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
-                            <div className="pswp__share-tooltip"></div> 
+                            <div className="pswp__share-tooltip"></div>
                         </div>
                         <button className="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
                         </button>
@@ -726,8 +727,8 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col sm="10" >
-                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) } />
-                </Col> 
+                    <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
+                </Col>
             </Row>
             <Row className="justify-content-center">
                 <Col sm="10">
@@ -735,40 +736,40 @@ export default function PageCommons() {
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete}/>
-                </Col> 
+                <Col className="contenEditorRow" xs="12" sm="10" >
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} />
+                </Col>
             </Row>
             <br />
             <br />
-            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
                 <div className="videos">
                     <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" multiple className="d-none editControl" id="videos" />
                     <Row>
-                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${videosDragActive?BSafesStyle.videosDragDropZoneActive:BSafesStyle.videosDragDropZone}`}>
+                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.videosDragDropZoneActive : BSafesStyle.videosDragDropZone}`}>
                             <Button id="videos" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="videos" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>              
+                                <h4><i id="videos" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>
                             </Button>
                         </Col>
-                    </Row>	
+                    </Row>
                 </div>
             }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
-                    { videoPanels }
+                    {videoPanels}
                 </Col>
             </Row>
             <br />
-            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
                 <div className="images">
                     <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                     <Row>
-                        <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${imagesDragActive?BSafesStyle.imagesDragDropZoneActive:BSafesStyle.imagesDragDropZone}`}>
+                        <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${imagesDragActive ? BSafesStyle.imagesDragDropZoneActive : BSafesStyle.imagesDragDropZone}`}>
                             <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>              
+                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>
                             </Button>
                         </Col>
-                    </Row>	
+                    </Row>
                 </div>
             }
             <Row className="justify-content-center">
@@ -777,28 +778,35 @@ export default function PageCommons() {
                 </Col>
             </Row>
             <br />
-            { (!editingEditorId && (activity === 0) && (!oldVersion)) && 
+            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
                 <div className="attachments">
                     <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
                     <Row>
-                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{span:10, offset:1}} md={{span:8, offset:2}} className={`text-center ${attachmentsDragActive?BSafesStyle.attachmentsDragDropZoneActive:BSafesStyle.attachmentsDragDropZone}`}>
+                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${attachmentsDragActive ? BSafesStyle.attachmentsDragDropZoneActive : BSafesStyle.attachmentsDragDropZone}`}>
                             <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>              
+                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>
                             </Button>
                         </Col>
-                    </Row>    	
+                    </Row>
                 </div>
             }
             <Row className="justify-content-center">
                 <Col xs="12" md="8" >
-                    { attachmentPanels }
+                    {attachmentPanels}
                 </Col>
             </Row>
             <br />
             {photoSwipeGallery()}
             {false && itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
             {true &&
-                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)}/>
+                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)} />
+            }
+            {!contentImagesAllDisplayed &&
+                <div className='fixed-bottom'>
+                    <Alert variant='info'>
+                        Loading contents, please wait ...
+                    </Alert>
+                </div>
             }
             <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
                 <Blocks
@@ -809,7 +817,7 @@ export default function PageCommons() {
                     wrapperStyle={{}}
                     wrapperClass="blocks-wrapper"
                 />
-            </div> 
+            </div>
         </>
     )
 }

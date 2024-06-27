@@ -25,7 +25,7 @@ export default function LogIn() {
     const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
-    
+
     const [nickname, setNickname] = useState("");
     const [keyPassword, setKeyPassword] = useState("");
     const [recovery, setRecovery] = useState(false);
@@ -70,10 +70,10 @@ export default function LogIn() {
 
     useEffect(() => {
         const queryString = window.location.search;
-        if(queryString) {
+        if (queryString) {
             const params = new URLSearchParams(queryString);
             const path = params.get("toPath");
-            if(path) {
+            if (path) {
                 setToPath(path);
             }
         }
@@ -81,7 +81,7 @@ export default function LogIn() {
 
     useEffect(() => {
         if (isLoggedIn) {
-            if(toPath) {
+            if (toPath) {
                 router.push(toPath);
             } else {
                 router.push('/safe');
@@ -98,10 +98,12 @@ export default function LogIn() {
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                                 <Card className='p-3'>
                                     {process.env.NEXT_PUBLIC_app === 'colors' &&
-                                        <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                        <>
+                                            <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                            <hr />
+                                        </>
                                     }
-                                    <hr/>
-                                    <h1 className='text-center'>Open Your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span></h1>
+                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
@@ -132,7 +134,7 @@ export default function LogIn() {
                                         <Col className='text-center'>
                                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
-                                                Own Your <span style={{fontWeight:'bold'}}>BSafes</span>
+                                                Own Your <span style={{ fontWeight: 'bold' }}>BSafes</span>
                                             </Button>
                                         </Col>
                                     </Row>

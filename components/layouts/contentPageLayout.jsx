@@ -76,6 +76,10 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
 
+    const refresh = (e) => {
+        router.reload();
+    }
+
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
     }
@@ -497,7 +501,12 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                 </Offcanvas.Body>
                             </Navbar.Offcanvas>
                         }
-                        {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && <Button variant='dark' size='sm' className='ms-auto' onClick={logOut}>Lock</Button>}
+                        {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && 
+                            <>
+                            <Button variant='link' size='md' className='ms-auto' onClick={refresh} style={{color:'black'}}><i className="fa fa-refresh" aria-hidden="true"></i></Button>
+                            <Button variant='dark' size='sm' className='ms-auto' onClick={logOut}>Lock</Button>
+                            </>
+                        }
                     </Container>
                 </Navbar>
 
