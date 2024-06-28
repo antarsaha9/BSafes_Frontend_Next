@@ -25,6 +25,7 @@ import { abort, initPage, clearPage, itemPathLoaded } from '../reduxStore/pageSl
 import { debugLog } from '../lib/helper'
 
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
+const pageOnlyFunction = (process.env.NEXT_PUBLIC_functions.indexOf('pageOnly') !== -1)
 
 export default function Workspace({ readyToList = false }) {
     const debugOn = false;
@@ -182,7 +183,11 @@ export default function Workspace({ readyToList = false }) {
                 </Form>
             </Row>
             <Row className="justify-content-center">
-                <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
+                { pageOnlyFunction? 
+                    <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
+                    :
+                    <AddAnItemButton addAnItem={addAnItem} />
+                } 
             </Row>
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} />
