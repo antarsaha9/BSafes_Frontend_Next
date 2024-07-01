@@ -393,7 +393,6 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                             } else {
                                 clearLocalData();
                                 dispatch(loggedOut());
-
                             }
                             dispatch(setNextAuthStep(data.nextStep))
                         }

@@ -342,6 +342,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             case 'Home':
                 let homePath;
                 switch (process.env.NEXT_PUBLIC_app) {
+                    case 'bsafes':
+                        homePath = '/apps/bsafes'
+                        break;
                     case 'colors':
                         homePath = '/apps/colors'
                         break;
