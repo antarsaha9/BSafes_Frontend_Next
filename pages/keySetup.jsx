@@ -107,7 +107,7 @@ export default function KeySetup() {
     }, [keyStrength, keyPassword, confirmPassword]);
 
     return (
-        <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
+        <div className={`${BSafesStyle.minHeight100Percent}`} style={{backgroundColor:"#F8F9F9"}}>
             <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
                 <Container>
                     <Row className={BSafesStyle.keyPanel}>

@@ -12,6 +12,7 @@ import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } f
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 
+const MAX_NUMBER_OF_MEDIA_FILES = 20;
 const debugOn = false;
 
 const initialState = {
@@ -2132,6 +2133,9 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
     })
 }
 
+const checkIfTooManyMediaFiles = (pageState, numberOfNewFiles) => {
+    return ((pageState.videoPanels.length + pageState.imagePanels.length + pageState.contentImagesDownloadQueue.length + numberOfNewFiles) > MAX_NUMBER_OF_MEDIA_FILES);
+}
 
 const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }, workspaceKey) => {
     const chunkSize = getEditorConfig().videoChunkSize;
@@ -2326,7 +2330,10 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, video, uploadResult;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-
+    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert("Sorry, please limit the number of media files to 20 per page!")
+        return;     
+    }
     if (state.activity & pageActivity.UploadVideos) {
         dispatch(addUploadVideos({ files: data.files, where: data.where }));
         return;
@@ -2646,7 +2653,10 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-
+    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert("Sorry, please limit the number of media files to 20 per page!")
+        return;     
+    }
     if (state.activity & pageActivity.UploadImages) {
         dispatch(addUploadImages({ files: data.files, where: data.where }));
         return;

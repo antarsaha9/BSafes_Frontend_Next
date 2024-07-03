@@ -90,12 +90,19 @@ export default function LogIn() {
     }, [isLoggedIn])
 
     return (
-        <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
+        <div className={`${BSafesStyle.minHeight100Percent}`} style={{backgroundColor:"#F8F9F9"}}>
             <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
                 <div>
                     <Container>
                         <Row className={BSafesStyle.keyPanel}>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
+                                {process.env.NEXT_PUBLIC_app !== 'colors' &&
+                                    <>
+                                        <br/>
+                                        <br/>
+                                        <br/>
+                                    </>
+                                }
                                 <Card className='p-3'>
                                     {process.env.NEXT_PUBLIC_app === 'colors' &&
                                         <>
