@@ -5,7 +5,7 @@ const DOMPurify = require('dompurify');
 
 import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
-import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
+import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
@@ -2099,6 +2099,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
 
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         dispatch(clearDraft());
+                        requestAppleReview();
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with content.");
@@ -2122,13 +2123,13 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         content
                     }));
                     dispatch(clearDraft());
+                    requestAppleReview();
                     resolve();
                 }
             } catch (error) {
                 alert('error');
                 reject("Failed to save content.");
             }
-
         });
     })
 }
