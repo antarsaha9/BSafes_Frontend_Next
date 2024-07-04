@@ -133,7 +133,7 @@ export const getMFADataThunk = () => async (dispatch, getState) => {
             }).then(async data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(MFALoaded({ otpAuthUrl: data.otpAuthUrl, mfaEnabled: data.mfaEnabled }));
+                    dispatch(MFALoaded({ otpAuthUrl: data.otpAuthUrl, key:data.key, mfaEnabled: data.mfaEnabled }));
                     resolve();
                 } else {
                     debugLog(debugOn, "getMFADataThunk failed: ", data.error);

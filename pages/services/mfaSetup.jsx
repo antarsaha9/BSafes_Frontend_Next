@@ -32,6 +32,7 @@ export default function MFASetup() {
     const [extraMFAEnabled, setExtraMFAEnabled] = useState(false);
     const [qrCode, setQrCode] = useState(null);
     const [token, setToken] = useState('');
+    const [keyCopied, setKeyCopied] = useState(false);
     const [showRecoveryWords, setShowRecoveryWords] = useState(false);
     const [copied, setCopied] = useState(false);
     const [downloadUrl, setDownloadUrl] = useState(null);
@@ -71,6 +72,11 @@ export default function MFASetup() {
     const handleHide = () => {
         const result = confirm("Did you save your 2FA recovery phase? Close this?")
         if(result) setShowRecoveryWords(false)
+    }
+
+    const handleCopyKey = () => {
+        navigator.clipboard.writeText(mfa.key);
+        setKeyCopied(true);
     }
 
     const handleCopy = () => {
@@ -162,8 +168,10 @@ export default function MFASetup() {
                             <p>{`Step 1. Open your authenticator app., or download one if you don't have any;`}</p>
                         </Row>
                         <Row>
-                            <p>Step 2. Add an account by scanning the following QR code;</p>
+                            <p>Step 2. Add an account by scanning the following QR code,</p>
                             {qrCode && <img className={BSafesStyle.qrCode} alt="qrcode" src={qrCode} />}
+                            <p>or entering the following key</p>
+                            {qrCode && <p>{mfa.key} <Button variant="light" size="sm" onClick={handleCopyKey}>{keyCopied?'Copied':'Copy'}</Button></p>}
                         </Row>
                         <Row>
                             <p>Step 3. Enter the token displayed on your app, then verify.</p>
