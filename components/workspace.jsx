@@ -183,11 +183,11 @@ export default function Workspace({ readyToList = false }) {
                 </Form>
             </Row>
             <Row className="justify-content-center">
-                { pageOnlyFunction? 
+                {pageOnlyFunction ?
                     <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
                     :
                     <AddAnItemButton addAnItem={addAnItem} />
-                } 
+                }
             </Row>
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} />
@@ -215,7 +215,7 @@ export default function Workspace({ readyToList = false }) {
 
                                 <ul>
                                     <li><strong>Hide</strong> - Click the blue + button to hide a page full of words, videos, photos, and files.</li>
-                                    <li><strong>View</strong> - You can access your hidden pages on any device with a browser. Go to bsafes.com and open your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span>.</li>
+                                    <li><strong>View</strong> - You can access your hidden pages on any device with a browser. Go to bsafes.com and open your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span>.</li>
                                 </ul>
 
                             </Card.Body>
@@ -232,7 +232,8 @@ export default function Workspace({ readyToList = false }) {
                                 <Card.Title>Instructions</Card.Title>
 
                                 <ul>
-                                    <li><strong>Adding items</strong> - Click on the central blue button, then select an item type.</li>
+                                    <li><strong>Get Started</strong> - Add a page item, then write and add photos, videos, and files.</li>
+                                    <li><strong>Adding an items</strong> - Click on the central blue button, then select an item type.</li>
                                     <li><strong>Searching for items</strong> - Enter keywords in central field, then click on search button.</li>
                                     <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
                                     <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>

@@ -103,9 +103,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtonsSM: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
                     toolbarButtonsXS: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo']
                 };
-
         }
-        
+        froalaOptions.videoInsertButtons = ['videoBack', '|', 'videoUpload']
+        froalaOptions.imageInsertButtons = ['imageBack', '|', 'imageUpload']
         $(editorRef.current).froalaEditor(froalaOptions);
         if(editorId === 'content'){
             const contentSample = $(editorRef.current).froalaEditor('html.get');
