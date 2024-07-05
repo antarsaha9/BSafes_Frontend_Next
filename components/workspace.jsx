@@ -230,15 +230,14 @@ export default function Workspace({ readyToList = false }) {
                             <Card.Header>🔰 Welcome!</Card.Header>
                             <Card.Body>
                                 <Card.Title>Instructions</Card.Title>
-
                                 <ul>
                                     <li><strong>Get Started</strong> - Add a page item, then write and add photos, videos, and files.</li>
                                     <li><strong>Adding an items</strong> - Click on the central blue button, then select an item type.</li>
                                     <li><strong>Searching for items</strong> - Enter keywords in central field, then click on search button.</li>
                                     <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
                                     <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
+                                    <li><a href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{}}><strong>Support</strong></a></li>
                                 </ul>
-
                             </Card.Body>
                         </Card>
                     </Col>
