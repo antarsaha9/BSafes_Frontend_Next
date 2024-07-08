@@ -61,6 +61,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const teamsActivity = useSelector(state => state.team.activity);
     const containerActivity = useSelector(state => state.container.activity);
     const pageActivity = useSelector(state => state.page.activity);
+    const iOSActivity = useSelector(state=> state.page.iOSActivity);
 
     const preflightReady = useSelector(state => state.auth.preflightReady);
     const localSessionState = useSelector(state => state.auth.localSessionState);
@@ -391,7 +392,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     return (
         <div>
-            {((accountActivity !== 0) || (authActivity !== 0) || (v1AccountActivity !== 0) || (teamsActivity !== 0) || (containerActivity !== 0) || (pageActivity !== 0)) &&
+            {((accountActivity !== 0) || (authActivity !== 0) || (v1AccountActivity !== 0) || (teamsActivity !== 0) || (containerActivity !== 0) || (pageActivity !== 0) || (iOSActivity !== 0)) &&
                 <div className={BSafesStyle.screenCenter}>
                     <Blocks
                         visible={true}

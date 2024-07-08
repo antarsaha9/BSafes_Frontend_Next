@@ -20,11 +20,11 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk } from "../reduxStore/pageSlice";
+import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const workspaceKey = useSelector(state => state.container.workspaceKey);
@@ -491,8 +491,14 @@ export default function PageCommons() {
         return;
     }
 
+    const iOSActivityWebCallFromIOS = (data) => {
+        debugLog(debugOn, "iOSActivityWebCallFromIOS", data);
+        dispatch(setIOSActivity(data.activity))
+    }
+
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
+        window.bsafesNative.iOSActivityWebCall = iOSActivityWebCallFromIOS
     }, []);
 
     useEffect(() => {
