@@ -498,7 +498,9 @@ export default function PageCommons() {
 
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
-        window.bsafesNative.iOSActivityWebCall = iOSActivityWebCallFromIOS
+        if(process.env.NEXT_PUBLIC_platform ==='iOS') {
+            window.bsafesNative.iOSActivityWebCall = iOSActivityWebCallFromIOS
+        }
     }, []);
 
     useEffect(() => {

@@ -21,7 +21,10 @@ import { newCommentAdded, setChangingPage } from "../../reduxStore/pageSlice";
 import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink, getAnotherItem } from "../../lib/bSafesCommonUI"
 
-const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
+let hideFunction = false;
+if(process.env.NEXT_PUBLIC_platform ==='iOS') {
+    hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1);
+}
 
 export default function Page() {
     const debugOn = false;
