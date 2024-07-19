@@ -61,7 +61,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const teamsActivity = useSelector(state => state.team.activity);
     const containerActivity = useSelector(state => state.container.activity);
     const pageActivity = useSelector(state => state.page.activity);
-    const iOSActivity = useSelector(state=> state.page.iOSActivity);
+    const iOSActivity = useSelector(state => state.page.iOSActivity);
 
     const preflightReady = useSelector(state => state.auth.preflightReady);
     const localSessionState = useSelector(state => state.auth.localSessionState);
@@ -173,6 +173,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             toastId: 'customId'
         });
     };
+
 
     const localSessionStateChanged = () => {
         debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
@@ -505,10 +506,13 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                 </Offcanvas.Body>
                             </Navbar.Offcanvas>
                         }
-                        {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && 
+                        {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) &&
                             <>
-                            <Button variant='link' size='md' className='ms-auto' onClick={refresh} style={{color:'black'}}><i className="fa fa-refresh" aria-hidden="true"></i></Button>
-                            <Button variant='dark' size='sm' className='ms-auto' onClick={logOut}>Lock</Button>
+                                <Button variant='link' size='md' className='ms-auto' onClick={refresh} style={{ color: 'black' }}><i className="fa fa-refresh" aria-hidden="true"></i></Button>
+                                <span className='ms-auto'>
+                                    <a href="https://support.bsafes.com" target='_blank' className='mx-3' style={{color:"#000000"}}><i className="fa fa-lg fa-question" aria-hidden="true"></i></a>
+                                    <Button variant='dark' size='sm' onClick={logOut}>Lock</Button>
+                                </span>
                             </>
                         }
                     </Container>

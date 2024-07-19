@@ -22,8 +22,13 @@ function MyApp({ Component, pageProps }) {
   const dispatch = useDispatch()
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_platform === 'iOS') {
+      const pingFromNative = () => {
+        debugLog(debugOn, "pingFromNative");
+        return "ok"
+      }
       window.bsafesNative = {
-        name: "bsafeNative"
+        name: "bsafeNative",
+        pingFromNative
       }
     }
     if ("serviceWorker" in navigator) {
