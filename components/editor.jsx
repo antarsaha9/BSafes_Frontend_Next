@@ -5,6 +5,7 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Image from 'react-bootstrap/Image';
 
 import jquery from "jquery"
 
@@ -20,7 +21,7 @@ import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
 
 let Excalidraw = null;
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null, showDrawIcon=false, showWriteIcon=false, uploadImages}) {
+export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null, showDrawIcon=false, showWriteIcon=false}) {
     const debugOn = false;    
     const dispatch = useDispatch();
 
@@ -35,7 +36,6 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     const itemIV = useSelector( state => state.page.itemIV);
     const draft = useSelector( state=>state.page.draft);
     const pageType = useSelector( state=>state.page.pageType) || 'WritingPage';
-    const imagePanelsState = useSelector(state => state.page.imagePanels);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
    
@@ -46,10 +46,8 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
 
     const drawing = () => {
-        const match = /image_(?<index>\d+)/gm.exec(editorId);
-        if (match && match.groups) {
-            const ImagePanelIndex = parseInt(match.groups.index, 10);
-            const savedJSON = JSON.parse(imagePanelsState[ImagePanelIndex].file?.metadata?.ExcalidrawSerializedJSON);
+        if (content && content?.metadata?.ExcalidrawSerializedJSON) {
+            const savedJSON = JSON.parse(content?.metadata?.ExcalidrawSerializedJSON);
             const res = Excalidraw.restore(savedJSON);
             function restoreExcalidraw(params) {
                 if (!ExcalidrawRef.current) {
@@ -175,19 +173,14 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 // setCanvasUrl(canvas.toDataURL());
                 canvas.toBlob(blob => {
                     blob.name = "excalidraw.png";
-                    const serialized =  Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState());
+                    const serialized = Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState());
+                    blob.src = window.URL.createObjectURL(blob);
 
                     blob.metadata = {
                         ExcalidrawExportedImage:true,
                         ExcalidrawSerializedJSON:serialized
                     };
-
-                    const match = /image_(?<index>\d+)/gm.exec(editorId);
-                    if (match && match.groups) {
-                        uploadImages([blob], `image_replace_${parseInt(match.groups.index, 10)}`);
-                    } else {
-                        uploadImages([blob], 'top');
-                    }
+                    onContentChanged(editorId, blob);
                 })
             });
         }
@@ -476,12 +469,16 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 </Row>
             }
             {
-                (pageType==='DrawingPage' && (mode=='Writing' || mode === 'Saving')) && 
+                pageType==='DrawingPage' && editorId ==='content' &&
                 <Row className={`${BSafesStyle.editorRow} w-100`} style={{height:'80vh'}}>
+                    {(mode=='Writing' || mode === 'Saving') ?
                     <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi)=>{
                         ExcalidrawRef.current = excalidrawApi;
                     }}
                     />
+                    :
+                    content && <Image style={{objectFit:'scale-down', maxHeight:'100%', maxWidth:'100%'}} alt="Image broken" src={content.src} fluid/>
+                    }
                 </Row>
             }
             </>:""

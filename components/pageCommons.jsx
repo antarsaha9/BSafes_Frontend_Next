@@ -208,8 +208,6 @@ export default function PageCommons() {
             dispatch(setPageType('WritingPage'));
         else if (purpose === 'excalidraw'){
             dispatch(setPageType('DrawingPage'));
-            if (editorId === 'content')
-                editorId = firstExcalidrawImageIndex===-1?editorId:"image_"+firstExcalidrawImageIndex;
         }
         if(editorId === 'content'){
             beforeWritingContent();
@@ -237,7 +235,7 @@ export default function PageCommons() {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
         
         if(editingEditorId === "content") {
-            if(content !== contentEditorContent) {
+            if(pageType === "DrawingPage" || content !== contentEditorContent) {
                 dispatch(saveContentThunk({content, workspaceKey}));
             } else {
                 setEditingEditorMode("ReadOnly");
@@ -283,11 +281,8 @@ export default function PageCommons() {
     const videoPanels = videoPanelsState.map((item, index) =>
         <VideoPanel key={item.queueId} panelIndex={"video_" + index} panel={item} onVideoClicked={onVideoClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
-    const firstExcalidrawImageIndex = imagePanelsState.findIndex(eachPanel => !!eachPanel.file?.metadata?.ExcalidrawExportedImage);
 
-    const imagePanels = imagePanelsState.flatMap((item, index) => {
-        if (index === firstExcalidrawImageIndex)
-            return [];
+    const imagePanels = imagePanelsState.map((item, index) => {
         return <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     }
     )
@@ -751,10 +746,7 @@ export default function PageCommons() {
             </Row>
             <Row className="justify-content-center">
                 <Col className="contenEditorRow"  xs="12" sm="10" >
-                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawIcon={!pageType || pageType==='DrawingPage'} showWriteIcon={!pageType || pageType==='WritingPage'} uploadImages={uploadImages}/>
-                    {pageType === 'DrawingPage' && contentEditorMode === 'ReadOnly' && firstExcalidrawImageIndex>=0 && <>
-                        <ImagePanel panelIndex={"image_" + firstExcalidrawImageIndex} panel={imagePanelsState[firstExcalidrawImageIndex]} onImageClicked={onImageClicked} editorMode={imagePanelsState[firstExcalidrawImageIndex].editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
-                    </>}
+                    <Editor editorId="content" mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed}  writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} showDrawIcon={!pageType || pageType==='DrawingPage'} showWriteIcon={!pageType || pageType==='WritingPage'}/>
                 </Col> 
             </Row>
             <br />
