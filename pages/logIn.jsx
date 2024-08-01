@@ -100,10 +100,9 @@ export default function LogIn() {
                                     <>
                                         <br/>
                                         <br/>
-                                        <br/>
                                     </>
                                 }
-                                <Card className='p-3'>
+                                <Card className='p-3' style={{maxWidth:'420px', margin:'auto'}}>
                                     {process.env.NEXT_PUBLIC_app === 'colors' &&
                                         <>
                                             <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
