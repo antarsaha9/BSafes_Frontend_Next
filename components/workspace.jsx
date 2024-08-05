@@ -25,6 +25,7 @@ import { abort, initPage, clearPage, itemPathLoaded } from '../reduxStore/pageSl
 import { debugLog } from '../lib/helper'
 
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
+const pageOnlyFunction = (process.env.NEXT_PUBLIC_functions.indexOf('pageOnly') !== -1)
 
 export default function Workspace({ readyToList = false }) {
     const debugOn = false;
@@ -161,11 +162,11 @@ export default function Workspace({ readyToList = false }) {
 
     return (
         <Container className={BSafesStyle.container}>
-            {(hideFunction) && 
+            {(hideFunction) &&
                 <>
-                    <br/>
-                    <br/>
-                    <br/>
+                    <br />
+                    <br />
+                    <br />
                 </>
             }
             <Row hidden={hideFunction}>
@@ -182,7 +183,11 @@ export default function Workspace({ readyToList = false }) {
                 </Form>
             </Row>
             <Row className="justify-content-center">
-                <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
+                {pageOnlyFunction ?
+                    <AddAnItemButton forcedType='Page' addAnItem={addAnItem} />
+                    :
+                    <AddAnItemButton addAnItem={addAnItem} />
+                }
             </Row>
 
             <NewItemModal show={showNewItemModal} handleClose={handleClose} handleCreateANewItem={handleCreateANewItem} />
@@ -200,7 +205,7 @@ export default function Workspace({ readyToList = false }) {
                     <br />
                 </>
             }
-            {(listingDone && (mode !== 'search') && (items.length === 0)) &&
+            {(hideFunction) &&
                 <Row className='justify-content-center'>
                     <Col sm={8}>
                         <Card>
@@ -209,12 +214,30 @@ export default function Workspace({ readyToList = false }) {
                                 <Card.Title>Instructions</Card.Title>
 
                                 <ul>
-                                    <li><strong>Adding items</strong> - Click on the central blue button, then select an item type.</li>
+                                    <li><strong>Hide</strong> - Click the blue + button to hide a page full of words, videos, photos, and files.</li>
+                                    <li><strong>View</strong> - You can access your hidden pages on any device with a browser. Go to bsafes.com and open your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span>.</li>
+                                </ul>
+
+                            </Card.Body>
+                        </Card>
+                    </Col>
+                </Row>
+            }
+            {(listingDone && (mode !== 'search') && (items.length === 0)) &&
+                <Row className='justify-content-center'>
+                    <Col sm={8}>
+                        <Card>
+                            <Card.Header>🔰 Welcome!</Card.Header>
+                            <Card.Body>
+                                <Card.Title>Instructions</Card.Title>
+                                <ul>
+                                    <li><strong>Get Started</strong> - Add a page item, then write and add photos, videos, and files.</li>
+                                    <li><strong>Adding an items</strong> - Click on the central blue button, then select an item type.</li>
                                     <li><strong>Searching for items</strong> - Enter keywords in central field, then click on search button.</li>
                                     <li><strong>Opening a new tab</strong> - Click on the blue button on upper right, then select an item.</li>
                                     <li><strong>Lock</strong> - Click on the Lock button on upper right.</li>
+                                    <li><a href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{}}><strong>Support</strong></a></li>
                                 </ul>
-
                             </Card.Body>
                         </Card>
                     </Col>

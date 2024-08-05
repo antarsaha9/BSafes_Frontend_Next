@@ -62,11 +62,6 @@ export default function Home() {
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
 
-    const bsafesNativeToWebCall = () => {
-        console.log('bsafesNativeToWebCall');
-        //alert('bsafesNativeToWebCall');
-    }
-
     const handleUnlock = () => {
         router.push("/logIn");
     }
@@ -505,8 +500,8 @@ export default function Home() {
                             <Link className={BSafesStyle.noUnderline} href='/public/pricing'>
                                 <div className={BSafesStyle.saleBadges}>
                                     <p>
-                                        <span className={BSafesStyle.saleFirstLine}>50GB</span><br />
-                                        <span className={BSafesStyle.saleSecondLine}>$2.95</span><br />
+                                        <span className={BSafesStyle.saleFirstLine}>20GB</span><br />
+                                        <span className={BSafesStyle.saleSecondLine}>$2.99</span><br />
                                         <span className={BSafesStyle.saleThirdLine}>PER MONTH</span><br />
                                         <span className={BSafesStyle.saleForthLine}>30-day free trial</span><br />
                                         <span className={BSafesStyle.saleFifthLine}>More Storage <i className="fa fa-arrow-right" aria-hidden="true"></i></span>

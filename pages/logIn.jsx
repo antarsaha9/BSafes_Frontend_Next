@@ -34,6 +34,7 @@ export default function LogIn() {
     const clientEncryptionKey = useSelector(state => state.auth.clientEncryptionKey);
     const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+    const [toPath, setToPath] = useState(null);
 
     const nicknameChanged = (e) => {
         setNickname(e.target.value);
@@ -68,28 +69,47 @@ export default function LogIn() {
     }
 
     useEffect(() => {
-        //alert(process.env.NEXT_PUBLIC_platform)
+        const queryString = window.location.search;
+        if (queryString) {
+            const params = new URLSearchParams(queryString);
+            const path = params.get("toPath");
+            if (path) {
+                setToPath(path);
+            }
+        }
     }, []);
 
     useEffect(() => {
         if (isLoggedIn) {
-            router.push('/safe');
+            if (toPath) {
+                router.push(toPath);
+            } else {
+                router.push('/safe');
+            }
         }
     }, [isLoggedIn])
 
     return (
-        <div className={`${BSafesStyle.metalBackground} ${BSafesStyle.minHeight100Percent}`}>
+        <div className={`${BSafesStyle.minHeight100Percent}`} style={{backgroundColor:"#F8F9F9"}}>
             <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
                 <div>
                     <Container>
                         <Row className={BSafesStyle.keyPanel}>
                             <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
-                                <Card className='p-3'>
+                                {process.env.NEXT_PUBLIC_app !== 'colors' &&
+                                    <>
+                                        <br/>
+                                        <br/>
+                                    </>
+                                }
+                                <Card className='p-3' style={{maxWidth:'420px', margin:'auto'}}>
                                     {process.env.NEXT_PUBLIC_app === 'colors' &&
-                                        <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                        <>
+                                            <p>This app securely hides your stories, videos, photos, and files using the reliable cloud service BSafes.</p>
+                                            <hr />
+                                        </>
                                     }
-                                    <hr/>
-                                    <h1 className='text-center'>Open Your <span style={{backgroundColor:'#990000', color:'white', fontWeight:'bold', padding:'7px'}}>BSafes</span></h1>
+                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
@@ -120,7 +140,7 @@ export default function LogIn() {
                                         <Col className='text-center'>
                                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
-                                                Own Your <span style={{fontWeight:'bold'}}>BSafes</span>
+                                                Own Your <span style={{ fontWeight: 'bold' }}>BSafes</span>
                                             </Button>
                                         </Col>
                                     </Row>

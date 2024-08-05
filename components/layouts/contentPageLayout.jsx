@@ -9,6 +9,8 @@ import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container'
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
 
@@ -20,6 +22,7 @@ import ItemPath from '../itemPath'
 import ItemsToolbar from '../itemsToolbar'
 import ItemsMovingProgress from '../itemsMovingProgress';
 import PaymentBanner from '../paymentBanner';
+import VisitPaymentBanner from '../visitPaymentBanner';
 import SuspendedModal from '../suspendedModal';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
@@ -51,6 +54,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const [nextRoute, setNextRoute] = useState(null);
 
     const accountState = useSelector(state => state.account.accountState);
+    debugLog(debugOn, "accountState: ", accountState);
     const accountActivity = useSelector(state => state.account.activity);
     const authActivity = useSelector(state => state.auth.activity);
     const authActivityErrors = useSelector(state => state.auth.activityErrors);
@@ -59,6 +63,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const teamsActivity = useSelector(state => state.team.activity);
     const containerActivity = useSelector(state => state.container.activity);
     const pageActivity = useSelector(state => state.page.activity);
+    const iOSActivity = useSelector(state => state.page.iOSActivity);
 
     const preflightReady = useSelector(state => state.auth.preflightReady);
     const localSessionState = useSelector(state => state.auth.localSessionState);
@@ -72,7 +77,11 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const workspaceName = useSelector(state => state.container.workspaceName);
 
-    const displayPaymentBanner = !(router.asPath.startsWith('/services/'));
+    const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
+
+    const refresh = (e) => {
+        router.reload();
+    }
 
     const mfaSetup = (e) => {
         router.push('/services/mfaSetup');
@@ -114,21 +123,24 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const checkIfPublicOrAuthPages = (path) => {
         return (path === '/' ||
-            path === '/logIn' ||
-            path === '/keySetup' ||
+            path.startsWith('/logIn') ||
+            path.startsWith('/keySetup') ||
             path.startsWith('/n/') ||
             path.startsWith('/v1/' ||
                 path.startsWith('/v3')));
     }
 
     const ifRedirectToHome = (path) => {
-        if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && (path !== '/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
+        if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && !path.startsWith('/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
             return true;
         } else return false;
     }
 
     const goHome = () => {
         switch (process.env.NEXT_PUBLIC_app) {
+            case 'bsafes':
+                changePage('/apps/bsafes');
+                break;
             case 'colors':
                 changePage('/apps/colors');
                 break;
@@ -139,11 +151,14 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const goLogin = () => {
         switch (process.env.NEXT_PUBLIC_app) {
+            case 'bsafes':
+                changePage('/apps/bsafes');
+                break;
             case 'colors':
                 changePage('/apps/colors');
                 break;
             default:
-                changePage('/login');
+                changePage('/logIn');
         }
     }
 
@@ -160,6 +175,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             toastId: 'customId'
         });
     };
+
 
     const localSessionStateChanged = () => {
         debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
@@ -297,9 +313,17 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         let nextPage = null;
         switch (v2NextAuthStep.step) {
             case 'Home':
+                let homePath;
+                switch (process.env.NEXT_PUBLIC_app) {
+                    case 'colors':
+                        homePath = '/apps/colors'
+                        break;
+                    default:
+                        homePath = '/'
+                }
                 const path = router.asPath;
-                if (path === '/') break;
-                nextPage = '/';
+                if (path === homePath) break;
+                nextPage = homePath;
                 break;
             case 'MFARequired':
                 nextPage = '/services/mfa';
@@ -320,9 +344,20 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         let nextPage = null;
         switch (nextAuthStep.step) {
             case 'Home':
+                let homePath;
+                switch (process.env.NEXT_PUBLIC_app) {
+                    case 'bsafes':
+                        homePath = '/apps/bsafes'
+                        break;
+                    case 'colors':
+                        homePath = '/apps/colors'
+                        break;
+                    default:
+                        homePath = '/'
+                }
                 const path = router.asPath;
                 if (path === '/logIn' || path.startsWith('/n/')) break;
-                nextPage = '/';
+                nextPage = homePath;
                 break;
             case 'SignIn':
                 nextPage = `/n/${nextAuthStep.nickname}`;
@@ -360,7 +395,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     return (
         <div>
-            {((accountActivity !== 0) || (authActivity !== 0) || (v1AccountActivity !== 0) || (teamsActivity !== 0) || (containerActivity !== 0) || (pageActivity !== 0)) &&
+            {((accountActivity !== 0) || (authActivity !== 0) || (v1AccountActivity !== 0) || (teamsActivity !== 0) || (containerActivity !== 0) || (pageActivity !== 0) || (iOSActivity !== 0)) &&
                 <div className={BSafesStyle.screenCenter}>
                     <Blocks
                         visible={true}
@@ -439,41 +474,49 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             }
             {showNaveBar && (accountVersion === 'v2') &&
                 <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
-                    <Container fluid>
-                        {isLoggedIn &&
-                            <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-false`} />
-                        }
-                        {(localSessionState && localSessionState.authState !== 'MFARequired' && !isLoggedIn) &&
-                            <Navbar.Brand href='/'><h1>BSafes</h1></Navbar.Brand>
-                        }
-                        {(localSessionState && localSessionState.authState === 'MFARequired' && !isLoggedIn) &&
-                            <Navbar.Brand><h2>Security</h2></Navbar.Brand>
-                        }
-                        {isLoggedIn &&
-                            <Navbar.Offcanvas
-                                id={`offcanvasNavbar-expand-false`}
-                                aria-labelledby={`offcanvasNavbarLabel-expand-false`}
-                                placement="start"
-                                style={{ border: 'solid' }}
-                            >
-                                {true && <Offcanvas.Header closeButton style={{ backgroundColor: '#abdbe3' }}>
-                                    <Offcanvas.Title id={`offcanvasNavbarLabel-expand-false`}>
-                                        <h4><i className="fa fa-info-circle" aria-hidden="true" style={{ width: '32px' }}></i> Services</h4>
-                                    </Offcanvas.Title>
-                                </Offcanvas.Header>}
-                                <Offcanvas.Body>
-                                    <Nav className="justify-content-end flex-grow-1 pe-3">
-                                        <p>Your ID</p>
-                                        <p style={{ borderBottom: 'solid', backgroundColor: '#EBF5FB', color: '#063970' }}>{memberId}</p>
-                                        <Nav.Link onClick={payment} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{ width: '32px' }}></i> Payment</h5></Nav.Link>
-                                        <Nav.Link onClick={mfaSetup} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-shield" aria-hidden="true" style={{ width: '32px' }}></i> 2FA</h5></Nav.Link>
-                                        <Nav.Link onClick={dataCenter} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-globe" aria-hidden="true" style={{ width: '32px' }}></i> Data Center</h5></Nav.Link>
-                                        <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{ borderBottom: 'solid' }}><h5><i className="fa fa-question" aria-hidden="true" style={{ width: '32px' }}></i> Support</h5></Nav.Link>
-                                    </Nav>
-                                </Offcanvas.Body>
-                            </Navbar.Offcanvas>
-                        }
-                        {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) && <Button variant='dark' size='sm' className='ms-auto' onClick={logOut}>Lock</Button>}
+                    <Container>
+                        {true && <>
+                            {(localSessionState && localSessionState.authState !== 'MFARequired' && !isLoggedIn) &&
+                                <Navbar.Brand href='/'><h1>BSafes</h1></Navbar.Brand>
+                            }
+                            {(localSessionState && localSessionState.authState === 'MFARequired' && !isLoggedIn) &&
+                                <Navbar.Brand><h2>Security</h2></Navbar.Brand>
+                            }
+                            {isLoggedIn &&
+                                <Navbar.Toggle aria-controls={`offcanvasNavbar-expand-false`} />
+                            }
+                            {isLoggedIn &&
+                                <Navbar.Offcanvas
+                                    id={`offcanvasNavbar-expand-false`}
+                                    aria-labelledby={`offcanvasNavbarLabel-expand-false`}
+                                    placement="start"
+                                    style={{ border: 'solid' }}
+                                >
+                                    {true && <Offcanvas.Header closeButton style={{ backgroundColor: '#abdbe3' }}>
+                                        <Offcanvas.Title id={`offcanvasNavbarLabel-expand-false`}>
+                                            <h4><i className="fa fa-info-circle" aria-hidden="true" style={{ width: '32px' }}></i> Services</h4>
+                                        </Offcanvas.Title>
+                                    </Offcanvas.Header>}
+                                    <Offcanvas.Body>
+                                        <Nav className="justify-content-end flex-grow-1 pe-3">
+                                            <p>Your ID</p>
+                                            <p style={{ borderBottom: 'solid', backgroundColor: '#EBF5FB', color: '#063970' }}>{memberId}</p>
+                                            <Nav.Link onClick={payment} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{ width: '32px' }}></i> Payment</h5></Nav.Link>
+                                            <Nav.Link onClick={mfaSetup} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-shield" aria-hidden="true" style={{ width: '32px' }}></i> 2FA</h5></Nav.Link>
+                                            <Nav.Link onClick={dataCenter} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-globe" aria-hidden="true" style={{ width: '32px' }}></i> Data Center</h5></Nav.Link>
+                                            <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{ borderBottom: 'solid' }}><h5><i className="fa fa-question" aria-hidden="true" style={{ width: '32px' }}></i> Support</h5></Nav.Link>
+                                        </Nav>
+                                    </Offcanvas.Body>
+                                </Navbar.Offcanvas>
+                            }
+                            {((localSessionState && localSessionState.authState === 'MFARequired') || isLoggedIn) &&
+                                <>
+                                    <a href="https://support.bsafes.com" target='_blank' className='' style={{ color: "#000000" }}><i className="fa fa-lg fa-question" aria-hidden="true"></i></a>
+                                    <Button variant='link' size='md' className='' onClick={refresh} style={{ color: 'black' }}><i className="fa fa-refresh" aria-hidden="true"></i></Button>
+                                    <Button variant='dark' size='sm' onClick={logOut}>Lock</Button>
+                                </>
+                            }
+                        </>}
                     </Container>
                 </Navbar>
 
@@ -495,9 +538,20 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsMovingProgress />
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
-            {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
-            {(displayPaymentBanner && accountState === 'suspended') && <SuspendedModal />}
-            {(displayPaymentBanner && accountState === 'overflow') && <SuspendedModal overflow={true} />}
+            {((process.env.NEXT_PUBLIC_platform === 'iOS')) &&
+                <>
+                    {((displayPaymentBanner && accountState === 'upgradeRequired')) && <VisitPaymentBanner upgradeRequired={true} />}
+                    {((displayPaymentBanner && accountState === 'suspended')) && <VisitPaymentBanner suspended={true} />}
+                    {((displayPaymentBanner && accountState === 'overflow')) && <VisitPaymentBanner overflow={true} />}
+                </>
+            }
+            {(process.env.NEXT_PUBLIC_platform === 'Web') &&
+                <>
+                    {displayPaymentBanner && accountState === 'upgradeRequired' && <PaymentBanner upgradeRequired={true} />}
+                    {(displayPaymentBanner && accountState === 'suspended') && <SuspendedModal />}
+                    {(displayPaymentBanner && accountState === 'overflow') && <SuspendedModal overflow={true} />}
+                </>
+            }
         </div>
     )
 };

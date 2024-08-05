@@ -3,7 +3,8 @@ import { createSlice } from '@reduxjs/toolkit';
 import { debugLog, PostCall, getTimeZoneOffset } from '../lib/helper'
 import { accountActivity } from '../lib/activities';
 
-const debugOn = false;
+const debugOn = true;
+const minimumPaymentWaitingTime = 3000;
 
 const initialState = {
     activity: 0,
@@ -24,6 +25,7 @@ const initialState = {
     nearestDataCenter: null,
     stripeClientSecret: null,
     lastPaymentIntentTime: null,
+    appleClientSecret: null,
 }
 
 const accountSlice = createSlice({
@@ -54,10 +56,10 @@ const accountSlice = createSlice({
             state.newAccountCreated = action.payload;
         },
         showApiActivity: (state, action) => {
-            state.activity |= accountActivity.apiCall;
+            state.activity |= accountActivity.ApiCall;
         },
         hideApiActivity: (state, action) => {
-            state.activity &= ~accountActivity.apiCall;
+            state.activity &= ~accountActivity.ApiCall;
         },
         incrementAPICount: (state, action) => {
             state.apiCount++;
@@ -100,11 +102,18 @@ const accountSlice = createSlice({
         },
         setLastPaymentIntentTime: (state, action) => {
             state.lastPaymentIntentTime = action.payload;
+        },
+        setApplePaymentIntentData: (state, action) => {
+            state.appleClientSecret = action.payload.appleClientSecret;
+            state.checkoutItem = action.payload.checkoutItem;
+        },
+        clearAppleClientSecret: (state, action) => {
+            state.appleClientSecret = null;
         }
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime } = accountSlice.actions;
+export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -124,7 +133,7 @@ export const getMFADataThunk = () => async (dispatch, getState) => {
             }).then(async data => {
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
-                    dispatch(MFALoaded({ otpAuthUrl: data.otpAuthUrl, mfaEnabled: data.mfaEnabled }));
+                    dispatch(MFALoaded({ otpAuthUrl: data.otpAuthUrl, key:data.key, mfaEnabled: data.mfaEnabled }));
                     resolve();
                 } else {
                     debugLog(debugOn, "getMFADataThunk failed: ", data.error);
@@ -211,7 +220,7 @@ export const deleteMFAThunk = (data) => async (dispatch, getState) => {
 }
 
 export const getInvoiceThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.getInvoice, () => {
+    newActivity(dispatch, accountActivity.GetInvoice, () => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/getInvoice',
@@ -234,7 +243,7 @@ export const getInvoiceThunk = () => async (dispatch, getState) => {
 }
 
 export const getTransactionsThunk = () => async (dispatch, getState) => {
-    newActivity(dispatch, accountActivity.getTransactions, () => {
+    newActivity(dispatch, accountActivity.GetTransactions, () => {
         return new Promise(async (resolve, reject) => {
             PostCall({
                 api: '/memberAPI/getTransactions',
@@ -350,6 +359,69 @@ export const paymentCompletedThunk = (data) => async (dispatch, getState) => {
     }).catch(error => {
         debugLog(debugOn, "woo... payment completed failed.", error)
     });
+}
+
+export const createApplePaymentIntentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.CreateApplePaymentIntent, () => {
+        return new Promise((resolve, reject) => {
+            const accountState = getState().account;
+            const currentTime = Date.now();
+            const timeDiff = currentTime - (accountState.lastPaymentIntentTime || 0);
+            if(accountState.lastPaymentIntentTime && timeDiff < minimumPaymentWaitingTime ) {
+                debugLog(debugOn, 'duplicated createApplePaymentIntentThunk')
+                resolve();
+                return;
+            }
+            dispatch(setLastPaymentIntentTime(currentTime));
+            dispatch(setApplePaymentIntentData({appleClientSecret: null, checkoutItem:null}))
+            PostCall({
+                api: '/memberAPI/createApplePaymentIntent',
+                body: {
+                    checkoutPlan:data.checkoutPlan
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setApplePaymentIntentData({appleClientSecret: data.client_secret, checkoutItem:data.checkoutItem}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... create Apple payment intent failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... create Apple payment intent failed.", error)
+            });
+        })
+    });
+}
+
+export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.ReportAnAppleTransaction, () => {
+        return new Promise((resolve, reject) => {
+            debugLog(debugOn, "reportAnAppleTransactionThunk, transaction: ", data.transaction)
+            const reportAnAppleTransactionCallback = data.callback;
+            PostCall({
+                api: '/memberAPI/reportAnAppleTransaction',
+                body: {
+                    transaction: data.transaction
+                }
+            }).then(data => {
+                debugLog(debugOn, 'reportAnAppleTransaction: ', data);
+                if (data.status === 'ok') {
+                    reportAnAppleTransactionCallback({status:'ok'});
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... reportAnAppleTransaction failed: ", data.error);
+                    reportAnAppleTransactionCallback({status:'error', error:data.error});
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... reportAnAppleTransaction failed.", error)
+                reportAnAppleTransactionCallback({status:'error', error:'Network Error.'});
+                reject();
+            });
+        })
+    });    
 }
 
 export const accountReducer = accountSlice.reducer;

@@ -1,12 +1,12 @@
 import Router from "next/router";
 import { useEffect, useState } from "react";
-const pathRegex = /^\/((?:activities|box(?:\/contents)?|diary(?:\/(?:contents|p))?|folder(?:\/(?:contents|p))?|notebook(?:\/(?:contents|p))?|n|public|page|tagsInput|team(?:Members)?|trashBox)\/([^\/]+))|(log(?:In|Out)|buyQuotas|keySetup|payment|safe|teams|v1\/keyEnter|v1\/extraMFA)$/
+const pathRegex = /^\/((?:activities|box(?:\/contents)?|diary(?:\/(?:contents|p))?|folder(?:\/(?:contents|p))?|notebook(?:\/(?:contents|p))?|n|public|services|apps|page|tagsInput|team(?:Members)?|trashBox)\/([^\/]+))|(log(?:In|Out)|buyQuotas|keySetup|payment|safe|teams|v1\/keyEnter|v1\/extraMFA)$/
 
 export default function Custom404() {
   const [isNotFound, setIsNotFound] = useState(false);
 
   useEffect(() => {
-    console.log("404: ", window.location.pathname )
+    console.log("404: ", window.location.pathname + window.location.search)
    if (pathRegex.test(window.location.pathname)) {
       console.log("redirect => ", window.location.pathname + window.location.search);
       Router.replace(window.location.pathname + window.location.search); // Redirect to the right page...

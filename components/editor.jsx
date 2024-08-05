@@ -92,7 +92,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'fontFamily', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',
@@ -126,9 +126,9 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtonsSM: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
                     toolbarButtonsXS: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo']
                 };
-
         }
-        
+        froalaOptions.videoInsertButtons = ['videoBack', '|', 'videoUpload']
+        froalaOptions.imageInsertButtons = ['imageBack', '|', 'imageUpload']
         $(editorRef.current).froalaEditor(froalaOptions);
         if(editorId === 'content'){
             const contentSample = $(editorRef.current).froalaEditor('html.get');

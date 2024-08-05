@@ -339,8 +339,64 @@
 .diaryPanel,
 .boxPanel {
   position: relative;
-  min-height: 925px;
+  min-height: 600px;
   padding-bottom: 48px;
+}
+
+@media only screen and (min-width: 400px) {
+  .pagePanel,
+  .containerCoverPanel,
+  .containerContentsPanel,
+  .folderPanel,
+  .notebookPanel,
+  .diaryPanel,
+  .boxPanel {
+    position: relative;
+    min-height: 640px;
+    padding-bottom: 48px;
+  }
+}
+
+@media only screen and (min-width: 560px) {
+  .pagePanel,
+  .containerCoverPanel,
+  .containerContentsPanel,
+  .folderPanel,
+  .notebookPanel,
+  .diaryPanel,
+  .boxPanel {
+    position: relative;
+    min-height: 975px;
+    padding-bottom: 48px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .pagePanel,
+  .containerCoverPanel,
+  .containerContentsPanel,
+  .folderPanel,
+  .notebookPanel,
+  .diaryPanel,
+  .boxPanel {
+    position: relative;
+    min-height: 975px;
+    padding-bottom: 48px;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .pagePanel,
+  .containerCoverPanel,
+  .containerContentsPanel,
+  .folderPanel,
+  .notebookPanel,
+  .diaryPanel,
+  .boxPanel {
+    position: relative;
+    min-height: 1100px;
+    padding-bottom: 48px;
+  }
 }
 
 .containerOpenBtn {

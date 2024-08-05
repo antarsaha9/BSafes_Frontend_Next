@@ -14,12 +14,13 @@ import format from "date-fns/format";
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
+import { accountActivity } from '../../lib/activities'
 import { getInvoiceThunk, getTransactionsThunk, setCheckoutPlan } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
 export default function Payment() {
-    const debugOn = false;
+    const debugOn = true;
 
     const router = useRouter();
     const dispatch = useDispatch();
@@ -43,7 +44,7 @@ export default function Payment() {
     const waived = invoice && invoice.waived;
 
     let storageUsageString;
-    if(storageUsage === 0) {
+    if (storageUsage === 0) {
         storageUsageString = '0.000 MB';
     } else if (storageUsage) {
         if (storageUsage < 1000000) {
@@ -67,7 +68,8 @@ export default function Payment() {
         }
     }
 
-    const dueItems = dues && (dues.length !== 0) && dues.toReversed().map((item, i) =>
+    debugLog(debugOn, "dues", dues)
+    const dueItems = dues && (dues.length !== 0) && dues.reverse().map((item, i) =>
         <tr key={i}>
             <td>{format(new Date(item.dueTime), 'MM/dd/yyyy')}</td>
             <td>{item.monthlyInvoice.requiredStorage}</td>
@@ -92,7 +94,7 @@ export default function Payment() {
         setPlan(e.target.value);
     }
 
-    const handleCheckout = (e) => {
+    const handleCheckout = (e) => {    
         dispatch(setCheckoutPlan(plan));
         router.push('/services/checkout');
     }
@@ -104,6 +106,7 @@ export default function Payment() {
 
     useEffect(() => {
         if (isLoggedIn) {
+            dispatch(setCheckoutPlan(null));
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
         }
@@ -158,7 +161,7 @@ export default function Payment() {
                                         </FormCheck>
                                         <br />
                                         <h4 className='px-4'>{planOptions && `$${planOptions.yearly.totalDues} USD.`}</h4>
-                                        <br/>
+                                        <br />
                                         <p>{planOptions && `For ${yearlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.yearly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
@@ -168,14 +171,14 @@ export default function Payment() {
                                         </FormCheck>
                                         <br />
                                         <h4 className='px-4'>{planOptions && `$${planOptions.monthly.totalDues} USD.`}</h4>
-                                        <br/>
+                                        <br />
                                         <p>{planOptions && `For ${monthlyDuesDuration}.`}</p>
                                         <p>{planOptions && `Next due date:  ${format(new Date(planOptions.monthly.nextDueTime), 'MM/dd/yyyy')}`}</p>
                                         <hr />
                                     </Form.Group>
                                 </Form>
                                 <div className='text-center'>
-                                    <Button onClick={handleCheckout}>Checkout</Button>
+                                    < Button onClick={handleCheckout}>Checkout</Button>
                                 </div>
                             </Col>
                         </Row>
@@ -205,7 +208,7 @@ export default function Payment() {
                 </>}
                 <br />
                 <Row>
-                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow:'auto' }}>
+                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
                         <h1>Transaction History</h1>
                         <Table>
                             <thead>
@@ -231,6 +234,6 @@ export default function Payment() {
                 </Row>
                 <br />
             </Container>
-        </ContentPageLayout>
+        </ContentPageLayout >
     )
 }

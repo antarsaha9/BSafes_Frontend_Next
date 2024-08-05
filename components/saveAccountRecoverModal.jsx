@@ -9,7 +9,7 @@ import Button from 'react-bootstrap/Button'
 
 import { setNewAccountCreated } from '../reduxStore/accountSlice'
 
-export default function SaveAccountRecoveryModal({show = false, onHide}) {
+export default function SaveAccountRecoveryModal({ show = false, onHide }) {
     const dispatch = useDispatch();
 
     const newAccountCreated = useSelector(state => state.account.newAccountCreated);
@@ -18,7 +18,7 @@ export default function SaveAccountRecoveryModal({show = false, onHide}) {
 
     const handleHide = () => {
         const result = confirm("Did you save your account recovery code? Close this?")
-        if(result) {
+        if (result) {
             dispatch(setNewAccountCreated(null));
             onHide();
         }
@@ -48,7 +48,7 @@ export default function SaveAccountRecoveryModal({show = false, onHide}) {
                 <Modal.Body>
                     <Container>
                         <p>Store your account recovery code in a secure location. If you forget your Nickname and Key Password, using account recovery code is the only way to recover your account.</p>
-                        <p>You can either copy the following recovery code and paste it to a safe location</p>
+                        <p>You can copy the following recovery code and paste it to a safe location</p>
                         <hr />
                         <Row>
                             <Col style={{ overflowX: 'auto', overflowY: 'hidden', textOverflow: 'ellipsis' }}>
@@ -62,13 +62,17 @@ export default function SaveAccountRecoveryModal({show = false, onHide}) {
                             </Col>
                         </Row>
                         <br />
-                        <p>or download the following file, rename it, and save it in a secure location.</p>
-                        <Row>
-                            <Col className="d-flex justify-content-center">
-                                {downloadUrl && <a href={downloadUrl} download="account.txt">account.txt</a>}
-                            </Col>
-                        </Row>
-                        <br/>
+                        {process.env.NEXT_PUBLIC_platform !== 'iOS' &&
+                            <>
+                                <p>or download the following file, rename it, and save it in a secure location.</p>
+                                <Row>
+                                    <Col className="d-flex justify-content-center">
+                                        {downloadUrl && <a href={downloadUrl} download="account.txt">account.txt</a>}
+                                    </Col>
+                                </Row>
+                                <br />
+                            </>
+                        }
                         <hr />
                         <Row>
                             <Col className="d-flex justify-content-center">

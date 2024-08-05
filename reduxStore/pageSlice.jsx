@@ -5,13 +5,15 @@ const DOMPurify = require('dompurify');
 
 import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
-import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText } from '../lib/helper'
+import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 const embeddJSONSeperator = '=#=#=embeddJSON=';
+
+const MAX_NUMBER_OF_MEDIA_FILES = 20;
 const debugOn = false;
 
 const initialState = {
@@ -19,6 +21,7 @@ const initialState = {
     activity: 0,
     activityErrors: 0,
     activityErrorMessages: {},
+    iOSActivity: 0,
     changingPage: false,
     activeRequest: null,
     error: null,
@@ -321,6 +324,9 @@ const pageSlice = createSlice({
             state.activity &= ~action.payload.type;
             state.activityErrors |= action.payload.type;
             state.activityErrorMessages[action.payload.type] = action.payload.error;
+        },
+        setIOSActivity: (state, action) => {
+            state.iOSActivity = action.payload;
         },
         setActiveRequest: (state, action) => {
             state.activeRequest = action.payload;
@@ -845,7 +851,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setPageType } = pageSlice.actions;
+export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -2176,6 +2182,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
 
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         dispatch(clearDraft());
+                        requestAppleReview();
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with content.");
@@ -2203,6 +2210,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         content
                     }));
                     dispatch(clearDraft());
+                    requestAppleReview();
                     resolve();
                 }
             } catch (error) {
@@ -2210,11 +2218,13 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                 console.error(error);
                 reject("Failed to save content.");
             }
-
         });
     })
 }
 
+const checkIfTooManyMediaFiles = (pageState, numberOfNewFiles) => {
+    return ((pageState.videoPanels.length + pageState.imagePanels.length + pageState.contentImagesDownloadQueue.length + numberOfNewFiles) > MAX_NUMBER_OF_MEDIA_FILES);
+}
 
 const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }, workspaceKey) => {
     const chunkSize = getEditorConfig().videoChunkSize;
@@ -2409,7 +2419,10 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, video, uploadResult;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-
+    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert("Sorry, please limit the number of media files to 20 per page!")
+        return;     
+    }
     if (state.activity & pageActivity.UploadVideos) {
         dispatch(addUploadVideos({ files: data.files, where: data.where }));
         return;
@@ -2729,7 +2742,10 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-
+    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert("Sorry, please limit the number of media files to 20 per page!")
+        return;     
+    }
     if (state.activity & pageActivity.UploadImages) {
         dispatch(addUploadImages({ files: data.files, where: data.where }));
         return;

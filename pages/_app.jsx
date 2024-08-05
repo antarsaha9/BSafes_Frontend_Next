@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import {reduxWrapper} from '../reduxStore/store'
+import { reduxWrapper } from '../reduxStore/store'
+import { useDispatch } from 'react-redux';
 import Head from "next/head";
 
 import '../styles/materia.css'
@@ -12,22 +13,38 @@ import '../public/css/froalaEditorCSS/video.css'
 import '../styles/bootstrapOverride.css'
 import '../styles/complianceBadge.css'
 
+import { accountActivity } from '../lib/activities';
+import { debugLog } from '../lib/helper';
+import { activityDone } from '../reduxStore/accountSlice';
+
 function MyApp({ Component, pageProps }) {
-  useEffect(()=> {
-    if("serviceWorker" in navigator) {
+  const debugOn = true;
+  const dispatch = useDispatch()
+  useEffect(() => {
+    if (process.env.NEXT_PUBLIC_platform === 'iOS') {
+      const pingFromNative = () => {
+        debugLog(debugOn, "pingFromNative");
+        return "ok"
+      }
+      window.bsafesNative = {
+        name: "bsafeNative",
+        pingFromNative
+      }
+    }
+    if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceWorkerV210.js?v210", {
         scope: "/",
       }).then(
-          function(registration) {
-            console.log("Service worker registration successful with scope: ", registration.scope);
-              //registration.active.postMessage(
-              //  "Test message sent immediately after creation"
-              //);
-          },
-          function(err) {
-            console.log("Service worker registration failed: ", err)
-          }
-      )  
+        function (registration) {
+          console.log("Service worker registration successful with scope: ", registration.scope);
+          //registration.active.postMessage(
+          //  "Test message sent immediately after creation"
+          //);
+        },
+        function (err) {
+          console.log("Service worker registration failed: ", err)
+        }
+      )
     }
   }, [])
   return (
@@ -41,7 +58,7 @@ function MyApp({ Component, pageProps }) {
       </Head>
       <Component {...pageProps} />
     </>
-    
+
   )
 }
 

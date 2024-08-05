@@ -32,7 +32,7 @@ export default function PaymentBanner({ upgradeRequired = false }) {
                         <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                        {dueDateString && <p>{`Hello, just wanted to remind you that your account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
+                        {dueDateString && <p>{`Hello, just wanted to remind you that your BSafes account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
                         <div className="text-center">
                             <Button onClick={handlePay}>Pay</Button>
                         </div>

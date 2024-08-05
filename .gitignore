@@ -34,4 +34,7 @@ yarn-error.log*
 
 # confidentials
 buildAndAddSri
-runForWeb
+buildForIOS
+buildForIOSColors
+runForIOS
+runForWebColors
