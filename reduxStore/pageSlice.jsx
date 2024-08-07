@@ -12,7 +12,7 @@ import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } f
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 
-const MAX_NUMBER_OF_MEDIA_FILES = 20;
+const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
 
 const initialState = {

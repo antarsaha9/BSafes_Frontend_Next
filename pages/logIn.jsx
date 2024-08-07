@@ -16,6 +16,7 @@ import { debugLog } from '../lib/helper'
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import KeyInput from "../components/keyInput";
 import RecoverAccountModal from '../components/recoverAccountModal';
+import Turnstile from '../components/turnstile'; 
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
@@ -121,6 +122,7 @@ export default function LogIn() {
                                             <KeyInput onKeyChanged={keyPasswordChanged} recoveredKeyPassword={keyPassword} />
                                         </Form.Group>
                                     </Form>
+                                    {false && <Turnstile />}
                                     <Row className='p-2'>
                                         <Col className='text-center'>
                                             <Button variant="dark" onClick={handleSubmit} disabled={activity === "LoggingIn"}>
