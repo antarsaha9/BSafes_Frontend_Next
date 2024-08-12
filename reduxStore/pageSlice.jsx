@@ -2336,7 +2336,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
     state = getState().page;
     workspaceKey = data.workspaceKey;
     if(checkIfTooManyMediaFiles(state, data.files.length)) {
-        alert("Sorry, please limit the number of media files to 20 per page!")
+        alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
         return;     
     }
     if (state.activity & pageActivity.UploadVideos) {
@@ -2659,7 +2659,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     state = getState().page;
     workspaceKey = data.workspaceKey;
     if(checkIfTooManyMediaFiles(state, data.files.length)) {
-        alert("Sorry, please limit the number of media files to 20 per page!")
+        alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
         return;     
     }
     if (state.activity & pageActivity.UploadImages) {

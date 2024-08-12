@@ -4,6 +4,8 @@
  * Copyright 2014-2017 Froala Labs
  */
 
+const { downScaleImage } = require('./bsafesAPIHooks');
+
 (function (factory) {
 
     if (typeof define === 'function' && define.amd) {
@@ -1050,11 +1052,11 @@
       }
 
       var reader = new FileReader();
-      var $img;
+      var img, $img, exifOrientation;
+      var link = window.URL.createObjectURL(image);
 
-      reader.addEventListener('load', function () {
-				imageDataInBinaryString = reader.result;			
-        var link = window.URL.createObjectURL(image);
+      const imageLoaded = async () => {
+				imageDataInBinaryString = await downScaleImage(img, exifOrientation, 720);;
 
 	      if (!$image_placeholder) {
   	      $img = _addImage(link, null, _sendRequest);
@@ -1070,9 +1072,11 @@
           $image_placeholder.data('fr-old-src', $image_placeholder.attr('src'));
           $image_placeholder.attr('src', link);
         }
-      });
+      };
 
-			reader.readAsBinaryString(image);
+      img = new Image();
+      img.src = link;
+			img.onload = imageLoaded;
 			editor.popups.hide('image.insert');
     }
 

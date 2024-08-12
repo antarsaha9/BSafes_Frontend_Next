@@ -16,7 +16,7 @@ import { getEditorConfig } from "../lib/bSafesCommonUI";
 import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
 import { putS3Object } from "../lib/s3Helper";
 import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
-import { rotateImage } from '../lib/wnImage';
+import { rotateImage, downScaleImage } from '../lib/wnImage';
 
 import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
@@ -188,6 +188,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
         window.bsafesFroala.rotateImage = rotateImageHook;
+        window.bsafesFroala.downScaleImage = downScaleImageHook;
         window.bsafesFroala.convertUint8ArrayToBinaryString = convertUint8ArrayToBinaryString;
         window.bsafesFroala.compareArraryBufferAndUnit8Array = compareArraryBufferAndUnit8ArrayHook;
         window.bsafesFroala.encryptBinaryString = encryptBinaryStringHook;
@@ -270,6 +271,19 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             debugLog(debugOn, 'rotateImage error:', error)
             callback(error);
         }
+    }
+
+    const downScaleImageHook = (img, exifOrientation, size) => {
+        return new Promise( async (resolve, reject) => {
+            try {
+                const result = await downScaleImage(img, exifOrientation, size);
+                debugLog(debugOn, 'downScaleImage done');
+                resolve(result)
+            } catch(error) {
+                debugLog(debugOn, 'downScaleImage error:', error)
+                reject(error);
+            }
+        });
     }
 
     const compareArraryBufferAndUnit8ArrayHook = (thisBuffer, thisArray) => {
