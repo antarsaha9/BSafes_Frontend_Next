@@ -59,7 +59,7 @@ const { downScaleImage } = require('./bsafesAPIHooks');
     imageResize: true,
     imageResizeWithPercent: false,
     imageRoundPercent: false,
-    imageDefaultWidth: 300,
+    //imageDefaultWidth: 300,
     imageDefaultAlign: 'center',
     imageDefaultDisplay: 'block',
     imageSplitHTML: false,
