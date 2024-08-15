@@ -2481,7 +2481,8 @@ const uploadAnImage = async (dispatch, state, file) => {
     const downscaleImgAndEncryptInUint8Array = (size) => {
         return new Promise(async (resolve, reject) => {
             try {
-                const originalStr = await downScaleImage(img, exifOrientation, size);
+                const result = await downScaleImage(img, exifOrientation, size);
+                const originalStr = result.byteString;
                 const encryptedStr = encryptLargeBinaryString(originalStr, state.itemKey);
                 resolve(encryptedStr);
             } catch (error) {

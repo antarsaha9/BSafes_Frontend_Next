@@ -935,12 +935,11 @@ const { downScaleImage } = require('./bsafesAPIHooks');
      */
     function _startUpload (image, $image_placeholder) {
 			var imageDataInBinaryString;
+      var imageWidth, imageHeight;
       var s3ObjectSize;
 			var exifOrientation;
 
       function _sendRequest () {
-				var imageWidth = this.width;
-        var imageHeight = this.height;
 	
 				var $img = $(this);
 
@@ -1056,7 +1055,10 @@ const { downScaleImage } = require('./bsafesAPIHooks');
       var link = window.URL.createObjectURL(image);
 
       const imageLoaded = async () => {
-				imageDataInBinaryString = await downScaleImage(img, exifOrientation, 720);;
+				const result = await downScaleImage(img, exifOrientation, 720);
+        imageDataInBinaryString = result.byteString;
+        imageWidth = result.width;
+        imageHeight = result.height;
 
 	      if (!$image_placeholder) {
   	      $img = _addImage(link, null, _sendRequest);

@@ -479,6 +479,34 @@ export default function PageCommons() {
         return;
     }
 
+    const buildContentImagesGallery = (id) => {
+        debugLog(debugOn, "buildContentImagesGallery");
+        const slides = [];
+        let startingIndex;
+        const images = document.querySelectorAll(".bSafesImage");
+        images.forEach((image) => {
+            if(image.src.startsWith("blob")) {
+                const item = {};
+                item.src = image.src;
+                item.w = image.width;
+                item.h = image.height;
+                slides.push(item);
+                if((image.id === id)){
+                    startingIndex = slides.length - 1;
+                }
+            }
+        });
+        const pswpElement = pswpRef.current;
+        const options = {
+            // optionName: 'option value'
+            // for example:
+            history: false,
+            index: startingIndex // start at first slide
+        };
+        const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
+        gallery.init();
+    }
+
     const handleContentReadOnlyModeReady = (e) => {
         const bSafesDownloadVideoImages = document.getElementsByClassName('bSafesDownloadVideo');
         for (let i = 0; i < bSafesDownloadVideoImages.length; i++) {
@@ -488,6 +516,16 @@ export default function PageCommons() {
             containerElement.appendChild(playVideoElement);
             playVideoElement.onclick = handleVideoClick;
         }
+
+        const images = document.querySelectorAll(".bSafesImage");
+        images.forEach((item) => {
+            if(item.src.startsWith("blob")) {
+                item.onclick = () => {
+                    buildContentImagesGallery(item.id);
+                }
+            }
+        });
+
         return;
     }
 
@@ -586,6 +624,12 @@ export default function PageCommons() {
 
                     }
                     if (contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
+                } else  {
+                    imageElement.onload = () => {     
+                        imageElement.onclick = () => {
+                            buildContentImagesGallery(imageElement.id);
+                        }
+                    }
                 }
                 dispatch(updateContentImagesDisplayIndex(i + 1));
             }
