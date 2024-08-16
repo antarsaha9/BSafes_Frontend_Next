@@ -113,7 +113,7 @@ export default function KeySetup() {
                     <Row className={BSafesStyle.keyPanel}>
                         <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                             <Card className='p-3'>
-                                <h1>Own Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
+                                <h1>Own Your <span style={{ backgroundColor: 'yellow', color: 'black', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
                                 <hr></hr>
                                 <Form>
                                     <Form.Group className="mb-3" controlId="Nickname">

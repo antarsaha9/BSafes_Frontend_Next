@@ -760,14 +760,12 @@
 .ribbonBanner {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
 }
 
 @media only screen and (min-width: 768px) {
   .ribbonBanner {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -775,7 +773,6 @@
   .ribbonBanner {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -783,7 +780,6 @@
   .ribbonBanner {
     font-size: 26px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -794,22 +790,21 @@
   padding-right: calc(var(--r) + .25em);
   line-height: 1.8;
   clip-path: polygon(-100vw 0, calc(100% - var(--r)) 0, 100% 50%, calc(100% - var(--r)) 100%, -100vw 100%);
-  border-image: conic-gradient(#2a5fac 0 0) fill 0;
+  border-image: conic-gradient(rgb(255, 41, 159) 0 0) fill 0;
   width: fit-content;
+  color: white;
 }
 
 /* HTML: <div class="ribbon">Your text content</div> */
 .ribbonBannerRight {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
 }
 
 @media only screen and (min-width: 768px) {
   .ribbonBannerRight {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -817,7 +812,6 @@
   .ribbonBannerRight {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -825,7 +819,6 @@
   .ribbonBannerRight {
     font-size: 26px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -837,8 +830,9 @@
   padding-right: calc(var(--r) + .25em);
   line-height: 1.8;
   clip-path: polygon(-100vw 0, calc(100% - var(--r)) 0, 100% 50%, calc(100% - var(--r)) 100%, -100vw 100%);
-  border-image: conic-gradient(#ff5800 0 0) fill 0;
+  border-image: conic-gradient(yellow 0 0) fill 0;
   width: fit-content;
+  color: black;
 }
 
 .serviceIntroBackground {

@@ -110,7 +110,7 @@ export default function LogIn() {
                                             <hr />
                                         </>
                                     }
-                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
+                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: 'yellow', color: 'black', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">

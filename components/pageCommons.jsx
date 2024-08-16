@@ -479,19 +479,23 @@ export default function PageCommons() {
         return;
     }
 
-    const buildContentImagesGallery = (id) => {
+    const buildContentImagesGallery = (selectedId) => {
         debugLog(debugOn, "buildContentImagesGallery");
         const slides = [];
         let startingIndex;
         const images = document.querySelectorAll(".bSafesImage");
         images.forEach((image) => {
-            if(image.src.startsWith("blob")) {
+            if (image.src.startsWith("blob")) {
                 const item = {};
+                const id = image.id;
+                const idParts = id.split('&');
+                const dimension = idParts[1];
+                const dimensionParts = dimension.split('x');
                 item.src = image.src;
-                item.w = image.width;
-                item.h = image.height;
+                item.w = dimensionParts[0];
+                item.h = dimensionParts[1];
                 slides.push(item);
-                if((image.id === id)){
+                if ((image.id === selectedId)) {
                     startingIndex = slides.length - 1;
                 }
             }
@@ -519,7 +523,7 @@ export default function PageCommons() {
 
         const images = document.querySelectorAll(".bSafesImage");
         images.forEach((item) => {
-            if(item.src.startsWith("blob")) {
+            if (item.src.startsWith("blob")) {
                 item.onclick = () => {
                     buildContentImagesGallery(item.id);
                 }
@@ -536,7 +540,7 @@ export default function PageCommons() {
 
     useEffect(() => {
         debugLog(debugOn, "pageCommons mounted.");
-        if(process.env.NEXT_PUBLIC_platform ==='iOS') {
+        if (process.env.NEXT_PUBLIC_platform === 'iOS') {
             window.bsafesNative.iOSActivityWebCall = iOSActivityWebCallFromIOS
         }
     }, []);
@@ -624,8 +628,8 @@ export default function PageCommons() {
 
                     }
                     if (contentEditorMode === 'ReadOnly') playVideoCenterElement.onclick = handleVideoClick;
-                } else  {
-                    imageElement.onload = () => {     
+                } else {
+                    imageElement.onload = () => {
                         imageElement.onclick = () => {
                             buildContentImagesGallery(imageElement.id);
                         }

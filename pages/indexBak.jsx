@@ -97,17 +97,17 @@ export default function Home() {
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderWidth: '1px', borderColor: '#5499C7' }}>Software made in USA, Taiwan, France & India. Since 2017</span></p>
                             </div>
                             <div className={bannerFont.className} style={{ padding: '10px', color: 'black' }}>
-                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight: '900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{ backgroundColor: 'yellow' }}>Sensitive Information</span> in an <span style={{ backgroundColor: 'yellow' }}>AI-Driven World</span></h1>
+                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight: '900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{ backgroundColor: 'yellow' }}>Sensitive Information</span> in an <span style={{ backgroundColor: 'orange' }}>AI-Driven World</span></h1>
                             </div>
                         </Col>
                     </Row>
                 </Container>
             </div>
-            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'red' }}>BSafes Makes it Simple!</span>&nbsp;</div>
-            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: 'yellow' }}>Any Media</span>, Anytime, Anywhere</div>
+            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'yellow' }}>BSafes Makes it Simple!</span>&nbsp;</div>
+            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: '#DFFF00' }}>Any Media</span>, Anytime, Anywhere</div>
             <div className='mt-3 mb-3 text-center'>
                 <h1 style={{ fontSize: '48px' }}>📖</h1>
-                <Link href='https://support.bsafes.com/category/get-started' target='_blank' style={{ textDecoration: 'none', fontSize: '1.0rem', backgroundColor: 'yellow', color: 'black', padding: '10px', position: 'relative', zIndex: '1000' }}>Get Started Guide <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>
+                <Link href='https://support.bsafes.com/category/get-started' target='_blank' style={{ textDecoration: 'none', fontSize: '1.0rem', backgroundColor: '#006bce', color: 'white', padding: '10px', position: 'relative', zIndex: '1000' }}>Get Started Guide <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>
             </div>
             <div className={BSafesStyle.carouselRow}>
                 <Carousel data-bs-theme="dark">
@@ -138,7 +138,7 @@ export default function Home() {
                 <Container>
                     <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h3 className='text-center display-3' style={{ fontWeight: '450', color: 'black' }}>Write, Add Media, and <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>One-Click</span> <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>Encryption+Backup</span></h3>
+                            <h3 className='text-center display-3' style={{ fontWeight: '450', color: 'black' }}>Write, Add Media, and <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>One-Click</span> <span style={{ backgroundColor: 'red', color: 'white', padding: '3px' }}>Encryption+Backup</span></h3>
                             <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and any files. No one else can see your data, including BSafes staff and server machines.</p>
                             <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>

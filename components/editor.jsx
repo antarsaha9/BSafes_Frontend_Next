@@ -80,6 +80,7 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                         "'Oswald Variable', sans-serif": 'Oswald',
                         "'Roboto Flex Variable', sans-serif": 'Roboto Flex',
                         "'Times New Roman',Times,serif": 'Times New Roman',
+                        "'Dancing Script Variable', cursive": 'Dancing Script',
                     },
                     fontFamilySelection: false,
                     tableStyles: {
