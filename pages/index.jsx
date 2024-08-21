@@ -138,7 +138,7 @@ export default function Home() {
                 <Container>
                     <Row className={`${BSafesStyle.descriptionRow} ${monteserrat.className}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h3 className='text-center display-3' style={{ fontWeight: '450', color: 'black' }}>Write, Add Media, and <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>One-Click</span> <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>Encryption+Backup</span></h3>
+                            <h3 className='text-center display-3' style={{ fontWeight: '450', color: 'black' }}>Write, Add Media, and <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>One-Click</span> <span style={{ backgroundColor: 'yellow', color: 'black', padding: '3px' }}>Encryption + Backup</span></h3>
                             <p className={BSafesStyle.descriptionText}>BSafes is an end-to-end encrypted platform for writing, record keeping, and secure storage of visual-rich media and any files. No one else can see your data, including BSafes staff and server machines.</p>
                             <h2 hidden><Badge pill bg="warning">Coming soon</Badge></h2>
                         </Col>
@@ -149,7 +149,7 @@ export default function Home() {
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <h3 className='text-center display-6' style={{ fontWeight: '450', color: 'black' }}>Your <span style={{ textDecoration: 'underline yellow', textDecorationThickness: '10px' }}>Private Story</span> Deserves Absolution Protection</h3>
-                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your information is fully encrypted and secure. From your relationships to your finance, health, family, and business, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
+                            <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your information is fully encrypted and secure. From your health to your relationships, family, business and finance, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>
                     <br />
