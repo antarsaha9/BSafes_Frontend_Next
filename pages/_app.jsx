@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { reduxWrapper } from '../reduxStore/store'
 import { useDispatch } from 'react-redux';
 import Head from "next/head";
+import Script from 'next/script';
 
 import '../styles/materia.css'
 import '../styles/react-tagsinput-bsafes.css'
@@ -32,7 +33,7 @@ function MyApp({ Component, pageProps }) {
       }
     }
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV210.js?v210", {
+      navigator.serviceWorker.register("./serviceWorkerV210.js?v210", { //
         scope: "/",
       }).then(
         function (registration) {
@@ -58,6 +59,10 @@ function MyApp({ Component, pageProps }) {
         <link rel='icon' href='/favicon.png' />
       </Head>
       <Component {...pageProps} />
+      <Script
+        strategy="beforeInteractive"
+        src="/js/globalThis_0.4.4_min.js"
+      ></Script>
     </>
 
   )

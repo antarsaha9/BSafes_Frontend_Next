@@ -818,7 +818,7 @@ export default function PageCommons() {
             <br />
             {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
                 <div className="images">
-                    <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
+                    <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" capture className="d-none editControl" id="images" />
                     <Row>
                         <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${imagesDragActive ? BSafesStyle.imagesDragDropZoneActive : BSafesStyle.imagesDragDropZone}`}>
                             <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
