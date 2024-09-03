@@ -385,8 +385,13 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
         }
     }, [preflightReady, accountState])
 
+
+    const [mounted, setMounted] = useState(true);
     useEffect(() => {
-        if (authActivityErrors) {
+        if (mounted) {
+            setMounted(false)
+        }
+        else if (authActivityErrors) {
             const errorMessages = getErrorMessages('Auth', authActivityErrors, authActivityErrorCodes);
             //notify();
             if (errorMessages.length) setTimeout(errorNotice(errorMessages[0]), 500);
