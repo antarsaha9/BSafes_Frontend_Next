@@ -39,6 +39,11 @@ const accountSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetAccountActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
             state.activityErrorMessages[action.payload] = '';
@@ -113,7 +118,7 @@ const accountSlice = createSlice({
     }
 });
 
-export const { cleanAccountSlice, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret } = accountSlice.actions;
+export const { cleanAccountSlice, resetAccountActivity, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

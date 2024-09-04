@@ -50,6 +50,11 @@ const authSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetAuthActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
             state.activityErrorCodes[action.payload] = '';
@@ -123,7 +128,7 @@ const authSlice = createSlice({
     }
 });
 
-export const { cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa } = authSlice.actions;
+export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

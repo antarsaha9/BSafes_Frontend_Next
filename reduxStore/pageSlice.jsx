@@ -289,6 +289,27 @@ const pageSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetPageActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
+        activityStart: (state, action) => {
+            if (state.aborted) return;
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload] = '';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            if (state.aborted) return;
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            if (state.aborted) return;
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
+        },
         clearPage: (state, action) => {
             const stateKeys = Object.keys(initialState);
             for (let i = 0; i < stateKeys.length; i++) {
@@ -306,22 +327,6 @@ const pageSlice = createSlice({
         abort: (state, action) => {
             state.aborted = true;
             debugLog(debugOn, "abort: ", state.aborted);
-        },
-        activityStart: (state, action) => {
-            if (state.aborted) return;
-            state.activityErrors &= ~action.payload;
-            state.activityErrorMessages[action.payload] = '';
-            state.activity |= action.payload;
-        },
-        activityDone: (state, action) => {
-            if (state.aborted) return;
-            state.activity &= ~action.payload;
-        },
-        activityError: (state, action) => {
-            if (state.aborted) return;
-            state.activity &= ~action.payload.type;
-            state.activityErrors |= action.payload.type;
-            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         setIOSActivity: (state, action) => {
             state.iOSActivity = action.payload;
@@ -841,7 +846,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {

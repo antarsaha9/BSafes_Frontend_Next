@@ -31,14 +31,19 @@ import BSafesStyle from '../../styles/BSafes.module.css'
 import { debugLog } from '../../lib/helper';
 import { getErrorMessages } from '../../lib/activities';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
-import { setAccountHashVerified } from '../../reduxStore/accountSlice';
+import { resetAccountActivity, setAccountHashVerified } from '../../reduxStore/accountSlice';
+import { resetAuthActivity, preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
+import { resetContainerActivity } from '../../reduxStore/containerSlice';
+import { resetPageActivity } from '../../reduxStore/pageSlice';
+import { resetTeamActivity } from '../../reduxStore/teamSlice';
+import { resetV1AccountActivity } from '../../reduxStore/v1AccountSlice';
+
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(false, "Rendering ContentPageLayout");
 
     SafeArea.getSafeAreaInsets().then(({ insets }) => {
@@ -79,6 +84,15 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const workspaceName = useSelector(state => state.container.workspaceName);
 
     const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
+
+    const resetAllActivities = () => {
+        dispatch(resetAccountActivity());
+        dispatch(resetAuthActivity());
+        dispatch(resetContainerActivity());
+        dispatch(resetPageActivity());
+        dispatch(resetTeamActivity());
+        dispatch(resetV1AccountActivity());
+    }
 
     const refresh = (e) => {
         router.reload();
@@ -266,7 +280,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     }, [router.asPath]);
 
     useEffect(() => {
-
         dispatch(setPreflightReady(false));
         dispatch(setAccountHashVerified(null));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
@@ -274,6 +287,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
         const handleRouteChange = (url, { shallow }) => {
             debugLog(debugOn, "Route is going to change ...")
+            resetAllActivities()
             dispatch(setPreflightReady(false));
             dispatch(setLocalSessionState(null));
         }

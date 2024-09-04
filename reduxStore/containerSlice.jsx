@@ -94,6 +94,11 @@ const containerSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetContainerActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
             state.activityErrorMessages[action.payload]='';
@@ -280,7 +285,7 @@ const containerSlice = createSlice({
     }
 })
 
-export const {cleanContainerSlice, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed, setListingDone} = containerSlice.actions;
+export const {cleanContainerSlice, resetContainerActivity, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed, setListingDone} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

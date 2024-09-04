@@ -37,6 +37,11 @@ const teamSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetTeamActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
             state.activityErrorMessages[action.payload]='';
@@ -102,7 +107,7 @@ const teamSlice = createSlice({
     }
 })
 
-export const { cleanTeamSlice, activityStart, activityDone, activityError, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
+export const { cleanTeamSlice, resetTeamActivity, activityStart, activityDone, activityError, setActivityResult, teamsLoaded, newTeamAddedOnTop, newTeamAddedBefore, newTeamAddedAfter, setTeamName, setTeamData, clearMemberSearchResult, setMemberSearchValue, setMemberSearchResult, setTeamMembers, newTeamMemberAdded, teamMemberDeleted, clearTeamMembers } = teamSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
