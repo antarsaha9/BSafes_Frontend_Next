@@ -1,15 +1,24 @@
 package com.example.bsafesandroid
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ServiceWorkerClient
 import android.webkit.ServiceWorkerController
+import android.webkit.ValueCallback
+import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewAssetLoader.PathHandler
@@ -20,6 +29,14 @@ import java.io.InputStream
 @SuppressLint("RestrictedApi")
 @Composable
 fun ComposeWrappedWebView() {
+    var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
+
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { selectedUri ->
+            println("File selected = $selectedUri")
+            filePathCallback?.onReceiveValue(selectedUri.toTypedArray())
+            filePathCallback = null
+        }
     AndroidView(
         factory = { context ->
             val scheme = "https"
@@ -84,6 +101,34 @@ fun ComposeWrappedWebView() {
                         request: WebResourceRequest
                     ): WebResourceResponse? {
                         return assetLoader.shouldInterceptRequest(request.url)
+                    }
+                }
+
+                webChromeClient = object : WebChromeClient() {
+                    override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage): Boolean {
+                        Log.d("WebView", consoleMessage.message())
+                        return true
+                    }
+
+
+                    override fun onShowFileChooser(
+                        webView: WebView?,
+                        filePathCallbackk: ValueCallback<Array<Uri>>?,
+                        fileChooserParams: FileChooserParams?
+                    ): Boolean {
+
+                        Log.d("WebView", fileChooserParams?.mode.toString())
+                        Log.d("WebView", fileChooserParams?.acceptTypes.toString())
+
+                        if (fileChooserParams?.acceptTypes?.isNotEmpty() == true) {
+                            val mimetypes =
+                                if (fileChooserParams.acceptTypes.size == 1 && fileChooserParams.acceptTypes[0] == ""
+                                ) arrayOf("*/*",) else fileChooserParams.acceptTypes!!
+                            filePathCallback = filePathCallbackk
+                            launcher.launch(mimetypes)
+                            return true
+                        } else return false
+
                     }
                 }
 
