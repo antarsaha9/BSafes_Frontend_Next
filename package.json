@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "sync:android":"npm run clean-android-asset && npm run copy-asset-to-android",
+    "clean-android-asset":"rm -r android-native/app/src/main/assets/dist/*",
+    "copy-asset-to-android":"cp out/. android-native/app/src/main/assets/dist/ -r"
   },
   "dependencies": {
     "@fontsource-variable/dancing-script": "^5.0.19",

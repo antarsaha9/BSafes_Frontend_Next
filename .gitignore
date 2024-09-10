@@ -38,3 +38,9 @@ buildForIOS
 buildForIOSColors
 runForIOS
 runForWebColors
+
+
+# android
+android/
+web/
+certificates

@@ -1,6 +1,10 @@
 package com.example.bsafesandroid
 
+import android.annotation.SuppressLint
+import android.util.Log
 import android.view.ViewGroup
+import android.webkit.ServiceWorkerClient
+import android.webkit.ServiceWorkerController
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
@@ -8,14 +12,50 @@ import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
+import androidx.webkit.WebViewAssetLoader.PathHandler
+import androidx.webkit.internal.AssetHelper
+import java.io.InputStream
 
+
+@SuppressLint("RestrictedApi")
 @Composable
 fun ComposeWrappedWebView() {
     AndroidView(
         factory = { context ->
+            val scheme = "https"
+            val domain = "android.bsafes.com"
             val assetLoader = WebViewAssetLoader.Builder()
-                .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(context))
+                .setDomain(domain)
+                .addPathHandler("/", PathHandler { path ->
+                    var usePath = path
+                    try {
+                        if (path.isEmpty()) usePath = "index.html"
+                        val inputStream: InputStream = context.assets.open("dist/$usePath")
+                        val mimeType = AssetHelper.guessMimeType(usePath)
+
+                        return@PathHandler WebResourceResponse(mimeType, null, inputStream)
+                    } catch (e: Exception) {
+                        Log.e("AssetLoader", "Error loading asset: $path", e)
+                    }
+                    null
+                })
                 .build()
+
+
+            val swController = ServiceWorkerController.getInstance()
+            swController.setServiceWorkerClient(object : ServiceWorkerClient() {
+                // I don't know how to reuse this variable, so I wrote it twice
+//                private val assetLoader: WebViewAssetLoader = assetLoaderBuilder.build()
+                override fun shouldInterceptRequest(request: WebResourceRequest): WebResourceResponse? {
+                    // Capture request here and generate response or allow pass-through
+                    return assetLoader.shouldInterceptRequest(request.url)
+                }
+            })
+
+
+//            val assetLoader = WebViewAssetLoader.Builder()
+//                .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(context))
+//                .build()
 
             WebView(context).apply {
                 layoutParams = ViewGroup.LayoutParams(
@@ -32,8 +72,13 @@ fun ComposeWrappedWebView() {
                  */
                 @Suppress("SetJavaScriptEnabled")
                 settings.javaScriptEnabled = true
-
-                webViewClient =  object : WebViewClient() {
+                settings.domStorageEnabled = true
+                settings.allowFileAccess = true
+                settings.allowContentAccess = true
+                settings.loadWithOverviewMode = true
+                settings.useWideViewPort = true
+                settings.setSupportZoom(false)
+                webViewClient = object : WebViewClient() {
                     override fun shouldInterceptRequest(
                         view: WebView,
                         request: WebResourceRequest
@@ -48,7 +93,7 @@ fun ComposeWrappedWebView() {
                  * Learn more about the WebViewAssetLoader here:
                  * https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader
                  */
-                loadUrl("https://appassets.androidplatform.net/assets/dist/index.html")
+                loadUrl("$scheme://$domain")
             }
         },
         update = {}

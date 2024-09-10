@@ -13,6 +13,10 @@ android {
     namespace = "com.example.bsafesandroid"
     compileSdk = 34
 
+    androidResources {
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
+    }   
+
     defaultConfig {
         applicationId = "com.example.bsafesandroid"
         minSdk = 24
@@ -134,13 +138,13 @@ val copyDistToAssets by tasks.registering(Copy::class) {
 /**
  * Hooks tasks into running as part of the app module build.
  */
-tasks.named("preBuild") {
-    dependsOn(copyDistToAssets)
-}
-
-/**
- * Includes tasks when running a project clean.
- */
-tasks.named("clean") {
-    dependsOn(cleanWeb)
-}
+//tasks.named("preBuild") {
+//    dependsOn(copyDistToAssets)
+//}
+//
+///**
+// * Includes tasks when running a project clean.
+// */
+//tasks.named("clean") {
+//    dependsOn(cleanWeb)
+//}
