@@ -36,6 +36,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +56,7 @@ import androidx.webkit.internal.AssetHelper
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
 import java.text.SimpleDateFormat
@@ -66,17 +69,19 @@ import java.util.Locale
 @Composable
 fun ComposeWrappedWebView() {
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
-    val values = remember { mutableStateOf("") }
-    val openBottomSheet = remember { mutableStateOf(false) }
-    val launcher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { selectedUri ->
-            println("File selected = $selectedUri")
-            filePathCallback?.onReceiveValue(selectedUri.toTypedArray())
-            filePathCallback = null
-        }
+    var requiredMimeType = remember { mutableStateOf<Array<String>>(arrayOf()) }
+    var openBottomSheet by rememberSaveable { mutableStateOf(false) }
 
     val bottomSheetState = rememberModalBottomSheetState()
-
+    val coroutineScope = rememberCoroutineScope()
+    val hideModalBottomSheet: () -> Unit =
+        {
+            coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
+                if (!bottomSheetState.isVisible) {
+                    openBottomSheet = false
+                }
+            }
+        }
 
 //    val permissions = arrayOf(Manifest.permission.CAMERA)
 ////    val context = LocalContext.current
@@ -191,10 +196,10 @@ fun ComposeWrappedWebView() {
                             val mimetypes =
                                 if (fileChooserParams.acceptTypes.size == 1 && fileChooserParams.acceptTypes[0] == ""
                                 ) arrayOf("*/*") else fileChooserParams.acceptTypes!!
+                            requiredMimeType.value = mimetypes
                             filePathCallback = filePathCallbackk
 
-                            openBottomSheet.value = true
-//                            launcher.launch(mimetypes)
+                            openBottomSheet = true
                             return true
                         } else return false
 
@@ -213,29 +218,22 @@ fun ComposeWrappedWebView() {
         update = {}
     )
 
-    if (openBottomSheet.value) {
+    if (openBottomSheet) {
         CameraGalleryChooser(
             sheetState = bottomSheetState,
-            onDismissRequest = { /*TODO*/ },
-//            onActionRequest = filePathCallback,
+            onDismissRequest = {
+                Log.d("WebView CameraGalleryChooser", "onDismissRequest")
+                filePathCallback?.onReceiveValue(null)
+                openBottomSheet = false
+            },
             onActionRequest = { value ->
                 filePathCallback?.onReceiveValue(value)
-//                filePathCallback(value)
-//                values.value = value
-//                Log.d("WebView CameraGalleryChooser", value)
+                hideModalBottomSheet()
 
-            }
+            },
+            requiredMimeType = requiredMimeType.value
         )
     }
-
-
-//    LaunchedEffect(showBottomSheet) {
-//        if (showBottomSheet) {
-//            bottomSheetState.show()
-//        } else {
-//            bottomSheetState.hide()
-//        }
-//    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
@@ -245,6 +243,7 @@ fun CameraGalleryChooser(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     onDismissRequest: () -> Unit = { /* No-op default implementation */ },
     onActionRequest: (Array<Uri>) -> Unit = { /* No-op default implementation */ },
+    requiredMimeType: Array<String> = arrayOf()
 ) {
 
     val imageUri = remember {
@@ -261,9 +260,7 @@ fun CameraGalleryChooser(
 
     val galleryLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { selectedUri ->
-            println("File selected = $selectedUri")
-//            filePathCallback?.onReceiveValue(selectedUri.toTypedArray())
-//            filePathCallback = null
+            Log.d("CameraGalleryChooser", "File selected = $selectedUri")
             onActionRequest(selectedUri.toTypedArray())
         }
 
@@ -277,59 +274,61 @@ fun CameraGalleryChooser(
 
     val size = 80.dp
 
-    ModalBottomSheet(
-        sheetState = sheetState,
-        onDismissRequest = onDismissRequest
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 20.dp)
+//    if required mime type is image (image/*) then show image picker
+    if (requiredMimeType.contains("image/*")) {
+        ModalBottomSheet(
+            sheetState = sheetState,
+            onDismissRequest = onDismissRequest
         ) {
-            Column {
-                IconButton(onClick = {
-                    galleryLauncher.launch(arrayOf("image/*"))
-                }, modifier = Modifier.size(size)) {
-                    Icon(
-                        Image,
-                        contentDescription = "Localized description",
-                        modifier = Modifier.fillMaxSize()
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp)
+            ) {
+                Column {
+                    IconButton(onClick = {
+                        galleryLauncher.launch(requiredMimeType)
+                    }, modifier = Modifier.size(size)) {
+                        Icon(
+                            Image,
+                            contentDescription = "Localized description",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Text(
+                        text = "Gallery",
+                        style = TextStyle(fontWeight = FontWeight.Bold),
+                        // adding text align on below line.
+                        textAlign = TextAlign.Center,
+                        // adding font size on below line.
+                        fontSize = 20.sp
                     )
                 }
-                Text(
-                    text = "Gallery",
-                    style = TextStyle(fontWeight = FontWeight.Bold),
-                    // adding text align on below line.
-                    textAlign = TextAlign.Center,
-                    // adding font size on below line.
-                    fontSize = 20.sp
-                )
-            }
-            Column {
-                IconButton(onClick = {
-                    if (cameraPermission.status.isGranted) {
-                        imageUri.value = createFile()
-                        cameraLauncher.launch(imageUri.value!!)
-                    } else cameraPermission.launchPermissionRequest()
-                }, modifier = Modifier.size(size)) {
-                    Icon(
-                        Photo_camera,
-                        contentDescription = "Localized description",
-                        modifier = Modifier.fillMaxSize()
+                Column {
+                    IconButton(onClick = {
+                        if (cameraPermission.status.isGranted) {
+                            imageUri.value = createFile()
+                            cameraLauncher.launch(imageUri.value!!)
+                        } else cameraPermission.launchPermissionRequest()
+                    }, modifier = Modifier.size(size)) {
+                        Icon(
+                            Photo_camera,
+                            contentDescription = "Localized description",
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                    Text(
+                        text = "Camera",
+                        style = TextStyle(fontWeight = FontWeight.Bold),
+                        // adding text align on below line.
+                        textAlign = TextAlign.Center,
+                        // adding font size on below line.
+                        fontSize = 20.sp
                     )
                 }
-                Text(
-                    text = "Camera",
-                    style = TextStyle(fontWeight = FontWeight.Bold),
-                    // adding text align on below line.
-                    textAlign = TextAlign.Center,
-                    // adding font size on below line.
-                    fontSize = 20.sp
-                )
             }
-        }
 
 
 //        Column {
@@ -359,9 +358,11 @@ fun CameraGalleryChooser(
 //                }
 //            }
 //        }
+        }
+
+    } else {
+        galleryLauncher.launch(requiredMimeType)
     }
-
-
 }
 
 private fun createImageCaptureFile(context: Context): File {
