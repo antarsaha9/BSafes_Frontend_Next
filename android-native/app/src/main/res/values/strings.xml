@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BSafes Android</string>
+    <string name="file_provider">com.example.bsafesandroid.components.file_provider</string>
 </resources>

@@ -1,9 +1,7 @@
 package com.example.bsafesandroid
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.net.Uri
-import android.os.Environment
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ServiceWorkerClient
@@ -15,14 +13,13 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -42,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -59,9 +57,6 @@ import com.google.accompanist.permissions.rememberPermissionState
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.InputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,32 +77,6 @@ fun ComposeWrappedWebView() {
                 }
             }
         }
-
-//    val permissions = arrayOf(Manifest.permission.CAMERA)
-////    val context = LocalContext.current
-//    var takePictureFile: File? = null
-//    var takePictureUri: Uri? = null
-//    val cameraPermissionLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.RequestPermission(),
-//    ) { isGranted: Boolean ->
-//        if (isGranted) {
-//            takePictureFile = createImageCaptureFile(context)
-//            Timber.tag("ok").d("ImageSelectionBottomSheet: %s", takePictureFile?.absoluteFile)
-//            takePictureUri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", takePictureFile!!)
-//            Timber.tag("ok").d("ImageSelectionBottomSheet: %s", takePictureUri)
-//            cameraLauncher.launch(takePictureUri)
-//
-//        } else {
-//            // Permission is denied, handle it accordingly
-//        }
-//    }
-//
-//    val takePhotoLauncher = rememberLauncherForActivityResult(
-//        contract = ActivityResultContracts.TakePicture(),
-//        onResult = {isSaved ->
-////            ...
-//        }
-//    )
 
     AndroidView(
         factory = { context ->
@@ -256,26 +225,45 @@ fun CameraGalleryChooser(
             if (it) {
                 onActionRequest(arrayOf(imageUri.value!!))
             }
+            else {
+                Log.d("CameraGalleryChooser", "File not selected")
+                onDismissRequest()
+            }
         }
 
-    val galleryLauncher =
+    val handleSelectedUri: (List<Uri>) -> Unit = { selectedUri ->
+        Log.d("CameraGalleryChooser", "File selected = $selectedUri")
+        onActionRequest(selectedUri.toTypedArray())
+    }
+    val visualMediaPickerLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia()) { selectedUri ->
+            handleSelectedUri(selectedUri)
+        }
+    val filePickerLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { selectedUri ->
-            Log.d("CameraGalleryChooser", "File selected = $selectedUri")
-            onActionRequest(selectedUri.toTypedArray())
+            handleSelectedUri(selectedUri)
         }
-
-    val cameraPermission = rememberPermissionState(permission = android.Manifest.permission.CAMERA)
-
+    val authority = stringResource(id = R.string.file_provider)
     fun createFile(): Uri {
-        val storage = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-        val file = File.createTempFile("image_${System.currentTimeMillis()}", ".jpg", storage)
-        return FileProvider.getUriForFile(context, context.packageName, file)
+        val directory = File(context.cacheDir, "images")
+        directory.mkdirs()
+        val file = File.createTempFile("image_${System.currentTimeMillis()}", ".jpg", directory)
+        return FileProvider.getUriForFile(context, authority, file)
     }
 
+    val cameraPermission = rememberPermissionState(
+        permission = android.Manifest.permission.CAMERA,
+        onPermissionResult = {
+            imageUri.value = createFile()
+            cameraLauncher.launch(imageUri.value!!)
+        })
+
+
     val size = 80.dp
+    val coroutineScope = rememberCoroutineScope()
 
 //    if required mime type is image (image/*) then show image picker
-    if (requiredMimeType.contains("image/*")) {
+    if (requiredMimeType[0].contains("image/")) {
         ModalBottomSheet(
             sheetState = sheetState,
             onDismissRequest = onDismissRequest
@@ -289,7 +277,13 @@ fun CameraGalleryChooser(
             ) {
                 Column {
                     IconButton(onClick = {
-                        galleryLauncher.launch(requiredMimeType)
+                        visualMediaPickerLauncher.launch(
+                            PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.SingleMimeType(
+                                    requiredMimeType[0]
+                                )
+                            )
+                        )
                     }, modifier = Modifier.size(size)) {
                         Icon(
                             Image,
@@ -311,7 +305,9 @@ fun CameraGalleryChooser(
                         if (cameraPermission.status.isGranted) {
                             imageUri.value = createFile()
                             cameraLauncher.launch(imageUri.value!!)
-                        } else cameraPermission.launchPermissionRequest()
+                        } else {
+                            cameraPermission.launchPermissionRequest()
+                        }
                     }, modifier = Modifier.size(size)) {
                         Icon(
                             Photo_camera,
@@ -329,45 +325,21 @@ fun CameraGalleryChooser(
                     )
                 }
             }
-
-
-//        Column {
-//            Row(
-//                horizontalArrangement = Arrangement.SpaceEvenly,
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .padding(8.dp)
-//            ) {
-//                IconButton(onClick = {
-//                    if (cameraPermission.status.isGranted) {
-//                        imageUri.value = createFile()
-//                        cameraLauncher.launch(imageUri.value!!)
-//                    } else cameraPermission.launchPermissionRequest()
-//
-//                }) {
-//                    Icon(imageVector = Icons.Filled.AccountCircle, contentDescription = "Camera")
-//                    Text(text = "Camera")
-//                }
-//                IconButton(onClick = {
-//
-//                    galleryLauncher.launch(arrayOf("image/*"))
-//                }) {
-//                    Icon(imageVector = Icons.Filled.Add, contentDescription = "File")
-//                    Text(text = "Plus")
-//
-//                }
-//            }
-//        }
         }
 
+    } else if (requiredMimeType[0].contains("video/")) {
+        coroutineScope.launch {
+            visualMediaPickerLauncher.launch(
+                PickVisualMediaRequest(
+                    ActivityResultContracts.PickVisualMedia.SingleMimeType(
+                        requiredMimeType[0]
+                    )
+                )
+            )
+        }
     } else {
-        galleryLauncher.launch(requiredMimeType)
+        coroutineScope.launch {
+            filePickerLauncher.launch(requiredMimeType)
+        }
     }
-}
-
-private fun createImageCaptureFile(context: Context): File {
-    val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-    val fileName = "JPEG_${timeStamp}.jpg"
-    val cacheDir = context.cacheDir
-    return File(cacheDir, fileName)
 }
