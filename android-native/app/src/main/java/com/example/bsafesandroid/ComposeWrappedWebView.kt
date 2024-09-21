@@ -1,6 +1,7 @@
 package com.example.bsafesandroid
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.net.Uri
 import android.util.Log
 import android.view.ViewGroup
@@ -12,15 +13,19 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewAssetLoader.PathHandler
@@ -33,12 +38,15 @@ import java.io.InputStream
 @SuppressLint("RestrictedApi")
 @Composable
 fun ComposeWrappedWebView() {
+    val rootTag = "WebViewWrapper"
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
-    var requiredMimeType = remember { mutableStateOf<Array<String>>(arrayOf()) }
+    val requiredMimeType = remember { mutableStateOf<Array<String>>(arrayOf()) }
     var openBottomSheet by rememberSaveable { mutableStateOf(false) }
-
+    val webView = remember { mutableStateOf<WebView?>(null) }
     val bottomSheetState = rememberModalBottomSheetState()
     val coroutineScope = rememberCoroutineScope()
+    val scheme = "https"
+    val domain = "android.bsafes.com"
     val hideModalBottomSheet: () -> Unit =
         {
             coroutineScope.launch { bottomSheetState.hide() }.invokeOnCompletion {
@@ -50,8 +58,7 @@ fun ComposeWrappedWebView() {
 
     AndroidView(
         factory = { context ->
-            val scheme = "https"
-            val domain = "android.bsafes.com"
+            val tag = "$rootTag AndroidView"
             val assetLoader = WebViewAssetLoader.Builder()
                 .setDomain(domain)
                 .addPathHandler("/", PathHandler { path ->
@@ -63,7 +70,7 @@ fun ComposeWrappedWebView() {
 
                         return@PathHandler WebResourceResponse(mimeType, null, inputStream)
                     } catch (e: Exception) {
-                        Log.e("AssetLoader", "Error loading asset: $path", e)
+                        Log.e(tag, "Error loading asset: $path", e)
                     }
                     null
                 })
@@ -86,6 +93,7 @@ fun ComposeWrappedWebView() {
 //                .build()
 
             WebView(context).apply {
+                val tag = "$rootTag WebView"
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
@@ -117,7 +125,7 @@ fun ComposeWrappedWebView() {
 
                 webChromeClient = object : WebChromeClient() {
                     override fun onConsoleMessage(consoleMessage: android.webkit.ConsoleMessage): Boolean {
-                        Log.d("WebView", consoleMessage.message())
+                        Log.d(tag, consoleMessage.message())
                         return true
                     }
 
@@ -128,8 +136,10 @@ fun ComposeWrappedWebView() {
                         fileChooserParams: FileChooserParams?
                     ): Boolean {
 
-                        Log.d("WebView", fileChooserParams?.mode.toString())
-                        Log.d("WebView", fileChooserParams?.acceptTypes.toString())
+                        Log.d(
+                            tag,
+                            "File chooser triggered, types = ${fileChooserParams?.acceptTypes.toString()}"
+                        )
 
                         if (fileChooserParams?.acceptTypes?.isNotEmpty() == true) {
                             val mimetypes =
@@ -152,10 +162,44 @@ fun ComposeWrappedWebView() {
                  * https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader
                  */
                 loadUrl("$scheme://$domain")
-            }
+            }.also { webView.value = it }
         },
         update = {}
     )
+
+    var backPressedCount by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
+    fun exitApp() {
+        (context as Activity).finish()
+    }
+
+    BackHandler(enabled = true) {
+        val localTag = "BackHandler"
+        val tag = "$rootTag $localTag"
+        Log.d(tag, "Back button pressed ${webView.value!!.url.toString()}")
+        if (webView.value!!.canGoBack()) {
+            val currentUrl = webView.value!!.url
+            if (currentUrl == "$scheme://$domain" || currentUrl == "$scheme://$domain/safe") {
+                backPressedCount++
+                if (backPressedCount >= 2) {
+                    // Exit the app
+                    Log.d(tag, "Exiting app")
+                    exitApp()
+                } else {
+                    Log.d(tag, "Press back again to exit")
+                    Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Navigate back in WebView
+                Log.d(tag, "Going back")
+                webView.value!!.goBack()
+                backPressedCount = 0 // Reset count
+            }
+        } else {
+            Log.d(tag, "Can't go back, exiting app")
+            exitApp()
+        }
+    }
 
     if (openBottomSheet) {
         CameraGalleryChooser(
