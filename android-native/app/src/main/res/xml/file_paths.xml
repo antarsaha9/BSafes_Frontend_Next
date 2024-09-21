@@ -3,5 +3,5 @@
     <!-- creates a reference to the cache folder that the system maintains -->
     <cache-path
         name="temporary_captured_assets"
-        path="images" />
+        path="captured_media" />
 </paths>

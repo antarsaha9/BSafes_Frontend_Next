@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,25 +51,38 @@ fun CameraGalleryChooser(
     onActionRequest: (Array<Uri>) -> Unit = { /* No-op default implementation */ },
     requiredMimeType: Array<String> = arrayOf()
 ) {
+    val TAG = "CameraGalleryChooser"
 
-    val imageUri = remember {
+    val mediaUri = remember {
         mutableStateOf<Uri?>(null)
     }
+    val afterPermissionGrantAction = remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val context = LocalContext.current
-    val cameraLauncher =
+    val cameraLauncherForImage =
         rememberLauncherForActivityResult(contract = ActivityResultContracts.TakePicture()) {
             if (it) {
-                onActionRequest(arrayOf(imageUri.value!!))
+                Log.d(TAG, "Image captured")
+                onActionRequest(arrayOf(mediaUri.value!!))
+            } else {
+                Log.d(TAG, "Image not captured")
+                onDismissRequest()
             }
-            else {
-                Log.d("CameraGalleryChooser", "File not selected")
+        }
+
+    val cameraLauncherForVideo =
+        rememberLauncherForActivityResult(contract = ActivityResultContracts.CaptureVideo()) {
+            if (it) {
+                Log.d(TAG, "Video captured")
+                onActionRequest(arrayOf(mediaUri.value!!))
+            } else {
+                Log.d(TAG, "Video not captured")
                 onDismissRequest()
             }
         }
 
     val handleSelectedUri: (List<Uri>) -> Unit = { selectedUri ->
-        Log.d("CameraGalleryChooser", "File selected = $selectedUri")
+        Log.d(TAG, "File selected = $selectedUri")
         onActionRequest(selectedUri.toTypedArray())
     }
     val visualMediaPickerLauncher =
@@ -80,26 +94,40 @@ fun CameraGalleryChooser(
             handleSelectedUri(selectedUri)
         }
     val authority = stringResource(id = R.string.file_provider)
-    fun createFile(): Uri {
-        val directory = File(context.cacheDir, "images")
+    fun createFile(mediaExtension: String): Uri {
+        val directory = File(context.cacheDir, "captured_media")
         directory.mkdirs()
-        val file = File.createTempFile("image_${System.currentTimeMillis()}", ".jpg", directory)
+        val file = File.createTempFile(
+            "media_${System.currentTimeMillis()}",
+            ".${mediaExtension}",
+            directory
+        )
         return FileProvider.getUriForFile(context, authority, file)
     }
 
     val cameraPermission = rememberPermissionState(
         permission = android.Manifest.permission.CAMERA,
         onPermissionResult = {
-            imageUri.value = createFile()
-            cameraLauncher.launch(imageUri.value!!)
+            afterPermissionGrantAction.value?.let { it1 -> it1() }
+            afterPermissionGrantAction.value = null
         })
 
 
     val size = 80.dp
     val coroutineScope = rememberCoroutineScope()
 
-//    if required mime type is image (image/*) then show image picker
-    if (requiredMimeType[0].contains("image/")) {
+    fun launchCameraForImage() {
+        mediaUri.value = createFile("jpg")
+        cameraLauncherForImage.launch(mediaUri.value!!)
+    }
+
+    fun launchCameraForVideo() {
+        mediaUri.value = createFile("mp4")
+        cameraLauncherForVideo.launch(mediaUri.value!!)
+    }
+
+//    if required mime type is image (image/) or video (video/) then show image picker
+    if (requiredMimeType[0].contains("image/") || requiredMimeType[0].contains("video/")) {
         ModalBottomSheet(
             sheetState = sheetState,
             onDismissRequest = onDismissRequest
@@ -110,6 +138,7 @@ fun CameraGalleryChooser(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 20.dp)
+                    .navigationBarsPadding()
             ) {
                 Column {
                     IconButton(onClick = {
@@ -138,12 +167,22 @@ fun CameraGalleryChooser(
                 }
                 Column {
                     IconButton(onClick = {
-                        if (cameraPermission.status.isGranted) {
-                            imageUri.value = createFile()
-                            cameraLauncher.launch(imageUri.value!!)
+                        if (requiredMimeType[0].contains("image/")) {
+                            if (cameraPermission.status.isGranted) {
+                                launchCameraForImage()
+                            } else {
+                                afterPermissionGrantAction.value = ::launchCameraForImage
+                                cameraPermission.launchPermissionRequest()
+                            }
                         } else {
-                            cameraPermission.launchPermissionRequest()
+                            if (cameraPermission.status.isGranted) {
+                                launchCameraForVideo()
+                            } else {
+                                afterPermissionGrantAction.value = ::launchCameraForVideo
+                                cameraPermission.launchPermissionRequest()
+                            }
                         }
+
                     }, modifier = Modifier.size(size)) {
                         Icon(
                             Photo_camera,
@@ -161,17 +200,6 @@ fun CameraGalleryChooser(
                     )
                 }
             }
-        }
-
-    } else if (requiredMimeType[0].contains("video/")) {
-        coroutineScope.launch {
-            visualMediaPickerLauncher.launch(
-                PickVisualMediaRequest(
-                    ActivityResultContracts.PickVisualMedia.SingleMimeType(
-                        requiredMimeType[0]
-                    )
-                )
-            )
         }
     } else {
         coroutineScope.launch {
