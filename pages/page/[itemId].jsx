@@ -22,7 +22,7 @@ import { debugLog } from "../../lib/helper";
 import { getCoverAndContentsLink, getAnotherItem } from "../../lib/bSafesCommonUI"
 
 let hideFunction = false;
-if(process.env.NEXT_PUBLIC_platform ==='iOS') {
+if((process.env.NEXT_PUBLIC_platform ==='iOS') || (process.env.NEXT_PUBLIC_platform ==='android')) {
     hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1);
 }
 

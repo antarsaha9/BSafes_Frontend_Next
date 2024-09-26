@@ -291,8 +291,8 @@ const pageSlice = createSlice({
         },
         resetPageActivity: (state, action) => {
             state.activity = 0,
-            state.activityErrors = 0,
-            state.activityErrorCodes = { };
+                state.activityErrors = 0,
+                state.activityErrorCodes = {};
         },
         activityStart: (state, action) => {
             if (state.aborted) return;
@@ -2340,9 +2340,9 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, video, uploadResult;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+    if (checkIfTooManyMediaFiles(state, data.files.length)) {
         alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
-        return;     
+        return;
     }
     if (state.activity & pageActivity.UploadVideos) {
         dispatch(addUploadVideos({ files: data.files, where: data.where }));
@@ -2564,13 +2564,13 @@ const uploadAnImage = async (dispatch, state, file) => {
                                             headers: {
                                                 'Content-Type': 'binary/octet-stream'
                                             }
-                                        }, 
+                                        },
                                         dispatch
                                     ).catch(error => {
                                         reject(error);
                                         return;
                                     });
-                                    
+
                                     uploadThumbnailImgPromise = putS3Object(
                                         s3KeyThumbnail, signedThumbnailURL,
                                         thumbnailImgString,
@@ -2600,7 +2600,7 @@ const uploadAnImage = async (dispatch, state, file) => {
                                 'Content-Type': 'binary/octet-stream'
                             }
                         }
-                        
+
                         uploadOriginalImgPromise = putS3Object(s3Key, signedURL,
                             Buffer.from(data, 'binary'), config, dispatch)
                             .catch(error => {
@@ -2664,9 +2664,9 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-    if(checkIfTooManyMediaFiles(state, data.files.length)) {
+    if (checkIfTooManyMediaFiles(state, data.files.length)) {
         alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
-        return;     
+        return;
     }
     if (state.activity & pageActivity.UploadImages) {
         dispatch(addUploadImages({ files: data.files, where: data.where }));
@@ -3026,6 +3026,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
+        let fileInBase64 = ""
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
 
@@ -3080,8 +3081,10 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             }
 
             if (!isUsingServiceWorker) {
-                fileInUint8Array = new Uint8Array(attachment.fileSize);
-                fileInUint8ArrayIndex = 0;
+                if (process.env.NEXT_PUBLIC_platform === 'android') {
+                    fileInUint8Array = new Uint8Array(attachment.fileSize);
+                    fileInUint8ArrayIndex = 0;
+                }
                 return true;
             } else {
                 try {
@@ -3096,8 +3099,10 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         function reconnectWriter() {
             if (!isUsingServiceWorker) {
-                fileInUint8Array = state.writer.fileInUint8Array;
-                fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
+                if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                    fileInUint8Array = state.writer.fileInUint8Array;
+                    fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
+                }
             } else {
                 messageChannel = state.writer;
             }
@@ -3106,15 +3111,19 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         function writeAChunkToFile(chunk) {
             return new Promise(async (resolve, reject) => {
                 if (!isUsingServiceWorker) {
-                    for (let offset = 0; offset < chunk.length; offset++) {
-                        if (fileInUint8ArrayIndex + offset < fileInUint8Array.length) {
-                            fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
-                        } else {
-                            reject("writeAChunkToFile error: fileInUint8Array overflow");
-                            return;
+                    if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                        for (let offset = 0; offset < chunk.length; offset++) {
+                            if (fileInUint8ArrayIndex + offset < fileInUint8Array.length) {
+                                fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
+                            } else {
+                                reject("writeAChunkToFile error: fileInUint8Array overflow");
+                                return;
+                            }
                         }
+                        fileInUint8ArrayIndex += chunk.length;
+                    } else {
+                        fileInBase64 += forge.util.encode64(chunk)
                     }
-                    fileInUint8ArrayIndex += chunk.length;
                     resolve();
                 } else {
                     messageChannel.port1.postMessage({
@@ -3128,7 +3137,9 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 
         function writeAChunkToFileFailed(chunkIndex) {
             if (!isUsingServiceWorker) {
-                dispatch(downloadAChunkFailed({ chunkIndex, writer: { fileInUint8Array, fileInUint8ArrayIndex } }));
+                if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                    dispatch(downloadAChunkFailed({ chunkIndex, writer: { fileInUint8Array, fileInUint8ArrayIndex } }));
+                }
             } else {
                 dispatch(downloadAChunkFailed({ chunkIndex, writer: messageChannel }));
             }
@@ -3209,7 +3220,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
         if (i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-            if (!isUsingServiceWorker) {
+            if ((process.env.NEXT_PUBLIC_platform !== 'android') && !isUsingServiceWorker) {
                 let blob = new Blob([fileInUint8Array], {
                     type: attachment.fileType
                 });
@@ -3217,6 +3228,8 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 link.href = URL.createObjectURL(blob);
                 link.download = attachment.fileName;
                 link.click();
+            } else if (process.env.NEXT_PUBLIC_platform === 'android') {
+                debugLog(debugOn, `fileInBase64 length: ${fileInBase64.length}`)
             }
             closeWriter();
             resolve();

@@ -164,7 +164,7 @@ export default function ItemPath() {
                             {breadItems}
                         </Breadcrumb>
                     </Col>
-                    { process.env.NEXT_PUBLIC_platform !=='iOS' &&
+                    { process.env.NEXT_PUBLIC_platform !=='iOS' && process.env.NEXT_PUBLIC_platform !=='android' &&
                         <Col xs={2} md={1}>
                             <Dropdown align="end" className="justify-content-end pull-right">
                                 <Dropdown.Toggle size='sm' variant="primary" bsPrefix='px-3 py-2'>
