@@ -3026,7 +3026,7 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
-        let fileInBase64 = ""
+        let fileInBinary = ""
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
 
@@ -3122,7 +3122,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         }
                         fileInUint8ArrayIndex += chunk.length;
                     } else {
-                        fileInBase64 += forge.util.encode64(chunk)
+                        fileInBinary += chunk;
                     }
                     resolve();
                 } else {
@@ -3229,7 +3229,11 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 link.download = attachment.fileName;
                 link.click();
             } else if (process.env.NEXT_PUBLIC_platform === 'android') {
-                debugLog(debugOn, `fileInBase64 length: ${fileInBase64.length}`)
+                debugLog(debugOn, `fileInBinary length: ${fileInBinary.length}`)
+                if(Android){
+                    console.log("Android.saveBinaryStringAsFile ...")
+                    Android.saveBinaryStringAsFile(fileInBinary, attachment.fileName, attachment.fileType )
+                }
             }
             closeWriter();
             resolve();
