@@ -59,6 +59,7 @@ const initialState = {
     imageDownloadIndex: 0,
     chunkSize: 10 * 1024 * 1024,
     attachmentPanels: [],
+    attachmentPanelSelectedForDownload: null,
     attachmentsUploadQueue: [],
     attachmentsUploadIndex: 0,
     attachmentsDownloadQueue: [],
@@ -741,7 +742,6 @@ const pageSlice = createSlice({
             panel.status = "UploadFailed";
         },
         addDownloadAttachment: (state, action) => {
-            ``
             if (state.aborted) return;
             state.attachmentsDownloadQueue.push(action.payload);
             let panel = state.attachmentPanels.find((item) => item.queueId === action.payload.queueId);
@@ -753,6 +753,9 @@ const pageSlice = createSlice({
             let panel = state.attachmentPanels.find((item) => item.queueId === state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].queueId);
             panel.status = "Downloading";
             panel.progress = action.payload.progress;
+        },
+        setAttachmentSelectedForDownload: (state, action) => {
+            state.attachmentPanelSelectedForDownload = action.payload;
         },
         setXHR: (state, action) => {
             state.xhr = action.payload.xhr;
@@ -846,7 +849,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -3108,7 +3111,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             }
         }
 
-        function writeAChunkToFile(chunk) {
+        function writeAChunkToFile(chunkIndex, chunk) {
             return new Promise(async (resolve, reject) => {
                 if (!isUsingServiceWorker) {
                     if (process.env.NEXT_PUBLIC_platform !== 'android') {
@@ -3122,7 +3125,11 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         }
                         fileInUint8ArrayIndex += chunk.length;
                     } else {
-                        fileInBinary += chunk;
+                        //fileInBinary += chunk;
+                        if(Android){
+                            console.log("Android.addAChunkToFile ...")
+                            Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
+                        }
                     }
                     resolve();
                 } else {
@@ -3177,7 +3184,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                     decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey, state.itemIV)
                     debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
 
-                    await writeAChunkToFile(decryptedChunkStr);
+                    await writeAChunkToFile(chunkIndex, decryptedChunkStr);
 
                     resolve();
                 } catch (error) {
@@ -3229,11 +3236,11 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 link.download = attachment.fileName;
                 link.click();
             } else if (process.env.NEXT_PUBLIC_platform === 'android') {
-                debugLog(debugOn, `fileInBinary length: ${fileInBinary.length}`)
+                /*debugLog(debugOn, `fileInBinary length: ${fileInBinary.length}`)
                 if(Android){
                     console.log("Android.saveBinaryStringAsFile ...")
-                    Android.saveBinaryStringAsFile(fileInBinary, attachment.fileName, attachment.fileType )
-                }
+                    Android.saveBinaryStringAsFile(fileInBinary, attachment.uriString)
+                }*/
             }
             closeWriter();
             resolve();

@@ -32,6 +32,13 @@ function MyApp({ Component, pageProps }) {
         pingFromNative
       }
     }
+
+    if (process.env.NEXT_PUBLIC_platform === 'android') {
+      window.bsafesAndroid = {
+        name: "bsafesAndroid"
+      }
+    }
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/serviceWorkerV210.js?v210", { //
         scope: "/",
