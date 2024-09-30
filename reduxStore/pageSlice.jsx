@@ -2448,6 +2448,10 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
             if (state.videosUploadQueue.length === state.videosUploadIndex) {
                 resolve();
             }
+            if(Android){
+                console.log("Calling Android.deleteTemporaryFiles")
+                Android.deleteTemporaryFiles();
+            }
         });
     });
 }
@@ -2745,6 +2749,12 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                     reject("Failed to save images.");
                 }
             }
+            if (process.env.NEXT_PUBLIC_platform === 'android'){
+                if(Android){
+                    console.log("Calling Android.deleteTemporaryFiles")
+                    Android.deleteTemporaryFiles();
+                }
+            }
         });
     });
 }
@@ -3029,7 +3039,6 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
 const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
-        let fileInBinary = ""
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
 
@@ -3125,7 +3134,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         }
                         fileInUint8ArrayIndex += chunk.length;
                     } else {
-                        //fileInBinary += chunk;
                         if(Android){
                             console.log("Android.addAChunkToFile ...")
                             Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
@@ -3235,13 +3243,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 link.href = URL.createObjectURL(blob);
                 link.download = attachment.fileName;
                 link.click();
-            } else if (process.env.NEXT_PUBLIC_platform === 'android') {
-                /*debugLog(debugOn, `fileInBinary length: ${fileInBinary.length}`)
-                if(Android){
-                    console.log("Android.saveBinaryStringAsFile ...")
-                    Android.saveBinaryStringAsFile(fileInBinary, attachment.uriString)
-                }*/
-            }
+            } 
             closeWriter();
             resolve();
         }
