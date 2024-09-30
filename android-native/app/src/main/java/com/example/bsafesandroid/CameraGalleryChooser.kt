@@ -1,9 +1,6 @@
 package com.example.bsafesandroid
 
-import android.app.Activity
-import android.content.Intent
 import android.net.Uri
-import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -21,18 +18,13 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
-import androidx.compose.material3.Snackbar
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -40,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -59,7 +50,7 @@ fun CameraGalleryChooser(
     onDismissRequest: () -> Unit = { /* No-op default implementation */ },
     onActionRequest: (Array<Uri>) -> Unit = { /* No-op default implementation */ },
     requiredMimeType: Array<String> = arrayOf(),
-    openSnackbarForCameraPermission:() -> Unit
+    openSnackbarForCameraPermission: () -> Unit
 ) {
     val TAG = "CameraGalleryChooser"
 
@@ -129,7 +120,7 @@ fun CameraGalleryChooser(
 
     val coroutineScope = rememberCoroutineScope()
     fun checkAndRequestPermission() {
-        if(cameraPermission.status.isGranted){
+        if (cameraPermission.status.isGranted) {
             Log.d(TAG, "Camera permission granted")
             afterPermissionGrantAction.value?.let { it1 -> it1() }
         } else {
@@ -230,8 +221,10 @@ fun CameraGalleryChooser(
             }
         }
     } else {
-        coroutineScope.launch {
-            filePickerLauncher.launch(requiredMimeType)
+        LaunchedEffect(requiredMimeType) {
+            coroutineScope.launch {
+                filePickerLauncher.launch(requiredMimeType)
+            }
         }
     }
 }
