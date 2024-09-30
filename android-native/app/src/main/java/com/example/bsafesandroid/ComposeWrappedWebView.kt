@@ -2,7 +2,9 @@ package com.example.bsafesandroid
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import android.view.ViewGroup
 import android.webkit.ServiceWorkerClient
@@ -15,7 +17,12 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
@@ -34,10 +42,23 @@ import kotlinx.coroutines.launch
 import java.io.InputStream
 
 
+@Composable
+fun ScafoldWrappedWebView() {
+    val snackbarHostState = remember { SnackbarHostState() }
+    Scaffold(
+        Modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { innerPadding ->
+        ComposeWrappedWebView(innerPadding, snackbarHostState)
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("RestrictedApi")
 @Composable
-fun ComposeWrappedWebView() {
+fun ComposeWrappedWebView(
+    innerPadding: androidx.compose.foundation.layout.PaddingValues,
+    snackbarHostState: SnackbarHostState
+) {
     val rootTag = "WebViewWrapper"
     var filePathCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
     val requiredMimeType = remember { mutableStateOf<Array<String>>(arrayOf()) }
@@ -147,7 +168,6 @@ fun ComposeWrappedWebView() {
                                 ) arrayOf("*/*") else fileChooserParams.acceptTypes!!
                             requiredMimeType.value = mimetypes
                             filePathCallback = filePathCallbackk
-
                             openBottomSheet = true
                             return true
                         } else return false
@@ -201,20 +221,38 @@ fun ComposeWrappedWebView() {
         }
     }
 
+    fun openSnackbarForCameraPermission() {
+        coroutineScope.launch {
+            val result =
+                snackbarHostState.showSnackbar(
+                    message = "The app needs camera permission to take a photo/video",
+                    actionLabel = "Go to settings",
+                    withDismissAction = true
+                )
+            if (result == SnackbarResult.ActionPerformed) {
+                val intent = Intent(
+                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", context.packageName, null)
+                )
+                (context as Activity).startActivity(intent)
+            }
+        }
+    }
+
     if (openBottomSheet) {
         CameraGalleryChooser(
             sheetState = bottomSheetState,
             onDismissRequest = {
-                Log.d("WebView CameraGalleryChooser", "onDismissRequest")
+                Log.d(rootTag, "Dismissing bottom sheet")
                 filePathCallback?.onReceiveValue(null)
-                openBottomSheet = false
+                hideModalBottomSheet()
             },
             onActionRequest = { value ->
                 filePathCallback?.onReceiveValue(value)
                 hideModalBottomSheet()
-
             },
-            requiredMimeType = requiredMimeType.value
+            requiredMimeType = requiredMimeType.value,
+            openSnackbarForCameraPermission = { openSnackbarForCameraPermission() },
         )
     }
 }

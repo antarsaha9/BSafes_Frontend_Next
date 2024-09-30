@@ -1,6 +1,9 @@
 package com.example.bsafesandroid
 
+import android.app.Activity
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -18,12 +21,18 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -38,18 +47,19 @@ import androidx.core.content.FileProvider
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import kotlinx.coroutines.launch
 import java.io.File
 
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
-@Preview
 fun CameraGalleryChooser(
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     onDismissRequest: () -> Unit = { /* No-op default implementation */ },
     onActionRequest: (Array<Uri>) -> Unit = { /* No-op default implementation */ },
-    requiredMimeType: Array<String> = arrayOf()
+    requiredMimeType: Array<String> = arrayOf(),
+    openSnackbarForCameraPermission:() -> Unit
 ) {
     val TAG = "CameraGalleryChooser"
 
@@ -107,14 +117,40 @@ fun CameraGalleryChooser(
 
     val cameraPermission = rememberPermissionState(
         permission = android.Manifest.permission.CAMERA,
-        onPermissionResult = {
-            afterPermissionGrantAction.value?.let { it1 -> it1() }
+        onPermissionResult = { isGranted ->
+            Log.d(TAG, "Camera permission granted = $isGranted")
+            if (isGranted) {
+                afterPermissionGrantAction.value?.let { it1 -> it1() }
+            } else {
+                onDismissRequest()
+            }
             afterPermissionGrantAction.value = null
         })
 
+    val coroutineScope = rememberCoroutineScope()
+    fun checkAndRequestPermission() {
+        if(cameraPermission.status.isGranted){
+            Log.d(TAG, "Camera permission granted")
+            afterPermissionGrantAction.value?.let { it1 -> it1() }
+        } else {
+            Log.d(TAG, "Requesting camera permission")
+            if (cameraPermission.status.shouldShowRationale) {
+                Log.d(TAG, "Show rationale")
+                openSnackbarForCameraPermission()
+                onDismissRequest()
+
+            } else {
+                Log.d(TAG, "Request permission")
+                val res = cameraPermission.launchPermissionRequest()
+                Log.d(TAG, "Permission result = $res")
+
+            }
+        }
+
+    }
+
 
     val size = 80.dp
-    val coroutineScope = rememberCoroutineScope()
 
     fun launchCameraForImage() {
         mediaUri.value = createFile("jpg")
@@ -168,19 +204,11 @@ fun CameraGalleryChooser(
                 Column {
                     IconButton(onClick = {
                         if (requiredMimeType[0].contains("image/")) {
-                            if (cameraPermission.status.isGranted) {
-                                launchCameraForImage()
-                            } else {
-                                afterPermissionGrantAction.value = ::launchCameraForImage
-                                cameraPermission.launchPermissionRequest()
-                            }
+                            afterPermissionGrantAction.value = ::launchCameraForImage
+                            checkAndRequestPermission()
                         } else {
-                            if (cameraPermission.status.isGranted) {
-                                launchCameraForVideo()
-                            } else {
-                                afterPermissionGrantAction.value = ::launchCameraForVideo
-                                cameraPermission.launchPermissionRequest()
-                            }
+                            afterPermissionGrantAction.value = ::launchCameraForVideo
+                            checkAndRequestPermission()
                         }
 
                     }, modifier = Modifier.size(size)) {

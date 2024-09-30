@@ -28,12 +28,13 @@ class MainActivity : ComponentActivity() {
 //                    )
 //                }
 
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ComposeWrappedWebView()
-                }
+//                Surface(
+//                    modifier = Modifier.fillMaxSize(),
+//                    color = MaterialTheme.colorScheme.background
+//                ) {
+                ScafoldWrappedWebView()
+//                    ComposeWrappedWebView()
+//                }
             }
         }
 
