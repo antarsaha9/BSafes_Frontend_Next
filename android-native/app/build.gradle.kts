@@ -10,7 +10,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.bsafesandroid"
+    namespace = "com.bsafes.android"
     compileSdk = 34
 
     androidResources {
@@ -18,7 +18,7 @@ android {
     }   
 
     defaultConfig {
-        applicationId = "com.example.bsafesandroid"
+        applicationId = "com.bsafes.android"
         minSdk = 24
         targetSdk = 34
         versionCode = 1
@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.billing.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

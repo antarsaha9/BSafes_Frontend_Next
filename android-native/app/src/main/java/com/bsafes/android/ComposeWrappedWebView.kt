@@ -1,4 +1,4 @@
-package com.example.bsafesandroid
+package com.bsafes.android
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -25,6 +25,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,15 @@ fun ComposeWrappedWebView(
                 }
             }
         }
+    val appContext = LocalContext.current
+    val inAppPurchaseWorker = remember {
+        InAppPurchaseWorker(appContext as Activity)
+    }
+
+    LaunchedEffect(key1 = true) {
+        inAppPurchaseWorker.billingSetup()
+//            inAppPurchaseWorker.checkProducts()
+    }
 
     AndroidView(
         factory = { context ->
@@ -182,15 +192,16 @@ fun ComposeWrappedWebView(
                  * https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader
                  */
                 loadUrl("$scheme://$domain")
+                addJavascriptInterface(WebviewJSInterface(context), "Android")
             }.also { webView.value = it }
         },
         update = {}
     )
 
     var backPressedCount by remember { mutableIntStateOf(0) }
-    val context = LocalContext.current
+
     fun exitApp() {
-        (context as Activity).finish()
+        (appContext as Activity).finish()
     }
 
     BackHandler(enabled = true) {
@@ -207,7 +218,8 @@ fun ComposeWrappedWebView(
                     exitApp()
                 } else {
                     Log.d(tag, "Press back again to exit")
-                    Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(appContext, "Press back again to exit", Toast.LENGTH_SHORT)
+                        .show()
                 }
             } else {
                 // Navigate back in WebView
@@ -232,9 +244,9 @@ fun ComposeWrappedWebView(
             if (result == SnackbarResult.ActionPerformed) {
                 val intent = Intent(
                     Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", context.packageName, null)
+                    Uri.fromParts("package", appContext.packageName, null)
                 )
-                (context as Activity).startActivity(intent)
+                (appContext as Activity).startActivity(intent)
             }
         }
     }

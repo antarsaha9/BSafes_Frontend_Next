@@ -1,4 +1,4 @@
-package com.example.bsafesandroid.ui.theme
+package com.bsafes.android.ui.theme
 
 import android.app.Activity
 import android.os.Build

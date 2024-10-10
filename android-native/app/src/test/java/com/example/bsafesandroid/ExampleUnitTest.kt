@@ -1,4 +1,4 @@
-package com.example.bsafesandroid
+package com.bsafes.android
 
 import org.junit.Test
 

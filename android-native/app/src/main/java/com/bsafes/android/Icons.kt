@@ -1,4 +1,4 @@
-package com.example.bsafesandroid
+package com.bsafes.android
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathFillType

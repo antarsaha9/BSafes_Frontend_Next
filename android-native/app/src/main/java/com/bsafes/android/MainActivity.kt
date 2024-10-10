@@ -1,4 +1,4 @@
-package com.example.bsafesandroid
+package com.bsafes.android
 
 import android.content.Context
 import android.os.Bundle
@@ -12,7 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.bsafesandroid.ui.theme.BSafesAndroidTheme
+import com.bsafes.android.ui.theme.BSafesAndroidTheme
 import java.io.File
 
 class MainActivity : ComponentActivity() {
