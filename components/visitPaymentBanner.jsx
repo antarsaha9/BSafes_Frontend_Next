@@ -1,12 +1,11 @@
 import { useSelector } from "react-redux";
 import { useRouter } from 'next/router';
+import Link from "next/link";
 
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Button from "react-bootstrap/Button";
 
 import format from "date-fns/format";
-
-
 import { debugLog } from "../lib/helper";
 
 export default function VisitPaymentBanner({ upgradeRequired = false, suspended = false, overflow = false }) {
@@ -32,9 +31,9 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                         <Offcanvas.Title>Upgrade Required</Offcanvas.Title>
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                        {true && <p>{`Hello, just wanted to remind you that your cuurent storage usage exceeds your storage quota. Please visit the`} <a href="/external/payment">payment page</a>.</p>}
+                        {true && <p>{`Hello, just wanted to remind you that your cuurent storage usage exceeds your storage quota. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/external/payment">Go</Button>
+                            <Button href="/services/payment">Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
@@ -43,9 +42,9 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                         <Offcanvas.Title>Pending Dues</Offcanvas.Title>
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                        {true && <p>{`Hello, you may have pending dues. Please visit the`} <a href="/external/payment">payment page</a>.</p>}
+                        {true && <p>{`Hello, you may have pending dues. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/external/payment">Go</Button>
+                            <Button href="/services/payment">Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
@@ -54,9 +53,9 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                         <Offcanvas.Title>Upgrade Required</Offcanvas.Title>
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                        {true && <p>{`Hello, you might have outstanding payments due to exceeding your storage quota. Please visit the`} <a href="/external/payment">payment page</a>.</p>}
+                        {true && <p>{`Hello, you might have outstanding payments due to exceeding your storage quota. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/external/payment">Go</Button>
+                            <Button href="/services/payment">Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
