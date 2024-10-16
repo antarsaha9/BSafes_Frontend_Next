@@ -82,10 +82,6 @@ fun ComposeWrappedWebView(
         InAppPurchaseWorker(appContext as Activity)
     }
 
-    LaunchedEffect(key1 = true) {
-        inAppPurchaseWorker.billingSetup()
-//            inAppPurchaseWorker.checkProducts()
-    }
 
     AndroidView(
         factory = { context ->
@@ -192,7 +188,8 @@ fun ComposeWrappedWebView(
                  * https://developer.android.com/reference/androidx/webkit/WebViewAssetLoader
                  */
                 loadUrl("$scheme://$domain")
-                addJavascriptInterface(WebviewJSInterface(context), "Android")
+                addJavascriptInterface(WebviewJSInterface(context, inAppPurchaseWorker), "Android")
+                inAppPurchaseWorker.billingSetup()
             }.also { webView.value = it }
         },
         update = {}

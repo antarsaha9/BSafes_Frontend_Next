@@ -106,6 +106,8 @@ export default function Checkout() {
             if (process.env.NEXT_PUBLIC_platform === 'iOS') {
                 debugLog(debugOn, 'createApplePaymentIntentThunk')
                 dispatch(createApplePaymentIntentThunk({ checkoutPlan }));
+            } else if(process.env.NEXT_PUBLIC_platform === 'android'){
+                window.Android.initiatePurchase(checkoutPlan)
             } else {
                 dispatch(createPaymentIntentThunk({ checkoutPlan }));
             }
