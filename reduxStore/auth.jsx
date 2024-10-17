@@ -52,8 +52,8 @@ const authSlice = createSlice({
         },
         resetAuthActivity: (state, action) => {
             state.activity = 0,
-            state.activityErrors = 0,
-            state.activityErrorCodes = { };
+                state.activityErrors = 0,
+                state.activityErrorCodes = {};
         },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
@@ -190,16 +190,46 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     api: '/logIn',
                     body: credentials.keyPack,
                     dispatch
-                }).then(data => {
+                }).then(async data => {
                     debugLog(debugOn, data);
                     if (data.status !== 'ok') {
                         debugLog(debugOn, "woo... failed to login.")
                         reject("102");
                         return;
                     }
-                    dispatch(setChallengeState(true));
-                    localStorage.setItem("authToken", data.authToken);
+                    
+                    // Verify if public key matches private key to ensure public key is not replaced by threat actors
+                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                    privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
+                    const pki = forge.pki;
+                    let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
 
+                    async function verifyPublicKey() {
+                        try {
+                            let testBytes = forge.random.getBytesSync(128);
+                            testBytes = forge.util.encode64(testBytes);
+                            let md = forge.md.sha1.create();
+                            md.update(testBytes, 'utf8');
+                            let signature = privateKeyFromPem.sign(md);
+                            const receivedPublicKey = forge.util.decode64(data.publicKey)
+                            md = forge.md.sha1.create();
+                            md.update(testBytes, 'utf8');
+                            const pki = forge.pki;
+                            const publicKeyFromPem = pki.publicKeyFromPem(receivedPublicKey);
+                            const verified = publicKeyFromPem.verify(md.digest().bytes(), signature);
+                            return verified;
+                        } catch (error) {
+                            debugLog(debugOn, "Pubilic key verification error: ", error);
+                            return false;
+                        }
+
+                    }
+                    if (!await verifyPublicKey()) {
+                        reject("116");
+                        return;
+                    };
+                    localStorage.setItem("authToken", data.authToken);
+                    dispatch(setChallengeState(true));
                     credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
                     credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
                     credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
@@ -209,15 +239,10 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         let randomMessage = data.randomMessage;
                         randomMessage = forge.util.encode64(randomMessage);
 
-                        let privateKey = forge.util.decode64(data.privateKeyEnvelope);
-                        privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
-                        const pki = forge.pki;
-                        let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
                         const md = forge.md.sha1.create();
                         md.update(randomMessage, 'utf8');
                         let signature = privateKeyFromPem.sign(md);
                         signature = forge.util.encode64(signature);
-
 
                         PostCall({
                             api: '/memberAPI/verifyChallenge',
@@ -375,7 +400,10 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.Preflight, () => {
         return new Promise(async (resolve, reject) => {
-            if (getState().auth.challengeState) return;
+            if (getState().auth.challengeState) {
+                resolve();
+                return;
+            }
             dispatch(setNextAuthStep(null));
             const params = {
                 api: '/memberAPI/preflight',

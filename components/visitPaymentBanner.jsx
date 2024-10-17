@@ -19,7 +19,7 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
     }
 
     const handleVisitPayment = () => {
-
+        router.push('/services/payment')
     }
 
     return (
@@ -33,7 +33,7 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                     <Offcanvas.Body>
                         {true && <p>{`Hello, just wanted to remind you that your cuurent storage usage exceeds your storage quota. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/services/payment">Go</Button>
+                            <Button onClick={handleVisitPayment}>Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
@@ -44,7 +44,7 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                     <Offcanvas.Body>
                         {true && <p>{`Hello, you may have pending dues. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/services/payment">Go</Button>
+                            <Button onClick={handleVisitPayment}>Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
@@ -55,7 +55,7 @@ export default function VisitPaymentBanner({ upgradeRequired = false, suspended 
                     <Offcanvas.Body>
                         {true && <p>{`Hello, you might have outstanding payments due to exceeding your storage quota. Please visit the`} <Link href="/services/payment">payment page</Link>.</p>}
                         <div className="text-center">
-                            <Button href="/services/payment">Go</Button>
+                            <Button onClick={handleVisitPayment}>Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}
