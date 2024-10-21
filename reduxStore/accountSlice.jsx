@@ -26,6 +26,7 @@ const initialState = {
     stripeClientSecret: null,
     lastPaymentIntentTime: null,
     appleClientSecret: null,
+    androidClientSecret: null
 }
 
 const accountSlice = createSlice({
@@ -114,11 +115,18 @@ const accountSlice = createSlice({
         },
         clearAppleClientSecret: (state, action) => {
             state.appleClientSecret = null;
+        },
+        setAndroidPaymentIntentData: (state, action) => {
+            state.androidClientSecret = action.payload.androidClientSecret;
+            state.checkoutItem = action.payload.checkoutItem;
+        },
+        clearAndroidClientSecret: (state, action) => {
+            state.androidClientSecret = null;
         }
     }
 });
 
-export const { cleanAccountSlice, resetAccountActivity, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret } = accountSlice.actions;
+export const { cleanAccountSlice, resetAccountActivity, activityStart, activityDone, activityError, setNewAccountCreated, showApiActivity, hideApiActivity, incrementAPICount, setAccountState, invoiceLoaded, setCheckoutPlan, transactionsLoaded, setAccountHashVerified, setDataCenterModal, MFALoaded, dataCentersLoaded, setCurrentDataCenter, setPaymentIntentData, setLastPaymentIntentTime, setApplePaymentIntentData, clearAppleClientSecret, setAndroidPaymentIntentData, clearAndroidClientSecret } = accountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -427,6 +435,40 @@ export const reportAnAppleTransactionThunk = (data) => async (dispatch, getState
             });
         })
     });    
+}
+
+export const createAndroidPaymentIntentThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.CreateAndroidPaymentIntent, () => {
+        return new Promise((resolve, reject) => {
+            const accountState = getState().account;
+            const currentTime = Date.now();
+            const timeDiff = currentTime - (accountState.lastPaymentIntentTime || 0);
+            if(accountState.lastPaymentIntentTime && timeDiff < minimumPaymentWaitingTime ) {
+                debugLog(debugOn, 'duplicated createAndroidPaymentIntentThunk')
+                resolve();
+                return;
+            }
+            dispatch(setLastPaymentIntentTime(currentTime));
+            dispatch(setAndroidPaymentIntentData({androidClientSecret: null, checkoutItem:null}))
+            PostCall({
+                api: '/memberAPI/createAndroidPaymentIntent',
+                body: {
+                    checkoutPlan:data.checkoutPlan
+                }
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    dispatch(setAndroidPaymentIntentData({androidClientSecret: data.client_secret, checkoutItem:data.checkoutItem}));
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... create Android payment intent failed: ", data.error);
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... create Android payment intent failed.", error)
+            });
+        })
+    });
 }
 
 export const accountReducer = accountSlice.reducer;

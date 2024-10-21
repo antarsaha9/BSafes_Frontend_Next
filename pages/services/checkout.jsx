@@ -14,7 +14,7 @@ import LoadStripe from '../../components/loadStripe'
 import CheckoutForm from '../../components/checkoutForm'
 
 import { accountActivity } from '../../lib/activities'
-import { createPaymentIntentThunk, createApplePaymentIntentThunk, setApplePaymentIntentData, reportAnAppleTransactionThunk, activityStart, activityDone, clearAppleClientSecret } from '../../reduxStore/accountSlice';
+import { createPaymentIntentThunk, createApplePaymentIntentThunk, reportAnAppleTransactionThunk, activityStart, activityDone, clearAppleClientSecret, createAndroidPaymentIntentThunk } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -32,7 +32,8 @@ export default function Checkout() {
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const memberId = useSelector(state => state.auth.memberId);
     const stripeClientSecret = useSelector(state => state.account.stripeClientSecret);
-    const appleClientSecret = useSelector(state => state.account.appleClientSecret)
+    const appleClientSecret = useSelector(state => state.account.appleClientSecret);
+    const androidClientSecret = useSelector(state => state.account.androidClientSecret);
     const checkoutItem = useSelector(state => state.account.checkoutItem);
     const invoice = useSelector(state => state.account.invoice);
     const checkoutPlan = useSelector(state => state.account.checkoutPlan);
@@ -101,11 +102,26 @@ export default function Checkout() {
         dispatch(activityDone(accountActivity.IOSInAppPurchase))
     }
 
+    const transactionWebCallFromAndroid = (data) => {
+        debugLog(debugOn, 'transactionWebCall', data);
+        let transaction = data.transaction;
+        //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}; // TestWarning
+        if (data.status === 'ok') {
+            savePendingAppleTransaction(transaction);
+        } else {
+            router.push('/services/payment')
+        }
+        dispatch(activityDone(accountActivity.IOSInAppPurchase))
+    }
+
     useEffect(() => {
         if (isLoggedIn && checkoutPlan) {
             if (process.env.NEXT_PUBLIC_platform === 'iOS') {
                 debugLog(debugOn, 'createApplePaymentIntentThunk')
                 dispatch(createApplePaymentIntentThunk({ checkoutPlan }));
+            } if (process.env.NEXT_PUBLIC_platform === 'android') {
+                debugLog(debugOn, 'createAndroidPaymentIntentThunk')
+                dispatch(createAndroidPaymentIntentThunk({ checkoutPlan }));
             } else {
                 dispatch(createPaymentIntentThunk({ checkoutPlan }));
             }
@@ -141,6 +157,19 @@ export default function Checkout() {
             dispatch(clearAppleClientSecret())
         }
     }, [appleClientSecret])
+
+    useEffect(() => {
+        debugLog(debugOn, 'androidCientSecret: ', androidClientSecret)
+        if (androidClientSecret) {
+            if (window.Android) {
+                console.log('checkout');
+                dispatch(activityStart(accountActivity.AndroidInAppPurchase))
+                window.bsafesAndroid.transactionWebCall = transactionWebCallFromAndroid;
+                window.Android.initiatePurchase(planId.toLowerCase())
+            }
+            dispatch(clearAppleClientSecret())
+        }
+    }, [androidClientSecret])
 
     useEffect(() => {
         if(appleTransactionCompleted) {
