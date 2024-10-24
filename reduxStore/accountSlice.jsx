@@ -471,6 +471,35 @@ export const createAndroidPaymentIntentThunk = (data) => async (dispatch, getSta
     });
 }
 
+export const reportAnAndroidPurchaseThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, accountActivity.ReportAnAndroidPurchase, () => {
+        return new Promise((resolve, reject) => {
+            debugLog(debugOn, "reportAnAndroidPurchaseThunk, purchase: ", data.purchase)
+            const reportAnAndroidPurchaseCallback = data.callback;
+            PostCall({
+                api: '/memberAPI/reportAnAndroidPurchase',
+                body: {
+                    purchase: data.purchase
+                }
+            }).then(data => {
+                debugLog(debugOn, 'reportAnAndroidPurchase: ', data);
+                if (data.status === 'ok') {
+                    reportAnAndroidPurchaseCallback({status:'ok'});
+                    resolve();
+                } else {
+                    debugLog(debugOn, "woo... reportAnAndroidPurchase failed: ", data.error);
+                    reportAnAndroidPurchaseCallback({status:'error', error:data.error});
+                    reject();
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... reportAnAndroidPurchase failed.", error)
+                reportAnAndroidPurchaseCallback({status:'error', error:'Network Error.'});
+                reject();
+            });
+        })
+    });    
+}
+
 export const accountReducer = accountSlice.reducer;
 
 export default accountSlice;

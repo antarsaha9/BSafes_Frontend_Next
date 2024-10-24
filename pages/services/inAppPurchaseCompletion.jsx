@@ -6,7 +6,7 @@ import Button from 'react-bootstrap/Button'
 
 import ContentPageLayout from '../../components/layouts/contentPageLayout';
 
-export default function AppleTransactionCompletion() {
+export default function InAppPurchaseCompletion() {
     const router = useRouter();
 
     return (

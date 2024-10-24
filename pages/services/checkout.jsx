@@ -14,7 +14,7 @@ import LoadStripe from '../../components/loadStripe'
 import CheckoutForm from '../../components/checkoutForm'
 
 import { accountActivity } from '../../lib/activities'
-import { createPaymentIntentThunk, createApplePaymentIntentThunk, reportAnAppleTransactionThunk, activityStart, activityDone, clearAppleClientSecret, createAndroidPaymentIntentThunk } from '../../reduxStore/accountSlice';
+import { createPaymentIntentThunk, createApplePaymentIntentThunk, reportAnAppleTransactionThunk, reportAnAndroidPurchaseThunk, activityStart, activityDone, clearAppleClientSecret, createAndroidPaymentIntentThunk } from '../../reduxStore/accountSlice';
 
 import { debugLog } from '../../lib/helper'
 
@@ -28,6 +28,9 @@ export default function Checkout() {
     const [pendingAppleTransaction, setPendingAppleTransaction] = useState(null);
     const [reportAnAppleTransactionError, setReportAnAppleTransactionError] = useState(null)
     const [appleTransactionCompleted, setAppleTransactionCompleted] = useState(false);
+    const [pendingAndroidPurchase, setPendingAndroidPurchase] = useState(null);
+    const [reportAnAndroidPurchaseError, setReportAnAndroidPurchaseError] = useState(null)
+    const [androidPurchaseCompleted, setAndroidPurchaseCompleted] = useState(false);
 
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const memberId = useSelector(state => state.auth.memberId);
@@ -55,7 +58,6 @@ export default function Checkout() {
         pendingAppleTransactions = JSON.stringify(pendingAppleTransactions)
         localStorage.setItem('pendingAppleTransactions', pendingAppleTransactions);
     }
-
     const clearPendingApppleTransaction = () => {
         debugLog(debugOn, "clearPendingApppleTransaction - ")
         setPendingAppleTransaction(null);
@@ -69,6 +71,34 @@ export default function Checkout() {
         pendingAppleTransactions = JSON.stringify(pendingAppleTransactions)
         localStorage.setItem('pendingAppleTransactions', pendingAppleTransactions);
     }
+
+    const savePendingAndroidPurchase = (purchase) => {
+        debugLog(debugOn, "savePendingAndroidPurchase - ")
+        setPendingAndroidPurchase(purchase);
+        let pendingAndroidPurchases = localStorage.getItem('pendingAndroidPurchases');
+        if (pendingAndroidPurchases) {
+            pendingAndroidPurchases = JSON.parse(pendingAndroidPurchases);
+        } else {
+            pendingAndroidPurchases = {};
+        }
+        pendingAndroidPurchases[memberId] = purchase;
+        pendingAndroidPurchases = JSON.stringify(pendingAndroidPurchases)
+        localStorage.setItem('pendingAndroidPurchases', pendingAndroidPurchase);
+    }
+    const clearPendingAndroidPurchase = () => {
+        debugLog(debugOn, "clearPendingAndroidPurchase - ")
+        setPendingAndroidPurchase(null);
+        let pendingAndroidPurchases = localStorage.getItem('pendingAndroidPurchases');
+        if (pendingAndroidPurchases) {
+            pendingAndroidPurchases = JSON.parse(pendingAndroidPurchases);
+        } else {
+            pendingAndroidPurchases = {};
+        }
+        pendingAndroidPurchases[memberId] = null;
+        pendingAndroidPurchases = JSON.stringify(pendingAndroidPurchases)
+        localStorage.setItem('pendingAndroidPurchases', pendingAndroidPurchases);
+    }
+    
 
     const handleFixIt = () => {
         setReportAnAppleTransactionError(null);
@@ -102,16 +132,28 @@ export default function Checkout() {
         dispatch(activityDone(accountActivity.IOSInAppPurchase))
     }
 
-    const transactionWebCallFromAndroid = (data) => {
-        debugLog(debugOn, 'transactionWebCall', data);
-        let transaction = data.transaction;
-        //transaction = {time: Date.now() ,id: '2000000619251013', originalId: '2000000619251013'}; // TestWarning
-        if (data.status === 'ok') {
-            savePendingAppleTransaction(transaction);
+    const reportAnAndroidPurchaseCallback = (response) => {
+        if (response.status === 'ok') {
+            clearPendingAndroidPurchase();
+            setAndroidPurchaseCompleted(true);
         } else {
+            console.log("reportAnAndroidPurchaseCallback returns error, pending: ", pendingAndroidPurchase)
+            setReportAnAndroidPurchaseError(response.error);
+        }
+    }
+
+    const transactionWebCallFromAndroid = (data) => {
+        debugLog(debugOn, 'transactionWebCall');
+        if(data.status === 'ok') {
+            let purchase = data.purchase;
+            debugLog(debugOn, 'purchase: ', purchase);
+            savePendingAndroidPurchase(purchase);
+        } else if(data.status === 'canceled') {
+            router.push('/services/payment')
+        } else if(data.status == 'error') {
             router.push('/services/payment')
         }
-        dispatch(activityDone(accountActivity.IOSInAppPurchase))
+        dispatch(activityDone(accountActivity.AndroidInAppPurchase))
     }
 
     useEffect(() => {
@@ -136,10 +178,37 @@ export default function Checkout() {
     }, [pendingAppleTransaction])
 
     useEffect(() => {
+        if(appleTransactionCompleted) {
+            debugLog(debugOn, "Apple transaction is completed.")
+            router.push('/services/inAppPurchaseCompletion')
+        }
+    }, [appleTransactionCompleted])
+
+    useEffect(() => {
         if (reportAnAppleTransactionError) {
             debugLog(debugOn, "useEffect - reportAnAppleTransactionErrorn: ", reportAnAppleTransactionError)
         }
     }, [reportAnAppleTransactionError])
+
+    useEffect(() => {
+        if (pendingAndroidPurchase) {
+            debugLog(debugOn, "useEffect - pendingAndroidPurchase: ", pendingAndroidPurchase)
+            dispatch(reportAnAndroidPurchaseThunk({ purchase: pendingAndroidPurchase, callback: reportAnAndroidPurchaseCallback }))
+        }
+    }, [pendingAndroidPurchase])
+
+    useEffect(() => {
+        if(androidPurchaseCompleted) {
+            debugLog(debugOn, "Android purchase is completed.")
+            router.push('/services/inAppPurchaseCompletion')
+        }
+    }, [androidPurchaseCompleted])
+
+    useEffect(() => {
+        if (reportAnAndroidPurchaseError) {
+            debugLog(debugOn, "useEffect - reportAnAndroidPurchaseError: ", reportAnAndroidPurchaseError)
+        }
+    }, [reportAnAndroidPurchaseError])
 
     useEffect(() => {
         debugLog(debugOn, 'appleCientSecret: ', appleClientSecret)
@@ -170,13 +239,6 @@ export default function Checkout() {
             dispatch(clearAppleClientSecret())
         }
     }, [androidClientSecret])
-
-    useEffect(() => {
-        if(appleTransactionCompleted) {
-            debugLog(debugOn, "Apple transaction is completed.")
-            router.push('/services/appleTransactionCompletion')
-        }
-    }, [appleTransactionCompleted])
 
     return (
         <ContentPageLayout showNaveBar={false}>
@@ -209,10 +271,10 @@ export default function Checkout() {
                     </Row>
                 }
                 <br />
-                {(process.env.NEXT_PUBLIC_platform === 'iOS') && reportAnAppleTransactionError && !reportAnAppleTransactionError.startsWith('Invalid transaction') &&
+                {(process.env.NEXT_PUBLIC_platform === 'iOS' || process.env.NEXT_PUBLIC_platform === 'android') && (reportAnAppleTransactionError || reportAnAndroidPurchaseError) && !reportAnAppleTransactionError.startsWith('Invalid transaction') && !reportAnAndroidPurchaseError.startsWith('Invalid purchase') &&
                     <Row>
                         <Col xs={{ span: 12 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} lg={{ span: 6, offset: 3 }}>
-                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{fontWeight:'bold'}}>{reportAnAppleTransactionError}</span>. {`Please try again, and you will not be re-charged.`}
+                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{fontWeight:'bold'}}>{reportAnAppleTransactionError}</span>. {`Please try again, and we will not ask you to pay.`}
                             <br/>
                             <br/>
                             <div className="text-center">
