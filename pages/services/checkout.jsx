@@ -49,7 +49,7 @@ export default function Checkout() {
         debugLog(debugOn, "savePendingAppleTransaction - ")
         setPendingAppleTransaction(transaction);
         let pendingAppleTransactions = localStorage.getItem('pendingAppleTransactions');
-        if (pendingAppleTransactions) {
+        if (pendingAppleTransactions && pendingAppleTransactions !== 'null') {
             pendingAppleTransactions = JSON.parse(pendingAppleTransactions);
         } else {
             pendingAppleTransactions = {};
@@ -62,7 +62,7 @@ export default function Checkout() {
         debugLog(debugOn, "clearPendingApppleTransaction - ")
         setPendingAppleTransaction(null);
         let pendingAppleTransactions = localStorage.getItem('pendingAppleTransactions');
-        if (pendingAppleTransactions) {
+        if (pendingAppleTransactions && pendingAppleTransactions !== 'null') {
             pendingAppleTransactions = JSON.parse(pendingAppleTransactions);
         } else {
             pendingAppleTransactions = {};
@@ -76,33 +76,40 @@ export default function Checkout() {
         debugLog(debugOn, "savePendingAndroidPurchase - ")
         setPendingAndroidPurchase(purchase);
         let pendingAndroidPurchases = localStorage.getItem('pendingAndroidPurchases');
-        if (pendingAndroidPurchases) {
+        if (pendingAndroidPurchases && pendingAndroidPurchases !== 'null') {
             pendingAndroidPurchases = JSON.parse(pendingAndroidPurchases);
         } else {
             pendingAndroidPurchases = {};
         }
-        pendingAndroidPurchases[memberId] = purchase;
+        pendingAndroidPurchases[memberId] = JSON.stringify(purchase);
         pendingAndroidPurchases = JSON.stringify(pendingAndroidPurchases)
-        localStorage.setItem('pendingAndroidPurchases', pendingAndroidPurchase);
+        localStorage.setItem('pendingAndroidPurchases', pendingAndroidPurchases);
     }
     const clearPendingAndroidPurchase = () => {
         debugLog(debugOn, "clearPendingAndroidPurchase - ")
         setPendingAndroidPurchase(null);
         let pendingAndroidPurchases = localStorage.getItem('pendingAndroidPurchases');
-        if (pendingAndroidPurchases) {
+        if (pendingAndroidPurchases && pendingAndroidPurchases !== 'null') {
             pendingAndroidPurchases = JSON.parse(pendingAndroidPurchases);
         } else {
             pendingAndroidPurchases = {};
         }
+        debugLog(debugOn, "clearPendingAndroidPurchase - ")
         pendingAndroidPurchases[memberId] = null;
         pendingAndroidPurchases = JSON.stringify(pendingAndroidPurchases)
         localStorage.setItem('pendingAndroidPurchases', pendingAndroidPurchases);
+        debugLog(debugOn, "clearPendingAndroidPurchase finished. ")
     }
-    
+
 
     const handleFixIt = () => {
-        setReportAnAppleTransactionError(null);
-        dispatch(reportAnAppleTransactionThunk({ transaction: pendingAppleTransaction, callback: reportAnAppleTransactionCallback }))
+        if (process.env.NEXT_PUBLIC_platform === 'iOS') {
+            setReportAnAppleTransactionError(null);
+            dispatch(reportAnAppleTransactionThunk({ transaction: pendingAppleTransaction, callback: reportAnAppleTransactionCallback }))
+        } else if (process.env.NEXT_PUBLIC_platform === 'android') {
+            setReportAnAndroidPurchaseError(null);
+            dispatch(reportAnAndroidPurchaseThunk({ purchase: pendingAndroidPurchase, callback: reportAnAppleTransactionCallback }))
+        }
     }
 
     const reportAnAppleTransactionCallback = (response) => {
@@ -133,6 +140,7 @@ export default function Checkout() {
     }
 
     const reportAnAndroidPurchaseCallback = (response) => {
+        debugLog("reportAnAndroidPurchaseCallback - ", response.status );
         if (response.status === 'ok') {
             clearPendingAndroidPurchase();
             setAndroidPurchaseCompleted(true);
@@ -144,13 +152,13 @@ export default function Checkout() {
 
     const transactionWebCallFromAndroid = (data) => {
         debugLog(debugOn, 'transactionWebCall');
-        if(data.status === 'ok') {
-            let purchase = data.purchase;
+        if (data.status === 'ok') {
+            let purchase = JSON.parse(data.purchase);
             debugLog(debugOn, 'purchase: ', purchase);
             savePendingAndroidPurchase(purchase);
-        } else if(data.status === 'canceled') {
+        } else if (data.status === 'canceled') {
             router.push('/services/payment')
-        } else if(data.status == 'error') {
+        } else if (data.status == 'error') {
             router.push('/services/payment')
         }
         dispatch(activityDone(accountActivity.AndroidInAppPurchase))
@@ -178,7 +186,7 @@ export default function Checkout() {
     }, [pendingAppleTransaction])
 
     useEffect(() => {
-        if(appleTransactionCompleted) {
+        if (appleTransactionCompleted) {
             debugLog(debugOn, "Apple transaction is completed.")
             router.push('/services/inAppPurchaseCompletion')
         }
@@ -198,7 +206,7 @@ export default function Checkout() {
     }, [pendingAndroidPurchase])
 
     useEffect(() => {
-        if(androidPurchaseCompleted) {
+        if (androidPurchaseCompleted) {
             debugLog(debugOn, "Android purchase is completed.")
             router.push('/services/inAppPurchaseCompletion')
         }
@@ -235,6 +243,9 @@ export default function Checkout() {
                 dispatch(activityStart(accountActivity.AndroidInAppPurchase))
                 window.bsafesAndroid.transactionWebCall = transactionWebCallFromAndroid;
                 window.Android.initiatePurchase(planId.toLowerCase())
+            } else {
+                const purchase = '{"orderId":"GPA.3351-4344-3420-01214","packageName":"com.bsafes.android.bsafes","productId":"bsafes_001","purchaseTime":1730092798870,"purchaseState":0,"purchaseToken":"ocikmbelnoiflbmgonehogeb.AO-J1OxvnDznYogJk0jliUCMcmyWDa8kcmNRoX_2mbYG8F0Ey6t5XdvdEoiLR5WoCMUOb2N0m_o9k25YTu0meiqY24m4TxAlvH-oqsjI9XQrEe0odPoljGU","quantity":1,"acknowledged":false}';
+                transactionWebCallFromAndroid({status: 'ok', purchase})
             }
             dispatch(clearAppleClientSecret())
         }
@@ -271,12 +282,12 @@ export default function Checkout() {
                     </Row>
                 }
                 <br />
-                {(process.env.NEXT_PUBLIC_platform === 'iOS' || process.env.NEXT_PUBLIC_platform === 'android') && (reportAnAppleTransactionError || reportAnAndroidPurchaseError) && !reportAnAppleTransactionError.startsWith('Invalid transaction') && !reportAnAndroidPurchaseError.startsWith('Invalid purchase') &&
+                {((process.env.NEXT_PUBLIC_platform === 'iOS' && reportAnAppleTransactionError && !reportAnAppleTransactionError.startsWith('Invalid transaction')) || (process.env.NEXT_PUBLIC_platform === 'android' && reportAnAndroidPurchaseError && !reportAnAndroidPurchaseError.startsWith('Invalid purchase'))) &&
                     <Row>
                         <Col xs={{ span: 12 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} lg={{ span: 6, offset: 3 }}>
-                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{fontWeight:'bold'}}>{reportAnAppleTransactionError}</span>. {`Please try again, and we will not ask you to pay.`}
-                            <br/>
-                            <br/>
+                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{ fontWeight: 'bold' }}>{reportAnAppleTransactionError}</span>. {`Please try again, and we will not ask you to pay.`}
+                            <br />
+                            <br />
                             <div className="text-center">
                                 <Button onClick={handleFixIt}>Fix It</Button>
                             </div>
