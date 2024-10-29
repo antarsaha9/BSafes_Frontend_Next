@@ -142,6 +142,10 @@ export default function Checkout() {
     const reportAnAndroidPurchaseCallback = (response) => {
         debugLog("reportAnAndroidPurchaseCallback - ", response.status );
         if (response.status === 'ok') {
+            if (window.Android) {
+                console.log('finishPurchase');
+                window.Android.finishPurchase(planId.toLowerCase())
+            }
             clearPendingAndroidPurchase();
             setAndroidPurchaseCompleted(true);
         } else {

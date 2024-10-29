@@ -104,8 +104,32 @@ export default function Payment() {
         router.push('/services/checkout');
     }
 
-    useEffect(() => {
+    const fixTransactionWebCallFromAndroid = (data) => {
+        debugLog(debugOn, 'transactionWebCall');
+        if (data.status === 'ok') {
+            let purchase = JSON.parse(data.purchase);
+            debugLog(debugOn, 'purchase: ', purchase);
+            savePendingAndroidPurchase(purchase);
+        } else if (data.status === 'canceled') {
+            router.push('/services/payment')
+        } else if (data.status == 'error') {
+            router.push('/services/payment')
+        }
+        dispatch(activityDone(accountActivity.AndroidInAppPurchase))
+    }
+
+    useEffect(() => { 
         if (isLoggedIn) {
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (window.Android) {
+                    debugLog(debugOn, "Check pending purchase ...")
+                    const pendingPurchase = window.Android.checkPendingPurchase();
+                    debugLog(debugOn, pendingPurchase)
+                    if(pendingPurchase !== 'null') {
+                        return;
+                    }
+                }
+            }
             dispatch(setCheckoutPlan(null));
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
