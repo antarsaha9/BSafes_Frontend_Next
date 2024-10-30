@@ -289,7 +289,7 @@ export default function Checkout() {
                 {((process.env.NEXT_PUBLIC_platform === 'iOS' && reportAnAppleTransactionError && !reportAnAppleTransactionError.startsWith('Invalid transaction')) || (process.env.NEXT_PUBLIC_platform === 'android' && reportAnAndroidPurchaseError && !reportAnAndroidPurchaseError.startsWith('Invalid purchase'))) &&
                     <Row>
                         <Col xs={{ span: 12 }} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} lg={{ span: 6, offset: 3 }}>
-                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{ fontWeight: 'bold' }}>{reportAnAppleTransactionError}</span>. {`Please try again, and we will not ask you to pay.`}
+                            {`Many thanks for your purchase. We're sorry we failed to complete it due to a`} <span style={{ fontWeight: 'bold' }}>{reportAnAppleTransactionError || reportAnAndroidPurchaseError}</span>. {`Please try again, and we will not ask you to pay.`}
                             <br />
                             <br />
                             <div className="text-center">
