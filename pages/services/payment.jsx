@@ -69,7 +69,7 @@ export default function Payment() {
     }
 
     debugLog(debugOn, "dues", dues)
-    const dueItems = dues && (dues.length !== 0) && dues.reverse().map((item, i) =>
+    let dueItems = dues && (dues.length !== 0) && JSON.parse(JSON.stringify(dues)).reverse().map((item, i) =>
         <tr key={i}>
             <td>{format(new Date(item.dueTime), 'MM/dd/yyyy')}</td>
             <td>{item.monthlyInvoice.requiredStorage}</td>
