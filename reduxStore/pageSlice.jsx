@@ -5,7 +5,7 @@ const DOMPurify = require('dompurify');
 
 import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
 
-import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
+import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview, openDb, getFile, deleteFile } from '../lib/helper'
 import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
@@ -571,10 +571,10 @@ const pageSlice = createSlice({
         addUploadImages: (state, action) => {
             if (state.aborted) return;
             const files = action.payload.files;
-            let newPanels = [];
+            const newPanels = [];
             for (let i = 0; i < files.length; i++) {
                 const queueId = 'u' + state.imageUploadQueue.length;
-                const newUpload = { file: files[i] };
+                const newUpload = { file: action.payload.indexedDb ? undefined : files[i], queueId };
                 state.imageUploadQueue.push(newUpload);
                 const newPanel = {
                     queueId: queueId,
@@ -2655,6 +2655,26 @@ const findImageWordsByKey = (images, s3Key) => {
     return null;
 }
 
+const addUploadImagesToIndexedDb = (data) => async (dispatch, getState) => {
+    dispatch(addUploadImages({ files: data.files, where: data.where, indexedDb: true }));
+    const state = getState().page;
+    const panels = state.imageUploadQueue.slice(data.files.length*-1)
+    const db = await openDb();
+    const transaction = db.transaction("queue", "readwrite");
+    const store = transaction.objectStore("queue");
+    
+    for (let i = 0; i< data.files.length; i++){
+        const eachFile = data.files[i];
+        const queueId = panels[i].queueId;
+        console.log(await new Promise((resolve, reject) => {
+            const request = store.add({ file: eachFile, queueId, status: "pending"});
+            request.onsuccess = () => resolve("Image added to queue");
+            request.onerror = (e) => reject("Error adding image to queue");
+        }));
+    }
+    db.close()
+}
+
 export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
@@ -2664,7 +2684,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
         return;     
     }
     if (state.activity & pageActivity.UploadImages) {
-        dispatch(addUploadImages({ files: data.files, where: data.where }));
+        await dispatch(addUploadImagesToIndexedDb({ files: data.files, where: data.where }));
         return;
     }
     newActivity(dispatch, pageActivity.UploadImages, () => {
@@ -2674,22 +2694,30 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 itemKey = generateNewItemKey();
                 dispatch(newItemKey({ itemKey }));
             }
-            dispatch(addUploadImages({ files: data.files, where: data.where }));
+            await dispatch(addUploadImagesToIndexedDb({ files: data.files, where: data.where }));
             state = getState().page;
+            const db = await openDb();
+            
             while (state.imageUploadQueue.length > state.imageUploadIndex) {
+                const transaction = db.transaction("queue");
+                const queueStore = transaction.objectStore("queue");
                 if (state.aborted) {
                     debugLog(debugOn, "abort: ", state.aborted);
                     break;
                 }
-                debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
-                const file = state.imageUploadQueue[state.imageUploadIndex].file;
+                const queueId = state.imageUploadQueue[state.imageUploadIndex].queueId;
+                const {file} = await getFile(queueStore, queueId)
+                
+                debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${file.name}`)
                 try {
                     const uploadResult = await uploadAnImage(dispatch, state, file);
                     dispatch(imageUploaded(uploadResult));
+                    await deleteFile(db, queueId);
+
                 } catch (error) {
+                    debugLog(debugOn, 'uploadImagesThunk failed: ', error);
                     alert("Network failure, retry?")
                 }
-
                 state = getState().page;
             }
             state = getState().page;
