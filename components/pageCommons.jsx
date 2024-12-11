@@ -17,6 +17,7 @@ import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 import AttachmentPanel from "./attachmentPanel";
 import Comments from "./comments";
+import { pageActivity } from "../lib/activities";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -773,7 +774,7 @@ export default function PageCommons() {
         )
     }
 
-
+    
     return (
         <>
             <Row className="justify-content-center">
@@ -816,7 +817,7 @@ export default function PageCommons() {
                 </Col>
             </Row>
             <br />
-            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
+            {(!editingEditorId && (activity === 0 || activity === pageActivity.UploadImages) && (!oldVersion)) &&
                 <div className="images">
                     <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
                     <Row>
