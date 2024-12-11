@@ -146,6 +146,13 @@ fun ComposeWrappedWebView(
                         view: WebView,
                         request: WebResourceRequest
                     ): WebResourceResponse? {
+                        // Add logic to append .html for subroutes if needed
+                        val url = request.url.toString()
+                        if (!url.contains("_next") && !url.endsWith(".html") && url.contains("/") && !url.endsWith("/")) {
+                            val modifiedUrl = "$url.html"  // Add .html extension for subroutes
+                            return assetLoader.shouldInterceptRequest(Uri.parse(modifiedUrl)) // Intercept with modified URL
+                        }
+
                         return assetLoader.shouldInterceptRequest(request.url)
                     }
                 }
