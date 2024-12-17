@@ -464,6 +464,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                         {publicPage && <>
                             <Nav className="me-auto">
                                 <NavDropdown title="Company" id="collapsible-nav-dropdown" className={BSafesStyle.navLink}>
+                                    <NavDropdown.Item href="https://blog.bsafes.com">
+                                        Blogs
+                                    </NavDropdown.Item>
                                     <NavDropdown.Item href="/public/aboutUs">
                                         About Us
                                     </NavDropdown.Item>

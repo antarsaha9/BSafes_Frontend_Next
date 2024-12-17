@@ -55,6 +55,9 @@ export default function Mission() {
                         <p>{`At our core, we believe that privacy is a fundamental human right. That's why we are fully committed to safeguarding your data privacy and security while ensuring that you remain productive. You can rest assured that your information is in good hands with us.`}</p>
                     </Col>
                 </Row>
+                <br/>
+                <br/>
+                <br/>
             </Container>
             <Footer />
             <br/>

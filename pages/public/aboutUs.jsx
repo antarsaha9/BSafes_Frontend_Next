@@ -60,10 +60,15 @@ export default function AboutUs() {
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <p>{`Wu-Nan Technology was founded by two Taiwanese immigrants with over ten years of combined experience in the US defense and networking industries. Together with engineers in France and India, they developed BSafes, an end-to-end encrypted writing and record-keeping platform.`}</p>
+                        <br/>
                         <p>{`We started the BSafes project after a confidential record was made searchable on Google due to a misconfiguration in a cloud service. Resolving the issue and removing the leaked information online took a lot of effort. `}</p>
+                        <br/>
                         <p>{`Then, we searched for a cloud service that could provide convenience and strong security controls to protect our confidential records, such as videos, photos, documents, and other files. After extensive research, we discovered that end-to-end encrypted cloud storage options, such as Tresorit and Mega, were the most suitable solutions for our needs.`}</p>
+                        <br/>
                         <p>{`End-to-end encrypted cloud storage is secure because the users' devices encrypt a file before sending it to the server. The server receives obscured data, which no one can access. However, updating a single piece of information in a record was previously a time-consuming process that required users to download the file, edit it using a separate word processor, save the work, and then upload it to the server in different steps. This process was even more challenging to do on a mobile device. To make things easier and more efficient, we developed a solution called BSafes. `}</p>
+                        <br/>
                         <p>{`In 2017, we successfully launched BSafes, which met our goals -`}</p>
+                        <br/>
                         <ul>
                             <li>It must be end-to-end encrypted;</li>
                             <li>It must work on any device - a computer(Windows, Mac, Linux), a phone or a tablet(IOS, Android);</li>
@@ -74,6 +79,7 @@ export default function AboutUs() {
                             <li>{`It must retain a record's revision history;`}</li>
                             <li>The backend infrastructure must be reliable and scalable;</li>
                         </ul>
+                        <br/>
                     </Col>
                 </Row>
             </Container>
