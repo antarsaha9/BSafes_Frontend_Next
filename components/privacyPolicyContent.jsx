@@ -19,6 +19,7 @@ export default function PrivacyPolicyContent({ callback }) {
         <>
             <br />
             <Image className={BSafesStyle.featureCardNormalImage} style={{ width: "30%" }} src='/images/dataProtection_small.png'></Image>
+            <img className='mx-auto d-block' src="/images/logo_small.png" />
             <Row className={BSafesStyle.descriptionRow}>
                 <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                     <h1 className='display-1 text-center'>Privacy Policy</h1>

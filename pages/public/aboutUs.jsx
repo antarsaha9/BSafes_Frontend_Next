@@ -44,6 +44,7 @@ export default function AboutUs() {
             <Container className={monteserrat.className} style={{color: 'black' }}>
                 <br />
                 <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/dataProtection_small.png'></Image>
+                <img className='mx-auto d-block' src="/images/logo_small.png" />
                 <Row hidden className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
                         <h2>We respect your privacy! </h2>

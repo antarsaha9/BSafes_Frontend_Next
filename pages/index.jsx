@@ -88,7 +88,8 @@ export default function Home() {
                             <div className="text-center">
                                 <Button variant='danger' size='sm' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
                             </div>
-                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontSize: '5.0rem' }}>🎉 Bit Safes</h1>
+                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontSize: '5.0rem' }}><span hidden>🎉</span> Bit Safes</h1>
+                            <img className='mx-auto d-block' src="/images/logo_small.png" />
                             <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                                 <h5 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h5>
                                 <div hidden className={BSafesStyle.ribbonBannerRight}>Powered by <span style={{ fontSize: '24px' }}>15-Million-Download-Per-Week, Open-Source Forge Crypto</span> Module.</div>
@@ -148,7 +149,7 @@ export default function Home() {
                 <Container>
                     <Row className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
-                            <h3 className='text-center display-6' style={{ fontWeight: '450', color: 'black' }}>Your <span style={{ textDecoration: 'underline yellow', textDecorationThickness: '10px' }}>Private Story</span> Deserves Absolution Protection</h3>
+                            <h3 className='text-center display-6' style={{ fontWeight: '450', color: 'black' }}>Your <span style={{ textDecoration: 'underline yellow', textDecorationThickness: '10px' }}>Private Story</span> Deserves Absolute Protection</h3>
                             <p style={{ color: 'black' }}><span style={{ fontSize: '2rem' }}> 🛁 </span>Rest assured that your information is fully encrypted and secure. From your health to your relationships, family, business and finance, all of your data is protected end-to-end. You can trust that your privacy is our top priority.</p>
                         </Col>
                     </Row>

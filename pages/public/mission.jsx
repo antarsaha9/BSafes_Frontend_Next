@@ -43,6 +43,7 @@ export default function Mission() {
             <Container className={monteserrat.className} style={{color: 'black' }}>
                 <br />
                 <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/dataProtection_small.png'></Image>
+                <img className='mx-auto d-block' src="/images/logo_small.png" />
                 <br/>
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
