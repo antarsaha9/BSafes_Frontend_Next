@@ -526,7 +526,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                             <Nav.Link onClick={payment} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-credit-card" aria-hidden="true" style={{ width: '32px' }}></i> Payment</h5></Nav.Link>
                                             <Nav.Link onClick={mfaSetup} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-shield" aria-hidden="true" style={{ width: '32px' }}></i> 2FA</h5></Nav.Link>
                                             <Nav.Link onClick={dataCenter} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-globe" aria-hidden="true" style={{ width: '32px' }}></i> Data Center</h5></Nav.Link>
-                                            <Nav.Link onClick={deleteAccount} style={{ borderBottom: 'solid' }}><h5><i className="fa fa-globe" aria-hidden="true" style={{ width: '32px' }}></i> Delete Account</h5></Nav.Link>
                                             <Nav.Link href="https://support.bsafes.com" target='_blank' rel="noopener noreferrer" style={{ borderBottom: 'solid' }}><h5><i className="fa fa-question" aria-hidden="true" style={{ width: '32px' }}></i> Support</h5></Nav.Link>
                                         </Nav>
                                     </Offcanvas.Body>
