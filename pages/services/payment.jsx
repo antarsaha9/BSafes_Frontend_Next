@@ -94,7 +94,7 @@ export default function Payment() {
         setPlan(e.target.value);
     }
 
-    const handleCheckout = (e) => {    
+    const handleCheckout = (e) => {
         dispatch(setCheckoutPlan(plan));
         router.push('/services/checkout');
     }
@@ -118,14 +118,14 @@ export default function Payment() {
         dispatch(activityDone(accountActivity.AndroidInAppPurchase))
     }
 
-    useEffect(() => { 
+    useEffect(() => {
         if (isLoggedIn) {
             if (process.env.NEXT_PUBLIC_platform === 'android') {
                 if (window.Android) {
                     debugLog(debugOn, "Check pending purchase ...")
                     const pendingPurchase = window.Android.checkPendingPurchase();
                     debugLog(debugOn, pendingPurchase)
-                    if(pendingPurchase !== 'null') {
+                    if (pendingPurchase !== 'null') {
                         return;
                     }
                 }
@@ -231,31 +231,33 @@ export default function Payment() {
 
                 </>}
                 <br />
-                <Row>
-                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
-                        <h1>Transaction History</h1>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Plan</th>
-                                    <th>Paid Dues</th>
-                                </tr>
-                            </thead>
-                            {(transactions.length !== 0) &&
-                                <tbody>
-                                    {
-                                        transactionItems
-                                    }
-                                </tbody>
+                {process.env.NEXT_PUBLIC_platform !== 'iOS' && process.env.NEXT_PUBLIC_platform !== 'android' &&
+                    <Row>
+                        <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
+                            <h1>Transaction History</h1>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Plan</th>
+                                        <th>Paid Dues</th>
+                                    </tr>
+                                </thead>
+                                {(transactions.length !== 0) &&
+                                    <tbody>
+                                        {
+                                            transactionItems
+                                        }
+                                    </tbody>
+                                }
+                            </Table>
+                            {(transactions.length === 0) &&
+                                <p>Empty</p>
                             }
-                        </Table>
-                        {(transactions.length === 0) &&
-                            <p>Empty</p>
-                        }
-                    </Col>
-                </Row>
+                        </Col>
+                    </Row>
+                }
                 <br />
             </Container>
         </ContentPageLayout >

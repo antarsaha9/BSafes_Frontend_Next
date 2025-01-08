@@ -53,7 +53,7 @@ export default function Mission() {
                 <br />
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                        <p>{`At our core, we believe that privacy is a fundamental human right. That's why we are fully committed to safeguarding your data privacy and security while ensuring that you remain productive. You can rest assured that your information is in good hands with us.`}</p>
+                        <p>{`At our core, we believe that privacy is a fundamental human right. That's why we are fully committed to safeguarding your data privacy and security with end-to-end encryption while ensuring you remain productive. You can rest assured that your information is in good hands with us.`}</p>
                     </Col>
                 </Row>
                 <br/>
