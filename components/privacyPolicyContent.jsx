@@ -66,7 +66,7 @@ export default function PrivacyPolicyContent({ callback }) {
                     <p><br/></p>
                     <p><span data-preserver-spaces="true">2.6 Native applications: When you use our iOS or Android apps, we do not track any location-based information from your device.</span></p>
                     <p><br/></p>
-                    <p><span data-preserver-spaces="true">2.7 BSafes only uses strictly necessary cookies when you need customer support & payment service. We don't track your other activities.<br /></span></p>
+                    <p><span data-preserver-spaces="true">{`2.7 BSafes only uses strictly necessary cookies when you need customer support & payment service. We don't track your other activities.`}<br/></span></p>
                     <p><br/></p>
                     <h2><span data-preserver-spaces="true">3 - Data Subprocessors</span></h2>
                     <p><span data-preserver-spaces="true">To deliver our services, we rely on different data subprocessors. These processors only store data within the scope of their specific purpose. Notably, since your device encrypts your data, they can not learn the content related to the general day-to-day use of your Account and Services. Our subprocessors include:</span></p>

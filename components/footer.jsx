@@ -33,7 +33,7 @@ export default function Footer() {
                 </Row>
                 <Row>
                     <Col className='text-center'>
-                        <span className={BSafesStyle.footerSmallText}>BSafes only uses strictly necessary cookies when you need customer support & payment service. We don't track your other activities.</span>&nbsp;&nbsp;
+                        <span className={BSafesStyle.footerSmallText}>{`BSafes only uses strictly necessary cookies when you need customer support & payment service. We don't track your other activities.`}</span>
                     </Col>
                 </Row>
                 <Link href="https://support.bsafes.com">
