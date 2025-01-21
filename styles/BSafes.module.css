@@ -546,7 +546,8 @@
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
-  background-color: rgb(255, 255, 255);
+  /*background-color:faf5f1*/
+  background-color: #fff;
   margin-top: 20px;
   margin-bottom: 20px;
   padding-left: 15px;
@@ -642,6 +643,34 @@
 /* End of MFA */
 
 /*--****** Home page ********/
+.appImage {
+  width: 96px;
+}
+
+@media only screen and (min-width: 400px) {
+  .appImage {
+    width: 120px;
+  }
+}
+
+@media only screen and (min-width: 560px) {
+  .appImage {
+    width: 160px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .appImage {
+    width: 200px;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .appImage {
+    width: 240px;
+  }
+}
+
 .carouselRow {
   margin-top: -50px;
   padding-left: 0px;
@@ -1663,6 +1692,10 @@
   font-size: 2.6rem;
 }
 
+.bannerTextH3 {
+  font-size: 1.8rem;
+}
+
 .descriptionText {
   color: black;
   font-size: 1.1rem;
@@ -1672,7 +1705,9 @@
   .bannerTextH1 {
     font-size: 4rem;
   }
-
+  .bannerTextH3 {
+    font-size: 2.6rem;
+  }
   .descriptionText {
     font-size: 1.3rem;
   }

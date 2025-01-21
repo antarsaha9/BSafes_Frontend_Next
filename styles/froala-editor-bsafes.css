@@ -9,3 +9,8 @@
   border: none;
 }
 
+.pageCommons .fr-element.fr-view {
+  /*background-color:faf5f1*/
+  background-color: #fff;
+}
+

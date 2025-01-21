@@ -775,7 +775,7 @@ export default function PageCommons() {
 
 
     return (
-        <>
+        <div className="pageCommons">
             <Row className="justify-content-center">
                 <Col sm="10">
                     <hr />
@@ -874,6 +874,6 @@ export default function PageCommons() {
                     wrapperClass="blocks-wrapper"
                 />
             </div>
-        </>
+        </div>
     )
 }

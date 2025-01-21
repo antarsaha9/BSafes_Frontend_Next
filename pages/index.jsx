@@ -85,27 +85,39 @@ export default function Home() {
                     <Row>
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
+                            <img className='img-fluid' src="/images/samples.png" />
                             <div className="text-center">
                                 <Button variant='danger' size='sm' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
                             </div>
-                            <h1 className={`fw-bold text-center m-0 ${tourney.className}`} style={{ fontSize: '5.0rem' }}><span hidden>🎉</span> Bit Safes</h1>
-                            <img className='mx-auto d-block' src="/images/logo_small.png" />
+                            <br/>
+                            <h1 hidden className={`fw-bold text-center m-0`} style={{ fontSize: '3.5em' }}>gnash</h1>
+                            <div className="" style={{ padding: '10px', color: 'black' }}>
+                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight: '900', paddingLeft: '12px' }}>Your Private Writing & Media Protection Space</h1>
+                            </div>
+                            <br/>
+                            <div className={bannerFont.className} style={{ padding: '10px', color: 'black' }}>
+                                <h1 className={BSafesStyle.bannerTextH3} style={{ fontWeight: '450', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Safeguard Your <span style={{ backgroundColor: 'yellow' }}>Sensitive Information</span> in an <span style={{ backgroundColor: 'yellow' }}>AI-Driven World</span></h1>
+                            </div>
                             <div className={`${monteserrat.className} ${BSafesStyle.descriptionRow}`}>
                                 <h5 className='fw-light text-center m-0'>with AES-256 End-to-End Encryption.</h5>
                                 <div hidden className={BSafesStyle.ribbonBannerRight}>Powered by <span style={{ fontSize: '24px' }}>15-Million-Download-Per-Week, Open-Source Forge Crypto</span> Module.</div>
-                                <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span></p>
+                                <p hidden className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ fontSize: '1.6rem' }}>🌎</span></p>
+                                <img className='mx-auto d-block' src="/images/logo_small.png" />
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}>Global Privacy Infrastructure with Secure Data Centers in US, Canada, UK, France, Netherlands, Germany, Australia, Japan, and Singapore.</p>
                                 <p className='text-center m-0' style={{ fontSize: '0.8rem' }}><span style={{ borderBottom: 'solid', borderWidth: '1px', borderColor: '#5499C7' }}>Software made in USA, Taiwan, France & India. Since 2017</span></p>
-                            </div>
-                            <div className={bannerFont.className} style={{ padding: '10px', color: 'black' }}>
-                                <h1 className={BSafesStyle.bannerTextH1} style={{ fontWeight: '900', borderLeft: 'solid', borderWidth: '12px', borderColor: '#7D3C98', paddingLeft: '12px' }}>Protecting <span style={{ backgroundColor: 'yellow' }}>Sensitive Information</span> in an <span style={{ backgroundColor: 'yellow' }}>AI-Driven World</span></h1>
                             </div>
                         </Col>
                     </Row>
                 </Container>
             </div>
-            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'red' }}>BSafes Makes it Simple!</span>&nbsp;</div>
-            <div className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: 'yellow' }}>Any Media</span>, Anytime, Anywhere</div>
+            <div hidden className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBannerRight}`} style={{ fontStyle: 'italic' }}><span hidden style={{ color: '#DFFF00' }}>Boost Privacy & Productivity - </span> Write, Add Media, Encrypt, and Backup. <span style={{ color: 'red' }}>BSafes Makes it Simple!</span>&nbsp;</div>
+            <div hidden className={`fw-bold text-center m-0 ${monteserrat.className} ${BSafesStyle.ribbonBanner}`} style={{ fontStyle: 'italic' }}>Any Device, <span style={{ color: 'yellow' }}>Any Media</span>, Anytime, Anywhere</div>
+            <div className='text-center'>
+                <a href="https://www.bsafes.com/logIn"><img className={`${BSafesStyle.appImage} m-2`} src="/images/webApp.png" alt="Web App" /></a>
+                <a href="https://apps.apple.com/tw/app/bsafes-hide-back-up-secrets/id6612017394"><img className={`${BSafesStyle.appImage} m-2`} src="/images/appleAppStore.png" alt="Apple App Store"/></a>
+                <a href="https://play.google.com/store/apps/details?id=com.bsafes.android.bsafes&pli=1"><img className={`${BSafesStyle.appImage} m-2`} src="/images/googlePlay.png" alt="Google Play"/></a>
+            </div>
+
             <div className='mt-3 mb-3 text-center'>
                 <h1 style={{ fontSize: '48px' }}>📖</h1>
                 <Link href='https://support.bsafes.com/category/get-started' target='_blank' style={{ textDecoration: 'none', fontSize: '1.0rem', backgroundColor: 'yellow', color: 'black', padding: '10px', position: 'relative', zIndex: '1000' }}>Get Started Guide <i className="fa fa-arrow-right" aria-hidden="true"></i></Link>
@@ -526,8 +538,11 @@ export default function Home() {
                                             <h1 className={BSafesStyle.featureCardTitle}>About Us</h1>
                                             <p className={BSafesStyle.featureCardFont}>We started the BSafes project after a confidential record was made searchable on Google due to a misconfiguration in a cloud service. Resolving the issue and removing the leaked information online took a lot of effort.</p>
                                             <p className={BSafesStyle.featureCardFont}>Then, we searched for a cloud service that could provide convenience and strong security controls to protect our confidential records, such as videos, photos, documents, and other files. After extensive research, we discovered that end-to-end encrypted cloud storage options, such as Tresorit and Mega, were the most suitable solutions for our needs.</p>
+                                            <br/>
                                             <p className={BSafesStyle.featureCardFont}>{`End-to-end encrypted cloud storage is secure because the users' devices encrypt a file before sending it to the server. The server receives obscured data, which no one can access. However,`} <span>updating a single piece of information in a record was previously a time-consuming process that required users to download the file, edit it using a separate word processor, save the work, and then upload it to the server in different steps. This process was even more challenging to do on a mobile device. To make things easier and more efficient, we developed a solution called BSafes</span></p>
+                                            <br/>
                                             <p className={BSafesStyle.featureCardFont}>In 2017, we successfully launched BSafes, which met our goals -</p>
+                                            <br/>
                                             <ul>
                                                 <li>It must be end-to-end encrypted;</li>
                                                 <li>It must work on any device - a computer (Windows, Mac, Linux), a phone or a tablet (IOS, Android);</li>
