@@ -11,7 +11,7 @@ import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
 import { cleanTeamSlice } from './teamSlice';
 
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     activity: 0,
@@ -454,9 +454,10 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
 export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     const checkLocalSession = () => {
         const authToken = localStorage.getItem('authToken');
-        const encodedGold = localStorage.getItem("encodedGold");
         const authState = localStorage.getItem("authState");
-        return { sessionExists: authToken ? true : false, authState, unlocked: (authState === 'Unlocked') };
+        const demoMode = localStorage.getItem("demoMode");
+        debugLog(debugOn, "demoMode: ", demoMode);
+        return { demoMode: demoMode?true:false, sessionExists: authToken ? true : false, authState, unlocked: (authState === 'Unlocked') };
     }
     const state = getState().auth;
     let contextId = state.contextId;
@@ -471,6 +472,7 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
         const thisInterval = setInterval(() => {
             //debugLog(debugOn, "Check session state");.
             const state = checkLocalSession();
+            debugLog(debugOn, "checkLocalSession state: ", state)
             dispatch(setLocalSessionState(state));
         }, 1000);
         localStorage.setItem(intervalId, thisInterval)

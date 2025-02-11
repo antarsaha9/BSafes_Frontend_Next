@@ -43,7 +43,7 @@ import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '.
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
 const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, showNaveBar = true, showNavbarMenu = true, showPathRow = true }) => {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(false, "Rendering ContentPageLayout");
 
     SafeArea.getSafeAreaInsets().then(({ insets }) => {
@@ -246,6 +246,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     return;
                 }
             }
+        } else if (localSessionState.demoMode) {
         } else if (!localSessionState.sessionExists) {
             if (localSessionState.unlocked) {
                 debugLog(debugOn, "Error: It should never happen");
