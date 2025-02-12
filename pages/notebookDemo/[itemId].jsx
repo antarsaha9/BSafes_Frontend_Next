@@ -17,7 +17,7 @@ import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
 
-import { } from "../../reduxStore/containerSlice";
+import { setDemoMode } from "../../reduxStore/auth";
 import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
 import { debugLog } from "../../lib/helper";
@@ -113,7 +113,9 @@ export default function Notebook() {
     }
 
     useEffect(() => {
-        setupDemo();
+        if(setupDemo()){
+            dispatch(setDemoMode(true));
+        }
     }, []);
 
     useEffect(() => {

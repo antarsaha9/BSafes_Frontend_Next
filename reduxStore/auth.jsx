@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall, getTimeZoneOffset, clearLocalData } from '../lib/helper'
+import { clearDemo } from '../lib/demoHelper';
 import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials } from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
@@ -11,7 +12,7 @@ import { cleanContainerSlice } from './containerSlice';
 import { cleanPageSlice } from './pageSlice';
 import { cleanTeamSlice } from './teamSlice';
 
-const debugOn = true;
+const debugOn = false;
 
 const initialState = {
     activity: 0,
@@ -36,7 +37,8 @@ const initialState = {
     froalaLicenseKey: null,
     stripePublishableKey: null,
     v2NextAuthStep: null,
-    mfa: null
+    mfa: null,
+    demoMode: false
 }
 
 const authSlice = createSlice({
@@ -84,6 +86,8 @@ const authSlice = createSlice({
             state.displayName = forge.util.decodeUtf8(action.payload);
         },
         loggedIn: (state, action) => {
+            clearDemo();
+            state.demoMode = false;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
             if (!credentials) return;
             state.activityErrors = 0;
@@ -124,11 +128,14 @@ const authSlice = createSlice({
         },
         setMfa: (state, action) => {
             state.mfa = action.payload;
+        },
+        setDemoMode: (state, action) => {
+            state.demoMode = action.payload;
         }
     }
 });
 
-export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa } = authSlice.actions;
+export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

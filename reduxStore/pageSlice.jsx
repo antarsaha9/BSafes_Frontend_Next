@@ -11,6 +11,7 @@ import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
+import { isDemoMode } from '../lib/demoHelper';
 
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
@@ -77,6 +78,7 @@ const initialState = {
     draft: null,
     draftLoaded: false,
     originalContent: null,
+    serviceWorkerRegistered: false
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -845,11 +847,14 @@ const pageSlice = createSlice({
             state.contentImagesDisplayIndex = 0;
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
+        },
+        setServiceWorkerRegistered: (state, action) => {
+            state.serviceWorkerRegistered = action.payload;
         }
     }
 })
 
-export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setServiceWorkerRegistered } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -907,6 +912,84 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
         xhr.send();
         dispatch(setXHR({ xhr }));
     });
+}
+
+const writeDataToServiceWorkerDB = (params) => {
+    return new Promise(async (resolve, reject) => {
+        debugLog(debugOn, "writeDataToServiceWorkerDB");
+        navigator.serviceWorker.getRegistration("/").then((registration) => {
+            debugLog(debugOn, "registration: ", registration);
+            if (registration) {
+                messageChannel = new MessageChannel();
+                registration.active.postMessage({
+                    type: 'WRITE_TO_DB',
+                    table: params.table,
+                    key: params.key,
+                    data: params.data
+                }, [messageChannel.port2]);
+
+                messageChannel.port1.onmessage = async (event) => {
+                    // Print the result
+                    debugLog(debugOn, event.data);
+                    if (event.data) {
+                        switch (event.data.status) {
+                            case 'success':
+                                resolve();
+                                break;
+                            case 'error':
+                                reject(event.data.error);
+                                break;
+                            default:
+                        }
+                        messageChannel.port1.onmessage = null
+                        messageChannel.port1.close();
+                        messageChannel.port2.close();
+                        messageChannel = null;
+                    }
+                };
+            } else {
+                debugLog(debugOn, "serviceWorker.getRegistration error");
+                reject("serviceWorker.getRegistration error")
+            }
+        })
+    })
+}
+
+const readDataFromServiceWorkerDB = (params) => {
+    return new Promise(async (resolve, reject) => {
+        debugLog(debugOn, "getDataFromServiceWorker");
+        navigator.serviceWorker.getRegistration("/").then((registration) => {
+            debugLog(debugOn, "registration: ", registration);
+            if (registration) {
+                messageChannel = new MessageChannel();
+                registration.active.postMessage({
+                    type: 'READ_FROM_DB',
+                    table: params.table,
+                    key: params.key
+                }, [messageChannel.port2]);
+
+                messageChannel.port1.onmessage = async (event) => {
+                    // Print the result
+                    debugLog(debugOn, event.data);
+                    if (event.data) {
+                        switch (event.data.type) {
+                            case 'DATA':
+                                resolve(event.data.data);
+                                messageChannel.port1.onmessage = null
+                                messageChannel.port1.close();
+                                messageChannel.port2.close();
+                                messageChannel = null;
+                                break;
+                            default:
+                        }
+                    }
+                };
+            } else {
+                debugLog(debugOn, "serviceWorker.getRegistration error");
+                reject("serviceWorker.getRegistration error")
+            }
+        })
+    })
 }
 
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
@@ -1045,116 +1128,123 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             let state;
             dispatch(setActiveRequest(data.itemId));
-            debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
 
             const payload = { itemId: data.itemId };
             if (data.version) {
                 payload.oldVersion = data.version;
                 dispatch(setOldVersion());
             }
-            PostCall({
-                api: '/memberAPI/getPageItem',
-                body: payload,
-                dispatch
-            }).then(async result => {
-                debugLog(debugOn, result);
-                state = getState().page;
-                if (result.status === 'ok') {
-                    if (data.itemId !== state.activeRequest) {
-                        debugLog(debugOn, "Aborted");
-                        reject("Aborted");
-                        return;
-                    }
-                    if (result.item) {
-                        dispatch(dataFetched({ item: result.item }));
-                        if (result.item.content && result.item.content.startsWith('s3Object/')) {
-                            const signedContentUrl = result.item.signedContentUrl;
-                            const response = await XHRDownload(null, dispatch, signedContentUrl, null);
 
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
-
-                            function itemKeyReady() {
-                                return new Promise((resolve, reject) => {
-                                    let trials = 0;
-                                    state = getState().page;
-                                    if (state.itemKey) {
-                                        resolve();
-                                        return;
-                                    }
-                                    const timer = setInterval(() => {
-                                        state = getState().page;
-                                        debugLog(debugOn, "Waiting for itemKey ...");
-                                        if (state.itemKey) {
-                                            resolve();
-                                            clearInterval(timer);
-                                            return;
-                                        } else {
-                                            trials++;
-                                            if (trials > 100) {
-                                                reject('itemKey error!');
-                                                clearInterval(timer);
-                                            }
-                                        }
-                                    }, 100)
-
-                                })
-                            }
-                            await itemKeyReady();
-                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
-                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                            const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
-                            dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
-
-                            state = getState().page;
-                            startDownloadingContentImages(data.itemId, dispatch, getState);
-
-                            resolve();
-                        } else {
-                            resolve();
-                        }
-                    } else {
-                        if (data.navigationInSameContainer) {
-                            debugLog(debugOn, "setNavigationMode ...");
-                            dispatch(setNavigationMode(true));
-                            dispatch(setNavigationInSameContainer(false));
-                            resolve();
+            if (!isDemoMode()) {
+                debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
+                PostCall({
+                    api: '/memberAPI/getPageItem',
+                    body: payload,
+                    dispatch
+                }).then(async result => {
+                    debugLog(debugOn, result);
+                    state = getState().page;
+                    if (result.status === 'ok') {
+                        if (data.itemId !== state.activeRequest) {
+                            debugLog(debugOn, "Aborted");
+                            reject("Aborted");
                             return;
                         }
-                        if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
-                            try {
-                                const container = await getContainerData(data.itemId);
-                                state = getState().page;
-                                if (data.itemId === state.activeRequest) {
-                                    dispatch(containerDataFetched({ itemId: data.itemId, container }));
-                                    resolve();
-                                } else {
-                                    reject("Aborted");
+                        if (result.item) {
+                            dispatch(dataFetched({ item: result.item }));
+                            if (result.item.content && result.item.content.startsWith('s3Object/')) {
+                                const signedContentUrl = result.item.signedContentUrl;
+                                const response = await XHRDownload(null, dispatch, signedContentUrl, null);
+
+                                const buffer = Buffer.from(response, 'binary');
+                                const downloadedBinaryString = buffer.toString('binary');
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+
+                                function itemKeyReady() {
+                                    return new Promise((resolve, reject) => {
+                                        let trials = 0;
+                                        state = getState().page;
+                                        if (state.itemKey) {
+                                            resolve();
+                                            return;
+                                        }
+                                        const timer = setInterval(() => {
+                                            state = getState().page;
+                                            debugLog(debugOn, "Waiting for itemKey ...");
+                                            if (state.itemKey) {
+                                                resolve();
+                                                clearInterval(timer);
+                                                return;
+                                            } else {
+                                                trials++;
+                                                if (trials > 100) {
+                                                    reject('itemKey error!');
+                                                    clearInterval(timer);
+                                                }
+                                            }
+                                        }, 100)
+
+                                    })
                                 }
-                            } catch (error) {
-                                reject("Failed to get the container data!");
+                                await itemKeyReady();
+                                const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
+
+                                state = getState().page;
+                                startDownloadingContentImages(data.itemId, dispatch, getState);
+
+                                resolve();
+                            } else {
+                                resolve();
                             }
                         } else {
-                            reject("Failed to get a page item!!!");
+                            if (data.navigationInSameContainer) {
+                                debugLog(debugOn, "setNavigationMode ...");
+                                dispatch(setNavigationMode(true));
+                                dispatch(setNavigationInSameContainer(false));
+                                resolve();
+                                return;
+                            }
+                            if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
+                                try {
+                                    const container = await getContainerData(data.itemId);
+                                    state = getState().page;
+                                    if (data.itemId === state.activeRequest) {
+                                        dispatch(containerDataFetched({ itemId: data.itemId, container }));
+                                        resolve();
+                                    } else {
+                                        reject("Aborted");
+                                    }
+                                } catch (error) {
+                                    reject("Failed to get the container data!");
+                                }
+                            } else {
+                                reject("Failed to get a page item!!!");
+                            }
                         }
-                    }
-                    const draftId = 'Draft-' + data.itemId;
-                    const draft = localStorage.getItem(draftId);
-                    if (draft) {
-                        dispatch(setDraft(draft));
-                    }
+                        const draftId = 'Draft-' + data.itemId;
+                        const draft = localStorage.getItem(draftId);
+                        if (draft) {
+                            dispatch(setDraft(draft));
+                        }
 
-                } else {
-                    debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
+                    } else {
+                        debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
+                        reject("Failed to get a page item.");
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "woo... failed to get a page item:", error)
                     reject("Failed to get a page item.");
+                })
+                await getItemPath(data.itemId, dispatch, getState);
+            } else {
+                const getDemoPageItem = () => {
+                    return new Promise(async (resolve, reject) => {
+                    })
                 }
-            }).catch(error => {
-                debugLog(debugOn, "woo... failed to get a page item:", error)
-                reject("Failed to get a page item.");
-            })
-
-            await getItemPath(data.itemId, dispatch, getState);
+            }
         });
     });
 }
@@ -2448,7 +2538,7 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
             if (state.videosUploadQueue.length === state.videosUploadIndex) {
                 resolve();
             }
-            if(Android){
+            if (Android) {
                 console.log("Calling Android.deleteTemporaryFiles")
                 Android.deleteTemporaryFiles();
             }
@@ -2749,8 +2839,8 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                     reject("Failed to save images.");
                 }
             }
-            if (process.env.NEXT_PUBLIC_platform === 'android'){
-                if(Android){
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (Android) {
                     console.log("Calling Android.deleteTemporaryFiles")
                     Android.deleteTemporaryFiles();
                 }
@@ -3134,7 +3224,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         }
                         fileInUint8ArrayIndex += chunk.length;
                     } else {
-                        if(Android){
+                        if (Android) {
                             console.log("Android.addAChunkToFile ...")
                             Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
                         }
@@ -3243,7 +3333,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 link.href = URL.createObjectURL(blob);
                 link.download = attachment.fileName;
                 link.click();
-            } 
+            }
             closeWriter();
             resolve();
         }

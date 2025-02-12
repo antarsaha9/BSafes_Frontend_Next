@@ -14,9 +14,8 @@ import '../public/css/froalaEditorCSS/video.css'
 import '../styles/bootstrapOverride.css'
 import '../styles/complianceBadge.css'
 
-import { accountActivity } from '../lib/activities';
 import { debugLog } from '../lib/helper';
-import { activityDone } from '../reduxStore/accountSlice';
+import { setServiceWorkerRegistered } from '../reduxStore/pageSlice';
 
 function MyApp({ Component, pageProps }) {
   const debugOn = true;
@@ -45,6 +44,7 @@ function MyApp({ Component, pageProps }) {
       }).then(
         function (registration) {
           console.log("Service worker registration successful with scope: ", registration.scope);
+          dispatch(setServiceWorkerRegistered(true));
           //registration.active.postMessage(
           //  "Test message sent immediately after creation"
           //);
