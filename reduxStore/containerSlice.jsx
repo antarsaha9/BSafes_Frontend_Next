@@ -7,6 +7,7 @@ import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
 import { newResultItem, formatTimeDisplay, isItemAContainer } from '../lib/bSafesCommonUI';
 import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
 import { containerActivity } from '../lib/activities';
+import { getDemoWorkspaceInfo } from '../lib/demoHelper';
 
 import { getTeamData } from './teamSlice';
 
@@ -281,11 +282,16 @@ const containerSlice = createSlice({
         },
         setListingDone: (state, action) => {
             state.listingDone = action.payload;
+        },
+        setDemoWorkspace: (state, action) => {
+            const demoWorkspaceInfo = getDemoWorkspaceInfo();
+            state.workspace = demoWorkspaceInfo.demoWorkspace;
+            state.workspaceKey = demoWorkspaceInfo.demoWorkspaceKey;
         }
     }
 })
 
-export const {cleanContainerSlice, resetContainerActivity, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed, setListingDone} = containerSlice.actions;
+export const {cleanContainerSlice, resetContainerActivity, activityStart, activityDone, activityError, setListingItems, clearContainer, setNavigationInSameContainer, changeContainerOnly, initContainer, setWorkspaceKeyReady, setMode, pageLoaded, clearItems, setNewItem, clearNewItem, selectItem, deselectItem, clearSelected, containersLoaded, setStartDateValue, setDiaryContentsPageFirstLoaded, trashBoxIdLoaded, clearActivities, activitiesLoaded, setMovingItemsTask, completedMovingAnItem, insertAnItemBefore, insertAnItemAfter, setReloadAPage, clearReoloadAPage, setItemTrashed, setListingDone, setDemoWorkspace} = containerSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

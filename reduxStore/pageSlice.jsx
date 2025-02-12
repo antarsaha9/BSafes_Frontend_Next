@@ -923,9 +923,7 @@ const writeDataToServiceWorkerDB = (params) => {
                 messageChannel = new MessageChannel();
                 registration.active.postMessage({
                     type: 'WRITE_TO_DB',
-                    table: params.table,
-                    key: params.key,
-                    data: params.data
+                    ...params
                 }, [messageChannel.port2]);
 
                 messageChannel.port1.onmessage = async (event) => {
@@ -961,11 +959,10 @@ const readDataFromServiceWorkerDB = (params) => {
         navigator.serviceWorker.getRegistration("/").then((registration) => {
             debugLog(debugOn, "registration: ", registration);
             if (registration) {
-                messageChannel = new MessageChannel();
+                let messageChannel = new MessageChannel();
                 registration.active.postMessage({
                     type: 'READ_FROM_DB',
-                    table: params.table,
-                    key: params.key
+                    ...params
                 }, [messageChannel.port2]);
 
                 messageChannel.port1.onmessage = async (event) => {
@@ -990,6 +987,26 @@ const readDataFromServiceWorkerDB = (params) => {
             }
         })
     })
+}
+
+const addADemoPageItemToServiceWorkerDB = (workspace, workspaceKey, type, itemId, item) => {
+    
+}
+
+const getDemoPageItemFromServiceWorkerDB = (itemId) => {
+    const params = {
+        table: 'itemVersions',
+        key: itemId
+    }
+    return readDataFromServiceWorkerDB(params);
+}
+
+const getS3ObjectFromServiceWorkerDB = (s3Key) => {
+    const params = {
+        table: 's3Objects',
+        key: itemId
+    }
+    return readDataFromServiceWorkerDB(params);
 }
 
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
@@ -1103,12 +1120,29 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 itemIdParts.pop();
                 containerId = itemIdParts.join(':');
                 containerId = containerId.replace('p:', ':');
-                debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
-                PostCall({
-                    api: '/memberAPI/getPageItem',
-                    body: { itemId: containerId },
-                    dispatch
-                }).then(result => {
+                if (!isDemoMode()) {
+                    debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
+                    PostCall({
+                        api: '/memberAPI/getPageItem',
+                        body: { itemId: containerId },
+                        dispatch
+                    }).then(result => {
+                        if (result.status === 'ok') {
+                            debugLog(debugOn, "getContainerData: ", result);
+                            if (result.item) {
+                                resolve(result.item);
+                            } else {
+                                debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                                reject("Failed to get the container data.");
+                            }
+                        } else {
+                            debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                            reject("Failed to get the container data.");
+                        }
+                    });
+                } else {
+                    debugLog(debugOn, "getDemoPageItemFromServiceWorkerDB: ", containerId);
+                    const result = await getDemoPageItemFromServiceWorkerDB(containerId);
                     if (result.status === 'ok') {
                         debugLog(debugOn, "getContainerData: ", result);
                         if (result.item) {
@@ -1121,7 +1155,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         debugLog(debugOn, "woo... failed to get the container data!", data.error);
                         reject("Failed to get the container data.");
                     }
-                });
+                }
             });
         }
 
@@ -1240,9 +1274,101 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 })
                 await getItemPath(data.itemId, dispatch, getState);
             } else {
-                const getDemoPageItem = () => {
-                    return new Promise(async (resolve, reject) => {
-                    })
+                const result = await getDemoPageItemFromServiceWorkerDB(data.itemId);
+                state = getState().page;
+                if (result.status === 'ok') {
+                    if (data.itemId !== state.activeRequest) {
+                        debugLog(debugOn, "Aborted");
+                        reject("Aborted");
+                        return;
+                    }
+                    if (result.item) {
+                        dispatch(dataFetched({ item: result.item }));
+                        if (result.item.content && result.item.content.startsWith('s3Object/')) {
+                            const s3Key = forge.util.decode64(result.item.content.substring(9));
+                            const downloadedBinaryString = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+
+                            function itemKeyReady() {
+                                return new Promise((resolve, reject) => {
+                                    let trials = 0;
+                                    state = getState().page;
+                                    if (state.itemKey) {
+                                        resolve();
+                                        return;
+                                    }
+                                    const timer = setInterval(() => {
+                                        state = getState().page;
+                                        debugLog(debugOn, "Waiting for itemKey ...");
+                                        if (state.itemKey) {
+                                            resolve();
+                                            clearInterval(timer);
+                                            return;
+                                        } else {
+                                            trials++;
+                                            if (trials > 100) {
+                                                reject('itemKey error!');
+                                                clearInterval(timer);
+                                            }
+                                        }
+                                    }, 100)
+
+                                })
+                            }
+                            await itemKeyReady();
+                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                            const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                            dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
+
+                            state = getState().page;
+                            startDownloadingContentImages(data.itemId, dispatch, getState);
+
+                            resolve();
+                        } else {
+                            resolve();
+                        }
+                    } else {
+                        if (data.itemId.startsWith('p:') || data.itemId.startsWith('n:') || data.itemId.startsWith('d:')) {
+                            const workspace = getState().container.workspace;
+                            const workspaceKey = getState().container.workspaceKey;
+                            
+                            resolve();
+                        } else {
+                            if (data.navigationInSameContainer) {
+                                debugLog(debugOn, "setNavigationMode ...");
+                                dispatch(setNavigationMode(true));
+                                dispatch(setNavigationInSameContainer(false));
+                                resolve();
+                                return;
+                            }
+                            if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
+                                try {
+                                    const container = await getContainerData(data.itemId);
+                                    state = getState().page;
+                                    if (data.itemId === state.activeRequest) {
+                                        dispatch(containerDataFetched({ itemId: data.itemId, container }));
+                                        resolve();
+                                    } else {
+                                        reject("Aborted");
+                                    }
+                                } catch (error) {
+                                    reject("Failed to get the container data!");
+                                }
+                            } else {
+                                reject("Failed to get a page item!!!");
+                            }
+                        }
+                    }
+                    const draftId = 'Draft-' + data.itemId;
+                    const draft = localStorage.getItem(draftId);
+                    if (draft) {
+                        dispatch(setDraft(draft));
+                    }
+
+                } else {
+                    debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
+                    reject("Failed to get a page item.");
                 }
             }
         });

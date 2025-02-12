@@ -14,6 +14,8 @@ function sleep(ms) {
 const DBName = "streams";
 const chunkStoreName = "videoChunksStore";
 const streamStoreName = "streamStore";
+const itemVersionsStoreName = "itemVersions";
+const s3ObjectsStoreName = "s3Objects";
 
 const myIndexedDB = self.indexedDB;
 
@@ -45,6 +47,8 @@ function openDB() {
       const transaction = e.target.transaction;
       db.createObjectStore(chunkStoreName, { keyPath: "chunkId" });
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
+      db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
+      db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
         resolve(db);
       }
@@ -244,6 +248,152 @@ function getStreamFromDB(streamId) {
   })
 }
 
+function addAnItemVersionToDB(itemId, item) {
+  return new Promise((resolve) => {
+    const data = {
+      itemId,
+      item
+    }
+    const request = streamDB
+      .transaction(itemVersionsStoreName, "readwrite")
+      .objectStore(itemVersionsStoreName)
+      .add(data);
+
+    request.onsuccess = (e) => {
+      console.log("item added: ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("addAnItemVersionToDB failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  })
+}
+
+function updateAnItemVersion(itemId, item) {
+  return new Promise(async (resolve, reject) => {
+    const data = {
+      itemId,
+      item
+    }
+    const request = streamDB
+      .transaction(itemVersionsStoreName, "readwrite")
+      .objectStore(itemVersionsStoreName)
+      .put(data);
+
+    request.onsuccess = (e) => {
+      console.log("updateAnItemVersion succeeded ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("updateAnItemVersion failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  });
+}
+
+function deleteAnItemVersionInDB(itemId) {
+  return new Promise((resolve) => {
+    streamDB
+      .transaction(itemVersionsStoreName, "readwrite")
+      .objectStore(itemVersionsStoreName)
+      .delete(itemId)
+      .onsuccess = (e) => {
+        console.log("itemVersion deleted: ", itemId);
+        resolve();
+      }
+  })
+}
+
+function getAnItemVersionFromDB(itemId) {
+
+  return new Promise((resolve) => {
+
+    const request = streamDB
+      .transaction(itemVersionsStoreName)
+      .objectStore(itemVersionsStoreName)
+      .get(itemId);
+
+    request.onsuccess = (e) => {
+      //console.log("got chunk: ", e.target.result );
+      resolve(e.target.result);
+    }
+
+    request.onerror = (e) => {
+      console.log("getStreamFromDB failed: ", e.target.error);
+      resolve(null);
+    }
+  })
+}
+
+function addAS3ObjectToDB(s3Key, object) {
+  return new Promise((resolve) => {
+    const data = {
+      s3Key,
+      object
+    }
+    const request = streamDB
+      .transaction(s3ObjectsStoreName, "readwrite")
+      .objectStore(s3ObjectsStoreName)
+      .put(data);
+
+    request.onsuccess = async (e) => {
+      console.log("object added: ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("addAS3ObjectToDB failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  })
+
+}
+
+function deleteAS3ObjectInDB(s3Key) {
+  return new Promise((resolve) => {
+    streamDB
+      .transaction(s3ObjectsStoreName, "readwrite")
+      .objectStore(s3ObjectsStoreName)
+      .delete(s3Key)
+      .onsuccess = (e) => {
+        console.log("objet deleted: ", s3Key);
+        resolve();
+      }
+  })
+}
+
+function getAS3ObjectFromDB(s3Key) {
+  return new Promise((resolve) => {
+    const request = streamDB
+      .transaction(s3ObjectsStoreName)
+      .objectStore(s3ObjectsStoreName)
+      .get(s3Key);
+
+    request.onsuccess = (e) => {
+      resolve(e.target.result);
+    }
+
+    request.onerror = (e) => {
+      console.log("getAS3ObjectFromDB failed: ", e.target.error);
+      resolve(null);
+    }
+  })
+}
 
 self.addEventListener('install', event => {
   // Bypass the waiting lifecycle stage,
@@ -504,6 +654,23 @@ self.addEventListener("message", async (event) => {
         break;
       case 'DELETE_DB':
         await deleteDB();
+        break;
+      case 'READ_FROM_DB':
+        switch(event.data.table) {
+          case itemVersionsStoreName:
+            const item = await getAnItemVersionFromDB(event.data.key);
+            const data = {status:'ok'}
+            if(item) {
+              data.item = item;
+            } 
+            const port = event.ports[0];
+            port.postMessage({type: "DATA", data});
+            break;
+          case s3ObjectsStoreName:
+            const object = await getAS3ObjectFromDB(event.data.key);
+            break;
+        }
+        
         break;
       default:
     }
