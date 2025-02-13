@@ -75,7 +75,7 @@ function deleteDB() {
 
     request.onblocked = function () {
       console.log("Couldn't delete database due to the operation being blocked");
-  };
+    };
   })
 }
 
@@ -656,21 +656,43 @@ self.addEventListener("message", async (event) => {
         await deleteDB();
         break;
       case 'READ_FROM_DB':
-        switch(event.data.table) {
+        switch (event.data.table) {
           case itemVersionsStoreName:
-            const item = await getAnItemVersionFromDB(event.data.key);
-            const data = {status:'ok'}
-            if(item) {
-              data.item = item;
-            } 
+            let data;
+            try {
+              const item = await getAnItemVersionFromDB(event.data.key);
+              data = { status: 'ok' }
+              if (item) {
+                data.item = item;
+              }
+            } catch (error) {
+              data = { status: 'error', error }
+            }
             const port = event.ports[0];
-            port.postMessage({type: "DATA", data});
+            port.postMessage({ type: "DATA", data });
             break;
           case s3ObjectsStoreName:
             const object = await getAS3ObjectFromDB(event.data.key);
             break;
         }
-        
+        break;
+      case 'WRITE_TO_DB':
+        switch (event.data.table) {
+          case itemVersionsStoreName:
+            let data;
+            try {
+              await addAnItemVersionToDB(event.data.key, event.data.data);
+              data = { status: 'ok' }
+            } catch (error) {
+              data = { status: 'error', error }
+            }
+            const port = event.ports[0];
+            port.postMessage({ type: "WRITE_RESULT", data });
+            break;
+          case s3ObjectsStoreName:
+            const object = await getAS3ObjectFromDB(event.data.key);
+            break;
+        }
         break;
       default:
     }

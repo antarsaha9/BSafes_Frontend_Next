@@ -15,10 +15,9 @@ import BSafesStyle from '../styles/BSafes.module.css'
 import { getEditorConfig } from "../lib/bSafesCommonUI";
 import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
 import { putS3Object } from "../lib/s3Helper";
-import { compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
+import { generateNewItemKey, compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage, downScaleImage } from '../lib/wnImage';
 
-import { generateNewItemKey } from "../reduxStore/containerSlice";
 import { newItemKey } from "../reduxStore/pageSlice";
 
 export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {

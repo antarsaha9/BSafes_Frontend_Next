@@ -3,10 +3,10 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
-import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
+import { setNavigationInSameContainer } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
+import { generateNewItemKey, decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
@@ -916,6 +916,7 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
 
 const writeDataToServiceWorkerDB = (params) => {
     return new Promise(async (resolve, reject) => {
+        let messageChannel;
         debugLog(debugOn, "writeDataToServiceWorkerDB");
         navigator.serviceWorker.getRegistration("/").then((registration) => {
             debugLog(debugOn, "registration: ", registration);
@@ -930,19 +931,18 @@ const writeDataToServiceWorkerDB = (params) => {
                     // Print the result
                     debugLog(debugOn, event.data);
                     if (event.data) {
-                        switch (event.data.status) {
-                            case 'success':
-                                resolve();
-                                break;
-                            case 'error':
-                                reject(event.data.error);
-                                break;
-                            default:
+                        if (event.data) {
+                            switch (event.data.type) {
+                                case 'WRITE_RESULT':
+                                    resolve(event.data.data);
+                                    messageChannel.port1.onmessage = null
+                                    messageChannel.port1.close();
+                                    messageChannel.port2.close();
+                                    messageChannel = null;
+                                    break;
+                                default:
+                            }
                         }
-                        messageChannel.port1.onmessage = null
-                        messageChannel.port1.close();
-                        messageChannel.port2.close();
-                        messageChannel = null;
                     }
                 };
             } else {
@@ -989,11 +989,89 @@ const readDataFromServiceWorkerDB = (params) => {
     })
 }
 
-const addADemoPageItemToServiceWorkerDB = (workspace, workspaceKey, type, itemId, item) => {
-    
+const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) => {
+    const itemType = itemId.split(":")[0].toUpperCase();
+    let title = null;
+    let isContainer = false;
+    switch (itemType) {
+        case "P":
+            title = "Demo Page";
+            break;
+        case "N":
+            title = "Demo Notebook";
+            isContainer = true;
+            break;
+        case "D":
+            title = "Demo Diary";
+            isContainer = true;
+            break;
+        default:
+    }
+    title = '<h2>' + title + '</h2>';
+    const encodedTitle = forge.util.encodeUtf8(title);
+    const itemKey = generateNewItemKey();
+    const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
+    const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
+    const createdTime = Date.now();
+    const owner = workspace.split(":")[1];
+    const currentKeyVersion = 3;
+    const id = itemId;
+    const container = workspace;
+    const displayName = "Demo"
+    const item = {
+        id,
+        title: encryptedTitle,
+        version: 1,
+        owner,
+        displayName,
+        createdTime,
+        updatedBy: owner,
+        update: "creation",
+        keyVersion: currentKeyVersion,
+        keyEnvelope,
+        type: itemType,
+        space: workspace,
+        container,
+        position: createdTime,
+        videos: [],
+        images: [],
+        attachments: ["Zero"],
+        usage: {
+            totalItemSize: 0,
+            dbSize: 0,
+            addedSize: 0,
+            accumulatedContentObjects: {
+                "Zero": "Zero"
+            },
+            accumulatedS3ObjectsInContent: {
+                "Zero": "Zero"
+            },
+            accumulatedAttachments: {
+                "Zero": "Zero"
+            },
+            accumulatedGalleryImages: {
+                "Zero": "Zero"
+            }
+        }
+    }
+    if (isContainer) {
+        item.totalItemVersions = 0;
+        item.totalStorage = 0;
+    }
+    const params = {
+        table: 'itemVersions',
+        key: itemId,
+        data: item
+    }
+    const result = await writeDataToServiceWorkerDB(params);
+    if(result.status === 'ok') {
+        return item;
+    } else {
+        return null;
+    }
 }
 
-const getDemoPageItemFromServiceWorkerDB = (itemId) => {
+const getDemoItemFromServiceWorkerDB = (itemId) => {
     const params = {
         table: 'itemVersions',
         key: itemId
@@ -1141,8 +1219,8 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         }
                     });
                 } else {
-                    debugLog(debugOn, "getDemoPageItemFromServiceWorkerDB: ", containerId);
-                    const result = await getDemoPageItemFromServiceWorkerDB(containerId);
+                    debugLog(debugOn, "getDemoItemFromServiceWorkerDB: ", containerId);
+                    const result = await getDemoItemFromServiceWorkerDB(containerId);
                     if (result.status === 'ok') {
                         debugLog(debugOn, "getContainerData: ", result);
                         if (result.item) {
@@ -1274,7 +1352,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 })
                 await getItemPath(data.itemId, dispatch, getState);
             } else {
-                const result = await getDemoPageItemFromServiceWorkerDB(data.itemId);
+                const result = await getDemoItemFromServiceWorkerDB(data.itemId);
                 state = getState().page;
                 if (result.status === 'ok') {
                     if (data.itemId !== state.activeRequest) {
@@ -1332,7 +1410,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if (data.itemId.startsWith('p:') || data.itemId.startsWith('n:') || data.itemId.startsWith('d:')) {
                             const workspace = getState().container.workspace;
                             const workspaceKey = getState().container.workspaceKey;
-                            
+                            const item = await addADemoItemToServiceWorkerDB(workspace, workspaceKey, data.itemId);
                             resolve();
                         } else {
                             if (data.navigationInSameContainer) {

@@ -5,7 +5,7 @@ const DOMPurify = require('dompurify');
 
 import { debugLog, PostCall, extractHTMLElementText} from '../lib/helper'
 import { newResultItem, formatTimeDisplay, isItemAContainer } from '../lib/bSafesCommonUI';
-import { encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, decryptBinaryStringCBC } from '../lib/crypto';
+import { generateNewItemKey, encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB } from '../lib/crypto';
 import { containerActivity } from '../lib/activities';
 import { getDemoWorkspaceInfo } from '../lib/demoHelper';
 
@@ -301,13 +301,6 @@ const newActivity = async (dispatch, type, activity) => {
     } catch(error) {
         dispatch(activityError({type, error}));
     }
-}
-
-export function generateNewItemKey() {
-    const salt = forge.random.getBytesSync(16);
-    const randomKey = forge.random.getBytesSync(32);
-    const itemKey = forge.pkcs5.pbkdf2(randomKey, salt, 10000, 32);
-    return itemKey;
 }
 
 export const createANewItemThunk = (data) => async (dispatch, getState) => {
