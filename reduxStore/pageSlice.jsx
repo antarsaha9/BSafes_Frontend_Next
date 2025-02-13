@@ -1010,8 +1010,8 @@ const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) =>
     title = '<h2>' + title + '</h2>';
     const encodedTitle = forge.util.encodeUtf8(title);
     const itemKey = generateNewItemKey();
-    const keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
-    const encryptedTitle = encryptBinaryString(encodedTitle, itemKey);
+    const keyEnvelope = forge.util.encode64(encryptBinaryString(itemKey, workspaceKey));
+    const encryptedTitle = forge.util.encode64(encryptBinaryString(encodedTitle, itemKey));
     const createdTime = Date.now();
     const owner = workspace.split(":")[1];
     const currentKeyVersion = 3;
@@ -1064,7 +1064,7 @@ const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) =>
         data: item
     }
     const result = await writeDataToServiceWorkerDB(params);
-    if(result.status === 'ok') {
+    if (result.status === 'ok') {
         return item;
     } else {
         return null;
@@ -1360,10 +1360,10 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         reject("Aborted");
                         return;
                     }
-                    if (result.item) {
-                        dispatch(dataFetched({ item: result.item }));
-                        if (result.item.content && result.item.content.startsWith('s3Object/')) {
-                            const s3Key = forge.util.decode64(result.item.content.substring(9));
+                    const decryptADemoItem = async (item) => {
+                        dispatch(dataFetched({ item }));
+                        if (item.content && item.content.startsWith('s3Object/')) {
+                            const s3Key = forge.util.decode64(item.content.substring(9));
                             const downloadedBinaryString = await getS3ObjectFromServiceWorkerDB(s3Key);
                             debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
 
@@ -1406,11 +1406,19 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         } else {
                             resolve();
                         }
+                    }
+
+                    if (result.item) {
+                        const item = result.item;
+                        await decryptADemoItem(item);
                     } else {
                         if (data.itemId.startsWith('p:') || data.itemId.startsWith('n:') || data.itemId.startsWith('d:')) {
                             const workspace = getState().container.workspace;
                             const workspaceKey = getState().container.workspaceKey;
                             const item = await addADemoItemToServiceWorkerDB(workspace, workspaceKey, data.itemId);
+                            if (item) {
+                                await decryptADemoItem(item);
+                            }
                             resolve();
                         } else {
                             if (data.navigationInSameContainer) {

@@ -663,7 +663,7 @@ self.addEventListener("message", async (event) => {
               const item = await getAnItemVersionFromDB(event.data.key);
               data = { status: 'ok' }
               if (item) {
-                data.item = item;
+                data.item = item.item;
               }
             } catch (error) {
               data = { status: 'error', error }
