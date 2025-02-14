@@ -77,8 +77,7 @@ const initialState = {
     S3SignedUrlForContentUpload: null,
     draft: null,
     draftLoaded: false,
-    originalContent: null,
-    serviceWorkerRegistered: false
+    originalContent: null
 }
 
 const dataFetchedFunc = (state, action) => {
@@ -847,14 +846,11 @@ const pageSlice = createSlice({
             state.contentImagesDisplayIndex = 0;
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
-        },
-        setServiceWorkerRegistered: (state, action) => {
-            state.serviceWorkerRegistered = action.payload;
         }
     }
 })
 
-export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setServiceWorkerRegistered } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -989,25 +985,25 @@ const readDataFromServiceWorkerDB = (params) => {
     })
 }
 
-const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) => {
+const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, searchKey, searchIV, itemId) => {
     const itemType = itemId.split(":")[0].toUpperCase();
-    let title = null;
+    let titleStr = null;
     let isContainer = false;
     switch (itemType) {
         case "P":
-            title = "Demo Page";
+            titleStr = "Demo Page";
             break;
         case "N":
-            title = "Demo Notebook";
+            titleStr = "Demo Notebook";
             isContainer = true;
             break;
         case "D":
-            title = "Demo Diary";
+            titleStr = "Demo Diary";
             isContainer = true;
             break;
         default:
     }
-    title = '<h2>' + title + '</h2>';
+    let title = '<h2>' + titleStr + '</h2>';
     const encodedTitle = forge.util.encodeUtf8(title);
     const itemKey = generateNewItemKey();
     const keyEnvelope = forge.util.encode64(encryptBinaryString(itemKey, workspaceKey));
@@ -1017,10 +1013,12 @@ const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) =>
     const currentKeyVersion = 3;
     const id = itemId;
     const container = workspace;
-    const displayName = "Demo"
+    const displayName = "Demo";
+    let titleTokens = JSON.stringify(stringToEncryptedTokensCBC(titleStr, searchKey, searchIV));
     const item = {
         id,
         title: encryptedTitle,
+        titleTokens,
         version: 1,
         owner,
         displayName,
@@ -1069,6 +1067,51 @@ const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, itemId) =>
     } else {
         return null;
     }
+}
+
+const prepareADemoPageItem = (workspace, type, data) => {
+    const createdTime = Date.now();
+    const owner = workspace.split(":")[1];
+    const currentKeyVersion = 3;
+    const id = data.itemId;
+    const displayName = "Demo";
+    const itemTemplate = {
+        id,
+        version: 1,
+        owner,
+        displayName,
+        createdTime,
+        updatedBy: owner,
+        update: "creation",
+        keyVersion: currentKeyVersion,
+        type,
+        position: createdTime,
+        videos: [],
+        images: [],
+        attachments: ["Zero"],
+        usage: {
+            totalItemSize: 0,
+            dbSize: 0,
+            addedSize: 0,
+            accumulatedContentObjects: {
+                "Zero": "Zero"
+            },
+            accumulatedS3ObjectsInContent: {
+                "Zero": "Zero"
+            },
+            accumulatedAttachments: {
+                "Zero": "Zero"
+            },
+            accumulatedGalleryImages: {
+                "Zero": "Zero"
+            }
+        }
+    }
+    const item = {
+        ...itemTemplate,
+        ...data
+    }
+    return item;
 }
 
 const getDemoItemFromServiceWorkerDB = (itemId) => {
@@ -1415,7 +1458,9 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         if (data.itemId.startsWith('p:') || data.itemId.startsWith('n:') || data.itemId.startsWith('d:')) {
                             const workspace = getState().container.workspace;
                             const workspaceKey = getState().container.workspaceKey;
-                            const item = await addADemoItemToServiceWorkerDB(workspace, workspaceKey, data.itemId);
+                            const searchKey = getState().container.searchKey;
+                            const searchIV = getState().container.searchIV;
+                            const item = await addADemoItemToServiceWorkerDB(workspace, workspaceKey, searchKey, searchIV, data.itemId);
                             if (item) {
                                 await decryptADemoItem(item);
                             }
@@ -1904,30 +1949,44 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
 }
 
 async function createNewItemVersion(itemCopy, dispatch) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+        const workspace = itemCopy.space;
         itemCopy.version = itemCopy.version + 1;
         debugLog(debugOn, "item copy version: ", itemCopy.version);
-
-        PostCall({
-            api: '/memberAPI/createNewItemVersion',
-            body: {
-                itemId: itemCopy.id,
-                itemVersion: JSON.stringify(itemCopy)
-            },
-            dispatch
-        }).then(data => {
-            debugLog(debugOn, data);
-            if (data.status === 'ok') {
-                debugLog(debugOn, `createNewItemVersion succeeded`);
-                resolve(data)
-            } else {
-                debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createNewItemVersion',
+                body: {
+                    itemId: itemCopy.id,
+                    itemVersion: JSON.stringify(itemCopy)
+                },
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, `createNewItemVersion succeeded`);
+                    resolve(data)
+                } else {
+                    debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+                    reject("Failed to create a new item version.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, `createNewItemVersion failed.`)
                 reject("Failed to create a new item version.");
+            })
+        } else {
+            const params = {
+                table: 'itemVersions',
+                key: itemCopy.id,
+                data: itemCopy
             }
-        }).catch(error => {
-            debugLog(debugOn, `createNewItemVersion failed.`)
-            reject("Failed to create a new item version.");
-        })
+            const result = await writeDataToServiceWorkerDB(params);
+            if (result.status === 'ok') {
+                resolve({ status: "ok", usage: JSON.stringify(itemCopy.usage) });
+            } else {
+                reject();
+            }
+        }
     });
 };
 
@@ -1939,7 +1998,6 @@ function createNewItemVersionForPage(itemCopy, dispatch) {
             if (data.status === 'ok') {
                 const usage = JSON.parse(data.usage);
                 itemCopy.usage = usage;
-
                 resolve();
             } else {
                 reject("Could not create a new item version!");
@@ -1951,27 +2009,44 @@ function createNewItemVersionForPage(itemCopy, dispatch) {
     })
 };
 
+
 function createANotebookPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/createANotebookPage',
-            body: data,
-            dispatch
-        }).then(result => {
-            debugLog(debugOn, result);
+        const workspace = data.space;
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createANotebookPage',
+                body: data,
+                dispatch
+            }).then(result => {
+                debugLog(debugOn, result);
 
-            if (result.status === 'ok') {
-                if (result.item) {
-                    resolve(result.item);
+                if (result.status === 'ok') {
+                    if (result.item) {
+                        resolve(result.item);
+                    } else {
+                        debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
+                        reject("Failed to create a notebook page!");
+                    }
                 } else {
                     debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
                     reject("Failed to create a notebook page!");
                 }
-            } else {
-                debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                reject("Failed to create a notebook page!");
+            });
+        } else {
+            const item = prepareADemoPageItem(workspace, 'NP', data)
+            const params = {
+                table: 'itemVersions',
+                key: item.id,
+                data: item
             }
-        });
+            const result = await writeDataToServiceWorkerDB(params);
+            if (result.status === 'ok') {
+                resolve(item);
+            } else {
+                reject();
+            }
+        }
     });
 }
 
@@ -2004,10 +2079,10 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         let item;
         const workspace = getState().container.workspace;
         newPageData.space = workspace;
+        newPageData.container = pageState.container;
         if (pageState.container.substring(0, 1) === 'f') {
 
         } else if (pageState.container.substring(0, 1) === 'n') {
-
             try {
                 item = await createANotebookPage(newPageData, dispatch);
                 dispatch(newItemCreated({

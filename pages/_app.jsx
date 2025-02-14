@@ -15,7 +15,7 @@ import '../styles/bootstrapOverride.css'
 import '../styles/complianceBadge.css'
 
 import { debugLog } from '../lib/helper';
-import { setServiceWorkerRegistered } from '../reduxStore/pageSlice';
+import { setServiceWorkerRegistered } from '../reduxStore/auth';
 
 function MyApp({ Component, pageProps }) {
   const debugOn = true;
@@ -39,7 +39,7 @@ function MyApp({ Component, pageProps }) {
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV210.js?v218", { //
+      navigator.serviceWorker.register("/serviceWorkerV210.js?v219", { //
         scope: "/",
       }).then(
         function (registration) {

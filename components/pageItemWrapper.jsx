@@ -26,6 +26,7 @@ const PageItemWrapper = ({ itemId, children}) => {
 
     const accountVersion = useSelector( state => state.auth.accountVersion);
     const demoMode = useSelector( state => state.auth.demoMode);
+    const serviceWorkerRegistered = useSelector( state => state.auth.serviceWorkerRegistered);
     const isLoggedIn = useSelector( state => state.auth.isLoggedIn);
     const searchKey = useSelector( state => state.auth.searchKey);
     const searchIV = useSelector( state => state.auth.searchIV);
@@ -46,7 +47,6 @@ const PageItemWrapper = ({ itemId, children}) => {
     const space = useSelector( state => state.page.space);
     const container = useSelector( state => state.page.container);
     const itemCopy = useSelector( state => state.page.itemCopy);
-    const serviceWorkerRegistered = useSelector( state => state.page.serviceWorkerRegistered);
 
     debugLog(debugOn, "aborted: ", aborted);
     debugLog(debugOn, "itemId: ", itemId);

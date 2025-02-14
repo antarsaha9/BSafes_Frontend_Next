@@ -38,7 +38,8 @@ const initialState = {
     stripePublishableKey: null,
     v2NextAuthStep: null,
     mfa: null,
-    demoMode: false
+    demoMode: false,
+    serviceWorkerRegistered: false
 }
 
 const authSlice = createSlice({
@@ -131,11 +132,14 @@ const authSlice = createSlice({
         },
         setDemoMode: (state, action) => {
             state.demoMode = action.payload;
+        },
+        setServiceWorkerRegistered: (state, action) => {
+            state.serviceWorkerRegistered = action.payload;
         }
     }
 });
 
-export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode } = authSlice.actions;
+export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode, setServiceWorkerRegistered } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

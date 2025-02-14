@@ -96,7 +96,7 @@ export default function Notebook() {
         debugLog(debugOn, "handleOpen");
 
         const idParts = pageItemId.split(":");
-        const firstPage = `/notebook/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+        const firstPage = `/notebookDemo/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
         router.push(firstPage);
             
     }

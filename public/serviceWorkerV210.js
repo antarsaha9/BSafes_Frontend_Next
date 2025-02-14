@@ -681,7 +681,7 @@ self.addEventListener("message", async (event) => {
           case itemVersionsStoreName:
             let data;
             try {
-              await addAnItemVersionToDB(event.data.key, event.data.data);
+              await updateAnItemVersion(event.data.key, event.data.data);
               data = { status: 'ok' }
             } catch (error) {
               data = { status: 'error', error }

@@ -287,7 +287,9 @@ const containerSlice = createSlice({
             const demoWorkspaceInfo = getDemoWorkspaceInfo();
             state.workspace = demoWorkspaceInfo.demoWorkspace;
             state.workspaceKey = demoWorkspaceInfo.demoWorkspaceKey;
-            state.workspaceName = demoWorkspaceInfo.workspaceName;
+            state.workspaceName = demoWorkspaceInfo.demoWorkspaceName;
+            state.searchKey = demoWorkspaceInfo.demoWorkspaceSearchKey;
+            state.searchIV = demoWorkspaceInfo.demoWorkspaceSearchIV;
         }
     }
 })

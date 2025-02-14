@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {useRouter} from "next/router";
 import { useSelector, useDispatch } from 'react-redux'
 
@@ -16,12 +16,15 @@ import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
 
+import { setDemoMode } from "../../../reduxStore/auth";
+import { setDemoWorkspace } from "../../../reduxStore/containerSlice";
 import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
 
 import { debugLog } from "../../../lib/helper";
+import { setupDemo} from "../../../lib/demoHelper"
 
 export default function NotebookPage() {
-    const debugOn = false;
+    const debugOn = true;
     debugLog(debugOn, "Rendering NotebookPage");
 
     const dispatch = useDispatch();
@@ -34,6 +37,13 @@ export default function NotebookPage() {
     debugLog(debugOn, "pageNumber: ", pageNumber);
 
     const containerInWorkspace = useSelector( state => state.container.container);
+
+    useEffect(() => {
+        if(setupDemo()){
+            dispatch(setDemoMode(true));
+            dispatch(setDemoWorkspace());
+        }
+    }, []);
 
     function gotoAnotherPage (anotherPageNumber) {
         if(!(pageItemId && pageNumber)) return;
@@ -76,7 +86,7 @@ export default function NotebookPage() {
     }
 
     const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
+        let newLink = `/notebookDemo/${containerInWorkspace}`;
         router.push(newLink);
     }
 
