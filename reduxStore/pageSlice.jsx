@@ -1125,7 +1125,7 @@ const getDemoItemFromServiceWorkerDB = (itemId) => {
 const getS3ObjectFromServiceWorkerDB = (s3Key) => {
     const params = {
         table: 's3Objects',
-        key: itemId
+        key: s3Key
     }
     return readDataFromServiceWorkerDB(params);
 }
@@ -1407,44 +1407,46 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         dispatch(dataFetched({ item }));
                         if (item.content && item.content.startsWith('s3Object/')) {
                             const s3Key = forge.util.decode64(item.content.substring(9));
-                            const downloadedBinaryString = await getS3ObjectFromServiceWorkerDB(s3Key);
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+                            const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            if (result.status === 'ok') {
+                                const downloadedBinaryString = result.object;
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
 
-                            function itemKeyReady() {
-                                return new Promise((resolve, reject) => {
-                                    let trials = 0;
-                                    state = getState().page;
-                                    if (state.itemKey) {
-                                        resolve();
-                                        return;
-                                    }
-                                    const timer = setInterval(() => {
+                                function itemKeyReady() {
+                                    return new Promise((resolve, reject) => {
+                                        let trials = 0;
                                         state = getState().page;
-                                        debugLog(debugOn, "Waiting for itemKey ...");
                                         if (state.itemKey) {
                                             resolve();
-                                            clearInterval(timer);
                                             return;
-                                        } else {
-                                            trials++;
-                                            if (trials > 100) {
-                                                reject('itemKey error!');
-                                                clearInterval(timer);
-                                            }
                                         }
-                                    }, 100)
+                                        const timer = setInterval(() => {
+                                            state = getState().page;
+                                            debugLog(debugOn, "Waiting for itemKey ...");
+                                            if (state.itemKey) {
+                                                resolve();
+                                                clearInterval(timer);
+                                                return;
+                                            } else {
+                                                trials++;
+                                                if (trials > 100) {
+                                                    reject('itemKey error!');
+                                                    clearInterval(timer);
+                                                }
+                                            }
+                                        }, 100)
 
-                                })
+                                    })
+                                }
+                                await itemKeyReady();
+                                const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
+
+                                state = getState().page;
+                                startDownloadingContentImages(data.itemId, dispatch, getState);
                             }
-                            await itemKeyReady();
-                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
-                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                            const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
-                            dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
-
-                            state = getState().page;
-                            startDownloadingContentImages(data.itemId, dispatch, getState);
-
                             resolve();
                         } else {
                             resolve();
@@ -2365,13 +2367,20 @@ const getS3SignedUrlForContentUpload = (dispatch) => {
 
 export const getS3SignedUrlForContentUploadThunk = (data) => async (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
-        try {
-            dispatch(setS3SignedUrlForContentUpload(null));
-            const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
-            dispatch(setS3SignedUrlForContentUpload(signedURLData));
-            resolve();
-        } catch {
-            reject();
+        const page = getState().page;
+        const workspace = page.space;
+        const demoOwner = workspace.split(":")[1];
+        if (!workspace.startsWith("d:")) {
+            try {
+                dispatch(setS3SignedUrlForContentUpload(null));
+                const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+                dispatch(setS3SignedUrlForContentUpload(signedURLData));
+                resolve();
+            } catch {
+                reject();
+            }
+        } else {
+            dispatch(setS3SignedUrlForContentUpload(`demo://${demoOwner}:3:${Date.now()}`));
         }
     });
 }
@@ -2420,46 +2429,60 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             const content = data.content;
             const workspaceKey = data.workspaceKey;
-
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;
             state = getState().page;
+            const workspace = state.space;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
 
             function uploadContentToS3(data) {
-
                 return new Promise(async (resolve, reject) => {
-                    try {
-                        let signedURLData = state.S3SignedUrlForContentUpload;
-                        if (Date.now() > signedURLData.expiration) {
-                            signedURLData = await getS3SignedUrlForContentUpload(dispatch);
-                        }
-                        s3Key = signedURLData.s3Key;
-                        signedURL = signedURLData.signedURL;
-
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
+                    if (!workspace.startsWith("d:")) {
+                        try {
+                            let signedURLData = state.S3SignedUrlForContentUpload;
+                            if (Date.now() > signedURLData.expiration) {
+                                signedURLData = await getS3SignedUrlForContentUpload(dispatch);
                             }
+                            s3Key = signedURLData.s3Key;
+                            signedURL = signedURLData.signedURL;
+
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
+                                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
+                                }
+                            }
+                            dispatch(setS3SignedUrlForContentUpload(null));
+                            await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            resolve();
+                        } catch (error) {
+                            debugLog(debugOn, "uploadContentToS3 failed: ", error);
+                            reject("uploadContentToS3 error.");
                         }
-                        dispatch(setS3SignedUrlForContentUpload(null));
-                        await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        resolve();
-                    } catch (error) {
-                        debugLog(debugOn, "uploadContentToS3 failed: ", error);
-                        reject("uploadContentToS3 error.");
+                    } else {
+                        const demoOwner = workspace.split(":")[1];
+                        s3Key = `${demoOwner}:3:${Date.now()}L_content`;
+                        const params = {
+                            table: 's3Objects',
+                            key: s3Key,
+                            data
+                        }
+                        const result = await writeDataToServiceWorkerDB(params);
+                        if (result.status === 'ok') {
+                            resolve();
+                        } else {
+                            reject();
+                        }
                     }
                 });
             }
 
             try {
                 encodedContent = forge.util.encodeUtf8(result.content);
-
                 if (!state.itemCopy) {
                     try {
                         let itemKey = state.itemKey;

@@ -639,7 +639,7 @@ self.addEventListener("message", async (event) => {
       }
     }
   }
-
+  let data, port;
   if (event.data) {
     await self.clients.claim();
     switch (event.data.type) {
@@ -658,7 +658,6 @@ self.addEventListener("message", async (event) => {
       case 'READ_FROM_DB':
         switch (event.data.table) {
           case itemVersionsStoreName:
-            let data;
             try {
               const item = await getAnItemVersionFromDB(event.data.key);
               data = { status: 'ok' }
@@ -668,29 +667,45 @@ self.addEventListener("message", async (event) => {
             } catch (error) {
               data = { status: 'error', error }
             }
-            const port = event.ports[0];
+            port = event.ports[0];
             port.postMessage({ type: "DATA", data });
             break;
           case s3ObjectsStoreName:
-            const object = await getAS3ObjectFromDB(event.data.key);
+            try {
+              const object = await getAS3ObjectFromDB(event.data.key);
+              data = { status: 'ok' }
+              if (object) {
+                data.object = object.object;
+              }
+            } catch (error) {
+              data = { status: 'error', error }
+            }
+            port = event.ports[0];
+            port.postMessage({ type: "DATA", data });
             break;
         }
         break;
       case 'WRITE_TO_DB':
         switch (event.data.table) {
           case itemVersionsStoreName:
-            let data;
             try {
               await updateAnItemVersion(event.data.key, event.data.data);
               data = { status: 'ok' }
             } catch (error) {
               data = { status: 'error', error }
             }
-            const port = event.ports[0];
+            port = event.ports[0];
             port.postMessage({ type: "WRITE_RESULT", data });
             break;
           case s3ObjectsStoreName:
-            const object = await getAS3ObjectFromDB(event.data.key);
+            try {
+              await addAS3ObjectToDB(event.data.key, event.data.data);
+              data = { status: 'ok' }
+            } catch (error) {
+              data = { status: 'error', error }
+            }
+            port = event.ports[0];
+            port.postMessage({ type: "WRITE_RESULT", data });
             break;
         }
         break;
