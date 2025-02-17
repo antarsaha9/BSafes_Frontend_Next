@@ -82,19 +82,14 @@ const initialState = {
 
 const dataFetchedFunc = (state, action) => {
     const item = action.payload.item;
-
     state.itemCopy = item;
-
     state.id = item.id;
-
     if (state.id.startsWith('np')) {
         state.pageNumber = parseInt(state.id.split(':').pop())
     }
-
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
-
 }
 
 function findMediasInContent(state, content) {
@@ -1524,32 +1519,38 @@ export const getItemPathThunk = (data) => async (dispatch, getState) => {
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState().page;
+    const workspace = state.space;
     newActivity(dispatch, pageActivity.DecryptPageItem, () => {
         const itemId = data.itemId;
 
         const startDownloadingImages = async () => {
             state = getState().page;
             const downloadAnImage = (image) => {
-
                 return new Promise(async (resolve, reject) => {
                     const s3Key = image.s3Key + (image.forVideo ? '' : "_gallery");
+                    let downloadedBinaryString, decryptedImageStr;
                     try {
-                        dispatch(downloadingImage({ itemId, progress: 5 }));
-                        const signedURL = await preS3Download(state.id, s3Key, dispatch);
-                        dispatch(downloadingImage({ itemId, progress: 10 }));
-                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-
-                        if (itemId !== state.activeRequest) {
-                            debugLog(debugOn, "Aborted!");
-                            reject("Aborted")
-                            return;
-                        };
-
-                        let decryptedImageStr
-
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
+                        if (!workspace.startsWith("d:")) {
+                            dispatch(downloadingImage({ itemId, progress: 5 }));
+                            const signedURL = await preS3Download(state.id, s3Key, dispatch);
+                            dispatch(downloadingImage({ itemId, progress: 10 }));
+                            const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);
+                            debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                            if (itemId !== state.activeRequest) {
+                                debugLog(debugOn, "Aborted!");
+                                reject("Aborted")
+                                return;
+                            };
+                            const buffer = Buffer.from(response, 'binary');
+                            downloadedBinaryString = buffer.toString('binary');
+                        } else {
+                            const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            if (result.status === 'ok') {
+                                downloadedBinaryString = result.object;
+                            } else {
+                                throw new Error("Failed to read an image data from service worker DB!");
+                            }
+                        }
                         debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                         decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                         debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
@@ -2555,10 +2556,9 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     const fileType = video.type;
     const fileSize = video.size;
     const fileName = video.name;
-
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
-
+    const workspace = state.space;
     // BEGIN **** For playing back video from service worker ***
     function setupWriter(s3KeyPrefix) {
         debugLog(debugOn, "setupWriter");
@@ -2621,7 +2621,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     function writeAChunkToFile(chunkIndex, chunk) {
         debugLog(debugOn, "writeAChunkToFile");
         return new Promise(async (resolve, reject) => {
-
             debugLog(debugOn, "BINARY: ", Date.now());
             messageChannel.port1.postMessage({
                 type: 'BINARY',
@@ -2629,7 +2628,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
                 chunk
             });
             resolve();
-
         })
     }
 
@@ -2651,41 +2649,58 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
 
                 return new Promise(async (resolve, reject) => {
                     try {
-                        result = await preS3ChunkUpload(state.id, index, timeStamp);
-                        fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
-                        debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                        dispatch(uploadingVideo(fileUploadProgress));
+                        if (!workspace.startsWith("d:")) {
+                            result = await preS3ChunkUpload(state.id, index, timeStamp);
+                            fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingVideo(fileUploadProgress));
 
-                        s3Key = result.s3Key;
-                        s3KeyPrefix = result.s3KeyPrefix;
-                        signedURL = result.signedURL;
-                        debugLog(debugOn, 'chunk signed url', signedURL);
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            debugLog(debugOn, 'chunk signed url', signedURL);
 
+                            const uploader = async (data, signedURL, uploadingPlaceholder) => {
+                                const config = {
+                                    onUploadProgress: async (progressEvent) => {
+                                        const percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
+                                        let fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
+                                        fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
+                                        debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                        debugLog(debugOn, `upload prgoress: ${fileUploadProgress}`);
+                                        dispatch(uploadingPlaceholder(fileUploadProgress));
+                                    },
+                                    headers: {
+                                        'Content-Type': 'binary/octet-stream'
+                                    }
+                                }
+                                await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            }
+                            await uploader(data, signedURL, uploadingVideo);
+                        } else {
+                            if (index === 0) {
+                                const demoOwner = workspace.split(":")[1];
+                                s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
+                            }
+                            s3Key = `${s3KeyPrefix}_chunk_${index}`;
+                            const params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            const result = {status: 'ok'}; // await writeDataToServiceWorkerDB(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write a chunk to service worker DB!");
+                            }
+                            fileUploadProgress = (index + 1) * (100 / numberOfChunks);
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingVideo(fileUploadProgress));
+                        }
                         if (!serviceWorkerReady) {
                             await setupWriter(s3KeyPrefix);
                             serviceWorkerReady = true;
                         }
-
-                        const uploader = async (data, signedURL, uploadingPlaceholder) => {
-                            const config = {
-                                onUploadProgress: async (progressEvent) => {
-                                    const percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
-                                    let fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
-                                    fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
-                                    debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                    debugLog(debugOn, `upload prgoress: ${fileUploadProgress}`);
-                                    dispatch(uploadingPlaceholder(fileUploadProgress));
-                                },
-                                headers: {
-                                    'Content-Type': 'binary/octet-stream'
-                                }
-                            }
-                            await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        }
-
-                        await uploader(data, signedURL, uploadingVideo);
                         await writeAChunkToFile(chunkIndex, binaryData);
-
                         resolve();
                     } catch (error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
@@ -2714,7 +2729,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     }
 
     return new Promise(async (resolve, reject) => {
-
         startingChunk = 0;
         for (i = startingChunk; i < numberOfChunks; i++) {
             try {
@@ -2848,9 +2862,11 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
             if (state.videosUploadQueue.length === state.videosUploadIndex) {
                 resolve();
             }
-            if (Android) {
-                console.log("Calling Android.deleteTemporaryFiles")
-                Android.deleteTemporaryFiles();
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (Android) {
+                    console.log("Calling Android.deleteTemporaryFiles")
+                    Android.deleteTemporaryFiles();
+                }
             }
         });
     });
@@ -2860,25 +2876,38 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     let state = getState().page;
     let s3Key;
     const itemId = state.id;
+    const workspace = state.space;
     const s3KeyPrefix = data.s3KeyPrefix;
     const snapshot = data.snapshot;
     let timeStamp = s3KeyPrefix.split(':').pop();
+    const encryptedStr = encryptLargeBinaryString(snapshot, state.itemKey);
     try {
-        const result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
-        const s3Key = result.s3Key;
-        const signedURL = result.signedURL;
-        const encryptedStr = encryptLargeBinaryString(snapshot, state.itemKey);
-
-        const config = {
-            onUploadProgress: async (progressEvent) => {
-                let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
-                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-            },
-            headers: {
-                'Content-Type': 'binary/octet-stream'
+        if (!workspace.startsWith("d:")) {
+            const result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
+            const s3Key = result.s3Key;
+            const signedURL = result.signedURL;
+            const config = {
+                onUploadProgress: async (progressEvent) => {
+                    let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
+                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                },
+                headers: {
+                    'Content-Type': 'binary/octet-stream'
+                }
+            }
+            await putS3Object(s3Key, signedURL, encryptedStr, config, dispatch);
+        } else {
+            s3Key = `${s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
+            const params = {
+                table: 's3Objects',
+                key: s3Key,
+                data: encryptedStr
+            }
+            const result = await writeDataToServiceWorkerDB(params);
+            if (result.status !== 'ok') {
+                throw new Error("Failed to write a chunk to service worker DB!");
             }
         }
-        await putS3Object(s3Key, signedURL, encryptedStr, config, dispatch);
     } catch (error) {
         console.log("uploadSnapshot failed");
     }
@@ -3534,9 +3563,11 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                         }
                         fileInUint8ArrayIndex += chunk.length;
                     } else {
-                        if (Android) {
-                            console.log("Android.addAChunkToFile ...")
-                            Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
+                        if (process.env.NEXT_PUBLIC_platform === 'android') {
+                            if (Android) {
+                                console.log("Android.addAChunkToFile ...")
+                                Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
+                            }
                         }
                     }
                     resolve();
