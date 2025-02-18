@@ -1519,7 +1519,7 @@ export const getItemPathThunk = (data) => async (dispatch, getState) => {
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState().page;
-    const workspace = state.space;
+    const workspace = getState().container.workspace;
     newActivity(dispatch, pageActivity.DecryptPageItem, () => {
         const itemId = data.itemId;
 
@@ -2083,6 +2083,14 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         const workspace = getState().container.workspace;
         newPageData.space = workspace;
         newPageData.container = pageState.container;
+        if(workspace.startsWith("d:")){
+            if(newPageData.videos){
+                newPageData.videos = JSON.parse(newPageData.videos)
+            }
+            if (newPageData.images) {
+                newPageData.images = JSON.parse(newPageData.images);
+            }
+        }
         if (pageState.container.substring(0, 1) === 'f') {
 
         } else if (pageState.container.substring(0, 1) === 'n') {
@@ -2432,7 +2440,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
             const workspaceKey = data.workspaceKey;
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;
             state = getState().page;
-            const workspace = state.space;
+            const workspace = getState().container.workspace;;
             const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
@@ -2558,7 +2566,7 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     const fileName = video.name;
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
-    const workspace = state.space;
+    const workspace = getState().container.workspace;;
     // BEGIN **** For playing back video from service worker ***
     function setupWriter(s3KeyPrefix) {
         debugLog(debugOn, "setupWriter");
@@ -2876,7 +2884,7 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     let state = getState().page;
     let s3Key;
     const itemId = state.id;
-    const workspace = state.space;
+    const workspace = getState().container.workspace;;
     const s3KeyPrefix = data.s3KeyPrefix;
     const snapshot = data.snapshot;
     let timeStamp = s3KeyPrefix.split(':').pop();
