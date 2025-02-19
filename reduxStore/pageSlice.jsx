@@ -3253,6 +3253,8 @@ export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
 }
 
 const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey) => {
+    const workspace = getState().container.workspace;
+    const demoOwner = workspace.split(":")[1];
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
@@ -3291,54 +3293,65 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
 
             function uploadAChunk(index, data) {
                 let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
-
                 debugLog(debugOn, `uploadAChunk: ${index}`);
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
                 timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1]
-
-                function setUploadTimeout() {
-                    timer = setTimeout(() => {
-                        if (controller) controller.abort();
-                    }, 30000);
-                }
-
                 return new Promise(async (resolve, reject) => {
                     try {
-                        result = await preS3ChunkUpload(state.id, index, timeStamp, dispatch);
-                        fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
-                        debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                        dispatch(uploadingAttachment(fileUploadProgress));
-                        s3Key = result.s3Key;
-                        s3KeyPrefix = result.s3KeyPrefix;
-                        signedURL = result.signedURL;
-                        debugLog(debugOn, 'chunk signed url', signedURL);
-
-                        controller = new AbortController();
-                        dispatch(setAbortController(controller));
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                if (timer) {
-                                    clearTimeout(timer);
-                                    timer = 0;
-                                }
-                                //setUploadTimeout();
-                                let percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
-                                fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
-                                debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                                dispatch(uploadingAttachment(fileUploadProgress));
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
-                            },
-                            timeout: 0,
-                            signal: controller.signal
+                        if (!workspace.startsWith("d:")) {
+                            result = await preS3ChunkUpload(state.id, index, timeStamp, dispatch);
+                            fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAttachment(fileUploadProgress));
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            debugLog(debugOn, 'chunk signed url', signedURL);
+                            controller = new AbortController();
+                            dispatch(setAbortController(controller));
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    if (timer) {
+                                        clearTimeout(timer);
+                                        timer = 0;
+                                    }
+                                    //setUploadTimeout();
+                                    let percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
+                                    fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
+                                    debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                                    dispatch(uploadingAttachment(fileUploadProgress));
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
+                                },
+                                timeout: 0,
+                                signal: controller.signal
+                            }
+                            await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            if (timer) clearTimeout(timer);
+                            dispatch(setAbortController(null));
+                            debugLog(debugOn, `uploadAChunk done: ${index}`);
+                            resolve();
+                        } else {
+                            if (index === 0) {
+                                s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
+                            }
+                            s3Key = `${s3KeyPrefix}_chunk_${index}`;
+                            const params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            const result = await writeDataToServiceWorkerDB(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write a chunk to service worker DB!");
+                            }
+                            fileUploadProgress = (index + 1) * (100 / numberOfChunks);
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAttachment(fileUploadProgress));
+                            resolve();
                         }
-                        await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        if (timer) clearTimeout(timer);
-                        dispatch(setAbortController(null));
-                        debugLog(debugOn, `uploadAChunk done: ${index}`);
-                        resolve();
                     } catch (error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
                         reject("uploadAChunk error.");
@@ -3499,26 +3512,24 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
+const downloadAnAttachment = (dispatch, getState, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
+        const workspace = getState().container.workspace;
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
-
         async function setupWriter() {
             function talkToServiceWorker() {
                 return new Promise(async (resolve, reject) => {
                     navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
                         if (registration) {
                             messageChannel = new MessageChannel();
-
                             registration.active.postMessage({
                                 type: 'INIT_PORT',
                                 fileName: attachment.fileName,
                                 fileSize: attachment.fileSize,
                                 browserInfo: getBrowserInfo()
                             }, [messageChannel.port2]);
-
                             messageChannel.port1.onmessage = (event) => {
                                 // Print the result
                                 debugLog(debugOn, event.data);
@@ -3543,7 +3554,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                     }
                                 }
                             };
-
                         } else {
                             debugLog(debugOn, "s");
                             reject("serviceWorker.getRegistration error")
@@ -3554,7 +3564,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                     reject("serviceWorker.getRegistration error.");
                 });
             }
-
             if (!isUsingServiceWorker) {
                 if (process.env.NEXT_PUBLIC_platform === 'android') {
                     fileInUint8Array = new Uint8Array(attachment.fileSize);
@@ -3571,7 +3580,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 }
             }
         }
-
         function reconnectWriter() {
             if (!isUsingServiceWorker) {
                 if (process.env.NEXT_PUBLIC_platform !== 'android') {
@@ -3582,7 +3590,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 messageChannel = state.writer;
             }
         }
-
         function writeAChunkToFile(chunkIndex, chunk) {
             return new Promise(async (resolve, reject) => {
                 if (!isUsingServiceWorker) {
@@ -3614,7 +3621,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 }
             })
         }
-
         function writeAChunkToFileFailed(chunkIndex) {
             if (!isUsingServiceWorker) {
                 if (process.env.NEXT_PUBLIC_platform !== 'android') {
@@ -3625,7 +3631,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             }
 
         }
-
         function closeWriter() {
             if (!isUsingServiceWorker) {
                 dispatch(writerClosed());
@@ -3635,30 +3640,36 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 });
             }
         }
-
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
                 try {
-                    result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
-                    if (numberOfChunksRequired) {
-                        numberOfChunks = result.numberOfChunks;
-                        numberOfChunksRequired = false;
+                    if (!workspace.startsWith("d:")) {
+                        result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
+                        if (numberOfChunksRequired) {
+                            numberOfChunks = result.numberOfChunks;
+                            numberOfChunksRequired = false;
+                        }
+                        const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks);
+                        debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
+                        if (state.activeRequest !== itemId) {
+                            reject("Aborted");
+                            return;
+                        }
+                        buffer = Buffer.from(response, 'binary');
+                        downloadedBinaryString = buffer.toString('binary');
+                    } else {
+                        const s3Key = `${s3KeyPrefix}_chunk_${chunkIndex}`
+                        const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                        if (result.status === 'ok') {
+                            downloadedBinaryString = result.object;
+                        } else {
+                            throw new Error("Failed to read an image data from service worker DB!");
+                        }
                     }
-                    const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks);
-                    debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
-                    if (state.activeRequest !== itemId) {
-                        reject("Aborted");
-                        return;
-                    }
-
-                    buffer = Buffer.from(response, 'binary');
-                    downloadedBinaryString = buffer.toString('binary');
                     debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                     decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey, state.itemIV)
                     debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
-
                     await writeAChunkToFile(chunkIndex, decryptedChunkStr);
-
                     resolve();
                 } catch (error) {
                     debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);
@@ -3679,16 +3690,12 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             reconnectWriter();
         } else {
             startingChunk = 0;
-
             if (!(await setupWriter())) {
                 dispatch(setupWriterFailed());
                 reject("Failed to setup the writer.");
                 return;
             };
-
         }
-
-
         for (i = startingChunk; i < numberOfChunks; i++) {
             try {
                 await downloadDecryptAndAssemble(i);
@@ -3716,19 +3723,16 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 }
 
 export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) => {
-    let state, attachment, downloadResult, itemId;
-
+    let state, attachment, itemId;
     state = getState().page;
     itemId = state.id;
     if (state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         dispatch(addDownloadAttachment({ ...data.panel }));
         return;
     }
-
     if (data.panel) {
         dispatch(addDownloadAttachment({ ...data.panel }));
     }
-
     state = getState().page;
     while (state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         if (state.aborted) {
@@ -3738,7 +3742,7 @@ export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) =>
         debugLog(debugOn, "======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
         attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
         try {
-            await downloadAnAttachment(dispatch, state, attachment, itemId);
+            await downloadAnAttachment(dispatch, getState, state, attachment, itemId);
             dispatch(attachmentDownloaded(attachment));
             state = getState().page;
         } catch (error) {
