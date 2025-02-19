@@ -2083,8 +2083,8 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         const workspace = getState().container.workspace;
         newPageData.space = workspace;
         newPageData.container = pageState.container;
-        if(workspace.startsWith("d:")){
-            if(newPageData.videos){
+        if (workspace.startsWith("d:")) {
+            if (newPageData.videos) {
                 newPageData.videos = JSON.parse(newPageData.videos)
             }
             if (newPageData.images) {
@@ -2696,7 +2696,7 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
                                 key: s3Key,
                                 data
                             }
-                            const result = {status: 'ok'}; // await writeDataToServiceWorkerDB(params);
+                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDB(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write a chunk to service worker DB!");
                             }
@@ -2921,13 +2921,15 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     }
 }
 
-const uploadAnImage = async (dispatch, state, file) => {
+const uploadAnImage = async (dispatch, getState, state, file) => {
     let img;
     let exifOrientation;
     let imageDataInBinaryString;
     let totalUploadedSize = 0;
+    const workspace = getState().container.workspace;
+    const demoOwner = workspace.split(":")[1];
 
-    const downscaleImgAndEncryptInUint8Array = (size) => {
+    const downscaleImgAndEncryptInBinaryString = (size) => {
         return new Promise(async (resolve, reject) => {
             try {
                 const result = await downScaleImage(img, exifOrientation, size);
@@ -2956,27 +2958,34 @@ const uploadAnImage = async (dispatch, state, file) => {
                 return new Promise(async (resolve, reject) => {
                     const preImagesS3Upload = () => {
                         return new Promise(async (resolve, reject) => {
-                            PostCall({
-                                api: '/memberAPI/preS3Upload',
-                                dispatch
-                            }).then(data => {
-                                debugLog(debugOn, data);
-                                if (data.status === 'ok') {
-                                    s3Key = data.s3Key;
-                                    s3KeyGallery = s3Key + '_gallery';
-                                    s3KeyThumbnail = s3Key + '_thumbnail';
-                                    signedURL = data.signedURL;
-                                    signedGalleryURL = data.signedGalleryURL;
-                                    signedThumbnailURL = data.signedThumbnailURL;
-                                    resolve();
-                                } else {
-                                    debugLog(debugOn, "preS3Upload failed: ", data.error);
+                            if (!workspace.startsWith("d:")) {
+                                PostCall({
+                                    api: '/memberAPI/preS3Upload',
+                                    dispatch
+                                }).then(data => {
+                                    debugLog(debugOn, data);
+                                    if (data.status === 'ok') {
+                                        s3Key = data.s3Key;
+                                        s3KeyGallery = s3Key + '_gallery';
+                                        s3KeyThumbnail = s3Key + '_thumbnail';
+                                        signedURL = data.signedURL;
+                                        signedGalleryURL = data.signedGalleryURL;
+                                        signedThumbnailURL = data.signedThumbnailURL;
+                                        resolve();
+                                    } else {
+                                        debugLog(debugOn, "preS3Upload failed: ", data.error);
+                                        reject("preS3Upload error.");
+                                    }
+                                }).catch(error => {
+                                    debugLog(debugOn, "preS3Upload failed: ", error)
                                     reject("preS3Upload error.");
-                                }
-                            }).catch(error => {
-                                debugLog(debugOn, "preS3Upload failed: ", error)
-                                reject("preS3Upload error.");
-                            })
+                                })
+                            } else {
+                                s3Key = `${demoOwner}:3:${Date.now()}L`;
+                                s3KeyGallery = s3Key + '_gallery';
+                                s3KeyThumbnail = s3Key + '_thumbnail';
+                                resolve();
+                            }
                         });
                     };
 
@@ -2984,74 +2993,107 @@ const uploadAnImage = async (dispatch, state, file) => {
                         await preImagesS3Upload();
                         dispatch(uploadingImage(5));
                         totalUploadedSize += data.length;
-                        const galleryImgString = await downscaleImgAndEncryptInUint8Array(720);
+                        const galleryImgString = await downscaleImgAndEncryptInBinaryString(720);
                         totalUploadedSize += galleryImgString.length;
                         debugLog(debugOn, "galleryString length: ", galleryImgString.length);
                         dispatch(uploadingImage(20));
-                        const thumbnailImgString = await downscaleImgAndEncryptInUint8Array(120);
+                        const thumbnailImgString = await downscaleImgAndEncryptInBinaryString(120);
                         totalUploadedSize += thumbnailImgString.length;
                         debugLog(debugOn, "thumbnailImgString length: ", thumbnailImgString.length);
                         dispatch(uploadingImage(30));
                         const buffer = Buffer.from(data, 'binary');
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = 30 + Math.ceil(progressEvent.loaded * 70 / progressEvent.total);
-                                dispatch(uploadingImage(percentCompleted));
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                if (!uploadingSubImages) {
-                                    uploadingSubImages = true;
+                        if (!workspace.startsWith("d:")) {
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    let percentCompleted = 30 + Math.ceil(progressEvent.loaded * 70 / progressEvent.total);
+                                    dispatch(uploadingImage(percentCompleted));
+                                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                    if (!uploadingSubImages) {
+                                        uploadingSubImages = true;
 
-                                    uploadGalleryImgPromise = putS3Object(
-                                        s3KeyGallery, signedGalleryURL,
-                                        galleryImgString,
-                                        {
-                                            headers: {
-                                                'Content-Type': 'binary/octet-stream'
-                                            }
-                                        },
-                                        dispatch
-                                    ).catch(error => {
-                                        reject(error);
-                                        return;
-                                    });
+                                        uploadGalleryImgPromise = putS3Object(
+                                            s3KeyGallery, signedGalleryURL,
+                                            galleryImgString,
+                                            {
+                                                headers: {
+                                                    'Content-Type': 'binary/octet-stream'
+                                                }
+                                            },
+                                            dispatch
+                                        ).catch(error => {
+                                            reject(error);
+                                            return;
+                                        });
 
-                                    uploadThumbnailImgPromise = putS3Object(
-                                        s3KeyThumbnail, signedThumbnailURL,
-                                        thumbnailImgString,
-                                        {
-                                            headers: {
-                                                'Content-Type': 'binary/octet-stream'
-                                            }
-                                        },
-                                        dispatch
-                                    ).catch(error => {
-                                        reject(error);
-                                        return;
-                                    });
-                                    try {
-                                        const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
-                                        debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
-                                        debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
-                                        debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
-                                        resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
-                                    } catch (error) {
-                                        debugLog(debugOn, "Uploading an image failed: ", error);
-                                        reject(error);
+                                        uploadThumbnailImgPromise = putS3Object(
+                                            s3KeyThumbnail, signedThumbnailURL,
+                                            thumbnailImgString,
+                                            {
+                                                headers: {
+                                                    'Content-Type': 'binary/octet-stream'
+                                                }
+                                            },
+                                            dispatch
+                                        ).catch(error => {
+                                            reject(error);
+                                            return;
+                                        });
+                                        try {
+                                            const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
+                                            debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
+                                            debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
+                                            debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
+                                            resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
+                                        } catch (error) {
+                                            debugLog(debugOn, "Uploading an image failed: ", error);
+                                            reject(error);
+                                        }
                                     }
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
                                 }
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
                             }
+
+                            uploadOriginalImgPromise = putS3Object(s3Key, signedURL,
+                                Buffer.from(data, 'binary'), config, dispatch)
+                                .catch(error => {
+                                    reject(error);
+                                    return;
+                                });
+                        } else {
+                            let params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            let result = await writeDataToServiceWorkerDB(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(65));
+                            params = {
+                                table: 's3Objects',
+                                key: s3KeyGallery,
+                                galleryImgString
+                            }
+                            result = await writeDataToServiceWorkerDB(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(85));
+                            params = {
+                                table: 's3Objects',
+                                key: s3KeyThumbnail,
+                                thumbnailImgString
+                            }
+                            result = await writeDataToServiceWorkerDB(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(90));
+                            resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
                         }
-
-                        uploadOriginalImgPromise = putS3Object(s3Key, signedURL,
-                            Buffer.from(data, 'binary'), config, dispatch)
-                            .catch(error => {
-                                reject(error);
-                                return;
-                            });
-
                     } catch (error) {
                         debugLog(debugOn, 'uploadImagesToS3 error: ', error)
                         reject("uploadImagesToS3 error.");
@@ -3070,26 +3112,19 @@ const uploadAnImage = async (dispatch, state, file) => {
                 reject("uploadImagesToS3 error.");
             }
         };
-
-
         reader.addEventListener('load', async () => {
             imageDataInBinaryString = reader.result;
             const link = window.URL.createObjectURL(file);
-
             try {
-
                 img = new Image();
                 img.src = link;
-
                 img.onload = startUploadingAnImage;
 
             } catch (error) {
                 debugLog(debugOn, 'rotateImage error:', error)
                 reject("rotateImage error.");
             }
-
         });
-
         reader.readAsBinaryString(file);
     });
 };
@@ -3133,7 +3168,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
                 const file = state.imageUploadQueue[state.imageUploadIndex].file;
                 try {
-                    const uploadResult = await uploadAnImage(dispatch, state, file);
+                    const uploadResult = await uploadAnImage(dispatch, getState, state, file);
                     dispatch(imageUploaded(uploadResult));
                 } catch (error) {
                     alert("Network failure, retry?")
