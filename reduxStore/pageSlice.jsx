@@ -1129,10 +1129,8 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
     let state = getState().page;
     dispatch(setContentImagesAllDownloaded(false));
     const downloadAnImage = (image) => {
-
         return new Promise(async (resolve, reject) => {
             const s3Key = image.s3Key;
-
             try {
                 dispatch(downloadingContentImage({ itemId, progress: 5 }));
                 const signedURL = await preS3Download(state.id, s3Key, dispatch);
@@ -1140,7 +1138,6 @@ const startDownloadingContentImages = async (itemId, dispatch, getState) => {
 
                 const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
                 debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
-
                 if (itemId !== state.activeRequest) {
                     debugLog(debugOn, "Aborted!");
                     reject("Aborted")
@@ -1576,9 +1573,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     }
                 });
             }
-
             while (state.imageDownloadIndex < state.imageDownloadQueue.length) {
-
                 if (state.aborted) {
                     debugLog(debugOn, "abort: ", state.aborted);
                     break;
@@ -2988,7 +2983,6 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                             }
                         });
                     };
-
                     try {
                         await preImagesS3Upload();
                         dispatch(uploadingImage(5));
@@ -3075,7 +3069,7 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                             params = {
                                 table: 's3Objects',
                                 key: s3KeyGallery,
-                                galleryImgString
+                                data: galleryImgString
                             }
                             result = await writeDataToServiceWorkerDB(params);
                             if (result.status !== 'ok') {
@@ -3085,7 +3079,7 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                             params = {
                                 table: 's3Objects',
                                 key: s3KeyThumbnail,
-                                thumbnailImgString
+                                data: thumbnailImgString
                             }
                             result = await writeDataToServiceWorkerDB(params);
                             if (result.status !== 'ok') {
@@ -3100,13 +3094,10 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                     }
                 });
             };
-
             const encryptedImageDataInBinaryString = encryptLargeBinaryString(imageDataInBinaryString, state.itemKey);
-
             try {
                 const uploadResult = await uploadImagesToS3(encryptedImageDataInBinaryString);
                 resolve(uploadResult);
-
             } catch (error) {
                 debugLog(debugOn, 'uploadImagesToS3 error: ', error);
                 reject("uploadImagesToS3 error.");
