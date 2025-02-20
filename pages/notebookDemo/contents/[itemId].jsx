@@ -15,9 +15,10 @@ import TurningPageControls from "../../../components/turningPageControls";
 import PaginationControl from "../../../components/paginationControl";
 
 import { listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
-import {  } from "../../../reduxStore/pageSlice";
+import { NotebookDemo } from "../../../lib/productID";
 import { debugLog } from "../../../lib/helper";
 
+const productID = NotebookDemo;
 
 export default function NotebookContents() {
     const debugOn = false;
@@ -53,13 +54,13 @@ export default function NotebookContents() {
                 if(pageNumber > 1) {
 
                 } else {
-                    newLink = `/notebook/${containerInWorkspace}`;  
+                    newLink = `/${productID}/${containerInWorkspace}`;  
                 }
                 break;
             case '+1':
                 if(!totalNumberOfPages || (pageNumber === totalNumberOfPages) ) {
                     nextPageId = 'np:'+ idParts.join(':') + ':1';
-                    newLink = `/notebook/p/${nextPageId}`; 
+                    newLink = `/${productID}/p/${nextPageId}`; 
                 } else {
 
                 }
@@ -67,7 +68,7 @@ export default function NotebookContents() {
             default:
                 idParts.push(anotherPageNumber);
                 nextPageId = 'np:'+ idParts.join(':');
-                newLink = `/notebook/p/${nextPageId}`;         
+                newLink = `/${productID}/p/${nextPageId}`;         
         }      
 
         router.push(newLink);
@@ -84,7 +85,7 @@ export default function NotebookContents() {
     }
 
     const handleCoverClicked = () => {
-        let newLink = `/notebook/${containerInWorkspace}`;
+        let newLink = `/${productID}/${containerInWorkspace}`;
         router.push(newLink);
     }
 
@@ -105,7 +106,7 @@ export default function NotebookContents() {
     const handleGoToFirstItem = async () => {
         try {
             const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
-            const newLink = `/notebook/p/${itemId}`;
+            const newLink = `/${productID}/p/${itemId}`;
             router.push(newLink);
         } catch(error) {
             alert("Could not get the first item in the container");
@@ -115,7 +116,7 @@ export default function NotebookContents() {
     const handleGoToLastItem = async () => {
         try {
             const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
-            const newLink = `/notebook/p/${itemId}`;
+            const newLink = `/${productID}/p/${itemId}`;
             router.push(newLink);
         } catch(error) {
             alert("Could not get the first item in the container");

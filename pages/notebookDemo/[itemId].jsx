@@ -21,9 +21,12 @@ import { setDemoMode } from "../../reduxStore/auth";
 import { setDemoWorkspace } from "../../reduxStore/containerSlice";
 import { saveTitleThunk } from "../../reduxStore/pageSlice";
 
+import { NotebookDemo } from "../../lib/productID";
 import { debugLog } from "../../lib/helper";
 import { setupDemo} from "../../lib/demoHelper"
 import { getCoverAndContentsLink} from "../../lib/bSafesCommonUI";
+
+const productID = NotebookDemo;
 
 export default function Notebook() {
     const debugOn = false;
@@ -96,7 +99,7 @@ export default function Notebook() {
         debugLog(debugOn, "handleOpen");
 
         const idParts = pageItemId.split(":");
-        const firstPage = `/notebookDemo/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
+        const firstPage = `/${productID}/p/np:${idParts[1]}:${idParts[2]}:${idParts[3]}:1`;
         router.push(firstPage);
             
     }

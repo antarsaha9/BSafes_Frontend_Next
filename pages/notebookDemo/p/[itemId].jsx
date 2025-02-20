@@ -20,8 +20,11 @@ import { setDemoMode } from "../../../reduxStore/auth";
 import { setDemoWorkspace } from "../../../reduxStore/containerSlice";
 import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
 
+import { NotebookDemo } from "../../../lib/productID";
 import { debugLog } from "../../../lib/helper";
 import { setupDemo} from "../../../lib/demoHelper"
+
+const productID = NotebookDemo;
 
 export default function NotebookPage() {
     const debugOn = true;
@@ -57,7 +60,7 @@ export default function NotebookPage() {
                     idParts.push((pageNumber-1));
                 } else {
                     if(!containerInWorkspace) return;
-                    router.push(`/notebook/contents/${containerInWorkspace}`);
+                    router.push(`/${productID}/contents/${containerInWorkspace}`);
                     return;
                 }
                 break;
@@ -72,7 +75,7 @@ export default function NotebookPage() {
         nextPageId = idParts.join(':');
         debugLog(debugOn, "setNavigationInSameContainer ...");
         dispatch(setNavigationInSameContainer(true));
-        router.push(`/notebook/p/${nextPageId}`);       
+        router.push(`/${productID}/p/${nextPageId}`);       
     }
 
     const gotoNextPage = () =>{
@@ -86,12 +89,12 @@ export default function NotebookPage() {
     }
 
     const handleCoverClicked = () => {
-        let newLink = `/notebookDemo/${containerInWorkspace}`;
+        let newLink = `/${productID}/${containerInWorkspace}`;
         router.push(newLink);
     }
 
     const handleContentsClicked = () => {
-        const contentsPageLink = `/notebook/contents/${container}`;
+        const contentsPageLink = `/${productID}/contents/${container}`;
         router.push(contentsPageLink);
     }
 

@@ -14,6 +14,7 @@ function sleep(ms) {
 const DBName = "streams";
 const chunkStoreName = "videoChunksStore";
 const streamStoreName = "streamStore";
+const notebookContentsStoreName = "notebookContentsContents";
 const itemVersionsStoreName = "itemVersions";
 const s3ObjectsStoreName = "s3Objects";
 
@@ -47,6 +48,7 @@ function openDB() {
       const transaction = e.target.transaction;
       db.createObjectStore(chunkStoreName, { keyPath: "chunkId" });
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
+      db.createObjectStore(notebookContentsStoreName, { keyPath: "itemId" });
       db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
       db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
@@ -245,6 +247,102 @@ function getStreamFromDB(streamId) {
       resolve(null);
     }
 
+  })
+}
+
+function setNotebookContents(itemId, contents) {
+  return new Promise((resolve) => {
+    const data = {
+      itemId,
+      contents
+    }
+    const request = streamDB
+      .transaction(notebookContentsStoreName, "readwrite")
+      .objectStore(notebookContentsStoreName)
+      .put(data);
+
+    request.onsuccess = (e) => {
+      console.log("setNotebookContents succeeded ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("setNotebookContents failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  });
+}
+
+const findTheIndexForANumber = (numbersArray, theNumber) => {
+  let newArrayStartingIndex = 0, newArrayEndingIndex = numbersArray.length - 1, midIndex;
+  let theIndex = 0, found = false;
+  while (1) {
+      if (newArrayStartingIndex === newArrayEndingIndex) break;
+      if ((newArrayStartingIndex +1) === newArrayEndingIndex){
+          break;
+      } 
+      midIndex = Math.floor((newArrayStartingIndex + newArrayEndingIndex) / 2);
+      if (theNumber < numbersArray[midIndex]) {
+          newArrayEndingIndex = midIndex;
+      } else if (theNumber > numbersArray[midIndex]) {
+          newArrayStartingIndex = midIndex;
+      } else {
+          found = true;
+          theIndex = midIndex;
+          break;
+      }
+  }
+  if (!found) {
+      if (theNumber > numbersArray[newArrayEndingIndex]) {
+          theIndex = newArrayEndingIndex + 1;
+      } else if (theNumber < numbersArray[newArrayStartingIndex]) {
+          theIndex = newArrayStartingIndex ? newArrayStartingIndex - 1 : 0;
+      } else {
+          theIndex = newArrayStartingIndex + 1 ;
+      }
+  }
+  return theIndex;
+}
+
+function getNotebookContents(itemId) {
+  return new Promise((resolve) => {
+    const request = streamDB
+      .transaction(notebookContentsStoreName)
+      .objectStore(notebookContentsStoreName)
+      .get(itemId);
+
+    request.onsuccess = (e) => {
+      //console.log("got chunk: ", e.target.result );
+      resolve(e.target.result.contents);
+    }
+
+    request.onerror = (e) => {
+      console.log("getNotebookContents failed: ", e.target.error);
+      resolve(null);
+    }
+  })
+}
+
+function addAPageToNotebookContents(itemId, pageNumber) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let contents = await getNotebookContents(itemId);
+      if (contents) {
+        const theIndex = findTheIndexForANumber(contents, pageNumber);
+        contents.splice(theIndex, 0, pageNumber);
+      } else {
+        contents = [pageNumber];
+      }
+      await setNotebookContents(itemId, contents);
+      resolve();
+    } catch (error) {
+      console.log("addAPageToNotebookContents failed: ", error);
+      reject();
+    }
   })
 }
 
