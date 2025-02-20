@@ -14,7 +14,7 @@ function sleep(ms) {
 const DBName = "streams";
 const chunkStoreName = "videoChunksStore";
 const streamStoreName = "streamStore";
-const notebookContentsStoreName = "notebookContentsContents";
+const notebookPagesStoreName = "notebookPagesStore";
 const itemVersionsStoreName = "itemVersions";
 const s3ObjectsStoreName = "s3Objects";
 
@@ -48,7 +48,7 @@ function openDB() {
       const transaction = e.target.transaction;
       db.createObjectStore(chunkStoreName, { keyPath: "chunkId" });
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
-      db.createObjectStore(notebookContentsStoreName, { keyPath: "itemId" });
+      db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
       db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
       db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
@@ -250,24 +250,24 @@ function getStreamFromDB(streamId) {
   })
 }
 
-function setNotebookContents(itemId, contents) {
+function setNotebookPages(itemId, pages) {
   return new Promise((resolve) => {
     const data = {
       itemId,
-      contents
+      pages
     }
     const request = streamDB
-      .transaction(notebookContentsStoreName, "readwrite")
-      .objectStore(notebookContentsStoreName)
+      .transaction(notebookPagesStoreName, "readwrite")
+      .objectStore(notebookPagesStoreName)
       .put(data);
 
     request.onsuccess = (e) => {
-      console.log("setNotebookContents succeeded ", e.target.result);
+      console.log("setNotebookPages succeeded ", e.target.result);
       resolve();
     }
 
     request.onerror = (e) => {
-      console.log("setNotebookContents failed: ", e.target.error);
+      console.log("setNotebookPages failed: ", e.target.error);
       if (e.target.error.name == "ConstraintError") {
         resolve();
       } else {
@@ -281,47 +281,47 @@ const findTheIndexForANumber = (numbersArray, theNumber) => {
   let newArrayStartingIndex = 0, newArrayEndingIndex = numbersArray.length - 1, midIndex;
   let theIndex = 0, found = false;
   while (1) {
-      if (newArrayStartingIndex === newArrayEndingIndex) break;
-      if ((newArrayStartingIndex +1) === newArrayEndingIndex){
-          break;
-      } 
-      midIndex = Math.floor((newArrayStartingIndex + newArrayEndingIndex) / 2);
-      if (theNumber < numbersArray[midIndex]) {
-          newArrayEndingIndex = midIndex;
-      } else if (theNumber > numbersArray[midIndex]) {
-          newArrayStartingIndex = midIndex;
-      } else {
-          found = true;
-          theIndex = midIndex;
-          break;
-      }
+    if (newArrayStartingIndex === newArrayEndingIndex) break;
+    if ((newArrayStartingIndex + 1) === newArrayEndingIndex) {
+      break;
+    }
+    midIndex = Math.floor((newArrayStartingIndex + newArrayEndingIndex) / 2);
+    if (theNumber < numbersArray[midIndex]) {
+      newArrayEndingIndex = midIndex;
+    } else if (theNumber > numbersArray[midIndex]) {
+      newArrayStartingIndex = midIndex;
+    } else {
+      found = true;
+      theIndex = midIndex;
+      break;
+    }
   }
   if (!found) {
-      if (theNumber > numbersArray[newArrayEndingIndex]) {
-          theIndex = newArrayEndingIndex + 1;
-      } else if (theNumber < numbersArray[newArrayStartingIndex]) {
-          theIndex = newArrayStartingIndex ? newArrayStartingIndex - 1 : 0;
-      } else {
-          theIndex = newArrayStartingIndex + 1 ;
-      }
+    if (theNumber > numbersArray[newArrayEndingIndex]) {
+      theIndex = newArrayEndingIndex + 1;
+    } else if (theNumber < numbersArray[newArrayStartingIndex]) {
+      theIndex = newArrayStartingIndex ? newArrayStartingIndex - 1 : 0;
+    } else {
+      theIndex = newArrayStartingIndex + 1;
+    }
   }
   return theIndex;
 }
 
-function getNotebookContents(itemId) {
+function getNotebookPages(itemId) {
   return new Promise((resolve) => {
     const request = streamDB
-      .transaction(notebookContentsStoreName)
-      .objectStore(notebookContentsStoreName)
+      .transaction(notebookPagesStoreName)
+      .objectStore(notebookPagesStoreName)
       .get(itemId);
 
     request.onsuccess = (e) => {
       //console.log("got chunk: ", e.target.result );
-      resolve(e.target.result.contents);
+      resolve(e.target.result.pages);
     }
 
     request.onerror = (e) => {
-      console.log("getNotebookContents failed: ", e.target.error);
+      console.log("getNotebookPages failed: ", e.target.error);
       resolve(null);
     }
   })
@@ -330,15 +330,40 @@ function getNotebookContents(itemId) {
 function addAPageToNotebookContents(itemId, pageNumber) {
   return new Promise(async (resolve, reject) => {
     try {
-      let contents = await getNotebookContents(itemId);
-      if (contents) {
-        const theIndex = findTheIndexForANumber(contents, pageNumber);
-        contents.splice(theIndex, 0, pageNumber);
+      let pages = await getNotebookPages(itemId);
+      if (pages) {
+        const theIndex = findTheIndexForANumber(pages, pageNumber);
+        pages.splice(theIndex, 0, pageNumber);
       } else {
-        contents = [pageNumber];
+        pages = [pageNumber];
       }
-      await setNotebookContents(itemId, contents);
+      await setNotebookPages(itemId, pages);
       resolve();
+    } catch (error) {
+      console.log("addAPageToNotebookContents failed: ", error);
+      reject();
+    }
+  })
+}
+
+function getNotebookContents(itemId, pageNumber, itemsPerPage) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let pages = await getNotebookPages(itemId);
+      if(pages === null) {
+        reject();
+        return;
+      }
+      const total = pages.total;
+      const hits = [];
+      const startingIndex = (pageNumber - 1)* itemsPerPage;
+      const endingIndex = startingIndex + itemsPerPage - 1;
+      if(endingIndex > total-1) {
+        endingIndex = total - 1;
+      }
+      for(let i= startingIndex; i< endingIndex; i++) {
+        const pageItemId = itemId.replace("n:", "np:")+ `:${pages[i]}`;
+      }
     } catch (error) {
       console.log("addAPageToNotebookContents failed: ", error);
       reject();
@@ -806,6 +831,26 @@ self.addEventListener("message", async (event) => {
             port.postMessage({ type: "WRITE_RESULT", data });
             break;
         }
+        break;
+      case 'ADD_A_NOTEBOOK_PAGE':
+        try {
+          await addAPageToNotebookContents(event.data.itemId, event.data.pageNumber);
+          data = { status: 'ok' }
+        } catch (error) {
+          data = { status: 'error', error }
+        }
+        port = event.ports[0];
+        port.postMessage({ type: "ADD_A_NOTEBOOK_PAGE_RESULT", data });
+        break;
+      case 'GET_NOTEBOOK_CONTENTS':
+        try {
+          const hits = await getNotebookContents(event.data.itemId, event.data.pageNumber, event.data.itemsPerPage);
+          data = { status: 'ok', hits }
+        } catch (error) {
+          data = { status: 'error', error }
+        }
+        port = event.ports[0];
+        port.postMessage({ type: "GET_NOTEBOOK_CONTENTS_RESULT", data });
         break;
       default:
     }
