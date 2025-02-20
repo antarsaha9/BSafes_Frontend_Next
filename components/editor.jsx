@@ -263,7 +263,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
         } else {
             fn(null);
         }
-        
+
     }
 
     const rotateImageHook = async (link, exifOrientation, callback) => {
@@ -344,29 +344,42 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     const preS3ChunkUploadHook = (itemId, chunkIndex, timeStamp) => {
         return new Promise((resolve, reject) => {
             let s3Key, s3KeyPrefix, signedURL;
-            PostCall({
-                api: '/memberAPI/preS3ChunkUpload',
-                body: {
-                    itemId,
-                    chunkIndex: chunkIndex.toString(),
-                    timeStamp: timeStamp
-                },
-                dispatch
-            }).then(data => {
-                debugLog(debugOn, data);
-                if (data.status === 'ok') {
-                    s3Key = data.s3Key;
-                    s3KeyPrefix = s3Key.split('_chunk_')[0];
-                    signedURL = data.signedURL;
-                    resolve({ s3Key, s3KeyPrefix, signedURL });
+            if (!workspace.startsWith("d:")) {
+                PostCall({
+                    api: '/memberAPI/preS3ChunkUpload',
+                    body: {
+                        itemId,
+                        chunkIndex: chunkIndex.toString(),
+                        timeStamp: timeStamp
+                    },
+                    dispatch
+                }).then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        s3Key = data.s3Key;
+                        s3KeyPrefix = s3Key.split('_chunk_')[0];
+                        signedURL = data.signedURL;
+                        resolve({ s3Key, s3KeyPrefix, signedURL });
+                    } else {
+                        debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
+                        reject(data.error);
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "preS3ChunkUpload failed: ", error)
+                    reject(error);
+                })
+            } else {
+                const demoOwner = workspace.split(":")[1];
+                if (chunkIndex === 0) {
+                    s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
                 } else {
-                    debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
-                    reject(data.error);
+                    s3KeyPrefix = `${demoOwner}:3:${timeStamp}`;
                 }
-            }).catch(error => {
-                debugLog(debugOn, "preS3ChunkUpload failed: ", error)
-                reject(error);
-            })
+                s3Key = `${s3KeyPrefix}_chunk_${chunkIndex}`;
+                signedURL = "";
+                resolve({ s3Key, s3KeyPrefix, signedURL });
+            }
+
         });;
     }
 
