@@ -960,11 +960,11 @@ const { downScaleImage } = require('./bsafesAPIHooks');
             if(data.status === 'ok') {
               s3Key = data.s3Key;
               signedURL = data.signedURL;
+              _setProgressMessage(editor.language.translate('Uploading'), 5);
               fn(null);
             } else {
               fn(data.error);
             }
-
         	};
 	
 			  	function _uploadProgress (e) {
@@ -1116,7 +1116,7 @@ const { downScaleImage } = require('./bsafesAPIHooks');
           return false;
         }
 
-        bSafesPreflight(function(err, key) {
+        bSafesPreflight(function(err) {
           if (err) {
             alert(err);
           } else {

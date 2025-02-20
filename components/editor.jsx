@@ -13,40 +13,40 @@ const forge = require('node-forge');
 import BSafesStyle from '../styles/BSafes.module.css'
 
 import { getEditorConfig } from "../lib/bSafesCommonUI";
-import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr} from "../lib/helper";
+import { debugLog, PostCall, convertUint8ArrayToBinaryString, getBrowserInfo, arraryBufferToStr } from "../lib/helper";
 import { putS3Object } from "../lib/s3Helper";
 import { generateNewItemKey, compareArraryBufferAndUnit8Array, encryptBinaryString, encryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync } from "../lib/crypto";
 import { rotateImage, downScaleImage } from '../lib/wnImage';
 
-import { newItemKey } from "../reduxStore/pageSlice";
+import { newItemKey, putS3ObjectInServiceWorkerDB } from "../reduxStore/pageSlice";
 
-export default function Editor({editorId, mode, content, onContentChanged, onPenClicked, showPen=true, editable=true, hideIfEmpty=false, writingModeReady=null, readOnlyModeReady=null, onDraftSampled=null , onDraftClicked=null, onDraftDelete=null}) {
-    const debugOn = false;    
+export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null }) {
+    const debugOn = false;
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);
     const [draftInterval, setDraftInterval] = useState(null);
     const [intervalState, setIntervalState] = useState(null);
-    const expandedKey = useSelector( state => state.auth.expandedKey);
-    const froalaKey = useSelector( state => state.auth.froalaLicenseKey);
-    const itemId = useSelector( state => state.page.id);
-    const itemKey = useSelector( state => state.page.itemKey);
-    const itemIV = useSelector( state => state.page.itemIV);
-    const draft = useSelector( state=>state.page.draft);
+    const froalaKey = useSelector(state => state.auth.froalaLicenseKey);
+    const workspace = useSelector(state => state.container.workspace);
+    const itemId = useSelector(state => state.page.id);
+    const itemKey = useSelector(state => state.page.itemKey);
+    const itemIV = useSelector(state => state.page.itemIV);
+    const draft = useSelector(state => state.page.draft);
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
-   
-    const [ editorOn, setEditorOn ] = useState(false);
-    const [ scriptsLoaded, setScriptsLoaded ] = useState(false);
-    const [ originalContent, setOriginalContent] = useState(null);
+
+    const [editorOn, setEditorOn] = useState(false);
+    const [scriptsLoaded, setScriptsLoaded] = useState(false);
+    const [originalContent, setOriginalContent] = useState(null);
 
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
-    
+
     const writing = () => {
-        if(!scriptsLoaded) return;
-        if(editorOn) return;
+        if (!scriptsLoaded) return;
+        if (editorOn) return;
         let froalaOptions;
-        switch(editorId) {
+        switch (editorId) {
             case 'title':
                 froalaOptions = {
                     key: froalaKey,
@@ -55,12 +55,12 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtonsSM: ['undo', 'redo'],
                     toolbarButtonsXS: ['undo', 'redo'],
                     placeholderText: "Page Title"
-                  }
+                }
                 break;
             case 'content':
-                if(!itemKey) {
-                    const thisItemKey = generateNewItemKey(); 
-                    dispatch(newItemKey({itemKey: thisItemKey}));
+                if (!itemKey) {
+                    const thisItemKey = generateNewItemKey();
+                    dispatch(newItemKey({ itemKey: thisItemKey }));
                 }
                 $(editorRef.current).html(content);
                 froalaOptions = {
@@ -68,11 +68,11 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
                     toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsXS: [ 'bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'fontFamily', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    toolbarButtonsXS: ['bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'fontFamily', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',
-                        'Georgia,serif': 'Georgia', 
+                        'Georgia,serif': 'Georgia',
                         'Impact,Charcoal,sans-serif': 'Impact',
                         "'Montserrat Variable', sans-serif": 'Montserrat',
                         "'Noto Serif Variable', serif": 'Noto Serif',
@@ -98,53 +98,53 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                     toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting', 'html'],
                     toolbarButtonsXS: ['bold', 'fontSize', 'color', 'paragraphStyle', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'undo']
                     */
-                    toolbarButtons: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
-                    toolbarButtonsMD: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
-                    toolbarButtonsSM: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo'],
-                    toolbarButtonsXS: [ 'bold', 'italic', 'underline', 'strikeThrough',  'undo', 'redo']
+                    toolbarButtons: ['bold', 'italic', 'underline', 'strikeThrough', 'undo', 'redo'],
+                    toolbarButtonsMD: ['bold', 'italic', 'underline', 'strikeThrough', 'undo', 'redo'],
+                    toolbarButtonsSM: ['bold', 'italic', 'underline', 'strikeThrough', 'undo', 'redo'],
+                    toolbarButtonsXS: ['bold', 'italic', 'underline', 'strikeThrough', 'undo', 'redo']
                 };
         }
         froalaOptions.videoInsertButtons = ['videoBack', '|', 'videoUpload']
         froalaOptions.imageInsertButtons = ['imageBack', '|', 'imageUpload']
         $(editorRef.current).froalaEditor(froalaOptions);
-        if(editorId === 'content'){
+        if (editorId === 'content') {
             const contentSample = $(editorRef.current).froalaEditor('html.get');
             setOriginalContent(contentSample);
         }
-          
+
         editorRef.current.style.overflowX = null;
-        if(!editorOn){
+        if (!editorOn) {
             debugLog(debugOn, "setEditorOn")
             setEditorOn(true);
         }
-        if(writingModeReady) writingModeReady();
+        if (writingModeReady) writingModeReady();
     }
 
     const saving = () => {
         let content = $(editorRef.current).froalaEditor('html.get');
-        debugLog(debugOn, "editor content: ", content );
-        setTimeout(()=> {
+        debugLog(debugOn, "editor content: ", content);
+        setTimeout(() => {
             onContentChanged(editorId, content);
-        }, 0) 
+        }, 0)
     }
 
     const readOnly = () => {
-        if(editorOn) {       
+        if (editorOn) {
             $(editorRef.current).froalaEditor('destroy');
             $(editorRef.current).html(content);
             editorRef.current.style.overflowX = 'auto';
-            if(draftInterval){
+            if (draftInterval) {
                 clearInterval(draftInterval);
                 setDraftInterval(null);
                 setIntervalState(null);
             }
             setOriginalContent(null);
-            setEditorOn(false);  
-            if(readOnlyModeReady) readOnlyModeReady();
+            setEditorOn(false);
+            if (readOnlyModeReady) readOnlyModeReady();
         }
     }
 
-    useEffect(()=> {
+    useEffect(() => {
         switch (mode) {
             case "ReadOnly":
                 readOnly();
@@ -157,20 +157,20 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
                 break;
             default:
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mode])
- 
-    useEffect(()=>{
-        if(itemId && itemKey) {
+
+    useEffect(() => {
+        if (itemId && itemKey) {
             $('.container').data('itemId', itemId);
             $('.container').data('itemKey', itemKey);
         }
     }, [itemId, itemKey, itemIV]);
 
     useEffect(() => {
-        window.$ = window.jQuery = jquery;``
+        window.$ = window.jQuery = jquery; ``
 
-        import('../lib/importScripts').then(async ic=>{
+        import('../lib/importScripts').then(async ic => {
             await ic.Froala;
             await ic.FroalaPlugins;
             await ic.Codemirror;
@@ -180,10 +180,10 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             setScriptsLoaded(true);
 
         });
-    },[]);
+    }, []);
 
-    useEffect(()=>{
-        if(!(scriptsLoaded && window)) return;
+    useEffect(() => {
+        if (!(scriptsLoaded && window)) return;
 
         debugLog(debugOn, `bsafesFroala: ${window.bsafesFroala.name}`)
         window.bsafesFroala.bSafesPreflight = bSafesPreflightHook;
@@ -200,32 +200,32 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         window.bsafesFroala.getBrowserInfo = getBrowserInfoHook;
         window.bsafesFroala.arraryBufferToStr = arraryBufferToStrHook;
         window.bsafesFroala.getEditorConfig = getEditorConfigHook;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [scriptsLoaded])
 
-    useEffect(()=> {
-        if( originalContent !== null){
-            if(editorId === 'content'){
+    useEffect(() => {
+        if (originalContent !== null) {
+            if (editorId === 'content') {
                 setIntervalState('Start');
             }
         }
     }, [originalContent])
 
-    useEffect(()=> {
+    useEffect(() => {
         let content;
         debugLog(debugOn, 'interval state:', intervalState);
-        switch(intervalState) {
-            case 'Start': 
-                const interval = setInterval(()=>{
+        switch (intervalState) {
+            case 'Start':
+                const interval = setInterval(() => {
                     debugLog(debugOn, "Saving draft ...");
                     content = $(editorRef.current).froalaEditor('html.get');
                     //debugLog(debugOn, "editor content: ", content );
-                    if(content !== originalContent) {
+                    if (content !== originalContent) {
                         debugLog(debugOn, 'Content changed');
                         onDraftSampled(content);
                         setOriginalContent(content);
                         setIntervalState('Stop');
-                    }  
+                    }
                 }, 1000);
                 setDraftInterval(interval);
                 break;
@@ -243,22 +243,27 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
 
     const bSafesPreflightHook = (fn) => {
         debugLog(debugOn, "bSafesPreflight");
-        PostCall({
-            api:'/memberAPI/preflight',
-            dispatch
-        }).then( data => {
-            debugLog(debugOn, data);
-            if(data.status === 'ok') {
-                debugLog(debugOn, "bSafesPreflight ok: ");
-                fn( null, expandedKey);
-            } else {
-                debugLog(debugOn, "woo... bSafesPreflight failed: ", data.error);
-                fn(data.error);
-            } 
-        }).catch( error => {
-            debugLog(debugOn, "woo... bSafesPreflight failed.")
-            fn(error);
-        })
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/preflight',
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, "bSafesPreflight ok: ");
+                    fn(null);
+                } else {
+                    debugLog(debugOn, "woo... bSafesPreflight failed: ", data.error);
+                    fn(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "woo... bSafesPreflight failed.")
+                fn(error);
+            })
+        } else {
+            fn(null);
+        }
+        
     }
 
     const rotateImageHook = async (link, exifOrientation, callback) => {
@@ -266,20 +271,20 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
             const result = await rotateImage(link, exifOrientation);
             debugLog(debugOn, 'Rotation done');
             callback(null, result.blob, result.byteString);
-            
-        } catch(error) {
+
+        } catch (error) {
             debugLog(debugOn, 'rotateImage error:', error)
             callback(error);
         }
     }
 
     const downScaleImageHook = (img, exifOrientation, size) => {
-        return new Promise( async (resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             try {
                 const result = await downScaleImage(img, exifOrientation, size);
                 debugLog(debugOn, 'downScaleImage done');
                 resolve(result)
-            } catch(error) {
+            } catch (error) {
                 debugLog(debugOn, 'downScaleImage error:', error)
                 reject(error);
             }
@@ -303,26 +308,36 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
 
     const preS3UploadHook = () => {
-        return new Promise( async (resolve, reject) => {
-            PostCall({
-                api:'/memberAPI/preS3Upload',
-                dispatch
-            }).then( data => {
-                debugLog(debugOn, data);
-                if(data.status === 'ok') {  
-                    const s3Key = data.s3Key;
-                    const signedURL = data.signedURL;
-                    const signedGalleryURL = data.signedGalleryURL;
-                    const signedThumbnailURL = data.signedThumbnailURL;                                 
-                    resolve({status:"ok", s3Key, signedURL, signedGalleryURL, signedThumbnailURL});
-                } else {
-                    debugLog(debugOn, "preS3Upload failed: ", data.error);
-                    reject({status:"error", error:data.error});
-                }
-            }).catch( error => {
-                debugLog(debugOn, "preS3Upload failed: ", error)
-                reject({status:"error", error});
-            })
+        return new Promise(async (resolve, reject) => {
+            if (!workspace.startsWith("d:")) {
+                PostCall({
+                    api: '/memberAPI/preS3Upload',
+                    dispatch
+                }).then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        const s3Key = data.s3Key;
+                        const signedURL = data.signedURL;
+                        const signedGalleryURL = data.signedGalleryURL;
+                        const signedThumbnailURL = data.signedThumbnailURL;
+                        resolve({ status: "ok", s3Key, signedURL, signedGalleryURL, signedThumbnailURL });
+                    } else {
+                        debugLog(debugOn, "preS3Upload failed: ", data.error);
+                        reject({ status: "error", error: data.error });
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "preS3Upload failed: ", error)
+                    reject({ status: "error", error });
+                })
+            } else {
+                const demoOwner = workspace.split(":")[1];
+                const s3Key = `${demoOwner}:3:${Date.now()}L`;
+                const signedURL = "";
+                const signedGalleryURL = "";
+                const signedThumbnailURL = "";
+                resolve({ status: "ok", s3Key, signedURL, signedGalleryURL, signedThumbnailURL });
+            }
+
         });
     }
 
@@ -330,46 +345,55 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
         return new Promise((resolve, reject) => {
             let s3Key, s3KeyPrefix, signedURL;
             PostCall({
-              api:'/memberAPI/preS3ChunkUpload',
-              body: {
-                  itemId,
-                  chunkIndex: chunkIndex.toString(),
-                  timeStamp: timeStamp
-              },
-              dispatch
-            }).then( data => {
-              debugLog(debugOn, data);
-              if(data.status === 'ok') {   
-                  s3Key = data.s3Key;                        
-                  s3KeyPrefix = s3Key.split('_chunk_')[0];
-                  signedURL = data.signedURL;
-                  resolve({s3Key, s3KeyPrefix, signedURL});
-              } else {
-                  debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
-                  reject(data.error);
-              }
-            }).catch( error => {
-              debugLog(debugOn, "preS3ChunkUpload failed: ", error)
-              reject(error);
+                api: '/memberAPI/preS3ChunkUpload',
+                body: {
+                    itemId,
+                    chunkIndex: chunkIndex.toString(),
+                    timeStamp: timeStamp
+                },
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    s3Key = data.s3Key;
+                    s3KeyPrefix = s3Key.split('_chunk_')[0];
+                    signedURL = data.signedURL;
+                    resolve({ s3Key, s3KeyPrefix, signedURL });
+                } else {
+                    debugLog(debugOn, "preS3ChunkUpload failed: ", data.error);
+                    reject(data.error);
+                }
+            }).catch(error => {
+                debugLog(debugOn, "preS3ChunkUpload failed: ", error)
+                reject(error);
             })
         });;
     }
 
     const uploadDataHook = (data, s3Key, signedURL, onProgress) => {
-        return new Promise( async (resolve, reject) => {
-            const config = {
-                onUploadProgress: async (progressEvent) => {
-                    onProgress(progressEvent);
-                },
-                headers: {
-                    'Content-Type': 'binary/octet-stream'
+        return new Promise(async (resolve, reject) => {
+            if (!workspace.startsWith("d:")) {
+                const config = {
+                    onUploadProgress: async (progressEvent) => {
+                        onProgress(progressEvent);
+                    },
+                    headers: {
+                        'Content-Type': 'binary/octet-stream'
+                    }
                 }
-            }
-            try {
-                const result = await putS3Object(s3Key, signedURL, data, config, null);
-                resolve(result);
-            } catch (error) {
-                reject(error);
+                try {
+                    const result = await putS3Object(s3Key, signedURL, data, config, null);
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
+            } else {
+                try {
+                    const result = await putS3ObjectInServiceWorkerDB(s3Key, data, onProgress);
+                    resolve(result);
+                } catch (error) {
+                    reject(error);
+                }
             }
         });
     }
@@ -387,37 +411,37 @@ export default function Editor({editorId, mode, content, onContentChanged, onPen
     }
     return (
         <>
-        {scriptsLoaded?
-            <>
-            {  (showPen)&&(editable)?
-                
-                <Row>
-                    <Col xs={6}>
-                        {(editorId==='title' && content==='<h2></h2>') &&<h6 className='m-0 text-secondary'>Title</h6>}
-                        {(editorId==='content' && content === null) &&<h6 className='m-0 text-secondary'>Write</h6>}
-                    </Col>
-                    <Col xs={6}>
-                        <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
-                        {(editorId==='content' && draft !== null) &&
-                            <ButtonGroup className='pull-right mx-3' size="sm">
-                                <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
-                                <Button variant="danger" onClick={onDraftDelete}>X</Button>
-                            </ButtonGroup>
-                        }
-                    </Col>
-                </Row>
-                :
-                ""
-                
+            {scriptsLoaded ?
+                <>
+                    {(showPen) && (editable) ?
+
+                        <Row>
+                            <Col xs={6}>
+                                {(editorId === 'title' && content === '<h2></h2>') && <h6 className='m-0 text-secondary'>Title</h6>}
+                                {(editorId === 'content' && content === null) && <h6 className='m-0 text-secondary'>Write</h6>}
+                            </Col>
+                            <Col xs={6}>
+                                <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                                {(editorId === 'content' && draft !== null) &&
+                                    <ButtonGroup className='pull-right mx-3' size="sm">
+                                        <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
+                                        <Button variant="danger" onClick={onDraftDelete}>X</Button>
+                                    </ButtonGroup>
+                                }
+                            </Col>
+                        </Row>
+                        :
+                        ""
+
+                    }
+                    {((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0))) &&
+                        <Row className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
+                            <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{ __html: content }} style={{ overflowX: 'auto' }}>
+                            </div>
+                        </Row>
+                    }
+                </> : ""
             }
-            { ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0))) &&
-                <Row className={`${(editorId ==='title')?BSafesStyle.titleEditorRow:BSafesStyle.editorRow} fr-element fr-view`}>
-                    <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{__html: content}} style={{overflowX:'auto'}}>
-                    </div>
-                </Row>
-            }
-            </>:""
-        }
         </>
     );
 }

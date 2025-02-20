@@ -1127,39 +1127,43 @@ const getS3ObjectFromServiceWorkerDB = (s3Key) => {
 
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
     let state = getState().page;
+    const workspace = getState().container.workspace;
     dispatch(setContentImagesAllDownloaded(false));
     const downloadAnImage = (image) => {
         return new Promise(async (resolve, reject) => {
             const s3Key = image.s3Key;
+            let downloadedBinaryString, decryptedImageStr;
             try {
-                dispatch(downloadingContentImage({ itemId, progress: 5 }));
-                const signedURL = await preS3Download(state.id, s3Key, dispatch);
-                dispatch(downloadingContentImage({ itemId, progress: 10 }));
-
-                const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
-                debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
-                if (itemId !== state.activeRequest) {
-                    debugLog(debugOn, "Aborted!");
-                    reject("Aborted")
-                    return;
-                };
-
-                let decryptedImageStr
-
-                const buffer = Buffer.from(response, 'binary');
-                const downloadedBinaryString = buffer.toString('binary');
+                if (!workspace.startsWith("d:")) {
+                    dispatch(downloadingContentImage({ itemId, progress: 5 }));
+                    const signedURL = await preS3Download(state.id, s3Key, dispatch);
+                    dispatch(downloadingContentImage({ itemId, progress: 10 }));
+                    const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
+                    debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
+                    if (itemId !== state.activeRequest) {
+                        debugLog(debugOn, "Aborted!");
+                        reject("Aborted")
+                        return;
+                    };
+                    const buffer = Buffer.from(response, 'binary');
+                    downloadedBinaryString = buffer.toString('binary');
+                } else {
+                    const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                    if (result.status === 'ok') {
+                        downloadedBinaryString = result.object;
+                    } else {
+                        throw new Error("Failed to read an image data from service worker DB!");
+                    }
+                }
                 debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                 decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                 debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-
                 const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                 const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                     type: 'image/*'
                 });
-
                 dispatch(contentImageDownloaded({ itemId, link }));
                 resolve();
-
             } catch (error) {
                 debugLog(debugOn, 'downloadFromS3 error: ', error);
                 dispatch(contentImageDownloadFailed({ itemId, link: null }));
@@ -1216,6 +1220,23 @@ function getItemPath(id, dispatch, getState) {
             debugLog(debugOn, "woo... failed to get the item path.", error)
             reject(error);
         })
+    });
+}
+
+export const putS3ObjectInServiceWorkerDB = (s3Key, data, onProgress) => {
+    return new Promise(async (resolve, reject) => {
+        let params = {
+            table: 's3Objects',
+            key: s3Key,
+            data
+        }
+        let result = await writeDataToServiceWorkerDB(params);
+        if (result.status === 'ok') {
+            resolve(result);
+            onProgress({ lengthComputable: true, total: 100, loaded: 100 });
+        } else {
+            reject();
+        }
     });
 }
 
@@ -1519,7 +1540,6 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     const workspace = getState().container.workspace;
     newActivity(dispatch, pageActivity.DecryptPageItem, () => {
         const itemId = data.itemId;
-
         const startDownloadingImages = async () => {
             state = getState().page;
             const downloadAnImage = (image) => {
