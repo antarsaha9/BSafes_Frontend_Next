@@ -346,7 +346,7 @@ function addAPageToNotebookContents(itemId, pageNumber) {
       let pages = await getNotebookPages(itemId);
       if (pages) {
         const theIndex = findTheIndexForANumber(pages, pageNumber);
-        if(theIndex !== -1) {
+        if (theIndex !== -1) {
           pages.splice(theIndex, 0, pageNumber);
         } else {
           resolve();
@@ -387,10 +387,46 @@ function getNotebookContents(itemId, from, itemsPerPage) {
       }
       resolve({ status: 'ok', hits: { total, hits } });
     } catch (error) {
-      console.log("addAPageToNotebookContents failed: ", error);
+      console.log("getNotebookContents failed: ", error);
       resolve({ status: 'error', error });
     }
   })
+}
+
+function getNotebookFirstPage(itemId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let pages = await getNotebookPages(itemId);
+      if (pages === null) {
+        pageItemId = -1;
+        return;
+      } else {
+        pageItemId = itemId.replace("n:", "np:") + `:${pages[0]}`;
+      }
+      resolve({ status: 'ok', pageItemId });
+    } catch (error) {
+      console.log("getNotebookFirstPage failed: ", error);
+      resolve({ status: 'error', error });
+    }
+  });
+}
+
+function getNotebookLastPage(itemId) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let pages = await getNotebookPages(itemId);
+      if (pages === null) {
+        pageItemId = -1;
+        return;
+      } else {
+        pageItemId = itemId.replace("n:", "np:") + `:${pages[pages.length-1]}`;
+      }
+      resolve({ status: 'ok', pageItemId });
+    } catch (error) {
+      console.log("getNotebookLastPage failed: ", error);
+      resolve({ status: 'error', error });
+    }
+  });
 }
 
 function addAnItemVersionToDB(itemId, item) {
@@ -874,6 +910,24 @@ self.addEventListener("message", async (event) => {
               }
             }
             break;
+          case 'GET_FIRST_PAGE':
+            if (event.data.container.startsWith('n')) {
+              try {
+                result = await getNotebookFirstPage(event.data.container);
+              } catch (error) {
+                result = { status: 'error', error }
+              }
+            }
+            break;
+            case 'GET_LAST_PAGE':
+              if (event.data.container.startsWith('n')) {
+                try {
+                  result = await getNotebookLastPage(event.data.container);
+                } catch (error) {
+                  result = { status: 'error', error }
+                }
+              }
+              break;
           default:
             result = { status: 'error', error: "Invalid action." }
         }

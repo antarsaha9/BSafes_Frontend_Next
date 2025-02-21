@@ -63,12 +63,16 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     dispatch(newItemKey({ itemKey: thisItemKey }));
                 }
                 $(editorRef.current).html(content);
+                const fullOptions = ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/];
+                const minimumOptions = ['bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'fontFamily', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'];
+
+                const isMinimumOption = (window.innerWidth < 480);
                 froalaOptions = {
                     key: froalaKey,
-                    toolbarButtons: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsMD: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsSM: ['fullscreen', 'bold', 'italic', 'underline', 'strikeThrough', 'subscript', 'superscript', 'fontFamily', 'fontSize', 'lineHeight', '|', 'color', 'emoticons', 'paragraphStyle', '|', 'paragraphFormat', 'align', 'formatOL', 'formatUL', 'outdent', 'indent', 'quote', 'insertHR', '-', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo', 'clearFormatting'/*, 'html'*/],
-                    toolbarButtonsXS: ['bold', 'italic', 'color', 'emoticons', 'paragraphFormat', 'fontFamily', 'formatOL', 'formatUL', 'insertLink', 'insertImage', 'insertVideo', 'insertTable', 'undo', 'redo'],
+                    toolbarButtons: fullOptions,
+                    toolbarButtonsMD: fullOptions,
+                    toolbarButtonsSM: fullOptions,
+                    toolbarButtonsXS: isMinimumOption?minimumOptions:fullOptions,
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',

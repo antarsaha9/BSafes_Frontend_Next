@@ -501,7 +501,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     from: (pageNumber - 1) * state.itemsPerPage,
                 }
             }
-            if(!workspace.startsWith("d:")){
+            if (!workspace.startsWith("d:")) {
                 PostCall({
                     api: '/memberAPI/listItems',
                     body,
@@ -543,7 +543,7 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                         debugLog(debugOn, "listItems failed: ", data.error);
                         reject("Failed to list items.");
                     }
-                } catch(error) {
+                } catch (error) {
                     debugLog(debugOn, "listItems failed: ", error)
                     reject("Failed to list items.");
                 }
@@ -630,57 +630,101 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-export const getFirstItemInContainer = async (container, dispatch) => {
+export const getFirstItemInContainer = async (container, dispatch, workspace=null) => {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/getFirstItemInContainer',
-            body: {
-                container
-            },
-            dispatch
-        }).then(data => {
-            debugLog(debugOn, data);
-            if (data.status === 'ok') {
-                let itemId = null;
-                if (data.hits.hits.length) {
-                    itemId = data.hits.hits[0]._id;
+        if (!workspace || !workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/getFirstItemInContainer',
+                body: {
+                    container
+                },
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    let itemId = null;
+                    if (data.hits.hits.length) {
+                        itemId = data.hits.hits[0]._id;
+                    }
+                    resolve(itemId);
+                } else {
+                    debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                    reject("Failed to get first item.");
                 }
-                resolve(itemId);
-            } else {
-                debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+            }).catch(error => {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+                reject("Failed to get first item.");
+            })
+        } else if (workspace.startsWith("d:")) {
+            try {
+                const data = await readDataFromServiceWorkerDB(
+                    {
+                        action: 'GET_FIRST_PAGE',
+                        container
+                    }
+                )
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    let itemId = data.pageItemId;
+                    resolve(itemId);
+                } else {
+                    debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                    reject("Failed to get first item.");
+                }
+            } catch (error) {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", error)
                 reject("Failed to get first item.");
             }
-        }).catch(error => {
-            debugLog(debugOn, "getFirstItemInContainer failed: ", error)
-            reject("Failed to get first item.");
-        })
+        }
     });
 }
 
-export const getLastItemInContainer = async (container, dispatch) => {
+export const getLastItemInContainer = async (container, dispatch, workspace=null) => {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/getLastItemInContainer',
-            body: {
-                container
-            },
-            dispatch
-        }).then(data => {
-            debugLog(debugOn, data);
-            if (data.status === 'ok') {
-                let itemId = null;
-                if (data.hits.hits.length) {
-                    itemId = data.hits.hits[0]._id;
+        if (!workspace || !workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/getLastItemInContainer',
+                body: {
+                    container
+                },
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    let itemId = null;
+                    if (data.hits.hits.length) {
+                        itemId = data.hits.hits[0]._id;
+                    }
+                    resolve(itemId);
+                } else {
+                    debugLog(debugOn, "getLastItemInContainer failed: ", data.error);
+                    reject("Failed to get last item.");
                 }
-                resolve(itemId);
-            } else {
-                debugLog(debugOn, "getLastItemInContainer failed: ", data.error);
-                reject("Failed to get last item.");
+            }).catch(error => {
+                debugLog(debugOn, "getLastItemInContainer failed: ", error)
+                reject("Failed to get last item");
+            })
+        } else if (workspace.startsWith("d:")) {
+            try {
+                const data = await readDataFromServiceWorkerDB(
+                    {
+                        action: 'GET_LAST_PAGE',
+                        container
+                    }
+                )
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    let itemId = data.pageItemId;
+                    resolve(itemId);
+                } else {
+                    debugLog(debugOn, "getFirstItemInContainer failed: ", data.error);
+                    reject("Failed to get first item.");
+                }
+            } catch (error) {
+                debugLog(debugOn, "getFirstItemInContainer failed: ", error)
+                reject("Failed to get first item.");
             }
-        }).catch(error => {
-            debugLog(debugOn, "getLastItemInContainer failed: ", error)
-            reject("Failed to get last item");
-        })
+        }  
     });
 }
 

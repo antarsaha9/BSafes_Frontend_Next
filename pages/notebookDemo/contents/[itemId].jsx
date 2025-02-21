@@ -16,6 +16,7 @@ import PaginationControl from "../../../components/paginationControl";
 
 import { setDemoMode } from "../../../reduxStore/auth";
 import { setDemoWorkspace, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import { setPageStyle } from "../../../reduxStore/pageSlice";
 import { NotebookDemo } from "../../../lib/productID";
 import { setupDemo } from "../../../lib/demoHelper";
 import { debugLog } from "../../../lib/helper";
@@ -39,6 +40,7 @@ export default function NotebookContents() {
     const total = useSelector(state => state.container.total);
 
     const pageItemId = useSelector( state => state.page.id);
+    const pageStyle = useSelector( state => state.page.style);
 
     const items = itemsState.map( (item, index) => 
         <ItemRow itemIndex={index} key={index} item={item} productID={productID}/>
@@ -140,6 +142,18 @@ export default function NotebookContents() {
         }
     }, [])
 
+    useEffect(()=>{
+        if(pageNumber) {
+            debugLog(debugOn, "pageNumber: ", pageNumber);
+            if(pageNumber%2) {
+                dispatch(setPageStyle(BSafesStyle.leftPagePanel));
+            } else {
+                dispatch(setPageStyle(BSafesStyle.rightPagePanel));
+            }
+        }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [pageNumber])
+
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout> 
@@ -149,7 +163,7 @@ export default function NotebookContents() {
                     <br />  
                     <Row>
                         <Col lg={{span:10, offset:1}}>
-                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel}`}>
+                            <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
                                 <br />
                                 <br />
                                 <p className='fs-1 text-center'>Contents</p>

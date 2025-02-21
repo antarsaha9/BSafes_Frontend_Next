@@ -33,6 +33,7 @@ export default function NotebookPage() {
     const dispatch = useDispatch();
     const router = useRouter();
     
+    const workspace = useSelector( state => state.container.workspace);
     const pageItemId = useSelector( state => state.page.id);
     const pageStyle = useSelector( state => state.page.style);
     const pageNumber = useSelector( state=> state.page.pageNumber);
@@ -105,7 +106,7 @@ export default function NotebookPage() {
 
     const handleGoToFirstItem = async () => {
         try {
-            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
+            const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch, workspace);
             const pageNumber = itemId.split(':').pop();
             gotoAnotherPage(pageNumber);
         } catch(error) {
@@ -115,7 +116,7 @@ export default function NotebookPage() {
 
     const handleGoToLastItem = async () => {
         try {
-            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
+            const itemId = await getLastItemInContainer(containerInWorkspace, dispatch, workspace);
             const pageNumber = itemId.split(':').pop();
             gotoAnotherPage(pageNumber);
         } catch(error) {
