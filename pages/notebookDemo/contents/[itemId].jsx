@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 import {useRouter} from "next/router";
 
@@ -14,8 +14,10 @@ import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 import PaginationControl from "../../../components/paginationControl";
 
-import { listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
+import { setDemoMode } from "../../../reduxStore/auth";
+import { setDemoWorkspace, listItemsThunk, searchItemsThunk, getFirstItemInContainer, getLastItemInContainer } from "../../../reduxStore/containerSlice";
 import { NotebookDemo } from "../../../lib/productID";
+import { setupDemo } from "../../../lib/demoHelper";
 import { debugLog } from "../../../lib/helper";
 
 const productID = NotebookDemo;
@@ -39,7 +41,7 @@ export default function NotebookContents() {
     const pageItemId = useSelector( state => state.page.id);
 
     const items = itemsState.map( (item, index) => 
-        <ItemRow itemIndex={index} key={index} item={item}/>
+        <ItemRow itemIndex={index} key={index} item={item} productID={productID}/>
     );
 
 
@@ -130,6 +132,13 @@ export default function NotebookContents() {
         else if (derivedSearchMode === 'search')
             dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
+
+    useEffect(() => {
+        if(setupDemo()){
+            dispatch(setDemoMode(true));
+            dispatch(setDemoWorkspace());
+        }
+    }, [])
 
     return (
         <div className={BSafesStyle.pageBackground}>

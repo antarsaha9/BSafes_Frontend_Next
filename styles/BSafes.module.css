@@ -307,6 +307,8 @@
 
 .containerControlPanel {
   background-color: black;
+  margin: auto;
+  max-width: 600px;
   min-height: 61px;
 }
 
@@ -339,8 +341,10 @@
 .diaryPanel,
 .boxPanel {
   position: relative;
+  max-width: 1024px;
   min-height: 600px;
   padding-bottom: 48px;
+  margin:auto
 }
 
 @media only screen and (min-width: 400px) {

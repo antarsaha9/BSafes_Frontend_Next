@@ -12,6 +12,7 @@ import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } f
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 import { isDemoMode } from '../lib/demoHelper';
+import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable } from '../lib/serviceWorkerDBHelper';
 
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
@@ -905,81 +906,6 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
     });
 }
 
-const writeDataToServiceWorkerDB = (params) => {
-    return new Promise(async (resolve, reject) => {
-        let messageChannel;
-        debugLog(debugOn, "writeDataToServiceWorkerDB");
-        navigator.serviceWorker.getRegistration("/").then((registration) => {
-            debugLog(debugOn, "registration: ", registration);
-            if (registration) {
-                messageChannel = new MessageChannel();
-                registration.active.postMessage({
-                    type: 'WRITE_TO_DB',
-                    ...params
-                }, [messageChannel.port2]);
-
-                messageChannel.port1.onmessage = async (event) => {
-                    // Print the result
-                    debugLog(debugOn, event.data);
-                    if (event.data) {
-                        if (event.data) {
-                            switch (event.data.type) {
-                                case 'WRITE_RESULT':
-                                    resolve(event.data.data);
-                                    messageChannel.port1.onmessage = null
-                                    messageChannel.port1.close();
-                                    messageChannel.port2.close();
-                                    messageChannel = null;
-                                    break;
-                                default:
-                            }
-                        }
-                    }
-                };
-            } else {
-                debugLog(debugOn, "serviceWorker.getRegistration error");
-                reject("serviceWorker.getRegistration error")
-            }
-        })
-    })
-}
-
-const readDataFromServiceWorkerDB = (params) => {
-    return new Promise(async (resolve, reject) => {
-        debugLog(debugOn, "getDataFromServiceWorker");
-        navigator.serviceWorker.getRegistration("/").then((registration) => {
-            debugLog(debugOn, "registration: ", registration);
-            if (registration) {
-                let messageChannel = new MessageChannel();
-                registration.active.postMessage({
-                    type: 'READ_FROM_DB',
-                    ...params
-                }, [messageChannel.port2]);
-
-                messageChannel.port1.onmessage = async (event) => {
-                    // Print the result
-                    debugLog(debugOn, event.data);
-                    if (event.data) {
-                        switch (event.data.type) {
-                            case 'DATA':
-                                resolve(event.data.data);
-                                messageChannel.port1.onmessage = null
-                                messageChannel.port1.close();
-                                messageChannel.port2.close();
-                                messageChannel = null;
-                                break;
-                            default:
-                        }
-                    }
-                };
-            } else {
-                debugLog(debugOn, "serviceWorker.getRegistration error");
-                reject("serviceWorker.getRegistration error")
-            }
-        })
-    })
-}
-
 const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, searchKey, searchIV, itemId) => {
     const itemType = itemId.split(":")[0].toUpperCase();
     let titleStr = null;
@@ -1056,7 +982,7 @@ const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, searchKey,
         key: itemId,
         data: item
     }
-    const result = await writeDataToServiceWorkerDB(params);
+    const result = await writeDataToServiceWorkerDBTable(params);
     if (result.status === 'ok') {
         return item;
     } else {
@@ -1114,7 +1040,7 @@ const getDemoItemFromServiceWorkerDB = (itemId) => {
         table: 'itemVersions',
         key: itemId
     }
-    return readDataFromServiceWorkerDB(params);
+    return readDataFromServiceWorkerDBTable(params);
 }
 
 const getS3ObjectFromServiceWorkerDB = (s3Key) => {
@@ -1122,7 +1048,7 @@ const getS3ObjectFromServiceWorkerDB = (s3Key) => {
         table: 's3Objects',
         key: s3Key
     }
-    return readDataFromServiceWorkerDB(params);
+    return readDataFromServiceWorkerDBTable(params);
 }
 
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
@@ -1230,7 +1156,7 @@ export const putS3ObjectInServiceWorkerDB = (s3Key, data, onProgress) => {
             key: s3Key,
             data
         }
-        let result = await writeDataToServiceWorkerDB(params);
+        let result = await writeDataToServiceWorkerDBTable(params);
         if (result.status === 'ok') {
             resolve(result);
             onProgress({ lengthComputable: true, total: 100, loaded: 100 });
@@ -1998,7 +1924,7 @@ async function createNewItemVersion(itemCopy, dispatch) {
                 key: itemCopy.id,
                 data: itemCopy
             }
-            const result = await writeDataToServiceWorkerDB(params);
+            const result = await writeDataToServiceWorkerDBTable(params);
             if (result.status === 'ok') {
                 resolve({ status: "ok", usage: JSON.stringify(itemCopy.usage) });
             } else {
@@ -2052,13 +1978,16 @@ function createANotebookPage(data, dispatch) {
                 }
             });
         } else {
-            const item = prepareADemoPageItem(workspace, 'NP', data)
+            const item = prepareADemoPageItem(workspace, 'NP', data);
+            const itemIdParts = item.id.split(':');
+            const pageNumber = parseInt(itemIdParts[itemIdParts.length - 1]);
+            item.pageNumber = pageNumber;
             const params = {
                 table: 'itemVersions',
                 key: item.id,
                 data: item
             }
-            const result = await writeDataToServiceWorkerDB(params);
+            const result = await writeDataToServiceWorkerDBTable(params);
             if (result.status === 'ok') {
                 resolve(item);
             } else {
@@ -2495,7 +2424,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                             key: s3Key,
                             data
                         }
-                        const result = await writeDataToServiceWorkerDB(params);
+                        const result = await writeDataToServiceWorkerDBTable(params);
                         if (result.status === 'ok') {
                             resolve();
                         } else {
@@ -2711,7 +2640,7 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
                                 key: s3Key,
                                 data
                             }
-                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDB(params);
+                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write a chunk to service worker DB!");
                             }
@@ -2926,7 +2855,7 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
                 key: s3Key,
                 data: encryptedStr
             }
-            const result = await writeDataToServiceWorkerDB(params);
+            const result = await writeDataToServiceWorkerDBTable(params);
             if (result.status !== 'ok') {
                 throw new Error("Failed to write a chunk to service worker DB!");
             }
@@ -3081,7 +3010,7 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                                 key: s3Key,
                                 data
                             }
-                            let result = await writeDataToServiceWorkerDB(params);
+                            let result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write an image data to service worker DB!");
                             }
@@ -3091,7 +3020,7 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                                 key: s3KeyGallery,
                                 data: galleryImgString
                             }
-                            result = await writeDataToServiceWorkerDB(params);
+                            result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write an image data to service worker DB!");
                             }
@@ -3101,7 +3030,7 @@ const uploadAnImage = async (dispatch, getState, state, file) => {
                                 key: s3KeyThumbnail,
                                 data: thumbnailImgString
                             }
-                            result = await writeDataToServiceWorkerDB(params);
+                            result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write an image data to service worker DB!");
                             }
@@ -3363,7 +3292,7 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
                                 key: s3Key,
                                 data
                             }
-                            const result = await writeDataToServiceWorkerDB(params);
+                            const result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write a chunk to service worker DB!");
                             }

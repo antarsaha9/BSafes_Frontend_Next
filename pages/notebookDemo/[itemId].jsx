@@ -146,7 +146,7 @@ export default function Notebook() {
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
                             { 
-                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
+                                <div className={`${BSafesStyle.notebookPanel} ${BSafesStyle.notebookCoverPanel}`}>
                                     <ItemTopRows />
                                     <br />
                                     <br />

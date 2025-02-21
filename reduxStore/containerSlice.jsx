@@ -8,6 +8,7 @@ import { newResultItem, formatTimeDisplay, isItemAContainer } from '../lib/bSafe
 import { generateNewItemKey, encryptBinaryString, decryptBinaryString, stringToEncryptedTokensCBC, stringToEncryptedTokensECB } from '../lib/crypto';
 import { containerActivity } from '../lib/activities';
 import { getDemoWorkspaceInfo } from '../lib/demoHelper';
+import { readDataFromServiceWorkerDB } from '../lib/serviceWorkerDBHelper';
 
 import { getTeamData } from './teamSlice';
 
@@ -453,6 +454,7 @@ export const initWorkspaceThunk = (data) => async (dispatch, getState) => {
 export const listItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, containerActivity.ListItems, () => {
         return new Promise(async (resolve, reject) => {
+            const workspace = getState().container.workspace;
             let state, pageNumber;
             dispatch(setListingDone(false));
             dispatch(setListingItems(true));
@@ -499,29 +501,54 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                     from: (pageNumber - 1) * state.itemsPerPage,
                 }
             }
-
-            PostCall({
-                api: '/memberAPI/listItems',
-                body,
-                dispatch
-            }).then(data => {
-                debugLog(debugOn, data);
-                if (data.status === 'ok') {
-                    const total = data.hits.total;
-                    const hits = data.hits.hits;
-                    dispatch(pageLoaded({ pageNumber, total, hits }));
-                    dispatch(setListingDone(true));
-                    resolve();
-                } else {
-                    debugLog(debugOn, "listItems failed: ", data.error);
+            if(!workspace.startsWith("d:")){
+                PostCall({
+                    api: '/memberAPI/listItems',
+                    body,
+                    dispatch
+                }).then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        const total = data.hits.total;
+                        const hits = data.hits.hits;
+                        dispatch(pageLoaded({ pageNumber, total, hits }));
+                        dispatch(setListingDone(true));
+                        resolve();
+                    } else {
+                        debugLog(debugOn, "listItems failed: ", data.error);
+                        reject("Failed to list items.");
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "listItems failed: ", error)
+                    reject("Failed to list items.");
+                }).finally(() => {
+                    dispatch(setListingItems(false));
+                })
+            } else {
+                try {
+                    const data = await readDataFromServiceWorkerDB(
+                        {
+                            action: 'GET_CONTENTS',
+                            ...body
+                        }
+                    )
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        const total = data.hits.total;
+                        const hits = data.hits.hits;
+                        dispatch(pageLoaded({ pageNumber, total, hits }));
+                        dispatch(setListingDone(true));
+                        resolve();
+                    } else {
+                        debugLog(debugOn, "listItems failed: ", data.error);
+                        reject("Failed to list items.");
+                    }
+                } catch(error) {
+                    debugLog(debugOn, "listItems failed: ", error)
                     reject("Failed to list items.");
                 }
-            }).catch(error => {
-                debugLog(debugOn, "listItems failed: ", error)
-                reject("Failed to list items.");
-            }).finally(() => {
                 dispatch(setListingItems(false));
-            })
+            }
         });
     });
 }

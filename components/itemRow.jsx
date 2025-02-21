@@ -22,7 +22,7 @@ import { getItemLink } from '../lib/bSafesCommonUI';
 
 import { deselectItem, selectItem, dropItemsThunk} from '../reduxStore/containerSlice';
 
-export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect}) {
+export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSelect, productID=null}) {
     const debugOn = false;
     const router = useRouter();
     const dispatch = useDispatch();
@@ -82,7 +82,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
 
     const rowClicked = () => {
         debugLog(debugOn, "rowClicked ...");
-        const link = getItemLink(item);
+        const link = getItemLink(item, false, productID);
         router.push(link);
         
     }
@@ -144,7 +144,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col>
                         <Col xs={1} >
-                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item, false, productID)} rel="noopener noreferrer">
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                             </a>
                         </Col>
@@ -171,7 +171,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
                             <span className='fs-5' dangerouslySetInnerHTML={{__html: itemText}} />
                         </Col>      
                         <Col xs={1} >
-                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                            <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item, false, productID)} rel="noopener noreferrer">
                                 <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                             </a>
                         </Col>
@@ -192,7 +192,7 @@ export default function ItemRow({ itemIndex, item , mode='listAll',  onAdd, onSe
                         </Col> 
                         <Col xs={3} className="p-1">
                             <ButtonGroup className="pull-right">
-                                <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item)} rel="noopener noreferrer">
+                                <a className={BSafesStyle.externalLink} target="_blank" href={getItemLink(item, false, productID)} rel="noopener noreferrer">
                                     <i className="me-2 fa fa-external-link fa-lg text-dark" aria-hidden="true"></i>
                                 </a>
                                 <Form.Group className="me-2" >

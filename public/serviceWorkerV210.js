@@ -305,6 +305,15 @@ const findTheIndexForANumber = (numbersArray, theNumber) => {
       theIndex = newArrayStartingIndex + 1;
     }
   }
+  if (theIndex) {
+    if ((theNumber === numbersArray[theIndex - 1]) || (theNumber === numbersArray[theIndex]) || (theNumber === numbersArray[theIndex + 1])) {
+      theIndex = -1;
+    }
+  } else {
+    if ((theNumber === numbersArray[theIndex]) || (theNumber === numbersArray[theIndex + 1])) {
+      theIndex = -1;
+    }
+  }
   return theIndex;
 }
 
@@ -317,7 +326,11 @@ function getNotebookPages(itemId) {
 
     request.onsuccess = (e) => {
       //console.log("got chunk: ", e.target.result );
-      resolve(e.target.result.pages);
+      if (e.target.result) {
+        resolve(e.target.result.pages);
+      } else {
+        resolve(null);
+      }
     }
 
     request.onerror = (e) => {
@@ -333,7 +346,12 @@ function addAPageToNotebookContents(itemId, pageNumber) {
       let pages = await getNotebookPages(itemId);
       if (pages) {
         const theIndex = findTheIndexForANumber(pages, pageNumber);
-        pages.splice(theIndex, 0, pageNumber);
+        if(theIndex !== -1) {
+          pages.splice(theIndex, 0, pageNumber);
+        } else {
+          resolve();
+          return;
+        }
       } else {
         pages = [pageNumber];
       }
@@ -346,27 +364,31 @@ function addAPageToNotebookContents(itemId, pageNumber) {
   })
 }
 
-function getNotebookContents(itemId, pageNumber, itemsPerPage) {
+function getNotebookContents(itemId, from, itemsPerPage) {
   return new Promise(async (resolve, reject) => {
     try {
       let pages = await getNotebookPages(itemId);
-      if(pages === null) {
-        reject();
+      if (pages === null) {
+        resolve({ status: 'ok', hits: { total: 0 } });
         return;
       }
-      const total = pages.total;
+      const total = pages.length;
+      if (from > total - 1) throw new Error("Invalid page.");
       const hits = [];
-      const startingIndex = (pageNumber - 1)* itemsPerPage;
-      const endingIndex = startingIndex + itemsPerPage - 1;
-      if(endingIndex > total-1) {
+      const startingIndex = from;
+      let endingIndex = startingIndex + itemsPerPage - 1;
+      if (endingIndex > total - 1) {
         endingIndex = total - 1;
       }
-      for(let i= startingIndex; i< endingIndex; i++) {
-        const pageItemId = itemId.replace("n:", "np:")+ `:${pages[i]}`;
+      for (let i = startingIndex; i <= endingIndex; i++) {
+        const pageItemId = itemId.replace("n:", "np:") + `:${pages[i]}`;
+        const item = await getAnItemVersionFromDB(pageItemId);
+        if (item) hits.push(item.item);
       }
+      resolve({ status: 'ok', hits: { total, hits } });
     } catch (error) {
       console.log("addAPageToNotebookContents failed: ", error);
-      reject();
+      resolve({ status: 'error', error });
     }
   })
 }
@@ -778,7 +800,7 @@ self.addEventListener("message", async (event) => {
       case 'DELETE_DB':
         await deleteDB();
         break;
-      case 'READ_FROM_DB':
+      case 'READ_FROM_DB_TABLE':
         switch (event.data.table) {
           case itemVersionsStoreName:
             try {
@@ -808,11 +830,19 @@ self.addEventListener("message", async (event) => {
             break;
         }
         break;
-      case 'WRITE_TO_DB':
+      case 'WRITE_TO_DB_TABLE':
         switch (event.data.table) {
           case itemVersionsStoreName:
             try {
               await updateAnItemVersion(event.data.key, event.data.data);
+              if (event.data.key.startsWith("np:")) {
+                const itemdIdParts = event.data.key.split(":");
+                const notenookId = `n:${itemdIdParts[1]}:${itemdIdParts[2]}:${itemdIdParts[3]}`;
+                const pageNumber = parseInt(itemdIdParts[4]);
+                await addAPageToNotebookContents(notenookId, pageNumber);
+              } else if (event.data.key.startsWith("dp:")) {
+
+              }
               data = { status: 'ok' }
             } catch (error) {
               data = { status: 'error', error }
@@ -832,25 +862,23 @@ self.addEventListener("message", async (event) => {
             break;
         }
         break;
-      case 'ADD_A_NOTEBOOK_PAGE':
-        try {
-          await addAPageToNotebookContents(event.data.itemId, event.data.pageNumber);
-          data = { status: 'ok' }
-        } catch (error) {
-          data = { status: 'error', error }
+      case 'READ_FROM_DB':
+        let result;
+        switch (event.data.action) {
+          case 'GET_CONTENTS':
+            if (event.data.container.startsWith('n')) {
+              try {
+                result = await getNotebookContents(event.data.container, event.data.from, event.data.size);
+              } catch (error) {
+                result = { status: 'error', error }
+              }
+            }
+            break;
+          default:
+            result = { status: 'error', error: "Invalid action." }
         }
         port = event.ports[0];
-        port.postMessage({ type: "ADD_A_NOTEBOOK_PAGE_RESULT", data });
-        break;
-      case 'GET_NOTEBOOK_CONTENTS':
-        try {
-          const hits = await getNotebookContents(event.data.itemId, event.data.pageNumber, event.data.itemsPerPage);
-          data = { status: 'ok', hits }
-        } catch (error) {
-          data = { status: 'error', error }
-        }
-        port = event.ports[0];
-        port.postMessage({ type: "GET_NOTEBOOK_CONTENTS_RESULT", data });
+        port.postMessage({ type: "DATA", data: result });
         break;
       default:
     }
