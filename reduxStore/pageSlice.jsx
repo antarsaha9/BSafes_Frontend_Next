@@ -2047,6 +2047,12 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         newPageData.space = workspace;
         newPageData.container = pageState.container;
         if (workspace.startsWith("d:")) {
+            if (newPageData.tagsTokens) {
+                newPageData.tagsTokens = JSON.parse(newPageData.tagsTokens);
+            }
+            if (newPageData.titleTokens) {
+                newPageData.titleTokens = JSON.parse(newPageData.titleTokens);
+            }
             if (newPageData.videos) {
                 newPageData.videos = JSON.parse(newPageData.videos)
             }
@@ -2116,13 +2122,11 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                             itemKey,
                             tags
                         }
-
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with tags.");
                     }
-
                 } else {
                     encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
                     encryptedTags.push('null');
@@ -2130,7 +2134,6 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     let itemCopy = {
                         ...state.itemCopy
                     }
-
                     itemCopy.tags = encryptedTags;
                     itemCopy.tagsTokens = tagsTokens;
                     itemCopy.update = "tags";

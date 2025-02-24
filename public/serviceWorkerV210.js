@@ -1,3 +1,5 @@
+import { stat } from "fs";
+
 let videoChunkSize;
 const broadcastChannelName = 'streamService';
 let streams = {};
@@ -15,6 +17,7 @@ const DBName = "streams";
 const chunkStoreName = "videoChunksStore";
 const streamStoreName = "streamStore";
 const notebookPagesStoreName = "notebookPagesStore";
+const notebookTokensStoreName = "notebookTokensStore";
 const itemVersionsStoreName = "itemVersions";
 const s3ObjectsStoreName = "s3Objects";
 
@@ -49,6 +52,7 @@ function openDB() {
       db.createObjectStore(chunkStoreName, { keyPath: "chunkId" });
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
       db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
+      db.createObjectStore(notebookTokensStoreName, { keyPath: "token" });
       db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
       db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
@@ -56,7 +60,6 @@ function openDB() {
       }
     }
   })
-
 }
 
 function deleteDB() {
@@ -419,7 +422,7 @@ function getNotebookLastPage(itemId) {
         pageItemId = -1;
         return;
       } else {
-        pageItemId = itemId.replace("n:", "np:") + `:${pages[pages.length-1]}`;
+        pageItemId = itemId.replace("n:", "np:") + `:${pages[pages.length - 1]}`;
       }
       resolve({ status: 'ok', pageItemId });
     } catch (error) {
@@ -427,6 +430,83 @@ function getNotebookLastPage(itemId) {
       resolve({ status: 'error', error });
     }
   });
+}
+
+function getNotebookPagesByAToken(token) {
+  return new Promise((resolve) => {
+    const request = streamDB
+      .transaction(notebookTokensStoreName)
+      .objectStore(notebookTokensStoreName)
+      .get(itemId);
+
+    request.onsuccess = (e) => {
+      //console.log("got chunk: ", e.target.result );
+      if (e.target.result) {
+        resolve(e.target.result.pages);
+      } else {
+        resolve(null);
+      }
+    }
+
+    request.onerror = (e) => {
+      console.log("getNotebookPagesByAToken failed: ", e.target.error);
+      resolve(null);
+    }
+  })
+}
+
+function setNotebookTokenPages(token, pages) {
+  return new Promise((resolve) => {
+    const data = {
+      token,
+      pages
+    }
+    const request = streamDB
+      .transaction(notebookTokensStoreName, "readwrite")
+      .objectStore(notebookTokensStoreName)
+      .put(data);
+
+    request.onsuccess = (e) => {
+      console.log("setNotebookTokenPages succeeded ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("setNotebookTokenPages failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  });
+}
+
+function indexANotebookPage(container, pageNumber, tokens) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let token;
+      for (let i = 0; i++; i < tokens.length) {
+        token = tokens[i];
+        let pages = await getNotebookPagesByAToken(token);
+        if (pages) {
+          const theIndex = findTheIndexForANumber(pages, pageNumber);
+          if (theIndex !== -1) {
+            pages.splice(theIndex, 0, pageNumber);
+          } else {
+            continue;
+          }
+        } else {
+          pages = [pageNumber];
+        }
+        await setNotebookTokenPages(token, pages);
+      }
+      resolve();
+    } catch (error) {
+      console.log("indexANotebookPage failed: ", error);
+      reject();
+    }
+  })
 }
 
 function addAnItemVersionToDB(itemId, item) {
@@ -820,7 +900,7 @@ self.addEventListener("message", async (event) => {
       }
     }
   }
-  let data, port;
+  let data, port, result;
   if (event.data) {
     await self.clients.claim();
     switch (event.data.type) {
@@ -898,8 +978,26 @@ self.addEventListener("message", async (event) => {
             break;
         }
         break;
+      case 'WRITE_TO_DB':
+        switch (event.data.action) {
+          case 'INDEX_A_PAGE':
+            if (event.data.container.startsWith('n')) {
+              try {
+                const pageNumber = parseInt(event.data.itemId.split(':').pop())
+                await indexANotebookPage(event.data.container, pageNumber, event.data.tokens);
+                result = { status:'ok'};
+              } catch (error) {
+                result = { status: 'error', error }
+              }
+            }
+            break;
+          default:
+            result = { status: 'error', error: "Invalid action." }
+        }
+        port = event.ports[0];
+        port.postMessage({ type: "DATA", data: result });
+        break;
       case 'READ_FROM_DB':
-        let result;
         switch (event.data.action) {
           case 'GET_CONTENTS':
             if (event.data.container.startsWith('n')) {
@@ -919,15 +1017,15 @@ self.addEventListener("message", async (event) => {
               }
             }
             break;
-            case 'GET_LAST_PAGE':
-              if (event.data.container.startsWith('n')) {
-                try {
-                  result = await getNotebookLastPage(event.data.container);
-                } catch (error) {
-                  result = { status: 'error', error }
-                }
+          case 'GET_LAST_PAGE':
+            if (event.data.container.startsWith('n')) {
+              try {
+                result = await getNotebookLastPage(event.data.container);
+              } catch (error) {
+                result = { status: 'error', error }
               }
-              break;
+            }
+            break;
           default:
             result = { status: 'error', error: "Invalid action." }
         }
