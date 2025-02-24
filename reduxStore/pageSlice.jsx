@@ -1999,25 +1999,44 @@ function createANotebookPage(data, dispatch) {
 
 function createADiaryPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/createADiaryPage',
-            body: data,
-            dispatch
-        }).then(result => {
-            debugLog(debugOn, result);
+        const workspace = data.space;
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createADiaryPage',
+                body: data,
+                dispatch
+            }).then(result => {
+                debugLog(debugOn, result);
 
-            if (result.status === 'ok') {
-                if (result.item) {
-                    resolve(result.item);
+                if (result.status === 'ok') {
+                    if (result.item) {
+                        resolve(result.item);
+                    } else {
+                        debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                        reject("Failed to create a diary page!");
+                    }
                 } else {
                     debugLog(debugOn, "woo... failed to create a diary page!", data.error);
                     reject("Failed to create a diary page!");
                 }
-            } else {
-                debugLog(debugOn, "woo... failed to create a diary page!", data.error);
-                reject("Failed to create a diary page!");
+            });
+        } else {
+            const item = prepareADemoPageItem(workspace, 'DP', data);
+            const itemIdParts = item.id.split(':');
+            const pageDate = parseInt(itemIdParts[itemIdParts.length - 1].replace(/-/g, ""));
+            item.pageNumber = pageDate;
+            const params = {
+                table: 'itemVersions',
+                key: item.id,
+                data: item
             }
-        });
+            const result = await writeDataToServiceWorkerDBTable(params);
+            if (result.status === 'ok') {
+                resolve(item);
+            } else {
+                reject();
+            }
+        }    
     });
 }
 

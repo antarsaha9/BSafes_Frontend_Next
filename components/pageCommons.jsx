@@ -57,7 +57,6 @@ export default function PageCommons() {
     const comments = useSelector(state => state.page.comments);
     const draftLoaded = useSelector(state => state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
-    const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
