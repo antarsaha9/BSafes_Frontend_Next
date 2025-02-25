@@ -594,6 +594,7 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
             dispatch(setMode("search"));
             auth = getState().auth;
             state = getState().container;
+            const workspace = state.workspace;
             if (auth.accountVersion === 'v1') {
                 searchTokens = stringToEncryptedTokensECB(data.searchValue, state.searchKey)
             } else {
@@ -607,11 +608,33 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                 size: state.itemsPerPage,
                 from: (pageNumber - 1) * state.itemsPerPage,
             }
-            PostCall({
-                api: '/memberAPI/search',
-                body,
-                dispatch
-            }).then(data => {
+            if (!workspace.startsWith("d:")) {
+                PostCall({
+                    api: '/memberAPI/search',
+                    body,
+                    dispatch
+                }).then(data => {
+                    debugLog(debugOn, data);
+                    if (data.status === 'ok') {
+                        const total = data.hits.total;
+                        const hits = data.hits.hits;
+                        dispatch(pageLoaded({ pageNumber, total, hits }));
+                        resolve();
+                    } else {
+                        debugLog(debugOn, "search failed: ", data.error);
+                        reject("Failed to search items.");
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "search failed: ", error)
+                    reject("Failed to search items.");
+                })
+            } else {
+                const params = {
+                    action: 'GET_PAGES_BY_TOKENS',
+                    container: state.container,
+                    tokens: searchTokens
+                }
+                const data = await readDataFromServiceWorkerDB(params);
                 debugLog(debugOn, data);
                 if (data.status === 'ok') {
                     const total = data.hits.total;
@@ -622,15 +645,12 @@ export const searchItemsThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "search failed: ", data.error);
                     reject("Failed to search items.");
                 }
-            }).catch(error => {
-                debugLog(debugOn, "search failed: ", error)
-                reject("Failed to search items.");
-            })
+            }
         });
     });
 }
 
-export const getFirstItemInContainer = async (container, dispatch, workspace=null) => {
+export const getFirstItemInContainer = async (container, dispatch, workspace = null) => {
     return new Promise(async (resolve, reject) => {
         if (!workspace || !workspace.startsWith("d:")) {
             PostCall({
@@ -679,7 +699,7 @@ export const getFirstItemInContainer = async (container, dispatch, workspace=nul
     });
 }
 
-export const getLastItemInContainer = async (container, dispatch, workspace=null) => {
+export const getLastItemInContainer = async (container, dispatch, workspace = null) => {
     return new Promise(async (resolve, reject) => {
         if (!workspace || !workspace.startsWith("d:")) {
             PostCall({
@@ -724,7 +744,7 @@ export const getLastItemInContainer = async (container, dispatch, workspace=null
                 debugLog(debugOn, "getFirstItemInContainer failed: ", error)
                 reject("Failed to get first item.");
             }
-        }  
+        }
     });
 }
 

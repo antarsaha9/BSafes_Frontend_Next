@@ -12,7 +12,7 @@ import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } f
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 import { isDemoMode } from '../lib/demoHelper';
-import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable } from '../lib/serviceWorkerDBHelper';
+import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable, writeDataToServiceWorkerDB } from '../lib/serviceWorkerDBHelper';
 
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
@@ -2047,6 +2047,9 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         newPageData.space = workspace;
         newPageData.container = pageState.container;
         if (workspace.startsWith("d:")) {
+            if (newPageData.tags) {
+                newPageData.tags = JSON.parse(newPageData.tags);
+            }
             if (newPageData.tagsTokens) {
                 newPageData.tagsTokens = JSON.parse(newPageData.tagsTokens);
             }
@@ -2092,6 +2095,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
 
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.SaveTags, () => {
+        const workspace = getState().container.workspace;
         return new Promise(async (resolve, reject) => {
             let auth, state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
             auth = getState().auth;
@@ -2102,7 +2106,6 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                 } else {
                     tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
                 }
-
                 if (!state.itemCopy) {
                     try {
                         itemKey = generateNewItemKey();
@@ -2123,6 +2126,14 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                             tags
                         }
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                        if(workspace.startsWith("d:")){
+                            const params = {
+                                action: "INDEX_A_PAGE",
+                                itemId: state.id,
+                                tokens: tagsTokens
+                            }
+                            await writeDataToServiceWorkerDB(params);
+                        } 
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with tags.");
@@ -2139,6 +2150,14 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     itemCopy.update = "tags";
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
+                    if(workspace.startsWith("d:")){
+                        const params = {
+                            action: "INDEX_A_PAGE",
+                            itemId: state.id,
+                            tokens: tagsTokens
+                        }
+                        await writeDataToServiceWorkerDB(params);
+                    } 
                     dispatch(newVersionCreated({
                         itemCopy,
                         tags

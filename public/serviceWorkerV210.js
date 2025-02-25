@@ -1,5 +1,3 @@
-import { stat } from "fs";
-
 let videoChunkSize;
 const broadcastChannelName = 'streamService';
 let streams = {};
@@ -437,7 +435,7 @@ function getNotebookPagesByAToken(token) {
     const request = streamDB
       .transaction(notebookTokensStoreName)
       .objectStore(notebookTokensStoreName)
-      .get(itemId);
+      .get(token);
 
     request.onsuccess = (e) => {
       //console.log("got chunk: ", e.target.result );
@@ -450,7 +448,7 @@ function getNotebookPagesByAToken(token) {
 
     request.onerror = (e) => {
       console.log("getNotebookPagesByAToken failed: ", e.target.error);
-      resolve(null);
+      reject();
     }
   })
 }
@@ -486,7 +484,7 @@ function indexANotebookPage(container, pageNumber, tokens) {
   return new Promise(async (resolve, reject) => {
     try {
       let token;
-      for (let i = 0; i++; i < tokens.length) {
+      for (let i = 0; i < tokens.length; i++) {
         token = tokens[i];
         let pages = await getNotebookPagesByAToken(token);
         if (pages) {
@@ -507,6 +505,35 @@ function indexANotebookPage(container, pageNumber, tokens) {
       reject();
     }
   })
+}
+
+function getNotebookPagesByTokens(itemId, tokens) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let token;
+      let pages = null;
+      for (let i = 0; i < 1; i++) {
+        token = tokens[i];
+        pages = await getNotebookPagesByAToken(token);
+      }
+      if (pages === null) {
+        resolve({ status: 'ok', hits: { total: 0 } });
+        return;
+      }
+      const total = pages.length;
+      const hits = [];
+      const endingIndex = Math.min(total, 20);
+      for (let i = 0; i < endingIndex; i++) {
+        const pageItemId = itemId.replace("n:", "np:") + `:${pages[i]}`;
+        const item = await getAnItemVersionFromDB(pageItemId);
+        if (item) hits.push(item.item);
+      }
+      resolve({ status: 'ok', hits: { total, hits } });
+    } catch (error) {
+      console.log("getNotebookPagesByTokens failed: ", error);
+      reject();
+    }
+  });
 }
 
 function addAnItemVersionToDB(itemId, item) {
@@ -981,11 +1008,11 @@ self.addEventListener("message", async (event) => {
       case 'WRITE_TO_DB':
         switch (event.data.action) {
           case 'INDEX_A_PAGE':
-            if (event.data.container.startsWith('n')) {
+            if (event.data.itemId.startsWith('np')) {
               try {
                 const pageNumber = parseInt(event.data.itemId.split(':').pop())
                 await indexANotebookPage(event.data.container, pageNumber, event.data.tokens);
-                result = { status:'ok'};
+                result = { status: 'ok' };
               } catch (error) {
                 result = { status: 'error', error }
               }
@@ -1021,6 +1048,15 @@ self.addEventListener("message", async (event) => {
             if (event.data.container.startsWith('n')) {
               try {
                 result = await getNotebookLastPage(event.data.container);
+              } catch (error) {
+                result = { status: 'error', error }
+              }
+            }
+            break;
+          case 'GET_PAGES_BY_TOKENS':
+            if (event.data.container.startsWith('n')) {
+              try {
+                result = await getNotebookPagesByTokens(event.data.container, event.data.tokens);
               } catch (error) {
                 result = { status: 'error', error }
               }
