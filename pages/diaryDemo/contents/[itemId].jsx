@@ -17,10 +17,14 @@ import ItemRow from "../../../components/itemRow";
 import TurningPageControls from "../../../components/turningPageControls";
 import PaginationControl from "../../../components/paginationControl";
 
-import { setStartDateValue, setDiaryContentsPageFirstLoaded, listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
-import { } from "../../../reduxStore/pageSlice";
+import { setDemoMode } from "../../../reduxStore/auth";
+import { setDemoWorkspace } from "../../../reduxStore/containerSlice";
+import { listItemsThunk, searchItemsThunk } from "../../../reduxStore/containerSlice";
+import { DiaryDemo } from "../../../lib/productID";
+import { setupDemo } from "../../../lib/demoHelper";
 import { debugLog } from "../../../lib/helper";
 
+const productID = DiaryDemo;
 
 export default function DiaryContents() {
     const debugOn = false;
@@ -49,7 +53,7 @@ export default function DiaryContents() {
     const currentMonthYear = format(showingMonthDate, 'MMM. yyyy') //=> 'Nov'
 
     const items = allItemsInCurrentPage.map( (item, index) => 
-        <ItemRow itemIndex={index} key={index} item={item} mode={mode}/>
+        <ItemRow itemIndex={index} key={index} item={item} mode={mode} productID={productID}/>
     );
 
     const gotoNextPage = () =>{
@@ -82,6 +86,13 @@ export default function DiaryContents() {
         if (derivedSearchMode === 'search')
             dispatch(searchItemsThunk({ searchValue, pageNumber }));
     }
+
+    useEffect(() => {
+        if(setupDemo()){
+            dispatch(setDemoMode(true));
+            dispatch(setDemoWorkspace());
+        }
+    }, [])
 
     useEffect(()=>{
         if(diaryContentsPageFirstLoaded) return;
@@ -141,7 +152,7 @@ export default function DiaryContents() {
                     <br />
                     <DiaryTopControlPanel {...{ startDate, setStartDate }} 
                         onCoverClicked={() => {
-                            router.push(`/diary/${pageItemId}`);
+                            router.push(`/${productID}/${pageItemId}`);
                         }} 
                         onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}
                         datePickerViewMode="monthYear" showSearchIcon />

@@ -478,14 +478,23 @@ export const listItemsThunk = (data) => async (dispatch, getState) => {
                 pageNumber = 1;
                 selectedDiaryContentStartPosition = parseInt(startDate + '00');
                 selectedDiaryContentEndPosition = parseInt(startDate + '31');
-
-                body = {
-                    container: state.container,
-                    size: 31,
-                    from: 0,
-                    selectedDiaryContentStartPosition,
-                    selectedDiaryContentEndPosition
+                if (!workspace.startsWith("d:")){
+                    body = {
+                        container: state.container,
+                        size: 31,
+                        from: 0,
+                        selectedDiaryContentStartPosition,
+                        selectedDiaryContentEndPosition
+                    }
+                } else {
+                    body = {
+                        container: state.container,
+                        size: 31,
+                        from: 0,
+                        month: startDate
+                    }
                 }
+                
             } else if (state.container.startsWith('f') || state.container.startsWith('b') || state.container.startsWith('t')) {
                 pageNumber = data.pageNumber;
                 body = {

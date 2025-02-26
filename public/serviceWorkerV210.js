@@ -16,6 +16,7 @@ const chunkStoreName = "videoChunksStore";
 const streamStoreName = "streamStore";
 const notebookPagesStoreName = "notebookPagesStore";
 const notebookTokensStoreName = "notebookTokensStore";
+const diaryPagesStoreName = "diaryPagesStore";
 const itemVersionsStoreName = "itemVersions";
 const s3ObjectsStoreName = "s3Objects";
 
@@ -51,6 +52,7 @@ function openDB() {
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
       db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
       db.createObjectStore(notebookTokensStoreName, { keyPath: "token" });
+      db.createObjectStore(diaryPagesStoreName, { keyPath: "month" });
       db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
       db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
@@ -536,6 +538,106 @@ function getNotebookPagesByTokens(itemId, tokens) {
   });
 }
 
+function getDiaryPagesForAMonth(month) {
+  return new Promise((resolve) => {
+    const request = streamDB
+      .transaction(diaryPagesStoreName)
+      .objectStore(diaryPagesStoreName)
+      .get(month);
+
+    request.onsuccess = (e) => {
+      //console.log("got chunk: ", e.target.result );
+      if (e.target.result) {
+        resolve(e.target.result.pages);
+      } else {
+        resolve(null);
+      }
+    }
+
+    request.onerror = (e) => {
+      console.log("getDiaryPagesForAMonth failed: ", e.target.error);
+      resolve(null);
+    }
+  })
+}
+
+function setDiaryPages(month, pages) {
+  return new Promise((resolve) => {
+    const data = {
+      month,
+      pages
+    }
+    const request = streamDB
+      .transaction(diaryPagesStoreName, "readwrite")
+      .objectStore(diaryPagesStoreName)
+      .put(data);
+
+    request.onsuccess = (e) => {
+      console.log("setDiaryPages succeeded ", e.target.result);
+      resolve();
+    }
+
+    request.onerror = (e) => {
+      console.log("setDiaryPages failed: ", e.target.error);
+      if (e.target.error.name == "ConstraintError") {
+        resolve();
+      } else {
+        reject();
+      }
+    }
+  });
+}
+
+function addAPageToDiaryContents(month, pageNumber) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let pages = await getDiaryPagesForAMonth(month);
+      if (pages) {
+        const theIndex = findTheIndexForANumber(pages, pageNumber);
+        if (theIndex !== -1) {
+          pages.splice(theIndex, 0, pageNumber);
+        } else {
+          resolve();
+          return;
+        }
+      } else {
+        pages = [pageNumber];
+      }
+      await setDiaryPages(month, pages);
+      resolve();
+    } catch (error) {
+      console.log("addAPageToNotebookContents failed: ", error);
+      reject();
+    }
+  })
+}
+
+function getDiaryContents(itemId, month) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let pages = await getDiaryPagesForAMonth(month);
+      if (pages === null) {
+        resolve({ status: 'ok', hits: { total: 0 } });
+        return;
+      }
+      const total = pages.length;
+      const hits = [];
+
+      for (let i = 0; i < total; i++) {
+        const pageNumberInString = pages[i].toString();
+        const pageNumber = pageNumberInString.substring(0,4) + '-' + pageNumberInString.substring(4,6) + '-' + pageNumberInString.substring(6,8);
+        const pageItemId = itemId.replace("d:", "dp:") + `:${pageNumber}`;
+        const item = await getAnItemVersionFromDB(pageItemId);
+        if (item) hits.push(item.item);
+      }
+      resolve({ status: 'ok', hits: { total, hits } });
+    } catch (error) {
+      console.log("getNotebookContents failed: ", error);
+      resolve({ status: 'error', error });
+    }
+  })
+}
+
 function addAnItemVersionToDB(itemId, item) {
   return new Promise((resolve) => {
     const data = {
@@ -804,13 +906,8 @@ self.addEventListener("message", async (event) => {
     let start = event.data.start;
     videoChunkSize = event.data.videoChunkSize;
     let numberOfChunks = Math.floor(fileSize / videoChunkSize);
-
-
     if (fileSize % videoChunkSize) numberOfChunks += 1;
-
-
     let id = encodeURI(`${timeStamp}_${fileName}`);
-
     let streamInfo = {
       port,
       id,
@@ -984,7 +1081,12 @@ self.addEventListener("message", async (event) => {
                 const pageNumber = parseInt(itemdIdParts[4]);
                 await addAPageToNotebookContents(notenookId, pageNumber);
               } else if (event.data.key.startsWith("dp:")) {
-
+                const itemIdParts = event.data.key.split(":");
+                const lastPart = itemIdParts[itemIdParts.length - 1];
+                const pageNumberParts = lastPart.split("-");
+                const monthForThePage = pageNumberParts[0] + pageNumberParts[1];
+                const pageNumber = parseInt(lastPart.replace(/-/g, ""));
+                await addAPageToDiaryContents(monthForThePage, pageNumber);
               }
               data = { status: 'ok' }
             } catch (error) {
@@ -1030,6 +1132,12 @@ self.addEventListener("message", async (event) => {
             if (event.data.container.startsWith('n')) {
               try {
                 result = await getNotebookContents(event.data.container, event.data.from, event.data.size);
+              } catch (error) {
+                result = { status: 'error', error }
+              }
+            } else if (event.data.container.startsWith('d')) {
+              try {
+                result = await getDiaryContents(event.data.container, event.data.month);
               } catch (error) {
                 result = { status: 'error', error }
               }
