@@ -135,11 +135,14 @@ const authSlice = createSlice({
         },
         setServiceWorkerRegistered: (state, action) => {
             state.serviceWorkerRegistered = action.payload;
+        },
+        setFroalaLicenseKey: (state, action) => {
+            state.froalaLicenseKey = action.payload.froalaLicenseKey;
         }
     }
 });
 
-export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode, setServiceWorkerRegistered } = authSlice.actions;
+export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode, setServiceWorkerRegistered, setFroalaLicenseKey } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -448,6 +451,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                     if (data.error === 'SessionNotExisted') {
                         clearLocalData();
                         dispatch(loggedOut());
+                        dispatch(setFroalaLicenseKey({froalaLicenseKey: data.froalaLicenseKey}))
                     }
                 }
                 dispatch(setClientEncryptionKey(data.clientEncryptionKey));

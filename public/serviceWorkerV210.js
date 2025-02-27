@@ -1082,9 +1082,11 @@ self.addEventListener("message", async (event) => {
                 await addAPageToNotebookContents(notenookId, pageNumber);
               } else if (event.data.key.startsWith("dp:")) {
                 const itemIdParts = event.data.key.split(":");
+                const timeStampPart = itemIdParts[itemIdParts.length - 2];
+                const shortId = timeStampPart.substr(timeStampPart.length - 4);
                 const lastPart = itemIdParts[itemIdParts.length - 1];
                 const pageNumberParts = lastPart.split("-");
-                const monthForThePage = pageNumberParts[0] + pageNumberParts[1];
+                const monthForThePage = shortId + '-' + pageNumberParts[0] + pageNumberParts[1];
                 const pageNumber = parseInt(lastPart.replace(/-/g, ""));
                 await addAPageToDiaryContents(monthForThePage, pageNumber);
               }
@@ -1137,7 +1139,10 @@ self.addEventListener("message", async (event) => {
               }
             } else if (event.data.container.startsWith('d')) {
               try {
-                result = await getDiaryContents(event.data.container, event.data.month);
+                const containerParts = event.data.container.split(":")
+                const timeStampPart = containerParts[containerParts.length - 1];
+                const shortId = timeStampPart.substr(timeStampPart.length - 4);
+                result = await getDiaryContents(event.data.container, shortId + '-' + event.data.month);
               } catch (error) {
                 result = { status: 'error', error }
               }

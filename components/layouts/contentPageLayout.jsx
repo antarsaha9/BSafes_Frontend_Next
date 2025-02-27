@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useRouter } from "next/router";
-import Script from 'next/script';
 
 import { SafeArea } from 'capacitor-plugin-safe-area';
 
@@ -10,8 +9,6 @@ import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container'
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
 
@@ -419,8 +416,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 <div className={BSafesStyle.screenCenter}>
                     <Blocks
                         visible={true}
-                        height="80"
-                        width="80"
+                        height="40"
+                        width="40"
                         ariaLabel="blocks-loading"
                         wrapperStyle={{}}
                         wrapperClass="blocks-wrapper"

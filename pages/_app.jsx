@@ -39,7 +39,7 @@ function MyApp({ Component, pageProps }) {
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/serviceWorkerV210.js?v241", { //
+      navigator.serviceWorker.register("/serviceWorkerV210.js?v243", { //
         scope: "/",
       }).then(
         function (registration) {
