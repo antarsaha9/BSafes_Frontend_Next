@@ -16,6 +16,7 @@ import ItemTopRows from "../../components/itemTopRows";
 import Editor from "../../components/editor";
 import ContainerOpenButton from "../../components/containerOpenButton";
 import PageCommonControls from "../../components/pageCommonControls";
+import SampleItemNoticeModal from "../../components/sampleItemNoticeModal";
 
 import { setDemoMode } from "../../reduxStore/auth";
 import { setDemoWorkspace } from "../../reduxStore/containerSlice";
@@ -47,6 +48,8 @@ export default function Notebook() {
 
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
+
+    const [showNotice, setShowNotice] = useState(false);
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
@@ -116,10 +119,15 @@ export default function Notebook() {
         router.push(newLink);
     }
 
+    const handleCloseNotice = () => {
+        setShowNotice(false);
+    }
+
     useEffect(() => {
         if(setupDemo()){
             dispatch(setDemoMode(true));
             dispatch(setDemoWorkspace());
+            setShowNotice(true);
         }
     }, []);
 
@@ -141,7 +149,7 @@ export default function Notebook() {
                 <ContentPageLayout>
                     <PageItemWrapper itemId={router.query.itemId}> 
                         <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
+                        {true && <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked}></TopControlPanel>}
                         <br />  
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
@@ -170,6 +178,7 @@ export default function Notebook() {
                 </ContentPageLayout>
                 <Scripts />
             </div>
+            <SampleItemNoticeModal show={showNotice} handleClose={handleCloseNotice}/>
         </div>
     )
 }

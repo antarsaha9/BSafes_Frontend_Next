@@ -15,13 +15,14 @@ import TopControlPanel from "../../../components/topControlPanel"
 import ItemTopRows from "../../../components/itemTopRows";
 import PageCommons from "../../../components/pageCommons";
 import TurningPageControls from "../../../components/turningPageControls";
+import SampleItemNoticeToast from "../../../components/sampleItemNoticeToast";
 
 import { setDemoMode } from "../../../reduxStore/auth";
 import { setDemoWorkspace } from "../../../reduxStore/containerSlice";
 import { setNavigationInSameContainer, getFirstItemInContainer, getLastItemInContainer } from '../../../reduxStore/containerSlice';
 
 import { NotebookDemo } from "../../../lib/productID";
-import { debugLog } from "../../../lib/helper";
+import { debugLog, sleep } from "../../../lib/helper";
 import { setupDemo} from "../../../lib/demoHelper"
 
 const productID = NotebookDemo;
@@ -32,7 +33,8 @@ export default function NotebookPage() {
 
     const dispatch = useDispatch();
     const router = useRouter();
-    
+    const [showSampleToast, setShowSampleToast] = useState(false);
+    const preflightReady = useSelector(state => state.auth.preflightReady);
     const workspace = useSelector( state => state.container.workspace);
     const pageItemId = useSelector( state => state.page.id);
     const pageStyle = useSelector( state => state.page.style);
@@ -124,6 +126,18 @@ export default function NotebookPage() {
         }
     }
     
+    const closeSampleToast = () => {
+        setShowSampleToast(false);
+    }
+
+    useEffect(()=>{
+        if(pageItemId){
+            setTimeout(()=>{
+                setShowSampleToast(true);
+            }, 1500)
+        }      
+    }, [pageItemId]);
+
     return (
         <div className={BSafesStyle.pageBackground}>
             <ContentPageLayout>            
@@ -141,7 +155,7 @@ export default function NotebookPage() {
                     </Row> 
 
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-   
+                    <SampleItemNoticeToast show={showSampleToast} handleClose={closeSampleToast}/>
                 </PageItemWrapper>           
             </ContentPageLayout>
             <Scripts />

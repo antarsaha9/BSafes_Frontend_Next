@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from 'next/router';
 
@@ -11,6 +11,9 @@ import ModalHeader from "react-bootstrap/ModalHeader";
 import ModalTitle from "react-bootstrap/ModalTitle";
 import ModalBody from "react-bootstrap/ModalBody";
 import ListGroup from "react-bootstrap/ListGroup";
+import Overlay from 'react-bootstrap/Overlay';
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import TagsInput from 'react-tagsinput-special'
 
@@ -22,15 +25,17 @@ import { getItemLink } from "../lib/bSafesCommonUI";
 export default function ItemTopRows() {
     const dispatch = useDispatch();
     const router = useRouter();
+    const tagTarget = useRef(null);
+    const [showTagTips, setShowTagTips] = useState(false);
 
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector(state => state.container.searchKey);
+    const workspaceSearchIV = useSelector(state => state.container.searchIV);
 
-    const oldVersion = useSelector(state=>state.page.oldVersion);
-    const activity = useSelector( state => state.page.activity);
+    const oldVersion = useSelector(state => state.page.oldVersion);
+    const activity = useSelector(state => state.page.activity);
     const tagsState = useSelector(state => state.page.tags);
-    const itemCopy  = useSelector( state => state.page.itemCopy);
+    const itemCopy = useSelector(state => state.page.itemCopy);
 
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
@@ -53,7 +58,7 @@ export default function ItemTopRows() {
     const openVersionsHistoryModal = () => {
         setVersionsHistoryModalOpened(true);
         dispatch(clearItemVersions());
-        dispatch(getItemVersionsHistoryThunk({page:1}));
+        dispatch(getItemVersionsHistoryThunk({ page: 1 }));
     }
 
     const handleLinkChanged = (link) => {
@@ -61,15 +66,15 @@ export default function ItemTopRows() {
         setVersionsHistoryModalOpened(false);
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         setTags(tagsState);
     }, [tagsState])
 
     useEffect(() => {
-        if(activity === 0) {
+        if (activity === 0) {
             if (showTagsConfirmButton) setShowTagsConfirmButton(false);
-        } 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     return (
@@ -78,20 +83,34 @@ export default function ItemTopRows() {
                 <Col>
                     <div className="pull-right">
                         <span>{itemCopy && `v.${itemCopy.version}`}</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
-                        { false && <Button variant="link" className="text-dark" >
-		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
-		        	    </Button>}
+                        {false && <Button variant="link" className="text-dark" >
+                            <i className="fa fa-share-square-o" aria-hidden="true"></i>
+                        </Button>}
                     </div>
-                </Col>     
+                </Col>
             </Row>
 
             <Row>
                 <Col xs="1" className="px-0">
-                    <label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                    <OverlayTrigger
+                        placement='top'
+                        overlay={
+                            <Tooltip id={`tooltip-top`}>
+                                Add a tag & press Enter key. Select the green V after you add all tags.
+                            </Tooltip>
+                        }
+                    ><Button ref={tagTarget} onClick={() => setShowTagTips(!showTagTips)} variant="link" className="text-dark pull-right p-0"><i className="fa fa-question" aria-hidden="true"></i></Button></OverlayTrigger><label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
+                <Overlay target={tagTarget.current} show={showTagTips} placement="top">
+                    {(props) => (
+                        <Tooltip id="overlay-example" {...props}>
+                            Add a tag & press Enter key.
+                        </Tooltip>
+                    )}
+                </Overlay>
                 <Col xs="10">
-                    {oldVersion?
-                        <TagsInput value={tags} onChange={handleChange} disabled/>
+                    {oldVersion ?
+                        <TagsInput value={tags} onChange={handleChange} disabled />
                         :
                         <TagsInput value={tags} onChange={handleChange} />
                     }
@@ -111,22 +130,22 @@ export default function ItemTopRows() {
 function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, closeVersionsHistoryModal }) {
 
     const dispatch = useDispatch();
-    
+
     const itemVersions = useSelector(state => state.page.itemVersions);
     const totalVersions = useSelector(state => state.page.totalVersions);
     const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
     const versionsPerPage = useSelector(state => state.page.versionsPerPage);
-    
+
     const handleMore = (e) => {
-        dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
+        dispatch(getItemVersionsHistoryThunk({ page: versionsPageNumber + 1 }));
     }
-    
+
     const handleVersionSelected = (link) => {
         onLinkChanged(link);
     }
 
-    const itemVersionCards = itemVersions.map((itemVersion, index) => 
-        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index===0}/>
+    const itemVersionCards = itemVersions.map((itemVersion, index) =>
+        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index === 0} />
     )
 
     return (
@@ -139,7 +158,7 @@ function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, close
             </ModalHeader>
             <ModalBody>
                 {itemVersionCards}
-                { totalVersions> (versionsPageNumber*versionsPerPage) &&
+                {totalVersions > (versionsPageNumber * versionsPerPage) &&
                     <div className='text-center'>
                         <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
                             More
@@ -151,16 +170,16 @@ function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, close
     )
 }
 
-function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion}) {
-    
-    const item = {id, container};
-    
+function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion }) {
+
+    const item = { id, container };
+
     let link = getItemLink(item);
-    if(!latestVersion) {
+    if (!latestVersion) {
         link += `?version=${version}`;
     }
-    const rowClicked = () => {    
-        onVersionSelected(link);   
+    const rowClicked = () => {
+        onVersionSelected(link);
     }
 
     return (

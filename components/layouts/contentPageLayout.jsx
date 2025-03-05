@@ -22,6 +22,7 @@ import ItemsMovingProgress from '../itemsMovingProgress';
 import PaymentBanner from '../paymentBanner';
 import VisitPaymentBanner from '../visitPaymentBanner';
 import SuspendedModal from '../suspendedModal';
+import DemoNotice from '../demoNotice';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
@@ -78,6 +79,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const displayName = useSelector(state => state.auth.displayName);
     const nextAuthStep = useSelector(state => state.v1Account.nextAuthStep);
 
+    const workspace = useSelector(state=>state.container.workspace);
     const workspaceName = useSelector(state => state.container.workspaceName);
 
     const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
@@ -425,7 +427,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 </div>
             }
 
-            {true && showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
+            {(!workspace || (workspace && !workspace.startsWith("d:"))) && showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
                 <Navbar bg="light" className={BSafesStyle.bsafesNavbar}>
                     <Container fluid>
                         {workspaceName ?
@@ -492,7 +494,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     </Container>
                 </Navbar>
             }
-            {showNaveBar && (accountVersion === 'v2') &&
+            {(!workspace || (workspace && !workspace.startsWith("d:"))) && showNaveBar && (accountVersion === 'v2') &&
                 <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
                     <Container>
                         {true && <>
@@ -540,6 +542,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     </Container>
                 </Navbar>
 
+            }
+            {false && (workspace && workspace.startsWith("d:")) &&
+                <DemoNotice />
             }
             <div>
                 <ToastContainer
