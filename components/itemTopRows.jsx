@@ -40,7 +40,6 @@ export default function ItemTopRows() {
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
     const [versionsHistoryModalOpened, setVersionsHistoryModalOpened] = useState(false);
-
     const handleChange = (tags) => {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
@@ -91,23 +90,16 @@ export default function ItemTopRows() {
             </Row>
 
             <Row>
-                <Col xs="1" className="px-0">
+                <Col xs="2" sm="1" className="px-0">
                     <OverlayTrigger
                         placement='top'
                         overlay={
                             <Tooltip id={`tooltip-top`}>
-                                Add a tag & press Enter key. Select the green V after you add all tags.
+                                <TagHelp/>
                             </Tooltip>
                         }
-                    ><Button ref={tagTarget} onClick={() => setShowTagTips(!showTagTips)} variant="link" className="text-dark pull-right p-0"><i className="fa fa-question" aria-hidden="true"></i></Button></OverlayTrigger><label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                    ><Button variant="link" className="text-dark pull-right p-0"><i className="fa fa-question" aria-hidden="true"></i></Button></OverlayTrigger><label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
-                <Overlay target={tagTarget.current} show={showTagTips} placement="top">
-                    {(props) => (
-                        <Tooltip id="overlay-example" {...props}>
-                            Add a tag & press Enter key.
-                        </Tooltip>
-                    )}
-                </Overlay>
                 <Col xs="10">
                     {oldVersion ?
                         <TagsInput value={tags} onChange={handleChange} disabled />
@@ -201,5 +193,13 @@ function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedT
                 <Col xs={12}><p className="pull-right">{updatedTimeStamp}</p></Col>
             </Row>
         </ListGroup.Item>
+    )
+}
+
+function TagHelp() {
+    return (
+        <>
+            Add a tag & press the Return key ↵ on the keyboard. Select the green <i className="fa fa-check" aria-hidden="true"></i> after you add all tags.
+        </>
     )
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRouter } from 'next/router';
 import Toast from 'react-bootstrap/Toast';
 import ToastContainer from 'react-bootstrap/ToastContainer';
 import { Button } from 'react-bootstrap';
@@ -8,9 +8,10 @@ import { debugLog } from '../lib/helper'
 export default function SampleItemNoticeToast({ show = false, handleClose }) {
     const debugOn = false;
     debugLog(debugOn, "Rendering SampleItemNoticeModal: ", `${show}}`);
+    const router = useRouter();
 
     const ownYourBSafes = () => {
-
+        router.push("/keySetup")
     }
 
     return (
@@ -20,7 +21,7 @@ export default function SampleItemNoticeToast({ show = false, handleClose }) {
             style={{ zIndex: 1000 }}
         >
             <Toast bg="warning" show={show} onClose={handleClose}>
-                <Toast.Header closeButton={true}>
+                <Toast.Header closeButton={true} style={{backgroundColor: 'yellow'}}>
                     <img
                         src="holder.js/20x20?text=%20"
                         className="rounded me-2"
@@ -29,7 +30,7 @@ export default function SampleItemNoticeToast({ show = false, handleClose }) {
                     <strong className="me-auto">🙂 It is a sample!</strong>
                     <small></small>
                 </Toast.Header>
-                <Toast.Body>Own your BSafes to have a private and safe space for writing and media protection!  <Button variant='light' size='sm'>Go</Button> <Button onClick={handleClose} variant='light' size='sm'>Later</Button></Toast.Body>
+                <Toast.Body style={{backgroundColor: 'white'}}>Create your lock <i className="fa fa-lock" aria-hidden="true"></i> to have a private and safe space for writing and media protection!  <Button onClick={ownYourBSafes} variant='dark' size='sm'>Go</Button> <Button onClick={handleClose} variant='secondary' size='sm'>Later</Button></Toast.Body>
             </Toast>
         </ToastContainer>
     )

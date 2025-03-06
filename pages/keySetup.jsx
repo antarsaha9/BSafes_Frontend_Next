@@ -107,13 +107,14 @@ export default function KeySetup() {
     }, [keyStrength, keyPassword, confirmPassword]);
 
     return (
-        <div className={`${BSafesStyle.minHeight100Percent}`} style={{backgroundColor:"#F8F9F9"}}>
+        <div className={`${BSafesStyle.minHeight100Percent}`} style={{ backgroundColor: "#F8F9F9" }}>
             <ContentPageLayout showNaveBar={false} showNavbarMenu={false} showPathRow={false}>
                 <Container>
                     <Row className={BSafesStyle.keyPanel}>
                         <Col sm={{ span: 10, offset: 1 }} lg={{ span: 6, offset: 3 }}>
                             <Card className='p-3'>
-                                <h1>Own Your <span style={{ backgroundColor: 'yellow', color: 'black', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
+                                <h1>Create Your Lock <i className="fa fa-lock" aria-hidden="true"></i></h1>
+                                <h5>Own Your <span style={{ backgroundColor: 'yellow', color: 'black', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h5>
                                 <hr></hr>
                                 <Form>
                                     <Form.Group className="mb-3" controlId="Nickname">
@@ -137,7 +138,7 @@ export default function KeySetup() {
                                     </Form.Group>
                                 </Form>
                                 <br />
-                                <p className='text-cent'>You agree to our <Link onClick={handlePrivacy} href='/public/privacyPolicy' style={{textDecoration: 'none'}}>Privacy Policy</Link> and <Link onClick={handleTerms} href='/public/termsOfService' style={{textDecoration: 'none'}}>Terms of Service</Link> by clicking GO.</p>
+                                <p className='text-cent'>You agree to our <Link onClick={handlePrivacy} href='/public/privacyPolicy' style={{ textDecoration: 'none' }}>Privacy Policy</Link> and <Link onClick={handleTerms} href='/public/termsOfService' style={{ textDecoration: 'none' }}>Terms of Service</Link> by clicking GO.</p>
                                 <Row>
                                     <Col className='text-center'>
                                         <Button variant="dark" onClick={handleSubmit} disabled={!keyReady}>Go</Button>
@@ -145,7 +146,7 @@ export default function KeySetup() {
                                 </Row>
                                 <Row>
                                     <Col className='text-end'>
-                                        <Link href='/logIn' style={{textDecoration: 'none', fontSize:'0.8rem'}}>Open Your BSafes</Link>
+                                        <Link href='/logIn' style={{ textDecoration: 'none', fontSize: '0.8rem' }}>Open Your BSafes</Link>
                                     </Col>
                                 </Row>
                                 {showPrivacy && <PrivacyPolicyModal callback={handlePrivacyCallback} />}

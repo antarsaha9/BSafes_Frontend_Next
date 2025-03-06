@@ -142,7 +142,7 @@ export default function LogIn() {
                                         <Col className='text-center'>
                                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
-                                                Own Your <span style={{ fontWeight: 'bold' }}>BSafes</span>
+                                                Create your lock <i className="fa fa-lock" aria-hidden="true"></i>, own your <span style={{ fontWeight: 'bold' }}>BSafes</span>
                                             </Button>
                                         </Col>
                                     </Row>

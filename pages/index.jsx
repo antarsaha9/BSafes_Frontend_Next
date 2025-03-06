@@ -24,8 +24,11 @@ import ContentPageLayout from '../components/layouts/contentPageLayout';
 import Footer from '../components/footer';
 import DialerLock from '../components/dialerLock/dialerLock';
 import ComplianceBadge from '../components/complianceBadge';
+import TryMeButton from '../components/tryMeButton';
 
-import { logInAsyncThunk } from '../reduxStore/auth'
+import { setDemoMode } from '../reduxStore/auth';
+import { cleanContainerSlice } from '../reduxStore/containerSlice';
+import { clearDemo } from '../lib/demoHelper';
 
 export const monteserrat = Montserrat({
     subsets: ['latin'],
@@ -57,16 +60,20 @@ export default function Home() {
     const router = useRouter();
     const dispatch = useDispatch();
 
-    const [keyPassword, setKeyPassword] = useState("");
-    const nicknameRef = useRef(null);
-    const activity = useSelector(state => state.auth.activity);
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
+
+    const handleTryMe = () => {
+        router.push('/pd/n00')
+    }
 
     const handleUnlock = () => {
         router.push("/logIn");
     }
 
     useEffect(() => {
+        dispatch(setDemoMode(false));
+        dispatch(cleanContainerSlice());
+        clearDemo();
     }, [])
 
     useEffect(() => {
@@ -86,9 +93,7 @@ export default function Home() {
                         <Col xs={12} md={{ span: 10, offset: 1 }} xl={{ span: 8, offset: 2 }}>
                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" />
                             <img className='img-fluid' src="/images/samples.png" />
-                            <div className="text-center">
-                                <Button variant='danger' size='sm' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
-                            </div>
+                            <TryMeButton size='sm'/>
                             <br/>
                             <h1 hidden className={`fw-bold text-center m-0`} style={{ fontSize: '3.5em' }}>gnash</h1>
                             <div className="" style={{ padding: '10px', color: 'black' }}>
@@ -351,9 +356,7 @@ export default function Home() {
                     </Row>
                 </Container>
                 <br />
-                <div className="text-center">
-                    <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
-                </div>
+                <TryMeButton />
                 <br />
             </div>
             <div className={monteserrat.className} style={{ backgroundColor: '#f4f4f4' }}>
@@ -525,9 +528,7 @@ export default function Home() {
                     </Row>
                     <br />
                     <br />
-                    <div className="text-center">
-                        <Button variant='danger' onClick={handleUnlock}>TRY ME <i className="fa fa-arrow-right" aria-hidden="true"></i></Button>
-                    </div>
+                    <TryMeButton />
                     <br />
                     <Row id="aboutUs" >
                         <Col md={12}>
