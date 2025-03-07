@@ -29,7 +29,6 @@ export default function TopControlPanel({ pageNumber = null, onCoverClicked = nu
 
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
-
     const [selectedItemType, setSelectedItemType] = useState(null);
     const [addAction, setAddAction] = useState(null);
     const [targetItem, setTargetItem] = useState(null);
@@ -100,7 +99,7 @@ export default function TopControlPanel({ pageNumber = null, onCoverClicked = nu
     }
 
     const onShowSearchBarClicked = (e) => {
-        setShowSearchBar(true);
+            setShowSearchBar(true);
     }
 
     const onSearchValueChanged = (e) => {

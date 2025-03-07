@@ -73,7 +73,7 @@ export default function ImagePanel({panelIndex, panel, onImageClicked, editorMod
             <Row>
                 <Col xs={8} sm={9}>
                     <div className="pt-2">
-                        <Editor editorId={panelIndex} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} />
+                        <Editor editorId={panelIndex} showWriteIcon={true} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} />
                     </div>   
                 </Col>
                 <Col xs={4} sm={3} className="p-0">

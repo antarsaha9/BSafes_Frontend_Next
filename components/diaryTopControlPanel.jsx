@@ -1,4 +1,5 @@
 import { forwardRef, useRef, useEffect, useState } from 'react'
+import { useSelector } from 'react-redux';
 import { useRouter } from "next/router";
 
 import Row from 'react-bootstrap/Row'
@@ -10,6 +11,8 @@ import Form from 'react-bootstrap/Form';
 
 import ReactDatePicker from 'react-datepicker'
 
+import FeatureNotAvailableForDemoToast from "./featureNotAvailabeForDemoToast";
+
 import BSafesStyle from '../styles/BSafes.module.css'
 
 export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", startDate, setStartDate, showListIcon = false, showSearchIcon = false, handleSearch, onCoverClicked, onContentsClicked, onSubmitSearch=null, onCancelSearch=null }) {
@@ -18,6 +21,8 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
     const searchInputRef = useRef(null);
     const [showSearchBar, setShowSearchBar] = useState(false);
     const [searchValue, setSearchValue] = useState("");
+    const [showFeatureNotAvailableForDemoToast, setShowFeatureNotAvailableForDemoToast] = useState(false);
+    const workspace = useSelector(state=>state.container.workspace);
 
     // eslint-disable-next-line react/display-name
     const ExampleCustomInput = forwardRef(({ value, onClick }, ref) => (
@@ -30,7 +35,11 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
     } : {}
 
     const onShowSearchBarClicked = (e) => {
-        setShowSearchBar(true);
+        if(workspace && workspace.startsWith("d:")) {
+            setShowFeatureNotAvailableForDemoToast(true);
+        } else {
+            setShowSearchBar(true);
+        }
     }
 
     const onSearchValueChanged = (e) => {
@@ -57,6 +66,7 @@ export default function DiaryTopControlPanel({ datePickerViewMode = "dayMonth", 
 
     return (
         <>
+            <FeatureNotAvailableForDemoToast show={showFeatureNotAvailableForDemoToast} message="The Search feature is not available for demo!" handleClose={()=>{setShowFeatureNotAvailableForDemoToast(false)}}/>
             <Row>
                 <Col xs={12} sm={{ span: 10, offset: 1 }} lg={{ span: 8, offset: 2 }}>
                     <Card className={`${BSafesStyle.containerControlPanel}`}>

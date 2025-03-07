@@ -5,6 +5,8 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import jquery from "jquery"
 
@@ -20,11 +22,13 @@ import { rotateImage, downScaleImage } from '../lib/wnImage';
 
 import { newItemKey, putS3ObjectInServiceWorkerDB } from "../reduxStore/pageSlice";
 
-export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null }) {
+let Excalidraw = null;
+export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false }) {
     const debugOn = false;
     const dispatch = useDispatch();
 
     const editorRef = useRef(null);
+    const ExcalidrawRef = useRef(null);
     const [draftInterval, setDraftInterval] = useState(null);
     const [intervalState, setIntervalState] = useState(null);
     const froalaKey = useSelector(state => state.auth.froalaLicenseKey);
@@ -33,6 +37,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     const itemKey = useSelector(state => state.page.itemKey);
     const itemIV = useSelector(state => state.page.itemIV);
     const draft = useSelector(state => state.page.draft);
+    const contentType = useSelector(state => state.page.contentType) || 'WritingPage';
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
 
@@ -72,7 +77,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     toolbarButtons: fullOptions,
                     toolbarButtonsMD: fullOptions,
                     toolbarButtonsSM: fullOptions,
-                    toolbarButtonsXS: isMinimumOption?minimumOptions:fullOptions,
+                    toolbarButtonsXS: isMinimumOption ? minimumOptions : fullOptions,
                     fontFamily: {
                         'Arial,Helvetica,sans-serif': 'Arial',
                         "'Edu SA Beginner Variable', cursive": 'Edu SA Beginner',
@@ -124,6 +129,27 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
         if (writingModeReady) writingModeReady();
     }
 
+    const drawing = () => {
+        if (content && content?.metadata?.ExcalidrawSerializedJSON) {
+            const savedJSON = JSON.parse(content?.metadata?.ExcalidrawSerializedJSON);
+            const res = Excalidraw.restore(savedJSON);
+            function restoreExcalidraw(params) {
+                if (!ExcalidrawRef.current) {
+                    debugLog(debugOn, 'excalidrawApi not defined, rechecking');
+                    setTimeout(() => {
+                        restoreExcalidraw(params);
+                    }, 500);
+                } else {
+                    ExcalidrawRef.current.updateScene(res);
+                    ExcalidrawRef.current.scrollToContent();
+                }
+            }
+            setTimeout(() => {
+                restoreExcalidraw(res);
+            }, 500);
+        }
+    }
+
     const saving = () => {
         let content = $(editorRef.current).froalaEditor('html.get');
         debugLog(debugOn, "editor content: ", content);
@@ -154,7 +180,11 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                 readOnly();
                 break;
             case "Writing":
-                writing();
+                if (contentType === "WritingPage")
+                    writing();
+                else if (contentType === "DrawingPage")
+                    drawing();
+                break;
                 break;
             case "Saving":
                 saving();
@@ -180,6 +210,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             await ic.Codemirror;
             await ic.Photoswipe;
             await ic.Others;
+            Excalidraw = (await ic.Excalidraw)[0];
 
             setScriptsLoaded(true);
 
@@ -241,8 +272,8 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
         }
     }, [intervalState])
 
-    const handlePenClicked = () => {
-        onPenClicked(editorId);
+    const handlePenClicked = (purpose) => {
+        onPenClicked(editorId, purpose);
     }
 
     const bSafesPreflightHook = (fn) => {
@@ -435,10 +466,27 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                         <Row>
                             <Col xs={6}>
                                 {(editorId === 'title' && content === '<h2></h2>') && <h6 className='m-0 text-secondary'>Title</h6>}
-                                {(editorId === 'content' && content === null) && <h6 className='m-0 text-secondary'>Write</h6>}
+                                {(editorId === 'content' && content === null) && <h6 className='m-0 text-secondary'>Write {showDrawIcon ? `or Draw` : ``}</h6>}
                             </Col>
                             <Col xs={6}>
-                                <Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked}><i className="fa fa-pencil" aria-hidden="true"></i></Button>
+                                {showWriteIcon && <OverlayTrigger
+                                    placement="top"
+                                    delay={{ show: 250, hide: 400 }}
+                                    overlay={(props) => (
+                                        <Tooltip id="button-tooltip" {...props}>
+                                            Write
+                                        </Tooltip>
+                                    )}
+                                ><Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button></OverlayTrigger>}
+                                {showDrawIcon && <span className='pull-right mx-2'><OverlayTrigger
+                                    placement="top"
+                                    delay={{ show: 250, hide: 400 }}
+                                    overlay={(props) => (
+                                        <Tooltip id="button-tooltip" {...props}>
+                                            Draw
+                                        </Tooltip>
+                                    )}
+                                ><Button variant="link" className="text-dark p-0 mx-1" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> |</span>}
                                 {(editorId === 'content' && draft !== null) &&
                                     <ButtonGroup className='pull-right mx-3' size="sm">
                                         <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
@@ -451,10 +499,23 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                         ""
 
                     }
-                    {((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0))) &&
+                    {(contentType === 'WritingPage' && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
                         <Row className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
                             <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{ __html: content }} style={{ overflowX: 'auto' }}>
                             </div>
+                        </Row>
+                    }
+                    {
+                        contentType === 'DrawingPage' && editorId === 'content' &&
+                        <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '80vh' }}>
+                            {(mode == 'Writing' || mode === 'Saving') ?
+                                <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
+                                    ExcalidrawRef.current = excalidrawApi;
+                                }}
+                                />
+                                :
+                                content && <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />
+                            }
                         </Row>
                     }
                 </> : ""

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from 'next/router';
 
@@ -11,13 +11,14 @@ import ModalHeader from "react-bootstrap/ModalHeader";
 import ModalTitle from "react-bootstrap/ModalTitle";
 import ModalBody from "react-bootstrap/ModalBody";
 import ListGroup from "react-bootstrap/ListGroup";
-import Overlay from 'react-bootstrap/Overlay';
+
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from 'react-bootstrap/Tooltip';
 
 import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import FeatureNotAvailableForDemoToast from "./featureNotAvailabeForDemoToast";
 
 import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
@@ -25,9 +26,8 @@ import { getItemLink } from "../lib/bSafesCommonUI";
 export default function ItemTopRows() {
     const dispatch = useDispatch();
     const router = useRouter();
-    const tagTarget = useRef(null);
-    const [showTagTips, setShowTagTips] = useState(false);
 
+    const workspace = useSelector(state => state.container.workspace);
     const workspaceKey = useSelector(state => state.container.workspaceKey);
     const workspaceSearchKey = useSelector(state => state.container.searchKey);
     const workspaceSearchIV = useSelector(state => state.container.searchIV);
@@ -40,6 +40,8 @@ export default function ItemTopRows() {
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
     const [versionsHistoryModalOpened, setVersionsHistoryModalOpened] = useState(false);
+    const [showFeatureNotAvailableForDemoToast, setShowFeatureNotAvailableForDemoToast] = useState(false);
+    
     const handleChange = (tags) => {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
@@ -55,9 +57,13 @@ export default function ItemTopRows() {
     }
 
     const openVersionsHistoryModal = () => {
-        setVersionsHistoryModalOpened(true);
-        dispatch(clearItemVersions());
-        dispatch(getItemVersionsHistoryThunk({ page: 1 }));
+        if (!workspace.startsWith("d:")) {
+            setVersionsHistoryModalOpened(true);
+            dispatch(clearItemVersions());
+            dispatch(getItemVersionsHistoryThunk({ page: 1 }));
+        } else {
+            setShowFeatureNotAvailableForDemoToast(true);
+        }
     }
 
     const handleLinkChanged = (link) => {
@@ -95,7 +101,7 @@ export default function ItemTopRows() {
                         placement='top'
                         overlay={
                             <Tooltip id={`tooltip-top`}>
-                                <TagHelp/>
+                                <TagHelp />
                             </Tooltip>
                         }
                     ><Button variant="link" className="text-dark pull-right p-0"><i className="fa fa-question" aria-hidden="true"></i></Button></OverlayTrigger><label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
@@ -114,6 +120,7 @@ export default function ItemTopRows() {
                     <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
             </Row>}
+            <FeatureNotAvailableForDemoToast show={showFeatureNotAvailableForDemoToast} message="The Versions feature is not available for demo!" handleClose={()=>{setShowFeatureNotAvailableForDemoToast(false)}}/>
             <VersionsHistoryModal onLinkChanged={handleLinkChanged} versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
         </Container>
     )
@@ -199,7 +206,7 @@ function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedT
 function TagHelp() {
     return (
         <>
-            Add a tag & press the Return key ↵ on the keyboard. Select the green <i className="fa fa-check" aria-hidden="true"></i> after you add all tags.
+            Add a tag and press the Return key ↵ on the keyboard. After you add all tags, select the green <i className="fa fa-check" aria-hidden="true"></i>.
         </>
     )
 }
