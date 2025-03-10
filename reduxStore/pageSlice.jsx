@@ -1267,19 +1267,26 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                     }
                                     const timer = setInterval(() => {
                                         state = getState().page;
-                                        debugLog(debugOn, "Waiting for itemKey ...");
                                         if (state.itemKey) {
                                             resolve();
-                                            clearInterval(timer);
                                             return;
-                                        } else {
-                                            trials++;
-                                            if (trials > 100) {
-                                                reject('itemKey error!');
-                                                clearInterval(timer);
-                                            }
                                         }
-                                    }, 100)
+                                        const timer = setInterval(() => {
+                                            state = getState().page;
+                                            debugLog(debugOn, "Waiting for itemKey ...");
+                                            if (state.itemKey) {
+                                                resolve();
+                                                clearInterval(timer);
+                                                return;
+                                            } else {
+                                                trials++;
+                                                if (trials > 100) {
+                                                    reject('itemKey error!');
+                                                    clearInterval(timer);
+                                                }
+                                            }
+                                        }, 100)
+                                    })
 
                                 })
                             }
@@ -1333,6 +1340,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             } else {
                                 resolve();
                             }
+                            resolve();
                         } else {
                             if (data.navigationInSameContainer) {
                                 debugLog(debugOn, "setNavigationMode ...");
@@ -1384,39 +1392,39 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     }
                     const decryptADemoItem = async (item) => {
                         dispatch(dataFetched({ item }));
-                        function itemKeyReady() {
-                            return new Promise((resolve, reject) => {
-                                let trials = 0;
-                                state = getState().page;
-                                if (state.itemKey) {
-                                    resolve();
-                                    return;
-                                }
-                                const timer = setInterval(() => {
-                                    state = getState().page;
-                                    debugLog(debugOn, "Waiting for itemKey ...");
-                                    if (state.itemKey) {
-                                        resolve();
-                                        clearInterval(timer);
-                                        return;
-                                    } else {
-                                        trials++;
-                                        if (trials > 100) {
-                                            reject('itemKey error!');
-                                            clearInterval(timer);
-                                        }
-                                    }
-                                }, 100)
-
-                            })
-                        }
                         if (item.content && item.content.startsWith('s3Object/')) {
                             const s3Key = forge.util.decode64(item.content.substring(9));
                             const result = await getS3ObjectFromServiceWorkerDB(s3Key);
                             if (result.status === 'ok') {
                                 const downloadedBinaryString = result.object;
                                 debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
-
+                                
+                                function itemKeyReady() {
+                                    return new Promise((resolve, reject) => {
+                                        let trials = 0;
+                                        state = getState().page;
+                                        if (state.itemKey) {
+                                            resolve();
+                                            return;
+                                        }
+                                        const timer = setInterval(() => {
+                                            state = getState().page;
+                                            debugLog(debugOn, "Waiting for itemKey ...");
+                                            if (state.itemKey) {
+                                                resolve();
+                                                clearInterval(timer);
+                                                return;
+                                            } else {
+                                                trials++;
+                                                if (trials > 100) {
+                                                    reject('itemKey error!');
+                                                    clearInterval(timer);
+                                                }
+                                            }
+                                        }, 100)
+        
+                                    })
+                                }
                                 await itemKeyReady();
                                 const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                                 debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
@@ -2497,7 +2505,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL, s3ContentPrefix;
             state = getState().page;
             const workspace = getState().container.workspace;;
-            const result = await preProcessEditorContentBeforeSaving(content, state.contentType);
+            const result = preProcessEditorContentBeforeSaving(content);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
 

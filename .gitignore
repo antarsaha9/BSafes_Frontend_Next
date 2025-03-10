@@ -36,11 +36,6 @@ yarn-error.log*
 buildAndAddSri
 buildForIOSColors
 runForIOS
-runForWebColors
+runForWeb
 runForAndroidBSafes
 runForWebColors
-android/
-android-native/
-web/
-
-certificates
