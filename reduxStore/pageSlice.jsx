@@ -2505,7 +2505,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL, s3ContentPrefix;
             state = getState().page;
             const workspace = getState().container.workspace;;
-            const result = preProcessEditorContentBeforeSaving(content);
+            const result = await preProcessEditorContentBeforeSaving(content, state.contentType);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
 
