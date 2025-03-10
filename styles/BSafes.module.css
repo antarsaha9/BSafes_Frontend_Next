@@ -36,6 +36,14 @@
   z-index: 1000;
 }
 
+.screenBottomLeft {
+  position: fixed;
+  top: 95%;
+  left: 10%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+}
+
 .inputBox {
   height: 44px;
   border: 1px solid black;
@@ -307,6 +315,8 @@
 
 .containerControlPanel {
   background-color: black;
+  margin: auto;
+  max-width: 600px;
   min-height: 61px;
 }
 
@@ -339,8 +349,10 @@
 .diaryPanel,
 .boxPanel {
   position: relative;
+  max-width: 1024px;
   min-height: 600px;
   padding-bottom: 48px;
+  margin:auto
 }
 
 @media only screen and (min-width: 400px) {
@@ -546,7 +558,8 @@
 /*--****** Page *******/
 /*--***** Page general */
 .pagePanel {
-  background-color: rgb(255, 255, 255);
+  /*background-color:faf5f1*/
+  background-color: #fff;
   margin-top: 20px;
   margin-bottom: 20px;
   padding-left: 15px;
@@ -642,6 +655,34 @@
 /* End of MFA */
 
 /*--****** Home page ********/
+.appImage {
+  width: 96px;
+}
+
+@media only screen and (min-width: 400px) {
+  .appImage {
+    width: 120px;
+  }
+}
+
+@media only screen and (min-width: 560px) {
+  .appImage {
+    width: 160px;
+  }
+}
+
+@media only screen and (min-width: 992px) {
+  .appImage {
+    width: 200px;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  .appImage {
+    width: 240px;
+  }
+}
+
 .carouselRow {
   margin-top: -50px;
   padding-left: 0px;
@@ -760,14 +801,12 @@
 .ribbonBanner {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
 }
 
 @media only screen and (min-width: 768px) {
   .ribbonBanner {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -775,7 +814,6 @@
   .ribbonBanner {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -783,7 +821,6 @@
   .ribbonBanner {
     font-size: 26px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -794,22 +831,21 @@
   padding-right: calc(var(--r) + .25em);
   line-height: 1.8;
   clip-path: polygon(-100vw 0, calc(100% - var(--r)) 0, 100% 50%, calc(100% - var(--r)) 100%, -100vw 100%);
-  border-image: conic-gradient(#2a5fac 0 0) fill 0;
+  border-image: conic-gradient(rgb(255, 41, 159) 0 0) fill 0;
   width: fit-content;
+  color: white;
 }
 
 /* HTML: <div class="ribbon">Your text content</div> */
 .ribbonBannerRight {
   font-size: 20px;
   font-weight: bold;
-  color: #fff;
 }
 
 @media only screen and (min-width: 768px) {
   .ribbonBannerRight {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -817,7 +853,6 @@
   .ribbonBannerRight {
     font-size: 22px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -825,7 +860,6 @@
   .ribbonBannerRight {
     font-size: 26px;
     font-weight: bold;
-    color: #fff;
   }
 }
 
@@ -837,8 +871,9 @@
   padding-right: calc(var(--r) + .25em);
   line-height: 1.8;
   clip-path: polygon(-100vw 0, calc(100% - var(--r)) 0, 100% 50%, calc(100% - var(--r)) 100%, -100vw 100%);
-  border-image: conic-gradient(#ff5800 0 0) fill 0;
+  border-image: conic-gradient(yellow 0 0) fill 0;
   width: fit-content;
+  color: black;
 }
 
 .serviceIntroBackground {
@@ -1669,6 +1704,10 @@
   font-size: 2.6rem;
 }
 
+.bannerTextH3 {
+  font-size: 1.8rem;
+}
+
 .descriptionText {
   color: black;
   font-size: 1.1rem;
@@ -1678,7 +1717,9 @@
   .bannerTextH1 {
     font-size: 4rem;
   }
-
+  .bannerTextH3 {
+    font-size: 2.6rem;
+  }
   .descriptionText {
     font-size: 1.3rem;
   }

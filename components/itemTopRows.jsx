@@ -12,9 +12,13 @@ import ModalTitle from "react-bootstrap/ModalTitle";
 import ModalBody from "react-bootstrap/ModalBody";
 import ListGroup from "react-bootstrap/ListGroup";
 
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from 'react-bootstrap/Tooltip';
+
 import TagsInput from 'react-tagsinput-special'
 
 import BSafesStyle from '../styles/BSafes.module.css'
+import FeatureNotAvailableForDemoToast from "./featureNotAvailabeForDemoToast";
 
 import { clearItemVersions, getItemVersionsHistoryThunk, saveTagsThunk } from "../reduxStore/pageSlice";
 
@@ -23,19 +27,21 @@ export default function ItemTopRows() {
     const dispatch = useDispatch();
     const router = useRouter();
 
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
+    const workspace = useSelector(state => state.container.workspace);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector(state => state.container.searchKey);
+    const workspaceSearchIV = useSelector(state => state.container.searchIV);
 
-    const oldVersion = useSelector(state=>state.page.oldVersion);
-    const activity = useSelector( state => state.page.activity);
+    const oldVersion = useSelector(state => state.page.oldVersion);
+    const activity = useSelector(state => state.page.activity);
     const tagsState = useSelector(state => state.page.tags);
-    const itemCopy  = useSelector( state => state.page.itemCopy);
+    const itemCopy = useSelector(state => state.page.itemCopy);
 
     const [tags, setTags] = useState([]);
     const [showTagsConfirmButton, setShowTagsConfirmButton] = useState(false);
     const [versionsHistoryModalOpened, setVersionsHistoryModalOpened] = useState(false);
-
+    const [showFeatureNotAvailableForDemoToast, setShowFeatureNotAvailableForDemoToast] = useState(false);
+    
     const handleChange = (tags) => {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
@@ -51,9 +57,13 @@ export default function ItemTopRows() {
     }
 
     const openVersionsHistoryModal = () => {
-        setVersionsHistoryModalOpened(true);
-        dispatch(clearItemVersions());
-        dispatch(getItemVersionsHistoryThunk({page:1}));
+        if (!workspace.startsWith("d:")) {
+            setVersionsHistoryModalOpened(true);
+            dispatch(clearItemVersions());
+            dispatch(getItemVersionsHistoryThunk({ page: 1 }));
+        } else {
+            setShowFeatureNotAvailableForDemoToast(true);
+        }
     }
 
     const handleLinkChanged = (link) => {
@@ -61,15 +71,15 @@ export default function ItemTopRows() {
         setVersionsHistoryModalOpened(false);
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         setTags(tagsState);
     }, [tagsState])
 
     useEffect(() => {
-        if(activity === 0) {
+        if (activity === 0) {
             if (showTagsConfirmButton) setShowTagsConfirmButton(false);
-        } 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
     return (
@@ -78,20 +88,27 @@ export default function ItemTopRows() {
                 <Col>
                     <div className="pull-right">
                         <span>{itemCopy && `v.${itemCopy.version}`}</span><Button variant="link" className="text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
-                        { false && <Button variant="link" className="text-dark" >
-		        		    <i className="fa fa-share-square-o" aria-hidden="true"></i>
-		        	    </Button>}
+                        {false && <Button variant="link" className="text-dark" >
+                            <i className="fa fa-share-square-o" aria-hidden="true"></i>
+                        </Button>}
                     </div>
-                </Col>     
+                </Col>
             </Row>
 
             <Row>
-                <Col xs="1" className="px-0">
-                    <label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
+                <Col xs="2" sm="1" className="px-0">
+                    <OverlayTrigger
+                        placement='top'
+                        overlay={
+                            <Tooltip id={`tooltip-top`}>
+                                <TagHelp />
+                            </Tooltip>
+                        }
+                    ><Button variant="link" className="text-dark pull-right p-0"><i className="fa fa-question" aria-hidden="true"></i></Button></OverlayTrigger><label className="pull-right py-2"><span><i className="fa fa-tags fa-lg" aria-hidden="true"></i></span></label>
                 </Col>
                 <Col xs="10">
-                    {oldVersion?
-                        <TagsInput value={tags} onChange={handleChange} disabled/>
+                    {oldVersion ?
+                        <TagsInput value={tags} onChange={handleChange} disabled />
                         :
                         <TagsInput value={tags} onChange={handleChange} />
                     }
@@ -103,6 +120,7 @@ export default function ItemTopRows() {
                     <Button variant="link" className="pull-right" onClick={handleSave}><i className={`fa fa-check fa-lg ${BSafesStyle.greenText}`} aria-hidden="true"></i></Button>
                 </Col>
             </Row>}
+            <FeatureNotAvailableForDemoToast show={showFeatureNotAvailableForDemoToast} message="The Versions feature is not available for demo!" handleClose={()=>{setShowFeatureNotAvailableForDemoToast(false)}}/>
             <VersionsHistoryModal onLinkChanged={handleLinkChanged} versionsHistoryModalOpened={versionsHistoryModalOpened} closeVersionsHistoryModal={() => setVersionsHistoryModalOpened(false)} />
         </Container>
     )
@@ -111,22 +129,22 @@ export default function ItemTopRows() {
 function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, closeVersionsHistoryModal }) {
 
     const dispatch = useDispatch();
-    
+
     const itemVersions = useSelector(state => state.page.itemVersions);
     const totalVersions = useSelector(state => state.page.totalVersions);
     const versionsPageNumber = useSelector(state => state.page.versionsPageNumber);
     const versionsPerPage = useSelector(state => state.page.versionsPerPage);
-    
+
     const handleMore = (e) => {
-        dispatch(getItemVersionsHistoryThunk({page:versionsPageNumber+1}));
+        dispatch(getItemVersionsHistoryThunk({ page: versionsPageNumber + 1 }));
     }
-    
+
     const handleVersionSelected = (link) => {
         onLinkChanged(link);
     }
 
-    const itemVersionCards = itemVersions.map((itemVersion, index) => 
-        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index===0}/>
+    const itemVersionCards = itemVersions.map((itemVersion, index) =>
+        <ItemVersionCard key={index} onVersionSelected={handleVersionSelected} id={itemVersion.id} container={itemVersion.container} updatedBy={itemVersion.updatedBy} updatedTime={itemVersion.updatedTime} updatedText={itemVersion.updatedText} updatedTimeStamp={itemVersion.updatedTimeStamp} version={itemVersion.version} latestVersion={index === 0} />
     )
 
     return (
@@ -139,7 +157,7 @@ function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, close
             </ModalHeader>
             <ModalBody>
                 {itemVersionCards}
-                { totalVersions> (versionsPageNumber*versionsPerPage) &&
+                {totalVersions > (versionsPageNumber * versionsPerPage) &&
                     <div className='text-center'>
                         <Button variant="link" className='text-center' size="sm" onClick={handleMore}>
                             More
@@ -151,16 +169,16 @@ function VersionsHistoryModal({ onLinkChanged, versionsHistoryModalOpened, close
     )
 }
 
-function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion}) {
-    
-    const item = {id, container};
-    
+function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedTime, updatedText, updatedTimeStamp, version, latestVersion }) {
+
+    const item = { id, container };
+
     let link = getItemLink(item);
-    if(!latestVersion) {
+    if (!latestVersion) {
         link += `?version=${version}`;
     }
-    const rowClicked = () => {    
-        onVersionSelected(link);   
+    const rowClicked = () => {
+        onVersionSelected(link);
     }
 
     return (
@@ -182,5 +200,13 @@ function ItemVersionCard({ onVersionSelected, id, container, updatedBy, updatedT
                 <Col xs={12}><p className="pull-right">{updatedTimeStamp}</p></Col>
             </Row>
         </ListGroup.Item>
+    )
+}
+
+function TagHelp() {
+    return (
+        <>
+            Add a tag and press the Return key ↵ on the keyboard. After you add all tags, select the green <i className="fa fa-check" aria-hidden="true"></i>.
+        </>
     )
 }

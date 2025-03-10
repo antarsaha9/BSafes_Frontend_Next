@@ -43,6 +43,7 @@ export default function Mission() {
             <Container className={monteserrat.className} style={{color: 'black' }}>
                 <br />
                 <Image className={BSafesStyle.featureCardNormalImage} style={{width:"30%"}} src='/images/dataProtection_small.png'></Image>
+                <img className='mx-auto d-block' src="/images/logo_small.png" />
                 <br/>
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
@@ -52,9 +53,12 @@ export default function Mission() {
                 <br />
                 <Row className={BSafesStyle.descriptionRow}>
                     <Col xs={12} md={{span:10, offset:1}} xl={{span:8, offset:2}}>
-                        <p>{`At our core, we believe that privacy is a fundamental human right. That's why we are fully committed to safeguarding your data privacy and security while ensuring that you remain productive. You can rest assured that your information is in good hands with us.`}</p>
+                        <p>{`At our core, we believe that privacy is a fundamental human right. That's why we are fully committed to safeguarding your data privacy and security with end-to-end encryption while ensuring you remain productive. You can rest assured that your information is in good hands with us.`}</p>
                     </Col>
                 </Row>
+                <br/>
+                <br/>
+                <br/>
             </Container>
             <Footer />
             <br/>

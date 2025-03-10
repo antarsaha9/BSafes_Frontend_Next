@@ -69,7 +69,7 @@ export default function Payment() {
     }
 
     debugLog(debugOn, "dues", dues)
-    const dueItems = dues && (dues.length !== 0) && dues.reverse().map((item, i) =>
+    let dueItems = dues && (dues.length !== 0) && JSON.parse(JSON.stringify(dues)).reverse().map((item, i) =>
         <tr key={i}>
             <td>{format(new Date(item.dueTime), 'MM/dd/yyyy')}</td>
             <td>{item.monthlyInvoice.requiredStorage}</td>
@@ -94,7 +94,7 @@ export default function Payment() {
         setPlan(e.target.value);
     }
 
-    const handleCheckout = (e) => {    
+    const handleCheckout = (e) => {
         dispatch(setCheckoutPlan(plan));
         router.push('/services/checkout');
     }
@@ -104,8 +104,32 @@ export default function Payment() {
         router.push('/services/checkout');
     }
 
+    const fixTransactionWebCallFromAndroid = (data) => {
+        debugLog(debugOn, 'transactionWebCall');
+        if (data.status === 'ok') {
+            let purchase = JSON.parse(data.purchase);
+            debugLog(debugOn, 'purchase: ', purchase);
+            savePendingAndroidPurchase(purchase);
+        } else if (data.status === 'canceled') {
+            router.push('/services/payment')
+        } else if (data.status == 'error') {
+            router.push('/services/payment')
+        }
+        dispatch(activityDone(accountActivity.AndroidInAppPurchase))
+    }
+
     useEffect(() => {
         if (isLoggedIn) {
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (window.Android) {
+                    debugLog(debugOn, "Check pending purchase ...")
+                    const pendingPurchase = window.Android.checkPendingPurchase();
+                    debugLog(debugOn, pendingPurchase)
+                    if (pendingPurchase !== 'null') {
+                        return;
+                    }
+                }
+            }
             dispatch(setCheckoutPlan(null));
             dispatch(getInvoiceThunk());
             dispatch(getTransactionsThunk());
@@ -207,31 +231,33 @@ export default function Payment() {
 
                 </>}
                 <br />
-                <Row>
-                    <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
-                        <h1>Transaction History</h1>
-                        <Table>
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Amount</th>
-                                    <th>Plan</th>
-                                    <th>Paid Dues</th>
-                                </tr>
-                            </thead>
-                            {(transactions.length !== 0) &&
-                                <tbody>
-                                    {
-                                        transactionItems
-                                    }
-                                </tbody>
+                {process.env.NEXT_PUBLIC_platform !== 'iOS' && process.env.NEXT_PUBLIC_platform !== 'android' &&
+                    <Row>
+                        <Col xs={{ span: 12, offset: 0 }} md={{ span: 8, offset: 2 }} style={{ border: 'solid', paddingTop: '12px', backgroundColor: '#EAEDED', overflow: 'auto' }}>
+                            <h1>Transaction History</h1>
+                            <Table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Plan</th>
+                                        <th>Paid Dues</th>
+                                    </tr>
+                                </thead>
+                                {(transactions.length !== 0) &&
+                                    <tbody>
+                                        {
+                                            transactionItems
+                                        }
+                                    </tbody>
+                                }
+                            </Table>
+                            {(transactions.length === 0) &&
+                                <p>Empty</p>
                             }
-                        </Table>
-                        {(transactions.length === 0) &&
-                            <p>Empty</p>
-                        }
-                    </Col>
-                </Row>
+                        </Col>
+                    </Row>
+                }
                 <br />
             </Container>
         </ContentPageLayout >

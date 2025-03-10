@@ -33,6 +33,11 @@ const v1AccountSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetV1AccountActivity: (state, action) => {
+            state.activity = 0,
+            state.activityErrors = 0,
+            state.activityErrorCodes = { };
+        },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
             state.activityErrorMessages[action.payload]='';
@@ -67,7 +72,7 @@ const v1AccountSlice = createSlice({
     }
 });
 
-export const { cleanV1AccountSlice, activityStart, activityDone, activityError, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
+export const { cleanV1AccountSlice, resetV1AccountActivity, activityStart, activityDone, activityError, nicknameResolved, setNextAuthStep, setKeyMeta, signedOut } = v1AccountSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));

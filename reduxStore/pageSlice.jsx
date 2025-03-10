@@ -3,17 +3,19 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 const DOMPurify = require('dompurify');
 
-import { generateNewItemKey, setNavigationInSameContainer } from './containerSlice';
+import { setNavigationInSameContainer } from './containerSlice';
 
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
-import { decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
+import { generateNewItemKey, decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig } from '../lib/bSafesCommonUI';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
+import { isDemoMode } from '../lib/demoHelper';
+import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable, writeDataToServiceWorkerDB } from '../lib/serviceWorkerDBHelper';
 const embeddJSONSeperator = '=#=#=embeddJSON=';
 
-const MAX_NUMBER_OF_MEDIA_FILES = 20;
+const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
 
 const initialState = {
@@ -60,6 +62,7 @@ const initialState = {
     imageDownloadIndex: 0,
     chunkSize: 10 * 1024 * 1024,
     attachmentPanels: [],
+    attachmentPanelSelectedForDownload: null,
     attachmentsUploadQueue: [],
     attachmentsUploadIndex: 0,
     attachmentsDownloadQueue: [],
@@ -77,24 +80,20 @@ const initialState = {
     draft: null,
     draftLoaded: false,
     originalContent: null,
-    pageType: ''
+    contentType: '',
 }
 
 const dataFetchedFunc = (state, action) => {
     const item = action.payload.item;
-
     state.itemCopy = item;
-
     state.id = item.id;
-
     if (state.id.startsWith('np')) {
         state.pageNumber = parseInt(state.id.split(':').pop())
     }
-
     state.space = item.space;
     state.container = item.container;
     state.position = item.position;
-    state.pageType = item.pageType;
+    state.contentType = item.contentType;
 }
 
 function findMediasInContent(state, content) {
@@ -291,6 +290,27 @@ const pageSlice = createSlice({
                 state[key] = initialState[key];
             }
         },
+        resetPageActivity: (state, action) => {
+            state.activity = 0,
+                state.activityErrors = 0,
+                state.activityErrorCodes = {};
+        },
+        activityStart: (state, action) => {
+            if (state.aborted) return;
+            state.activityErrors &= ~action.payload;
+            state.activityErrorMessages[action.payload] = '';
+            state.activity |= action.payload;
+        },
+        activityDone: (state, action) => {
+            if (state.aborted) return;
+            state.activity &= ~action.payload;
+        },
+        activityError: (state, action) => {
+            if (state.aborted) return;
+            state.activity &= ~action.payload.type;
+            state.activityErrors |= action.payload.type;
+            state.activityErrorMessages[action.payload.type] = action.payload.error;
+        },
         clearPage: (state, action) => {
             const stateKeys = Object.keys(initialState);
             for (let i = 0; i < stateKeys.length; i++) {
@@ -308,22 +328,6 @@ const pageSlice = createSlice({
         abort: (state, action) => {
             state.aborted = true;
             debugLog(debugOn, "abort: ", state.aborted);
-        },
-        activityStart: (state, action) => {
-            if (state.aborted) return;
-            state.activityErrors &= ~action.payload;
-            state.activityErrorMessages[action.payload] = '';
-            state.activity |= action.payload;
-        },
-        activityDone: (state, action) => {
-            if (state.aborted) return;
-            state.activity &= ~action.payload;
-        },
-        activityError: (state, action) => {
-            if (state.aborted) return;
-            state.activity &= ~action.payload.type;
-            state.activityErrors |= action.payload.type;
-            state.activityErrorMessages[action.payload.type] = action.payload.error;
         },
         setIOSActivity: (state, action) => {
             state.iOSActivity = action.payload;
@@ -743,7 +747,6 @@ const pageSlice = createSlice({
             panel.status = "UploadFailed";
         },
         addDownloadAttachment: (state, action) => {
-            ``
             if (state.aborted) return;
             state.attachmentsDownloadQueue.push(action.payload);
             let panel = state.attachmentPanels.find((item) => item.queueId === action.payload.queueId);
@@ -755,6 +758,9 @@ const pageSlice = createSlice({
             let panel = state.attachmentPanels.find((item) => item.queueId === state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].queueId);
             panel.status = "Downloading";
             panel.progress = action.payload.progress;
+        },
+        setAttachmentSelectedForDownload: (state, action) => {
+            state.attachmentPanelSelectedForDownload = action.payload;
         },
         setXHR: (state, action) => {
             state.xhr = action.payload.xhr;
@@ -845,13 +851,13 @@ const pageSlice = createSlice({
             state.contentVideosDownloadQueue = 0;
             findMediasInContent(state, state.content);
         },
-        setPageType: (state, action) => {
-            state.pageType = action.payload;
-        }
+        setContentType: (state, action) => {
+            state.contentType = action.payload;
+        },
     }
 })
 
-export const { cleanPageSlice, clearPage, initPage, activityStart, activityDone, activityError, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setPageType } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setContentType } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -911,44 +917,190 @@ const XHRDownload = (itemId, dispatch, signedURL, downloadingFunction, baseProgr
     });
 }
 
+const addADemoItemToServiceWorkerDB = async (workspace, workspaceKey, searchKey, searchIV, itemId) => {
+    const itemType = itemId.split(":")[0].toUpperCase();
+    let titleStr = null;
+    let isContainer = false;
+    switch (itemType) {
+        case "P":
+            titleStr = "Demo Page";
+            break;
+        case "N":
+            titleStr = "Demo Notebook";
+            isContainer = true;
+            break;
+        case "D":
+            titleStr = "Demo Diary";
+            isContainer = true;
+            break;
+        default:
+    }
+    let title = '<h2>' + titleStr + '</h2>';
+    const encodedTitle = forge.util.encodeUtf8(title);
+    const itemKey = generateNewItemKey();
+    const keyEnvelope = forge.util.encode64(encryptBinaryString(itemKey, workspaceKey));
+    const encryptedTitle = forge.util.encode64(encryptBinaryString(encodedTitle, itemKey));
+    const createdTime = Date.now();
+    const owner = workspace.split(":")[1];
+    const currentKeyVersion = 3;
+    const id = itemId;
+    const container = workspace;
+    const displayName = "Demo";
+    let titleTokens = JSON.stringify(stringToEncryptedTokensCBC(titleStr, searchKey, searchIV));
+    const item = {
+        id,
+        title: encryptedTitle,
+        titleTokens,
+        version: 1,
+        owner,
+        displayName,
+        createdTime,
+        updatedBy: owner,
+        update: "creation",
+        keyVersion: currentKeyVersion,
+        keyEnvelope,
+        type: itemType,
+        space: workspace,
+        container,
+        position: createdTime,
+        videos: [],
+        images: [],
+        attachments: ["Zero"],
+        usage: {
+            totalItemSize: 0,
+            dbSize: 0,
+            addedSize: 0,
+            accumulatedContentObjects: {
+                "Zero": "Zero"
+            },
+            accumulatedS3ObjectsInContent: {
+                "Zero": "Zero"
+            },
+            accumulatedAttachments: {
+                "Zero": "Zero"
+            },
+            accumulatedGalleryImages: {
+                "Zero": "Zero"
+            }
+        }
+    }
+    if (isContainer) {
+        item.totalItemVersions = 0;
+        item.totalStorage = 0;
+    }
+    const params = {
+        table: 'itemVersions',
+        key: itemId,
+        data: item
+    }
+    const result = await writeDataToServiceWorkerDBTable(params);
+    if (result.status === 'ok') {
+        return item;
+    } else {
+        return null;
+    }
+}
+
+const prepareADemoPageItem = (workspace, type, data) => {
+    const createdTime = Date.now();
+    const owner = workspace.split(":")[1];
+    const currentKeyVersion = 3;
+    const id = data.itemId;
+    const displayName = "Demo";
+    const itemTemplate = {
+        id,
+        version: 1,
+        owner,
+        displayName,
+        createdTime,
+        updatedBy: owner,
+        update: "creation",
+        keyVersion: currentKeyVersion,
+        type,
+        position: createdTime,
+        videos: [],
+        images: [],
+        attachments: ["Zero"],
+        usage: {
+            totalItemSize: 0,
+            dbSize: 0,
+            addedSize: 0,
+            accumulatedContentObjects: {
+                "Zero": "Zero"
+            },
+            accumulatedS3ObjectsInContent: {
+                "Zero": "Zero"
+            },
+            accumulatedAttachments: {
+                "Zero": "Zero"
+            },
+            accumulatedGalleryImages: {
+                "Zero": "Zero"
+            }
+        }
+    }
+    const item = {
+        ...itemTemplate,
+        ...data
+    }
+    return item;
+}
+
+const getDemoItemFromServiceWorkerDB = (itemId) => {
+    const params = {
+        table: 'itemVersions',
+        key: itemId
+    }
+    return readDataFromServiceWorkerDBTable(params);
+}
+
+const getS3ObjectFromServiceWorkerDB = (s3Key) => {
+    const params = {
+        table: 's3Objects',
+        key: s3Key
+    }
+    return readDataFromServiceWorkerDBTable(params);
+}
+
 const startDownloadingContentImages = async (itemId, dispatch, getState) => {
     let state = getState().page;
+    const workspace = getState().container.workspace;
     dispatch(setContentImagesAllDownloaded(false));
     const downloadAnImage = (image) => {
-
         return new Promise(async (resolve, reject) => {
             const s3Key = image.s3Key;
-
+            let downloadedBinaryString, decryptedImageStr;
             try {
-                dispatch(downloadingContentImage({ itemId, progress: 5 }));
-                const signedURL = await preS3Download(state.id, s3Key, dispatch);
-                dispatch(downloadingContentImage({ itemId, progress: 10 }));
-
-                const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
-                debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
-
-                if (itemId !== state.activeRequest) {
-                    debugLog(debugOn, "Aborted!");
-                    reject("Aborted")
-                    return;
-                };
-
-                let decryptedImageStr
-
-                const buffer = Buffer.from(response, 'binary');
-                const downloadedBinaryString = buffer.toString('binary');
+                if (!workspace.startsWith("d:")) {
+                    dispatch(downloadingContentImage({ itemId, progress: 5 }));
+                    const signedURL = await preS3Download(state.id, s3Key, dispatch);
+                    dispatch(downloadingContentImage({ itemId, progress: 10 }));
+                    const response = await XHRDownload(itemId, dispatch, signedURL, downloadingContentImage);
+                    debugLog(debugOn, "downloadAnContentImage completed. Length: ", response.byteLength);
+                    if (itemId !== state.activeRequest) {
+                        debugLog(debugOn, "Aborted!");
+                        reject("Aborted")
+                        return;
+                    };
+                    const buffer = Buffer.from(response, 'binary');
+                    downloadedBinaryString = buffer.toString('binary');
+                } else {
+                    const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                    if (result.status === 'ok') {
+                        downloadedBinaryString = result.object;
+                    } else {
+                        throw new Error("Failed to read an image data from service worker DB!");
+                    }
+                }
                 debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                 decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                 debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
-
                 const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decryptedImageStr);
                 const link = window.URL.createObjectURL(new Blob([decryptedImageDataInUint8Array]), {
                     type: 'image/*'
                 });
-
                 dispatch(contentImageDownloaded({ itemId, link }));
                 resolve();
-
             } catch (error) {
                 debugLog(debugOn, 'downloadFromS3 error: ', error);
                 dispatch(contentImageDownloadFailed({ itemId, link: null }));
@@ -1008,6 +1160,23 @@ function getItemPath(id, dispatch, getState) {
     });
 }
 
+export const putS3ObjectInServiceWorkerDB = (s3Key, data, onProgress) => {
+    return new Promise(async (resolve, reject) => {
+        let params = {
+            table: 's3Objects',
+            key: s3Key,
+            data
+        }
+        let result = await writeDataToServiceWorkerDBTable(params);
+        if (result.status === 'ok') {
+            resolve(result);
+            onProgress({ lengthComputable: true, total: 100, loaded: 100 });
+        } else {
+            reject();
+        }
+    });
+}
+
 export const getPageItemThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.GetPageItem, () => {
 
@@ -1022,12 +1191,29 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 itemIdParts.pop();
                 containerId = itemIdParts.join(':');
                 containerId = containerId.replace('p:', ':');
-                debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
-                PostCall({
-                    api: '/memberAPI/getPageItem',
-                    body: { itemId: containerId },
-                    dispatch
-                }).then(result => {
+                if (!isDemoMode()) {
+                    debugLog(debugOn, "/memberAPI/getPageItem: ", containerId);
+                    PostCall({
+                        api: '/memberAPI/getPageItem',
+                        body: { itemId: containerId },
+                        dispatch
+                    }).then(result => {
+                        if (result.status === 'ok') {
+                            debugLog(debugOn, "getContainerData: ", result);
+                            if (result.item) {
+                                resolve(result.item);
+                            } else {
+                                debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                                reject("Failed to get the container data.");
+                            }
+                        } else {
+                            debugLog(debugOn, "woo... failed to get the container data!", data.error);
+                            reject("Failed to get the container data.");
+                        }
+                    });
+                } else {
+                    debugLog(debugOn, "getDemoItemFromServiceWorkerDB: ", containerId);
+                    const result = await getDemoItemFromServiceWorkerDB(containerId);
                     if (result.status === 'ok') {
                         debugLog(debugOn, "getContainerData: ", result);
                         if (result.item) {
@@ -1040,26 +1226,155 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         debugLog(debugOn, "woo... failed to get the container data!", data.error);
                         reject("Failed to get the container data.");
                     }
-                });
+                }
             });
         }
 
         return new Promise(async (resolve, reject) => {
             let state;
             dispatch(setActiveRequest(data.itemId));
-            debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
 
             const payload = { itemId: data.itemId };
             if (data.version) {
                 payload.oldVersion = data.version;
                 dispatch(setOldVersion());
             }
-            PostCall({
-                api: '/memberAPI/getPageItem',
-                body: payload,
-                dispatch
-            }).then(async result => {
-                debugLog(debugOn, result);
+
+            if (!isDemoMode()) {
+                debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
+                PostCall({
+                    api: '/memberAPI/getPageItem',
+                    body: payload,
+                    dispatch
+                }).then(async result => {
+                    debugLog(debugOn, result);
+                    state = getState().page;
+                    if (result.status === 'ok') {
+                        if (data.itemId !== state.activeRequest) {
+                            debugLog(debugOn, "Aborted");
+                            reject("Aborted");
+                            return;
+                        }
+                        if (result.item) {
+                            dispatch(dataFetched({ item: result.item }));
+                            function itemKeyReady() {
+                                return new Promise((resolve, reject) => {
+                                    let trials = 0;
+                                    state = getState().page;
+                                    if (state.itemKey) {
+                                        resolve();
+                                        return;
+                                    }
+                                    const timer = setInterval(() => {
+                                        state = getState().page;
+                                        debugLog(debugOn, "Waiting for itemKey ...");
+                                        if (state.itemKey) {
+                                            resolve();
+                                            clearInterval(timer);
+                                            return;
+                                        } else {
+                                            trials++;
+                                            if (trials > 100) {
+                                                reject('itemKey error!');
+                                                clearInterval(timer);
+                                            }
+                                        }
+                                    }, 100)
+
+                                })
+                            }
+                            if (result.item.content && result.item.content.startsWith('s3Object/')) {
+                                const signedContentUrl = result.item.signedContentUrl;
+                                const response = await XHRDownload(null, dispatch, signedContentUrl, null);
+
+                                const buffer = Buffer.from(response, 'binary');
+                                const downloadedBinaryString = buffer.toString('binary');
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+
+                                await itemKeyReady();
+                                const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
+
+                                state = getState().page;
+                                startDownloadingContentImages(data.itemId, dispatch, getState);
+
+                                resolve();
+                            } else if (result.item.content.startsWith('s3DrawingObject/')){
+                                const signedContentUrl = await preS3Download(state.id, forge.util.decode64(result.item.content.split('s3DrawingObject/').pop()), dispatch);
+                                const response = await XHRDownload(null, dispatch, signedContentUrl, null);
+    
+                                const buffer = Buffer.from(response, 'binary');
+                                const downloadedBinaryString = buffer.toString('binary');
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+    
+                                await itemKeyReady();
+                                const decryptedContent = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const [decryptedImageStr, embeddJSON] = decryptedContent.split(embeddJSONSeperator);
+                                const decodedContent = (forge.util.decodeUtf8(decryptedImageStr));
+    
+    
+                                const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decodedContent);
+                                const blob = new Blob([decryptedImageDataInUint8Array], {
+                                    type: 'image/*'
+                                });
+                                const link = window.URL.createObjectURL(blob);
+                                blob.src = link;
+                                blob.metadata = {
+                                    ExcalidrawExportedImage:true,
+                                    ExcalidrawSerializedJSON:embeddJSON
+                                };
+    
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
+    
+                                resolve();
+                            } else {
+                                resolve();
+                            }
+                        } else {
+                            if (data.navigationInSameContainer) {
+                                debugLog(debugOn, "setNavigationMode ...");
+                                dispatch(setNavigationMode(true));
+                                dispatch(setNavigationInSameContainer(false));
+                                resolve();
+                                return;
+                            }
+                            if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
+                                try {
+                                    const container = await getContainerData(data.itemId);
+                                    state = getState().page;
+                                    if (data.itemId === state.activeRequest) {
+                                        dispatch(containerDataFetched({ itemId: data.itemId, container }));
+                                        resolve();
+                                    } else {
+                                        reject("Aborted");
+                                    }
+                                } catch (error) {
+                                    reject("Failed to get the container data!");
+                                }
+                            } else {
+                                reject("Failed to get a page item!!!");
+                            }
+                        }
+                        const draftId = 'Draft-' + data.itemId;
+                        const draft = localStorage.getItem(draftId);
+                        if (draft) {
+                            dispatch(setDraft(draft));
+                        }
+
+                    } else {
+                        debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
+                        reject("Failed to get a page item.");
+                    }
+                }).catch(error => {
+                    debugLog(debugOn, "woo... failed to get a page item:", error)
+                    reject("Failed to get a page item.");
+                })
+                await getItemPath(data.itemId, dispatch, getState);
+            } else {
+                const result = await getDemoItemFromServiceWorkerDB(data.itemId);
                 state = getState().page;
                 if (result.status === 'ok') {
                     if (data.itemId !== state.activeRequest) {
@@ -1067,8 +1382,8 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         reject("Aborted");
                         return;
                     }
-                    if (result.item) {
-                        dispatch(dataFetched({ item: result.item }));
+                    const decryptADemoItem = async (item) => {
+                        dispatch(dataFetched({ item }));
                         function itemKeyReady() {
                             return new Promise((resolve, reject) => {
                                 let trials = 0;
@@ -1095,80 +1410,66 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
                             })
                         }
+                        if (item.content && item.content.startsWith('s3Object/')) {
+                            const s3Key = forge.util.decode64(item.content.substring(9));
+                            const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            if (result.status === 'ok') {
+                                const downloadedBinaryString = result.object;
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
 
-                        if (result.item.content && result.item.content.startsWith('s3Object/')) {
-                            const signedContentUrl = result.item.signedContentUrl;
-                            const response = await XHRDownload(null, dispatch, signedContentUrl, null);
+                                await itemKeyReady();
+                                const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
 
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
-
-                            await itemKeyReady();
-                            const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
-                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                            const decodedContent = DOMPurify.sanitize(forge.util.decodeUtf8(decryptedContent));
-                            dispatch(contentDecrypted({ item: { id: data.itemId, content: decodedContent } }));
-
-                            state = getState().page;
-                            startDownloadingContentImages(data.itemId, dispatch, getState);
-
-                            resolve();
-                        } else if (result.item.content.startsWith('s3DrawingObject/')){
-                            const signedContentUrl = await preS3Download(state.id, forge.util.decode64(result.item.content.split('s3DrawingObject/').pop()), dispatch);
-                            const response = await XHRDownload(null, dispatch, signedContentUrl, null);
-                            
-                            const buffer = Buffer.from(response, 'binary');
-                            const downloadedBinaryString = buffer.toString('binary');
-                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
-
-                            await itemKeyReady();
-                            const decryptedContent = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
-                            debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                            const [decryptedImageStr, embeddJSON] = decryptedContent.split(embeddJSONSeperator);
-                            const decodedContent = (forge.util.decodeUtf8(decryptedImageStr));
-
-
-                            const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decodedContent);
-                            const blob = new Blob([decryptedImageDataInUint8Array], {
-                                type: 'image/*'
-                            });
-                            const link = window.URL.createObjectURL(blob);
-                            blob.src = link;
-                            blob.metadata = {
-                                ExcalidrawExportedImage:true,
-                                ExcalidrawSerializedJSON:embeddJSON
-                            };
-
-                            dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
-
-                            resolve();
-                        } else {
-                            resolve();
-                        }
-                    } else {
-                        if (data.navigationInSameContainer) {
-                            debugLog(debugOn, "setNavigationMode ...");
-                            dispatch(setNavigationMode(true));
-                            dispatch(setNavigationInSameContainer(false));
-                            resolve();
-                            return;
-                        }
-                        if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
-                            try {
-                                const container = await getContainerData(data.itemId);
                                 state = getState().page;
-                                if (data.itemId === state.activeRequest) {
-                                    dispatch(containerDataFetched({ itemId: data.itemId, container }));
-                                    resolve();
-                                } else {
-                                    reject("Aborted");
-                                }
-                            } catch (error) {
-                                reject("Failed to get the container data!");
+                                startDownloadingContentImages(data.itemId, dispatch, getState);
                             }
+                            resolve();
                         } else {
-                            reject("Failed to get a page item!!!");
+                            resolve();
+                        }
+                    }
+
+                    if (result.item) {
+                        const item = result.item;
+                        await decryptADemoItem(item);
+                    } else {
+                        if (data.itemId.startsWith('p:') || data.itemId.startsWith('n:') || data.itemId.startsWith('d:')) {
+                            const workspace = getState().container.workspace;
+                            const workspaceKey = getState().container.workspaceKey;
+                            const searchKey = getState().container.searchKey;
+                            const searchIV = getState().container.searchIV;
+                            const item = await addADemoItemToServiceWorkerDB(workspace, workspaceKey, searchKey, searchIV, data.itemId);
+                            if (item) {
+                                await decryptADemoItem(item);
+                            }
+                            resolve();
+                        } else {
+                            if (data.navigationInSameContainer) {
+                                debugLog(debugOn, "setNavigationMode ...");
+                                dispatch(setNavigationMode(true));
+                                dispatch(setNavigationInSameContainer(false));
+                                resolve();
+                                return;
+                            }
+                            if (!data.navigationInSameContainer && (data.itemId.startsWith('np') || data.itemId.startsWith('dp'))) {
+                                try {
+                                    const container = await getContainerData(data.itemId);
+                                    state = getState().page;
+                                    if (data.itemId === state.activeRequest) {
+                                        dispatch(containerDataFetched({ itemId: data.itemId, container }));
+                                        resolve();
+                                    } else {
+                                        reject("Aborted");
+                                    }
+                                } catch (error) {
+                                    reject("Failed to get the container data!");
+                                }
+                            } else {
+                                reject("Failed to get a page item!!!");
+                            }
                         }
                     }
                     const draftId = 'Draft-' + data.itemId;
@@ -1181,12 +1482,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     debugLog(debugOn, "woo... failed to get a page item!!!", result.error);
                     reject("Failed to get a page item.");
                 }
-            }).catch(error => {
-                debugLog(debugOn, "woo... failed to get a page item:", error)
-                reject("Failed to get a page item.");
-            })
-
-            await getItemPath(data.itemId, dispatch, getState);
+            }
         });
     });
 }
@@ -1207,32 +1503,37 @@ export const getItemPathThunk = (data) => async (dispatch, getState) => {
 export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
     let state;
     state = getState().page;
+    const workspace = getState().container.workspace;
     newActivity(dispatch, pageActivity.DecryptPageItem, () => {
         const itemId = data.itemId;
-
         const startDownloadingImages = async () => {
             state = getState().page;
             const downloadAnImage = (image) => {
-
                 return new Promise(async (resolve, reject) => {
                     const s3Key = image.s3Key + (image.forVideo ? '' : "_gallery");
+                    let downloadedBinaryString, decryptedImageStr, embeddJSON;
                     try {
-                        dispatch(downloadingImage({ itemId, progress: 5 }));
-                        const signedURL = await preS3Download(state.id, s3Key, dispatch);
-                        dispatch(downloadingImage({ itemId, progress: 10 }));
-                        const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);
-                        debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
-
-                        if (itemId !== state.activeRequest) {
-                            debugLog(debugOn, "Aborted!");
-                            reject("Aborted")
-                            return;
-                        };
-
-                        let decryptedImageStr, embeddJSON
-
-                        const buffer = Buffer.from(response, 'binary');
-                        const downloadedBinaryString = buffer.toString('binary');
+                        if (!workspace.startsWith("d:")) {
+                            dispatch(downloadingImage({ itemId, progress: 5 }));
+                            const signedURL = await preS3Download(state.id, s3Key, dispatch);
+                            dispatch(downloadingImage({ itemId, progress: 10 }));
+                            const response = await XHRDownload(itemId, dispatch, signedURL, downloadingImage);
+                            debugLog(debugOn, "downloadAnImage completed. Length: ", response.byteLength);
+                            if (itemId !== state.activeRequest) {
+                                debugLog(debugOn, "Aborted!");
+                                reject("Aborted")
+                                return;
+                            };
+                            const buffer = Buffer.from(response, 'binary');
+                            downloadedBinaryString = buffer.toString('binary');
+                        } else {
+                            const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            if (result.status === 'ok') {
+                                downloadedBinaryString = result.object;
+                            } else {
+                                throw new Error("Failed to read an image data from service worker DB!");
+                            }
+                        }
                         debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                         decryptedImageStr = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                         debugLog(debugOn, "Decrypted image string length: ", decryptedImageStr.length);
@@ -1270,9 +1571,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                     }
                 });
             }
-
             while (state.imageDownloadIndex < state.imageDownloadQueue.length) {
-
                 if (state.aborted) {
                     debugLog(debugOn, "abort: ", state.aborted);
                     break;
@@ -1646,30 +1945,44 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
 }
 
 async function createNewItemVersion(itemCopy, dispatch) {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+        const workspace = itemCopy.space;
         itemCopy.version = itemCopy.version + 1;
         debugLog(debugOn, "item copy version: ", itemCopy.version);
-
-        PostCall({
-            api: '/memberAPI/createNewItemVersion',
-            body: {
-                itemId: itemCopy.id,
-                itemVersion: JSON.stringify(itemCopy)
-            },
-            dispatch
-        }).then(data => {
-            debugLog(debugOn, data);
-            if (data.status === 'ok') {
-                debugLog(debugOn, `createNewItemVersion succeeded`);
-                resolve(data)
-            } else {
-                debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createNewItemVersion',
+                body: {
+                    itemId: itemCopy.id,
+                    itemVersion: JSON.stringify(itemCopy)
+                },
+                dispatch
+            }).then(data => {
+                debugLog(debugOn, data);
+                if (data.status === 'ok') {
+                    debugLog(debugOn, `createNewItemVersion succeeded`);
+                    resolve(data)
+                } else {
+                    debugLog(debugOn, `createNewItemVersion failed: `, data.error)
+                    reject("Failed to create a new item version.");
+                }
+            }).catch(error => {
+                debugLog(debugOn, `createNewItemVersion failed.`)
                 reject("Failed to create a new item version.");
+            })
+        } else {
+            const params = {
+                table: 'itemVersions',
+                key: itemCopy.id,
+                data: itemCopy
             }
-        }).catch(error => {
-            debugLog(debugOn, `createNewItemVersion failed.`)
-            reject("Failed to create a new item version.");
-        })
+            const result = await writeDataToServiceWorkerDBTable(params);
+            if (result.status === 'ok') {
+                resolve({ status: "ok", usage: JSON.stringify(itemCopy.usage) });
+            } else {
+                reject();
+            }
+        }
     });
 };
 
@@ -1681,7 +1994,6 @@ function createNewItemVersionForPage(itemCopy, dispatch) {
             if (data.status === 'ok') {
                 const usage = JSON.parse(data.usage);
                 itemCopy.usage = usage;
-
                 resolve();
             } else {
                 reject("Could not create a new item version!");
@@ -1693,51 +2005,90 @@ function createNewItemVersionForPage(itemCopy, dispatch) {
     })
 };
 
+
 function createANotebookPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/createANotebookPage',
-            body: data,
-            dispatch
-        }).then(result => {
-            debugLog(debugOn, result);
+        const workspace = data.space;
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createANotebookPage',
+                body: data,
+                dispatch
+            }).then(result => {
+                debugLog(debugOn, result);
 
-            if (result.status === 'ok') {
-                if (result.item) {
-                    resolve(result.item);
+                if (result.status === 'ok') {
+                    if (result.item) {
+                        resolve(result.item);
+                    } else {
+                        debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
+                        reject("Failed to create a notebook page!");
+                    }
                 } else {
                     debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
                     reject("Failed to create a notebook page!");
                 }
-            } else {
-                debugLog(debugOn, "woo... failed to create a notebook page!", data.error);
-                reject("Failed to create a notebook page!");
+            });
+        } else {
+            const item = prepareADemoPageItem(workspace, 'NP', data);
+            const itemIdParts = item.id.split(':');
+            const pageNumber = parseInt(itemIdParts[itemIdParts.length - 1]);
+            item.pageNumber = pageNumber;
+            const params = {
+                table: 'itemVersions',
+                key: item.id,
+                data: item
             }
-        });
+            const result = await writeDataToServiceWorkerDBTable(params);
+            if (result.status === 'ok') {
+                resolve(item);
+            } else {
+                reject();
+            }
+        }
     });
 }
 
 function createADiaryPage(data, dispatch) {
     return new Promise(async (resolve, reject) => {
-        PostCall({
-            api: '/memberAPI/createADiaryPage',
-            body: data,
-            dispatch
-        }).then(result => {
-            debugLog(debugOn, result);
+        const workspace = data.space;
+        if (!workspace.startsWith("d:")) {
+            PostCall({
+                api: '/memberAPI/createADiaryPage',
+                body: data,
+                dispatch
+            }).then(result => {
+                debugLog(debugOn, result);
 
-            if (result.status === 'ok') {
-                if (result.item) {
-                    resolve(result.item);
+                if (result.status === 'ok') {
+                    if (result.item) {
+                        resolve(result.item);
+                    } else {
+                        debugLog(debugOn, "woo... failed to create a diary page!", data.error);
+                        reject("Failed to create a diary page!");
+                    }
                 } else {
                     debugLog(debugOn, "woo... failed to create a diary page!", data.error);
                     reject("Failed to create a diary page!");
                 }
-            } else {
-                debugLog(debugOn, "woo... failed to create a diary page!", data.error);
-                reject("Failed to create a diary page!");
+            });
+        } else {
+            const item = prepareADemoPageItem(workspace, 'DP', data);
+            const itemIdParts = item.id.split(':');
+            const pageDate = parseInt(itemIdParts[itemIdParts.length - 1].replace(/-/g, ""));
+            item.pageNumber = pageDate;
+            const params = {
+                table: 'itemVersions',
+                key: item.id,
+                data: item
             }
-        });
+            const result = await writeDataToServiceWorkerDBTable(params);
+            if (result.status === 'ok') {
+                resolve(item);
+            } else {
+                reject();
+            }
+        }    
     });
 }
 
@@ -1746,10 +2097,27 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
         let item;
         const workspace = getState().container.workspace;
         newPageData.space = workspace;
+        newPageData.container = pageState.container;
+        if (workspace.startsWith("d:")) {
+            if (newPageData.tags) {
+                newPageData.tags = JSON.parse(newPageData.tags);
+            }
+            if (newPageData.tagsTokens) {
+                newPageData.tagsTokens = JSON.parse(newPageData.tagsTokens);
+            }
+            if (newPageData.titleTokens) {
+                newPageData.titleTokens = JSON.parse(newPageData.titleTokens);
+            }
+            if (newPageData.videos) {
+                newPageData.videos = JSON.parse(newPageData.videos)
+            }
+            if (newPageData.images) {
+                newPageData.images = JSON.parse(newPageData.images);
+            }
+        }
         if (pageState.container.substring(0, 1) === 'f') {
 
         } else if (pageState.container.substring(0, 1) === 'n') {
-
             try {
                 item = await createANotebookPage(newPageData, dispatch);
                 dispatch(newItemCreated({
@@ -1779,6 +2147,7 @@ function createANewPage(dispatch, getState, pageState, newPageData, updatedState
 
 export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async (dispatch, getState) => {
     newActivity(dispatch, pageActivity.SaveTags, () => {
+        const workspace = getState().container.workspace;
         return new Promise(async (resolve, reject) => {
             let auth, state, encryptedTags, tagsTokens, itemKey, keyEnvelope, newPageData, updatedState;
             auth = getState().auth;
@@ -1789,7 +2158,6 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                 } else {
                     tagsTokens = tokenfieldToEncryptedTokensCBC(tags, searchKey, searchIV);
                 }
-
                 if (!state.itemCopy) {
                     try {
                         itemKey = generateNewItemKey();
@@ -1809,13 +2177,19 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                             itemKey,
                             tags
                         }
-
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                        if(workspace.startsWith("d:")){
+                            const params = {
+                                action: "INDEX_A_PAGE",
+                                itemId: state.id,
+                                tokens: tagsTokens
+                            }
+                            await writeDataToServiceWorkerDB(params);
+                        } 
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with tags.");
                     }
-
                 } else {
                     encryptedTags = tokenfieldToEncryptedArray(tags, state.itemKey);
                     encryptedTags.push('null');
@@ -1823,12 +2197,19 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     let itemCopy = {
                         ...state.itemCopy
                     }
-
                     itemCopy.tags = encryptedTags;
                     itemCopy.tagsTokens = tagsTokens;
                     itemCopy.update = "tags";
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
+                    if(workspace.startsWith("d:")){
+                        const params = {
+                            action: "INDEX_A_PAGE",
+                            itemId: state.id,
+                            tokens: tagsTokens
+                        }
+                        await writeDataToServiceWorkerDB(params);
+                    } 
                     dispatch(newVersionCreated({
                         itemCopy,
                         tags
@@ -1909,8 +2290,8 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
     })
 }
 
-async function preProcessEditorContentBeforeSaving(content, pageType) {
-    if (pageType === "DrawingPage") {
+async function preProcessEditorContentBeforeSaving(content, contentType) {
+    if (contentType === "DrawingPage") {
         const ExcalidrawSerializedJSON =
             content.metadata.ExcalidrawSerializedJSON;
         const DataURI = await new Promise((resolve, reject) => {
@@ -1918,7 +2299,7 @@ async function preProcessEditorContentBeforeSaving(content, pageType) {
             img.src = content.src;
             img.onload = async() =>{
                 const result = await downScaleImage(img, null, 720);
-                resolve(result);
+                resolve(result.byteString);
             }
         });
         return {
@@ -2050,13 +2431,20 @@ const getS3SignedUrlForContentUpload = (dispatch) => {
 
 export const getS3SignedUrlForContentUploadThunk = (data) => async (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
-        try {
-            dispatch(setS3SignedUrlForContentUpload(null));
-            const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
-            dispatch(setS3SignedUrlForContentUpload(signedURLData));
-            resolve();
-        } catch {
-            reject();
+        const page = getState().page;
+        const workspace = page.space;
+        const demoOwner = workspace.split(":")[1];
+        if (!workspace.startsWith("d:")) {
+            try {
+                dispatch(setS3SignedUrlForContentUpload(null));
+                const signedURLData = await getS3SignedUrlForContentUpload(dispatch);
+                dispatch(setS3SignedUrlForContentUpload(signedURLData));
+                resolve();
+            } catch {
+                reject();
+            }
+        } else {
+            dispatch(setS3SignedUrlForContentUpload(`demo://${demoOwner}:3:${Date.now()}`));
         }
     });
 }
@@ -2106,51 +2494,65 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             const content = data.content;
             const workspaceKey = data.workspaceKey;
-
             let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL, s3ContentPrefix;
             state = getState().page;
-            const result = await preProcessEditorContentBeforeSaving(content, state.pageType);
+            const workspace = getState().container.workspace;;
+            const result = await preProcessEditorContentBeforeSaving(content, state.contentType);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
 
             function uploadContentToS3(data) {
-
                 return new Promise(async (resolve, reject) => {
-                    try {
-                        let signedURLData = state.S3SignedUrlForContentUpload;
-                        if (Date.now() > signedURLData.expiration) {
-                            signedURLData = await getS3SignedUrlForContentUpload(dispatch);
-                        }
-                        s3Key = signedURLData.s3Key;
-                        signedURL = signedURLData.signedURL;
-
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
+                    if (!workspace.startsWith("d:")) {
+                        try {
+                            let signedURLData = state.S3SignedUrlForContentUpload;
+                            if (Date.now() > signedURLData.expiration) {
+                                signedURLData = await getS3SignedUrlForContentUpload(dispatch);
                             }
+                            s3Key = signedURLData.s3Key;
+                            signedURL = signedURLData.signedURL;
+
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
+                                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
+                                }
+                            }
+                            dispatch(setS3SignedUrlForContentUpload(null));
+                            await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            resolve();
+                        } catch (error) {
+                            debugLog(debugOn, "uploadContentToS3 failed: ", error);
+                            reject("uploadContentToS3 error.");
                         }
-                        dispatch(setS3SignedUrlForContentUpload(null));
-                        await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        resolve();
-                    } catch (error) {
-                        debugLog(debugOn, "uploadContentToS3 failed: ", error);
-                        reject("uploadContentToS3 error.");
+                    } else {
+                        const demoOwner = workspace.split(":")[1];
+                        s3Key = `${demoOwner}:3:${Date.now()}L_content`;
+                        const params = {
+                            table: 's3Objects',
+                            key: s3Key,
+                            data
+                        }
+                        const result = await writeDataToServiceWorkerDBTable(params);
+                        if (result.status === 'ok') {
+                            resolve();
+                        } else {
+                            reject();
+                        }
                     }
                 });
             }
 
             try {
-                if (state.pageType === "DrawingPage") 
+                if (state.contentType === "DrawingPage") 
                     s3ContentPrefix = "s3DrawingObject/";
                 else 
                     s3ContentPrefix = "s3Object/";
 
                 encodedContent = forge.util.encodeUtf8(result.content);
-
                 if (!state.itemCopy) {
                     try {
                         let itemKey = state.itemKey;
@@ -2159,7 +2561,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         }
 
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
-                        if (state.pageType === "DrawingPage")                     
+                        if (state.contentType === "DrawingPage")                     
                             encryptedContent = encryptLargeBinaryString(encodedContent, itemKey);
                         else
                             encryptedContent = encryptBinaryString(encodedContent, itemKey);
@@ -2172,7 +2574,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                             "contentSize": encryptedContent.length,
                             "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
                             "s3ObjectsSizeInContent": s3ObjectsSize,
-                            "pageType": state.pageType,
+                            "contentType": state.contentType,
                         };
 
                         updatedState = {
@@ -2188,7 +2590,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         reject("Failed to create a new page with content.");
                     }
                 } else {
-                    if (state.pageType === "DrawingPage")                     
+                    if (state.contentType === "DrawingPage")                     
                         encryptedContent = encryptLargeBinaryString(encodedContent, state.itemKey);
                     else
                         encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
@@ -2202,7 +2604,7 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
                     itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
-                    itemCopy.pageType = state.pageType
+                    itemCopy.contentType = state.contentType
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
@@ -2231,10 +2633,9 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     const fileType = video.type;
     const fileSize = video.size;
     const fileName = video.name;
-
     let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
     let serviceWorkerReady = false, videoLinkFromServiceWorker = null, messageChannel = null;
-
+    const workspace = getState().container.workspace;;
     // BEGIN **** For playing back video from service worker ***
     function setupWriter(s3KeyPrefix) {
         debugLog(debugOn, "setupWriter");
@@ -2297,7 +2698,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     function writeAChunkToFile(chunkIndex, chunk) {
         debugLog(debugOn, "writeAChunkToFile");
         return new Promise(async (resolve, reject) => {
-
             debugLog(debugOn, "BINARY: ", Date.now());
             messageChannel.port1.postMessage({
                 type: 'BINARY',
@@ -2305,7 +2705,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
                 chunk
             });
             resolve();
-
         })
     }
 
@@ -2327,41 +2726,58 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
 
                 return new Promise(async (resolve, reject) => {
                     try {
-                        result = await preS3ChunkUpload(state.id, index, timeStamp);
-                        fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
-                        debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                        dispatch(uploadingVideo(fileUploadProgress));
+                        if (!workspace.startsWith("d:")) {
+                            result = await preS3ChunkUpload(state.id, index, timeStamp);
+                            fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingVideo(fileUploadProgress));
 
-                        s3Key = result.s3Key;
-                        s3KeyPrefix = result.s3KeyPrefix;
-                        signedURL = result.signedURL;
-                        debugLog(debugOn, 'chunk signed url', signedURL);
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            debugLog(debugOn, 'chunk signed url', signedURL);
 
+                            const uploader = async (data, signedURL, uploadingPlaceholder) => {
+                                const config = {
+                                    onUploadProgress: async (progressEvent) => {
+                                        const percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
+                                        let fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
+                                        fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
+                                        debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                        debugLog(debugOn, `upload prgoress: ${fileUploadProgress}`);
+                                        dispatch(uploadingPlaceholder(fileUploadProgress));
+                                    },
+                                    headers: {
+                                        'Content-Type': 'binary/octet-stream'
+                                    }
+                                }
+                                await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            }
+                            await uploader(data, signedURL, uploadingVideo);
+                        } else {
+                            if (index === 0) {
+                                const demoOwner = workspace.split(":")[1];
+                                s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
+                            }
+                            s3Key = `${s3KeyPrefix}_chunk_${index}`;
+                            const params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write a chunk to service worker DB!");
+                            }
+                            fileUploadProgress = (index + 1) * (100 / numberOfChunks);
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingVideo(fileUploadProgress));
+                        }
                         if (!serviceWorkerReady) {
                             await setupWriter(s3KeyPrefix);
                             serviceWorkerReady = true;
                         }
-
-                        const uploader = async (data, signedURL, uploadingPlaceholder) => {
-                            const config = {
-                                onUploadProgress: async (progressEvent) => {
-                                    const percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
-                                    let fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
-                                    fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
-                                    debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                    debugLog(debugOn, `upload prgoress: ${fileUploadProgress}`);
-                                    dispatch(uploadingPlaceholder(fileUploadProgress));
-                                },
-                                headers: {
-                                    'Content-Type': 'binary/octet-stream'
-                                }
-                            }
-                            await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        }
-
-                        await uploader(data, signedURL, uploadingVideo);
                         await writeAChunkToFile(chunkIndex, binaryData);
-
                         resolve();
                     } catch (error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
@@ -2390,7 +2806,6 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
     }
 
     return new Promise(async (resolve, reject) => {
-
         startingChunk = 0;
         for (i = startingChunk; i < numberOfChunks; i++) {
             try {
@@ -2419,9 +2834,9 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, video, uploadResult;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-    if(checkIfTooManyMediaFiles(state, data.files.length)) {
-        alert("Sorry, please limit the number of media files to 20 per page!")
-        return;     
+    if (checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
+        return;
     }
     if (state.activity & pageActivity.UploadVideos) {
         dispatch(addUploadVideos({ files: data.files, where: data.where }));
@@ -2524,6 +2939,12 @@ export const uploadVideosThunk = (data) => async (dispatch, getState) => {
             if (state.videosUploadQueue.length === state.videosUploadIndex) {
                 resolve();
             }
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (Android) {
+                    console.log("Calling Android.deleteTemporaryFiles")
+                    Android.deleteTemporaryFiles();
+                }
+            }
         });
     });
 }
@@ -2532,40 +2953,56 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     let state = getState().page;
     let s3Key;
     const itemId = state.id;
+    const workspace = getState().container.workspace;;
     const s3KeyPrefix = data.s3KeyPrefix;
     const snapshot = data.snapshot;
     let timeStamp = s3KeyPrefix.split(':').pop();
+    const encryptedStr = encryptLargeBinaryString(snapshot, state.itemKey);
     try {
-        const result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
-        const s3Key = result.s3Key;
-        const signedURL = result.signedURL;
-        const encryptedStr = encryptLargeBinaryString(snapshot, state.itemKey);
-
-        const config = {
-            onUploadProgress: async (progressEvent) => {
-                let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
-                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-            },
-            headers: {
-                'Content-Type': 'binary/octet-stream'
+        if (!workspace.startsWith("d:")) {
+            const result = await preS3ChunkUpload(itemId, getEditorConfig().videoThumbnailIndex, timeStamp);
+            const s3Key = result.s3Key;
+            const signedURL = result.signedURL;
+            const config = {
+                onUploadProgress: async (progressEvent) => {
+                    let percentCompleted = Math.ceil(progressEvent.loaded * 100 / progressEvent.total);
+                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                },
+                headers: {
+                    'Content-Type': 'binary/octet-stream'
+                }
+            }
+            await putS3Object(s3Key, signedURL, encryptedStr, config, dispatch);
+        } else {
+            s3Key = `${s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
+            const params = {
+                table: 's3Objects',
+                key: s3Key,
+                data: encryptedStr
+            }
+            const result = await writeDataToServiceWorkerDBTable(params);
+            if (result.status !== 'ok') {
+                throw new Error("Failed to write a chunk to service worker DB!");
             }
         }
-        await putS3Object(s3Key, signedURL, encryptedStr, config, dispatch);
     } catch (error) {
         console.log("uploadSnapshot failed");
     }
 }
 
-const uploadAnImage = async (dispatch, state, file, embeddJSON) => {
+const uploadAnImage = async (dispatch, getState, state, file, embeddJSON) => {
     let img;
     let exifOrientation;
     let imageDataInBinaryString;
     let totalUploadedSize = 0;
+    const workspace = getState().container.workspace;
+    const demoOwner = workspace.split(":")[1];
 
-    const downscaleImgAndEncryptInUint8Array = (size) => {
+    const downscaleImgAndEncryptInBinaryString = (size) => {
         return new Promise(async (resolve, reject) => {
             try {
-                const originalStr = (await downScaleImage(img, exifOrientation, size)) + (embeddJSON ? `${embeddJSONSeperator}${embeddJSON}` : '');
+                const result = await downScaleImage(img, exifOrientation, size);
+                const originalStr = result.byteString + (embeddJSON ? `${embeddJSONSeperator}${embeddJSON}` : '');
                 const encryptedStr = encryptLargeBinaryString(originalStr, state.itemKey);
                 resolve(encryptedStr);
             } catch (error) {
@@ -2590,140 +3027,169 @@ const uploadAnImage = async (dispatch, state, file, embeddJSON) => {
                 return new Promise(async (resolve, reject) => {
                     const preImagesS3Upload = () => {
                         return new Promise(async (resolve, reject) => {
-                            PostCall({
-                                api: '/memberAPI/preS3Upload',
-                                dispatch
-                            }).then(data => {
-                                debugLog(debugOn, data);
-                                if (data.status === 'ok') {
-                                    s3Key = data.s3Key;
-                                    s3KeyGallery = s3Key + '_gallery';
-                                    s3KeyThumbnail = s3Key + '_thumbnail';
-                                    signedURL = data.signedURL;
-                                    signedGalleryURL = data.signedGalleryURL;
-                                    signedThumbnailURL = data.signedThumbnailURL;
-                                    resolve();
-                                } else {
-                                    debugLog(debugOn, "preS3Upload failed: ", data.error);
+                            if (!workspace.startsWith("d:")) {
+                                PostCall({
+                                    api: '/memberAPI/preS3Upload',
+                                    dispatch
+                                }).then(data => {
+                                    debugLog(debugOn, data);
+                                    if (data.status === 'ok') {
+                                        s3Key = data.s3Key;
+                                        s3KeyGallery = s3Key + '_gallery';
+                                        s3KeyThumbnail = s3Key + '_thumbnail';
+                                        signedURL = data.signedURL;
+                                        signedGalleryURL = data.signedGalleryURL;
+                                        signedThumbnailURL = data.signedThumbnailURL;
+                                        resolve();
+                                    } else {
+                                        debugLog(debugOn, "preS3Upload failed: ", data.error);
+                                        reject("preS3Upload error.");
+                                    }
+                                }).catch(error => {
+                                    debugLog(debugOn, "preS3Upload failed: ", error)
                                     reject("preS3Upload error.");
-                                }
-                            }).catch(error => {
-                                debugLog(debugOn, "preS3Upload failed: ", error)
-                                reject("preS3Upload error.");
-                            })
+                                })
+                            } else {
+                                s3Key = `${demoOwner}:3:${Date.now()}L`;
+                                s3KeyGallery = s3Key + '_gallery';
+                                s3KeyThumbnail = s3Key + '_thumbnail';
+                                resolve();
+                            }
                         });
                     };
-
                     try {
                         await preImagesS3Upload();
                         dispatch(uploadingImage(5));
                         totalUploadedSize += data.length;
-                        const galleryImgString = await downscaleImgAndEncryptInUint8Array(720);
+                        const galleryImgString = await downscaleImgAndEncryptInBinaryString(720);
                         totalUploadedSize += galleryImgString.length;
                         debugLog(debugOn, "galleryString length: ", galleryImgString.length);
                         dispatch(uploadingImage(20));
-                        const thumbnailImgString = await downscaleImgAndEncryptInUint8Array(120);
+                        const thumbnailImgString = await downscaleImgAndEncryptInBinaryString(120);
                         totalUploadedSize += thumbnailImgString.length;
                         debugLog(debugOn, "thumbnailImgString length: ", thumbnailImgString.length);
                         dispatch(uploadingImage(30));
                         const buffer = Buffer.from(data, 'binary');
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                let percentCompleted = 30 + Math.ceil(progressEvent.loaded * 70 / progressEvent.total);
-                                dispatch(uploadingImage(percentCompleted));
-                                debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                if (!uploadingSubImages) {
-                                    uploadingSubImages = true;
+                        if (!workspace.startsWith("d:")) {
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    let percentCompleted = 30 + Math.ceil(progressEvent.loaded * 70 / progressEvent.total);
+                                    dispatch(uploadingImage(percentCompleted));
+                                    debugLog(debugOn, `Upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                    if (!uploadingSubImages) {
+                                        uploadingSubImages = true;
 
-                                    uploadGalleryImgPromise = putS3Object(
-                                        s3KeyGallery, signedGalleryURL,
-                                        galleryImgString,
-                                        {
-                                            headers: {
-                                                'Content-Type': 'binary/octet-stream'
-                                            }
-                                        }, 
-                                        dispatch
-                                    ).catch(error => {
-                                        reject(error);
-                                        return;
-                                    });
-                                    
-                                    uploadThumbnailImgPromise = putS3Object(
-                                        s3KeyThumbnail, signedThumbnailURL,
-                                        thumbnailImgString,
-                                        {
-                                            headers: {
-                                                'Content-Type': 'binary/octet-stream'
-                                            }
-                                        },
-                                        dispatch
-                                    ).catch(error => {
-                                        reject(error);
-                                        return;
-                                    });
-                                    try {
-                                        const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
-                                        debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
-                                        debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
-                                        debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
-                                        resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
-                                    } catch (error) {
-                                        debugLog(debugOn, "Uploading an image failed: ", error);
-                                        reject(error);
+                                        uploadGalleryImgPromise = putS3Object(
+                                            s3KeyGallery, signedGalleryURL,
+                                            galleryImgString,
+                                            {
+                                                headers: {
+                                                    'Content-Type': 'binary/octet-stream'
+                                                }
+                                            },
+                                            dispatch
+                                        ).catch(error => {
+                                            reject(error);
+                                            return;
+                                        });
+
+                                        uploadThumbnailImgPromise = putS3Object(
+                                            s3KeyThumbnail, signedThumbnailURL,
+                                            thumbnailImgString,
+                                            {
+                                                headers: {
+                                                    'Content-Type': 'binary/octet-stream'
+                                                }
+                                            },
+                                            dispatch
+                                        ).catch(error => {
+                                            reject(error);
+                                            return;
+                                        });
+                                        try {
+                                            const uploadResult = await Promise.all([uploadOriginalImgPromise, uploadGalleryImgPromise, uploadThumbnailImgPromise]);
+                                            debugLog(debugOn, "Upload original image result: ", uploadResult[0]);
+                                            debugLog(debugOn, "Upload gallery image result: ", uploadResult[1]);
+                                            debugLog(debugOn, "Upload thumbnail image result: ", uploadResult[2]);
+                                            resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
+                                        } catch (error) {
+                                            debugLog(debugOn, "Uploading an image failed: ", error);
+                                            reject(error);
+                                        }
                                     }
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
                                 }
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
                             }
-                        }
-                        
-                        uploadOriginalImgPromise = putS3Object(s3Key, signedURL,
-                            Buffer.from(data, 'binary'), config, dispatch)
-                            .catch(error => {
-                                reject(error);
-                                return;
-                            });
 
+                            uploadOriginalImgPromise = putS3Object(s3Key, signedURL,
+                                Buffer.from(data, 'binary'), config, dispatch)
+                                .catch(error => {
+                                    reject(error);
+                                    return;
+                                });
+                        } else {
+                            let params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            let result = await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(65));
+                            params = {
+                                table: 's3Objects',
+                                key: s3KeyGallery,
+                                data: galleryImgString
+                            }
+                            result = await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(85));
+                            params = {
+                                table: 's3Objects',
+                                key: s3KeyThumbnail,
+                                data: thumbnailImgString
+                            }
+                            result = await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write an image data to service worker DB!");
+                            }
+                            dispatch(uploadingImage(90));
+                            resolve({ s3Key, size: totalUploadedSize, link: img.src, width: img.width, height: img.height, buffer });
+                        }
                     } catch (error) {
                         debugLog(debugOn, 'uploadImagesToS3 error: ', error)
                         reject("uploadImagesToS3 error.");
                     }
                 });
             };
-
             const encryptedImageDataInBinaryString = encryptLargeBinaryString(imageDataInBinaryString, state.itemKey);
-
             try {
                 const uploadResult = await uploadImagesToS3(encryptedImageDataInBinaryString);
                 resolve(uploadResult);
-
             } catch (error) {
                 debugLog(debugOn, 'uploadImagesToS3 error: ', error);
                 reject("uploadImagesToS3 error.");
             }
         };
-
-
         reader.addEventListener('load', async () => {
             imageDataInBinaryString = reader.result;
             const link = window.URL.createObjectURL(file);
-
             try {
-
                 img = new Image();
                 img.src = link;
-
                 img.onload = startUploadingAnImage;
 
             } catch (error) {
                 debugLog(debugOn, 'rotateImage error:', error)
                 reject("rotateImage error.");
             }
-
         });
-
         reader.readAsBinaryString(file);
     });
 };
@@ -2742,9 +3208,9 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
     let state, workspaceKey, itemKey, keyEnvelope, newPageData, updatedState;;
     state = getState().page;
     workspaceKey = data.workspaceKey;
-    if(checkIfTooManyMediaFiles(state, data.files.length)) {
-        alert("Sorry, please limit the number of media files to 20 per page!")
-        return;     
+    if (checkIfTooManyMediaFiles(state, data.files.length)) {
+        alert(`Sorry, please limit the number of media files to ${MAX_NUMBER_OF_MEDIA_FILES} per page!`)
+        return;
     }
     if (state.activity & pageActivity.UploadImages) {
         dispatch(addUploadImages({ files: data.files, where: data.where }));
@@ -2767,7 +3233,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 debugLog(debugOn, "======================= Uploading file: ", `index: ${state.imageUploadIndex} name: ${state.imageUploadQueue[state.imageUploadIndex].file.name}`)
                 const file = state.imageUploadQueue[state.imageUploadIndex].file;
                 try {
-                    const uploadResult = await uploadAnImage(dispatch, state, file, file?.metadata?.ExcalidrawExportedImage ? file.metadata.ExcalidrawSerializedJSON : null);
+                    const uploadResult = await uploadAnImage(dispatch, getState, state, file, file?.metadata?.ExcalidrawExportedImage ? file.metadata.ExcalidrawSerializedJSON : null);
                     dispatch(imageUploaded(uploadResult));
                 } catch (error) {
                     debugLog(debugOn, 'Uploading failed: ', error);
@@ -2812,7 +3278,7 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                 try {
                     itemCopy.images = images;
                     itemCopy.update = "images";
-                    itemCopy.pageType = state.pageType;
+                    itemCopy.contentType = state.contentType;
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
                         itemCopy
@@ -2820,6 +3286,12 @@ export const uploadImagesThunk = (data) => async (dispatch, getState) => {
                     resolve();
                 } catch (error) {
                     reject("Failed to save images.");
+                }
+            }
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (Android) {
+                    console.log("Calling Android.deleteTemporaryFiles")
+                    Android.deleteTemporaryFiles();
                 }
             }
         });
@@ -2857,6 +3329,8 @@ export const deleteAnImageThunk = (data) => async (dispatch, getState) => {
 }
 
 const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey) => {
+    const workspace = getState().container.workspace;
+    const demoOwner = workspace.split(":")[1];
     const chunkSize = state.chunkSize;
     const numberOfChunks = attachment.numberOfChunks;
     const file = attachment.file;
@@ -2895,54 +3369,65 @@ const uploadAnAttachment = (dispatch, getState, state, attachment, workspaceKey)
 
             function uploadAChunk(index, data) {
                 let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp, controller, timer;
-
                 debugLog(debugOn, `uploadAChunk: ${index}`);
                 s3KeyPrefixParts = s3KeyPrefix.split(':');
                 timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1]
-
-                function setUploadTimeout() {
-                    timer = setTimeout(() => {
-                        if (controller) controller.abort();
-                    }, 30000);
-                }
-
                 return new Promise(async (resolve, reject) => {
                     try {
-                        result = await preS3ChunkUpload(state.id, index, timeStamp, dispatch);
-                        fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
-                        debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                        dispatch(uploadingAttachment(fileUploadProgress));
-                        s3Key = result.s3Key;
-                        s3KeyPrefix = result.s3KeyPrefix;
-                        signedURL = result.signedURL;
-                        debugLog(debugOn, 'chunk signed url', signedURL);
-
-                        controller = new AbortController();
-                        dispatch(setAbortController(controller));
-                        const config = {
-                            onUploadProgress: async (progressEvent) => {
-                                if (timer) {
-                                    clearTimeout(timer);
-                                    timer = 0;
-                                }
-                                //setUploadTimeout();
-                                let percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
-                                fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
-                                debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
-                                debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
-                                dispatch(uploadingAttachment(fileUploadProgress));
-                            },
-                            headers: {
-                                'Content-Type': 'binary/octet-stream'
-                            },
-                            timeout: 0,
-                            signal: controller.signal
+                        if (!workspace.startsWith("d:")) {
+                            result = await preS3ChunkUpload(state.id, index, timeStamp, dispatch);
+                            fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAttachment(fileUploadProgress));
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            debugLog(debugOn, 'chunk signed url', signedURL);
+                            controller = new AbortController();
+                            dispatch(setAbortController(controller));
+                            const config = {
+                                onUploadProgress: async (progressEvent) => {
+                                    if (timer) {
+                                        clearTimeout(timer);
+                                        timer = 0;
+                                    }
+                                    //setUploadTimeout();
+                                    let percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
+                                    fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
+                                    debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                    debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                                    dispatch(uploadingAttachment(fileUploadProgress));
+                                },
+                                headers: {
+                                    'Content-Type': 'binary/octet-stream'
+                                },
+                                timeout: 0,
+                                signal: controller.signal
+                            }
+                            await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            if (timer) clearTimeout(timer);
+                            dispatch(setAbortController(null));
+                            debugLog(debugOn, `uploadAChunk done: ${index}`);
+                            resolve();
+                        } else {
+                            if (index === 0) {
+                                s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
+                            }
+                            s3Key = `${s3KeyPrefix}_chunk_${index}`;
+                            const params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            const result = await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write a chunk to service worker DB!");
+                            }
+                            fileUploadProgress = (index + 1) * (100 / numberOfChunks);
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAttachment(fileUploadProgress));
+                            resolve();
                         }
-                        await putS3Object(s3Key, signedURL, data, config, dispatch);
-                        if (timer) clearTimeout(timer);
-                        dispatch(setAbortController(null));
-                        debugLog(debugOn, `uploadAChunk done: ${index}`);
-                        resolve();
                     } catch (error) {
                         debugLog(debugOn, 'uploadAChunk failed: ', error);
                         reject("uploadAChunk error.");
@@ -3103,26 +3588,24 @@ export const uploadAttachmentsThunk = (data) => async (dispatch, getState) => {
     });
 }
 
-const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
+const downloadAnAttachment = (dispatch, getState, state, attachment, itemId) => {
     return new Promise(async (resolve, reject) => {
+        const workspace = getState().container.workspace;
         let messageChannel, fileInUint8Array, fileInUint8ArrayIndex, i, numberOfChunks, numberOfChunksRequired = false, result, decryptedChunkStr, buffer, downloadedBinaryString, startingChunk;
         const isUsingServiceWorker = usingServiceWorker();
         const s3KeyPrefix = attachment.s3KeyPrefix;
-
         async function setupWriter() {
             function talkToServiceWorker() {
                 return new Promise(async (resolve, reject) => {
                     navigator.serviceWorker.getRegistration("/downloadFile/").then((registration) => {
                         if (registration) {
                             messageChannel = new MessageChannel();
-
                             registration.active.postMessage({
                                 type: 'INIT_PORT',
                                 fileName: attachment.fileName,
                                 fileSize: attachment.fileSize,
                                 browserInfo: getBrowserInfo()
                             }, [messageChannel.port2]);
-
                             messageChannel.port1.onmessage = (event) => {
                                 // Print the result
                                 debugLog(debugOn, event.data);
@@ -3147,7 +3630,6 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                                     }
                                 }
                             };
-
                         } else {
                             debugLog(debugOn, "s");
                             reject("serviceWorker.getRegistration error")
@@ -3158,10 +3640,11 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                     reject("serviceWorker.getRegistration error.");
                 });
             }
-
             if (!isUsingServiceWorker) {
-                fileInUint8Array = new Uint8Array(attachment.fileSize);
-                fileInUint8ArrayIndex = 0;
+                if (process.env.NEXT_PUBLIC_platform === 'android') {
+                    fileInUint8Array = new Uint8Array(attachment.fileSize);
+                    fileInUint8ArrayIndex = 0;
+                }
                 return true;
             } else {
                 try {
@@ -3173,28 +3656,37 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 }
             }
         }
-
         function reconnectWriter() {
             if (!isUsingServiceWorker) {
-                fileInUint8Array = state.writer.fileInUint8Array;
-                fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
+                if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                    fileInUint8Array = state.writer.fileInUint8Array;
+                    fileInUint8ArrayIndex = state.writer.fileInUint8ArrayIndex;
+                }
             } else {
                 messageChannel = state.writer;
             }
         }
-
-        function writeAChunkToFile(chunk) {
+        function writeAChunkToFile(chunkIndex, chunk) {
             return new Promise(async (resolve, reject) => {
                 if (!isUsingServiceWorker) {
-                    for (let offset = 0; offset < chunk.length; offset++) {
-                        if (fileInUint8ArrayIndex + offset < fileInUint8Array.length) {
-                            fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
-                        } else {
-                            reject("writeAChunkToFile error: fileInUint8Array overflow");
-                            return;
+                    if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                        for (let offset = 0; offset < chunk.length; offset++) {
+                            if (fileInUint8ArrayIndex + offset < fileInUint8Array.length) {
+                                fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
+                            } else {
+                                reject("writeAChunkToFile error: fileInUint8Array overflow");
+                                return;
+                            }
+                        }
+                        fileInUint8ArrayIndex += chunk.length;
+                    } else {
+                        if (process.env.NEXT_PUBLIC_platform === 'android') {
+                            if (Android) {
+                                console.log("Android.addAChunkToFile ...")
+                                Android.addAChunkToFile(chunkIndex, numberOfChunks, chunk, attachment.uriString)
+                            }
                         }
                     }
-                    fileInUint8ArrayIndex += chunk.length;
                     resolve();
                 } else {
                     messageChannel.port1.postMessage({
@@ -3205,16 +3697,16 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 }
             })
         }
-
         function writeAChunkToFileFailed(chunkIndex) {
             if (!isUsingServiceWorker) {
-                dispatch(downloadAChunkFailed({ chunkIndex, writer: { fileInUint8Array, fileInUint8ArrayIndex } }));
+                if (process.env.NEXT_PUBLIC_platform !== 'android') {
+                    dispatch(downloadAChunkFailed({ chunkIndex, writer: { fileInUint8Array, fileInUint8ArrayIndex } }));
+                }
             } else {
                 dispatch(downloadAChunkFailed({ chunkIndex, writer: messageChannel }));
             }
 
         }
-
         function closeWriter() {
             if (!isUsingServiceWorker) {
                 dispatch(writerClosed());
@@ -3224,30 +3716,36 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
                 });
             }
         }
-
         function downloadDecryptAndAssemble(chunkIndex) {
             return new Promise(async (resolve, reject) => {
                 try {
-                    result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
-                    if (numberOfChunksRequired) {
-                        numberOfChunks = result.numberOfChunks;
-                        numberOfChunksRequired = false;
+                    if (!workspace.startsWith("d:")) {
+                        result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, numberOfChunksRequired, dispatch);
+                        if (numberOfChunksRequired) {
+                            numberOfChunks = result.numberOfChunks;
+                            numberOfChunksRequired = false;
+                        }
+                        const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks);
+                        debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
+                        if (state.activeRequest !== itemId) {
+                            reject("Aborted");
+                            return;
+                        }
+                        buffer = Buffer.from(response, 'binary');
+                        downloadedBinaryString = buffer.toString('binary');
+                    } else {
+                        const s3Key = `${s3KeyPrefix}_chunk_${chunkIndex}`
+                        const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                        if (result.status === 'ok') {
+                            downloadedBinaryString = result.object;
+                        } else {
+                            throw new Error("Failed to read an image data from service worker DB!");
+                        }
                     }
-                    const response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAttachment, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks);
-                    debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
-                    if (state.activeRequest !== itemId) {
-                        reject("Aborted");
-                        return;
-                    }
-
-                    buffer = Buffer.from(response, 'binary');
-                    downloadedBinaryString = buffer.toString('binary');
                     debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
                     decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey, state.itemIV)
                     debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
-
-                    await writeAChunkToFile(decryptedChunkStr);
-
+                    await writeAChunkToFile(chunkIndex, decryptedChunkStr);
                     resolve();
                 } catch (error) {
                     debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);
@@ -3268,16 +3766,12 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
             reconnectWriter();
         } else {
             startingChunk = 0;
-
             if (!(await setupWriter())) {
                 dispatch(setupWriterFailed());
                 reject("Failed to setup the writer.");
                 return;
             };
-
         }
-
-
         for (i = startingChunk; i < numberOfChunks; i++) {
             try {
                 await downloadDecryptAndAssemble(i);
@@ -3289,7 +3783,7 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
         }
         if (i === numberOfChunks) {
             debugLog(debugOn, `downloadAnAttachment done, total chunks: ${numberOfChunks}`);
-            if (!isUsingServiceWorker) {
+            if ((process.env.NEXT_PUBLIC_platform !== 'android') && !isUsingServiceWorker) {
                 let blob = new Blob([fileInUint8Array], {
                     type: attachment.fileType
                 });
@@ -3305,19 +3799,16 @@ const downloadAnAttachment = (dispatch, state, attachment, itemId) => {
 }
 
 export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) => {
-    let state, attachment, downloadResult, itemId;
-
+    let state, attachment, itemId;
     state = getState().page;
     itemId = state.id;
     if (state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         dispatch(addDownloadAttachment({ ...data.panel }));
         return;
     }
-
     if (data.panel) {
         dispatch(addDownloadAttachment({ ...data.panel }));
     }
-
     state = getState().page;
     while (state.attachmentsDownloadQueue.length > state.attachmentsDownloadIndex) {
         if (state.aborted) {
@@ -3327,7 +3818,7 @@ export const downloadAnAttachmentThunk = (data) => async (dispatch, getState) =>
         debugLog(debugOn, "======================= Downloading file: ", `index: ${state.attachmentsDownloadIndex} name: ${state.attachmentsDownloadQueue[state.attachmentsDownloadIndex].fileName}`)
         attachment = state.attachmentsDownloadQueue[state.attachmentsDownloadIndex];
         try {
-            await downloadAnAttachment(dispatch, state, attachment, itemId);
+            await downloadAnAttachment(dispatch, getState, state, attachment, itemId);
             dispatch(attachmentDownloaded(attachment));
             state = getState().page;
         } catch (error) {

@@ -16,6 +16,7 @@ import { debugLog } from '../lib/helper'
 import ContentPageLayout from '../components/layouts/contentPageLayout';
 import KeyInput from "../components/keyInput";
 import RecoverAccountModal from '../components/recoverAccountModal';
+import Turnstile from '../components/turnstile'; 
 
 import { logInAsyncThunk } from '../reduxStore/auth'
 
@@ -109,7 +110,7 @@ export default function LogIn() {
                                             <hr />
                                         </>
                                     }
-                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: '#990000', color: 'white', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
+                                    <h1 className='text-center'>Open Your <span style={{ backgroundColor: 'yellow', color: 'black', fontWeight: 'bold', padding: '7px' }}>BSafes</span></h1>
                                     <hr></hr>
                                     <Form>
                                         <Form.Group className="mb-3" controlId="Nickname">
@@ -121,6 +122,7 @@ export default function LogIn() {
                                             <KeyInput onKeyChanged={keyPasswordChanged} recoveredKeyPassword={keyPassword} />
                                         </Form.Group>
                                     </Form>
+                                    {false && <Turnstile />}
                                     <Row className='p-2'>
                                         <Col className='text-center'>
                                             <Button variant="dark" onClick={handleSubmit} disabled={activity === "LoggingIn"}>
@@ -140,7 +142,7 @@ export default function LogIn() {
                                         <Col className='text-center'>
                                             <img className='mx-auto d-block' src="/images/mySafe_Small.png" style={{ width: '52px' }} />
                                             <Button size='lg' variant='link' onClick={handleCreate} disabled={activity === "LoggingIn"} style={{ textTransform: 'none', textDecoration: 'none' }}>
-                                                Own Your <span style={{ fontWeight: 'bold' }}>BSafes</span>
+                                                Create your lock <i className="fa fa-lock" aria-hidden="true"></i>, own your <span style={{ fontWeight: 'bold' }}>BSafes</span>
                                             </Button>
                                         </Col>
                                     </Row>

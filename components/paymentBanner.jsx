@@ -29,12 +29,18 @@ export default function PaymentBanner({ upgradeRequired = false }) {
                 <div style={{ height: '1px', backgroundColor: 'grey' }}></div>
                 {!upgradeRequired && <>
                     <Offcanvas.Header >
-                        <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
+                        {false &&
+                            <Offcanvas.Title>{dueDateString && <>{`Due on ${dueDateString}.`}</>}</Offcanvas.Title>
+                        }
+                        {
+                            <Offcanvas.Title>Many thanks for your use!</Offcanvas.Title>
+                        }
                     </Offcanvas.Header>
                     <Offcanvas.Body>
-                        {dueDateString && <p>{`Hello, just wanted to remind you that your BSafes account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
+                        {false && dueDateString && <p>{`Hello, just wanted to remind you that your BSafes account was due on ${dueDateString}. Please make your payment as soon as possible.`}</p>}
+                        <p>Please check the payment center for any pending dues.</p>
                         <div className="text-center">
-                            <Button onClick={handlePay}>Pay</Button>
+                            <Button onClick={handlePay}>Go</Button>
                         </div>
                     </Offcanvas.Body>
                 </>}

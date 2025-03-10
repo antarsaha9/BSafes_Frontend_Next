@@ -2,7 +2,7 @@ import Script from "next/script"
 export default function Turnstile({ }) {
     const onLoad = () => {
         turnstile.render('#turnstileWidget', {
-            sitekey: '1x00000000000000000000AA',
+            sitekey: '0x4AAAAAAAgVmy_Jh_y_Psw2',
             callback: function(token) {
                 console.log(`Challenge Success ${token}`);
             },

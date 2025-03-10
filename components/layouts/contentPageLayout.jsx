@@ -9,8 +9,6 @@ import Nav from 'react-bootstrap/Nav';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import Offcanvas from 'react-bootstrap/Offcanvas';
 import Container from 'react-bootstrap/Container'
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
 
@@ -24,14 +22,20 @@ import ItemsMovingProgress from '../itemsMovingProgress';
 import PaymentBanner from '../paymentBanner';
 import VisitPaymentBanner from '../visitPaymentBanner';
 import SuspendedModal from '../suspendedModal';
+import DemoNotice from '../demoNotice';
 
 import BSafesStyle from '../../styles/BSafes.module.css'
 
 import { debugLog } from '../../lib/helper';
 import { getErrorMessages } from '../../lib/activities';
 
-import { preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
-import { setAccountHashVerified } from '../../reduxStore/accountSlice';
+import { resetAccountActivity, setAccountHashVerified } from '../../reduxStore/accountSlice';
+import { resetAuthActivity, preflightAsyncThunk, setPreflightReady, setLocalSessionState, createCheckSessionIntervalThunk, loggedOut, cleanMemoryThunk, setV2NextAuthStep, logOutAsyncThunk } from '../../reduxStore/auth';
+import { resetContainerActivity } from '../../reduxStore/containerSlice';
+import { resetPageActivity } from '../../reduxStore/pageSlice';
+import { resetTeamActivity } from '../../reduxStore/teamSlice';
+import { resetV1AccountActivity } from '../../reduxStore/v1AccountSlice';
+
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
@@ -75,9 +79,19 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const displayName = useSelector(state => state.auth.displayName);
     const nextAuthStep = useSelector(state => state.v1Account.nextAuthStep);
 
+    const workspace = useSelector(state=>state.container.workspace);
     const workspaceName = useSelector(state => state.container.workspaceName);
 
     const displayPaymentBanner = !(router.asPath.startsWith('/logIn')) && !(router.asPath.startsWith('/services/')) && !(router.asPath.startsWith('/apps/'));
+
+    const resetAllActivities = () => {
+        dispatch(resetAccountActivity());
+        dispatch(resetAuthActivity());
+        dispatch(resetContainerActivity());
+        dispatch(resetPageActivity());
+        dispatch(resetTeamActivity());
+        dispatch(resetV1AccountActivity());
+    }
 
     const refresh = (e) => {
         router.reload();
@@ -93,6 +107,10 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     const dataCenter = (e) => {
         router.push('/services/dataCenterSetup')
+    }
+
+    const deleteAccount = (e) => {
+        router.push('/services/deleteAccount')
     }
 
     const logOut = (e) => {
@@ -227,6 +245,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     return;
                 }
             }
+        } else if (localSessionState.demoMode) {
         } else if (!localSessionState.sessionExists) {
             if (localSessionState.unlocked) {
                 debugLog(debugOn, "Error: It should never happen");
@@ -265,7 +284,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     }, [router.asPath]);
 
     useEffect(() => {
-
         dispatch(setPreflightReady(false));
         dispatch(setAccountHashVerified(null));
         debugLog(debugOn, "Calling preflight, isLoggedIn", isLoggedIn);
@@ -273,6 +291,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
         const handleRouteChange = (url, { shallow }) => {
             debugLog(debugOn, "Route is going to change ...")
+            resetAllActivities()
             dispatch(setPreflightReady(false));
             dispatch(setLocalSessionState(null));
         }
@@ -399,8 +418,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 <div className={BSafesStyle.screenCenter}>
                     <Blocks
                         visible={true}
-                        height="80"
-                        width="80"
+                        height="40"
+                        width="40"
                         ariaLabel="blocks-loading"
                         wrapperStyle={{}}
                         wrapperClass="blocks-wrapper"
@@ -408,7 +427,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 </div>
             }
 
-            {true && showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
+            {(!workspace || (workspace && !workspace.startsWith("d:"))) && showNaveBar && ((accountVersion === '' || accountVersion === 'v1')) &&
                 <Navbar bg="light" className={BSafesStyle.bsafesNavbar}>
                     <Container fluid>
                         {workspaceName ?
@@ -449,6 +468,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                         {publicPage && <>
                             <Nav className="me-auto">
                                 <NavDropdown title="Company" id="collapsible-nav-dropdown" className={BSafesStyle.navLink}>
+                                    <NavDropdown.Item href="https://blog.bsafes.com">
+                                        Blogs
+                                    </NavDropdown.Item>
                                     <NavDropdown.Item href="/public/aboutUs">
                                         About Us
                                     </NavDropdown.Item>
@@ -472,7 +494,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     </Container>
                 </Navbar>
             }
-            {showNaveBar && (accountVersion === 'v2') &&
+            {(!workspace || (workspace && !workspace.startsWith("d:"))) && showNaveBar && (accountVersion === 'v2') &&
                 <Navbar key={false} expand="false" bg="light" className={`${BSafesStyle.bsafesNavbar} py-2`}>
                     <Container>
                         {true && <>
@@ -521,6 +543,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 </Navbar>
 
             }
+            {false && (workspace && workspace.startsWith("d:")) &&
+                <DemoNotice />
+            }
             <div>
                 <ToastContainer
                     position="top-right"
@@ -538,7 +563,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
             <ItemsMovingProgress />
             <ItemsToolbar />
             {displayPaymentBanner && accountState === 'paymentRequired' && <PaymentBanner />}
-            {((process.env.NEXT_PUBLIC_platform === 'iOS')) &&
+            {((process.env.NEXT_PUBLIC_platform === 'iOS') || (process.env.NEXT_PUBLIC_platform === 'android')) &&
                 <>
                     {((displayPaymentBanner && accountState === 'upgradeRequired')) && <VisitPaymentBanner upgradeRequired={true} />}
                     {((displayPaymentBanner && accountState === 'suspended')) && <VisitPaymentBanner suspended={true} />}

@@ -15,11 +15,16 @@ const nextConfig = {
         process: false,
       }
     }
-
+    
     config.experiments = {
       asyncWebAssembly: true,
       layers: true
     };
+
+    config.cache = {
+      type: 'memory',
+      maxGenerations: 5
+    }
 
     config.module.rules.push({
       test: /\.wasm$/,

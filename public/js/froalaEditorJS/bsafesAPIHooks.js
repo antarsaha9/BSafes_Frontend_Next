@@ -10,6 +10,10 @@ export function rotateImage(link, exifOrientation, callback) {
     window.bsafesFroala.rotateImage(link, exifOrientation, callback);
 }
 
+export function downScaleImage(img, exifOrientation, size) {
+    return window.bsafesFroala.downScaleImage(img, exifOrientation, size);
+}
+
 export function convertUint8ArrayToBinaryString(u8Array) {
     return window.bsafesFroala.convertUint8ArrayToBinaryString(u8Array);
 }

@@ -234,7 +234,7 @@ export default function MFASetup() {
                                         </Col>
                                     </Row>
                                     <br />
-                                    {process.env.NEXT_PUBLIC_platform !== 'iOS' &&
+                                    {process.env.NEXT_PUBLIC_platform !== 'iOS' && process.env.NEXT_PUBLIC_platform !== 'android' &&
                                         <>
                                             <p>or download the following file, rename it, and save it in a secure location.</p>
                                             <Row>

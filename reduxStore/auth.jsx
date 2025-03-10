@@ -2,6 +2,7 @@ import { createSlice } from '@reduxjs/toolkit';
 const forge = require('node-forge');
 
 import { debugLog, PostCall, getTimeZoneOffset, clearLocalData } from '../lib/helper'
+import { clearDemo } from '../lib/demoHelper';
 import { calculateCredentials, saveLocalCredentials, createAccountRecoveryCode, decryptBinaryString, readLocalCredentials, clearLocalCredentials } from '../lib/crypto'
 import { authActivity } from '../lib/activities';
 
@@ -36,7 +37,9 @@ const initialState = {
     froalaLicenseKey: null,
     stripePublishableKey: null,
     v2NextAuthStep: null,
-    mfa: null
+    mfa: null,
+    demoMode: false,
+    serviceWorkerRegistered: false
 }
 
 const authSlice = createSlice({
@@ -49,6 +52,11 @@ const authSlice = createSlice({
                 let key = stateKeys[i];
                 state[key] = initialState[key];
             }
+        },
+        resetAuthActivity: (state, action) => {
+            state.activity = 0,
+                state.activityErrors = 0,
+                state.activityErrorCodes = {};
         },
         activityStart: (state, action) => {
             state.activityErrors &= ~action.payload;
@@ -79,6 +87,8 @@ const authSlice = createSlice({
             state.displayName = forge.util.decodeUtf8(action.payload);
         },
         loggedIn: (state, action) => {
+            clearDemo();
+            state.demoMode = false;
             let credentials = readLocalCredentials(action.payload.sessionKey, action.payload.sessionIV);
             if (!credentials) return;
             state.activityErrors = 0;
@@ -119,11 +129,20 @@ const authSlice = createSlice({
         },
         setMfa: (state, action) => {
             state.mfa = action.payload;
+        },
+        setDemoMode: (state, action) => {
+            state.demoMode = action.payload;
+        },
+        setServiceWorkerRegistered: (state, action) => {
+            state.serviceWorkerRegistered = action.payload;
+        },
+        setFroalaLicenseKey: (state, action) => {
+            state.froalaLicenseKey = action.payload.froalaLicenseKey;
         }
     }
 });
 
-export const { cleanAuthSlice, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa } = authSlice.actions;
+export const { cleanAuthSlice, resetAuthActivity, activityStart, activityDone, activityError, setContextId, setChallengeState, setPreflightReady, setLocalSessionState, setDisplayName, loggedIn, loggedOut, setAccountVersion, setV2NextAuthStep, setClientEncryptionKey, setMfa, setDemoMode, setServiceWorkerRegistered, setFroalaLicenseKey } = authSlice.actions;
 
 const newActivity = async (dispatch, type, activity) => {
     dispatch(activityStart(type));
@@ -185,16 +204,46 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                     api: '/logIn',
                     body: credentials.keyPack,
                     dispatch
-                }).then(data => {
+                }).then(async data => {
                     debugLog(debugOn, data);
                     if (data.status !== 'ok') {
                         debugLog(debugOn, "woo... failed to login.")
                         reject("102");
                         return;
                     }
-                    dispatch(setChallengeState(true));
-                    localStorage.setItem("authToken", data.authToken);
+                    
+                    // Verify if public key matches private key to ensure public key is not replaced by threat actors
+                    let privateKey = forge.util.decode64(data.privateKeyEnvelope);
+                    privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
+                    const pki = forge.pki;
+                    let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
 
+                    async function verifyPublicKey() {
+                        try {
+                            let testBytes = forge.random.getBytesSync(128);
+                            testBytes = forge.util.encode64(testBytes);
+                            let md = forge.md.sha1.create();
+                            md.update(testBytes, 'utf8');
+                            let signature = privateKeyFromPem.sign(md);
+                            const receivedPublicKey = forge.util.decode64(data.publicKey)
+                            md = forge.md.sha1.create();
+                            md.update(testBytes, 'utf8');
+                            const pki = forge.pki;
+                            const publicKeyFromPem = pki.publicKeyFromPem(receivedPublicKey);
+                            const verified = publicKeyFromPem.verify(md.digest().bytes(), signature);
+                            return verified;
+                        } catch (error) {
+                            debugLog(debugOn, "Pubilic key verification error: ", error);
+                            return false;
+                        }
+
+                    }
+                    if (!await verifyPublicKey()) {
+                        reject("116");
+                        return;
+                    };
+                    localStorage.setItem("authToken", data.authToken);
+                    dispatch(setChallengeState(true));
                     credentials.keyPack.privateKeyEnvelope = data.privateKeyEnvelope;
                     credentials.keyPack.searchKeyEnvelope = data.searchKeyEnvelope;
                     credentials.keyPack.searchIVEnvelope = data.searchIVEnvelope;
@@ -204,15 +253,10 @@ export const logInAsyncThunk = (data) => async (dispatch, getState) => {
                         let randomMessage = data.randomMessage;
                         randomMessage = forge.util.encode64(randomMessage);
 
-                        let privateKey = forge.util.decode64(data.privateKeyEnvelope);
-                        privateKey = decryptBinaryString(privateKey, credentials.secret.expandedKey);
-                        const pki = forge.pki;
-                        let privateKeyFromPem = pki.privateKeyFromPem(privateKey);
                         const md = forge.md.sha1.create();
                         md.update(randomMessage, 'utf8');
                         let signature = privateKeyFromPem.sign(md);
                         signature = forge.util.encode64(signature);
-
 
                         PostCall({
                             api: '/memberAPI/verifyChallenge',
@@ -370,7 +414,10 @@ export const logOutAsyncThunk = (data) => async (dispatch, getState) => {
 export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, authActivity.Preflight, () => {
         return new Promise(async (resolve, reject) => {
-            if (getState().auth.challengeState) return;
+            if (getState().auth.challengeState) {
+                resolve();
+                return;
+            }
             dispatch(setNextAuthStep(null));
             const params = {
                 api: '/memberAPI/preflight',
@@ -404,6 +451,7 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
                     if (data.error === 'SessionNotExisted') {
                         clearLocalData();
                         dispatch(loggedOut());
+                        dispatch(setFroalaLicenseKey({froalaLicenseKey: data.froalaLicenseKey}))
                     }
                 }
                 dispatch(setClientEncryptionKey(data.clientEncryptionKey));
@@ -421,9 +469,10 @@ export const preflightAsyncThunk = (data) => async (dispatch, getState) => {
 export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
     const checkLocalSession = () => {
         const authToken = localStorage.getItem('authToken');
-        const encodedGold = localStorage.getItem("encodedGold");
         const authState = localStorage.getItem("authState");
-        return { sessionExists: authToken ? true : false, authState, unlocked: (authState === 'Unlocked') };
+        const demoMode = localStorage.getItem("demoMode");
+        debugLog(debugOn, "demoMode: ", demoMode);
+        return { demoMode: demoMode?true:false, sessionExists: authToken ? true : false, authState, unlocked: (authState === 'Unlocked') };
     }
     const state = getState().auth;
     let contextId = state.contextId;
@@ -438,6 +487,7 @@ export const createCheckSessionIntervalThunk = () => (dispatch, getState) => {
         const thisInterval = setInterval(() => {
             //debugLog(debugOn, "Check session state");.
             const state = checkLocalSession();
+            debugLog(debugOn, "checkLocalSession state: ", state)
             dispatch(setLocalSessionState(state));
         }, 1000);
         localStorage.setItem(intervalId, thisInterval)

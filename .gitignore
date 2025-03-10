@@ -34,9 +34,10 @@ yarn-error.log*
 
 # confidentials
 buildAndAddSri
-buildForIOS
 buildForIOSColors
 runForIOS
+runForWebColors
+runForAndroidBSafes
 runForWebColors
 android/
 android-native/
