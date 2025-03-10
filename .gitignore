@@ -38,3 +38,6 @@ buildForIOS
 buildForIOSColors
 runForIOS
 runForWebColors
+android/
+android-native/
+web/
