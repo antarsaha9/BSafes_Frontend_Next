@@ -14,6 +14,7 @@ import { downScaleImage } from '../lib/wnImage';
 import { isDemoMode } from '../lib/demoHelper';
 import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable, writeDataToServiceWorkerDB } from '../lib/serviceWorkerDBHelper';
 
+const embeddJSONSeperator = '=#=#=embeddJSON=';
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = false;
 
@@ -2040,7 +2041,7 @@ function createADiaryPage(data, dispatch) {
             } else {
                 reject();
             }
-        }    
+        }
     });
 }
 
@@ -2130,14 +2131,14 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                             tags
                         }
                         await createANewPage(dispatch, getState, state, newPageData, updatedState);
-                        if(workspace.startsWith("d:")){
+                        if (workspace.startsWith("d:")) {
                             const params = {
                                 action: "INDEX_A_PAGE",
                                 itemId: state.id,
                                 tokens: tagsTokens
                             }
                             await writeDataToServiceWorkerDB(params);
-                        } 
+                        }
                         resolve();
                     } catch (error) {
                         reject("Failed to create a new page with tags.");
@@ -2154,14 +2155,14 @@ export const saveTagsThunk = (tags, workspaceKey, searchKey, searchIV) => async 
                     itemCopy.update = "tags";
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
-                    if(workspace.startsWith("d:")){
+                    if (workspace.startsWith("d:")) {
                         const params = {
                             action: "INDEX_A_PAGE",
                             itemId: state.id,
                             tokens: tagsTokens
                         }
                         await writeDataToServiceWorkerDB(params);
-                    } 
+                    }
                     dispatch(newVersionCreated({
                         itemCopy,
                         tags
@@ -2242,7 +2243,23 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
     })
 }
 
-function preProcessEditorContentBeforeSaving(content) {
+async function preProcessEditorContentBeforeSaving(content, contentType) {
+    if (contentType === "DrawingPage") {
+        const ExcalidrawSerializedJSON = content.metadata.ExcalidrawSerializedJSON;
+        const DataURI = await new Promise((resolve) => {
+            const img = new Image();
+            img.src = content.src;
+            img.onload = async () => {
+                const result = await downScaleImage(img, null, 720);
+                resolve(result.byteString)
+            }
+        });
+        return {
+            content: DataURI + embeddJSONSeperator + ExcalidrawSerializedJSON,
+            s3ObjectsInContent: [],
+            s3ObjectsSize: 0
+        }
+    }
     var tempElement = document.createElement("div");
     tempElement.innerHTML = content;
     //Remove all spinners, progress elements, videoControls
@@ -2389,7 +2406,7 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
 
         let state, encodedContent;
         state = getState().page;
-        const result = preProcessEditorContentBeforeSaving(content);
+        const result = await preProcessEditorContentBeforeSaving(content);
 
         try {
             encodedContent = forge.util.encodeUtf8(result.content);
@@ -2427,10 +2444,10 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
         return new Promise(async (resolve, reject) => {
             const content = data.content;
             const workspaceKey = data.workspaceKey;
-            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL;
+            let state, encodedContent, encryptedContent, itemKey, keyEnvelope, newPageData, updatedState, s3Key, signedURL, s3ContentPrefix;
             state = getState().page;
             const workspace = getState().container.workspace;;
-            const result = preProcessEditorContentBeforeSaving(content);
+            const result = await preProcessEditorContentBeforeSaving(content, state.contentType);
             const s3ObjectsInContent = result.s3ObjectsInContent;
             const s3ObjectsSize = result.s3ObjectsSize;
 
@@ -2480,6 +2497,10 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
             }
 
             try {
+                if (state.contentType === "DrawingPage")
+                    s3ContentPrefix = "s3DrawingObject/";
+                else
+                    s3ContentPrefix = "s3Object/";
                 encodedContent = forge.util.encodeUtf8(result.content);
                 if (!state.itemCopy) {
                     try {
@@ -2489,17 +2510,20 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         }
 
                         keyEnvelope = encryptBinaryString(itemKey, workspaceKey);
-
-                        encryptedContent = encryptBinaryString(encodedContent, itemKey);
+                        if (state.contentType === "DrawingPage")
+                            encryptedContent = encryptLargeBinaryString(encodedContent, itemKey);
+                        else
+                            encryptedContent = encryptBinaryString(encodedContent, itemKey);
                         await uploadContentToS3(encryptedContent);
 
                         newPageData = {
                             "itemId": state.id,
                             "keyEnvelope": forge.util.encode64(keyEnvelope),
-                            "content": 's3Object/' + forge.util.encode64(s3Key),
+                            "content": s3ContentPrefix + forge.util.encode64(s3Key),
                             "contentSize": encryptedContent.length,
                             "s3ObjectsInContent": JSON.stringify(s3ObjectsInContent),
-                            "s3ObjectsSizeInContent": s3ObjectsSize
+                            "s3ObjectsSizeInContent": s3ObjectsSize,
+                            "contentType": state.contentType
                         };
 
                         updatedState = {
@@ -2515,17 +2539,21 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                         reject("Failed to create a new page with content.");
                     }
                 } else {
-                    encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
+                    if (state.contentType === "DrawingPage")
+                        encryptedContent = encryptLargeBinaryString(encodedContent, state.itemKey);
+                    else
+                        encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
                     await uploadContentToS3(encryptedContent);
                     let itemCopy = {
                         ...state.itemCopy
                     }
 
-                    itemCopy.content = 's3Object/' + forge.util.encode64(s3Key);
+                    itemCopy.content = s3ContentPrefix + forge.util.encode64(s3Key);
                     itemCopy.contentSize = encryptedContent.length;
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
                     itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
+                    itemCopy.contentType = state.contentType
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({
@@ -3941,7 +3969,7 @@ export const saveCommentThunk = (data) => async (dispatch, getState) => {
             try {
                 if (!state.itemCopy) {
                 } else {
-                    content = preProcessEditorContentBeforeSaving(data.content).content;
+                    content = await preProcessEditorContentBeforeSaving(data.content).content;
                     encodedComment = forge.util.encodeUtf8(content);
                     encryptedComment = forge.util.encode64(encryptBinaryString(encodedComment, state.itemKey));
 

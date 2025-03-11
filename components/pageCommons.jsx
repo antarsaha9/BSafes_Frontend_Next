@@ -176,8 +176,9 @@ export default function PageCommons() {
             playVideo.remove();
         });
 
-        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html').innerHTML;
-        setcontentEditorContentWithImagesAndVideos(contentByDOM);
+        let contentByDOM = document.querySelector('.contenEditorRow').querySelector('.inner-html');
+        if (contentByDOM)
+            setcontentEditorContentWithImagesAndVideos(contentByDOM.innerHTML);
         dispatch(getS3SignedUrlForContentUploadThunk());
         setContentEditorMode("Writing");
 
@@ -234,7 +235,7 @@ export default function PageCommons() {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
 
         if (editingEditorId === "content") {
-            if (content !== contentEditorContent) {
+            if (contentType === "DrawingPage" || content !== contentEditorContent) {
                 dispatch(saveContentThunk({ content, workspaceKey }));
             } else {
                 setEditingEditorMode("ReadOnly");

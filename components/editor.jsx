@@ -5,12 +5,11 @@ import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
 import Button from 'react-bootstrap/Button';
 import ButtonGroup from 'react-bootstrap/ButtonGroup';
+import Image from 'react-bootstrap/Image';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
 import jquery from "jquery"
-
-const forge = require('node-forge');
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
@@ -141,6 +140,8 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     }, 500);
                 } else {
                     ExcalidrawRef.current.updateScene(res);
+                    if (res.files)
+                        ExcalidrawRef.current.addFiles(Object.values(res.files));
                     ExcalidrawRef.current.scrollToContent();
                 }
             }
@@ -151,11 +152,40 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     }
 
     const saving = () => {
-        let content = $(editorRef.current).froalaEditor('html.get');
-        debugLog(debugOn, "editor content: ", content);
-        setTimeout(() => {
-            onContentChanged(editorId, content);
-        }, 0)
+        if (contentType === "WritingPage") {
+            let content = $(editorRef.current).froalaEditor('html.get');
+            debugLog(debugOn, "editor content: ", content);
+            setTimeout(() => {
+                onContentChanged(editorId, content);
+            }, 0)
+        } else if (contentType === "DrawingPage") {
+            debugLog(debugOn, "Saving drawing page ...");
+            if (!ExcalidrawRef.current) {
+                return;
+            }
+            const elements = ExcalidrawRef.current.getSceneElements();
+            if (!elements || !elements.length) {
+                return;
+            }
+            Excalidraw.exportToCanvas({
+                elements,
+                appState: {
+                    exportWithDarkMode: false,
+                },
+                files: ExcalidrawRef.current.getFiles(),
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    blob.name = 'excalidraw.png';
+                    const serialized = Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState(), ExcalidrawRef.current.getFiles(), 'local');
+                    blob.src = window.URL.createObjectURL(blob);
+                    blob.metadata = {
+                        ExcalidrawExportedImage: true,
+                        ExcalidrawSerializedJSON: serialized
+                    };
+                    onContentChanged(editorId, blob);
+                })
+            })
+        }
     }
 
     const readOnly = () => {
