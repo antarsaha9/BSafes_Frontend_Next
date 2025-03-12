@@ -204,11 +204,13 @@ export default function PageCommons() {
     const handlePenClicked = (editorId, purpose) => {
         debugLog(debugOn, `pen ${editorId} clicked ${purpose}`);
         let thisReadyForSaving = true;
-        if (purpose === 'froala')
-            dispatch(setContentType('WritingPage'));
-        else if (purpose === 'excalidraw') {
-            dispatch(setContentType('DrawingPage'));
-        }
+        if(editorId === 'content') {
+            if (purpose === 'froala')
+                dispatch(setContentType('WritingPage'));
+            else if (purpose === 'excalidraw') {
+                dispatch(setContentType('DrawingPage'));
+            }
+        } 
         if (editorId === 'content') {
             beforeWritingContent();
             setEditingEditorId("content");

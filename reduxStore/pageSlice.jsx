@@ -1234,7 +1234,32 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                 payload.oldVersion = data.version;
                 dispatch(setOldVersion());
             }
+            function itemKeyReady() {
+                return new Promise((resolve, reject) => {
+                    let trials = 0;
+                    state = getState().page;
+                    if (state.itemKey) {
+                        resolve();
+                        return;
+                    }
+                    const timer = setInterval(() => {
+                        state = getState().page;
+                        debugLog(debugOn, "Waiting for itemKey ...");
+                        if (state.itemKey) {
+                            resolve();
+                            clearInterval(timer);
+                            return;
+                        } else {
+                            trials++;
+                            if (trials > 100) {
+                                reject('itemKey error!');
+                                clearInterval(timer);
+                            }
+                        }
+                    }, 100)
 
+                })
+            }
             if (!isDemoMode()) {
                 debugLog(debugOn, "/memberAPI/getPageItem: ", data.itemId);
                 PostCall({
@@ -1252,33 +1277,8 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         }
                         if (result.item) {
                             dispatch(dataFetched({ item: result.item }));
-                            function itemKeyReady() {
-                                return new Promise((resolve, reject) => {
-                                    let trials = 0;
-                                    state = getState().page;
-                                    if (state.itemKey) {
-                                        resolve();
-                                        return;
-                                    }
-                                    const timer = setInterval(() => {
-                                        state = getState().page;
-                                        debugLog(debugOn, "Waiting for itemKey ...");
-                                        if (state.itemKey) {
-                                            resolve();
-                                            clearInterval(timer);
-                                            return;
-                                        } else {
-                                            trials++;
-                                            if (trials > 100) {
-                                                reject('itemKey error!');
-                                                clearInterval(timer);
-                                            }
-                                        }
-                                    }, 100)
-
-                                })
-                            }
                             if (result.item.content && result.item.content.startsWith('s3Object/')) {
+                                dispatch(setContentType('WritingPage'));
                                 const signedContentUrl = result.item.signedContentUrl;
                                 const response = await XHRDownload(null, dispatch, signedContentUrl, null);
                                 const buffer = Buffer.from(response, 'binary');
@@ -1292,7 +1292,8 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 state = getState().page;
                                 startDownloadingContentImages(data.itemId, dispatch, getState);
                                 resolve();
-                            } else if (result.item.content.startsWith('s3DrawingObject/')) {
+                            } else if (result.item.content && result.item.content.startsWith('s3DrawingObject/')) {
+                                dispatch(setContentType('DrawingPage'));
                                 const signedContentUrl = result.item.signedContentUrl;
                                 const response = await XHRDownload(null, dispatch, signedContentUrl, null);
 
@@ -1372,38 +1373,12 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                     const decryptADemoItem = async (item) => {
                         dispatch(dataFetched({ item }));
                         if (item.content && item.content.startsWith('s3Object/')) {
+                            dispatch(setContentType('WritingPage'));
                             const s3Key = forge.util.decode64(item.content.substring(9));
                             const result = await getS3ObjectFromServiceWorkerDB(s3Key);
                             if (result.status === 'ok') {
                                 const downloadedBinaryString = result.object;
                                 debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
-
-                                function itemKeyReady() {
-                                    return new Promise((resolve, reject) => {
-                                        let trials = 0;
-                                        state = getState().page;
-                                        if (state.itemKey) {
-                                            resolve();
-                                            return;
-                                        }
-                                        const timer = setInterval(() => {
-                                            state = getState().page;
-                                            debugLog(debugOn, "Waiting for itemKey ...");
-                                            if (state.itemKey) {
-                                                resolve();
-                                                clearInterval(timer);
-                                                return;
-                                            } else {
-                                                trials++;
-                                                if (trials > 100) {
-                                                    reject('itemKey error!');
-                                                    clearInterval(timer);
-                                                }
-                                            }
-                                        }, 100)
-
-                                    })
-                                }
                                 await itemKeyReady();
                                 const decryptedContent = decryptBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                                 debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
@@ -1412,6 +1387,31 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
 
                                 state = getState().page;
                                 startDownloadingContentImages(data.itemId, dispatch, getState);
+                            }
+                            resolve();
+                        } else if (result.item.content && result.item.content.startsWith('s3DrawingObject/')) {
+                            dispatch(setContentType('DrawingPage'));
+                            const s3Key = forge.util.decode64(item.content.substring(16));
+                            const result = await getS3ObjectFromServiceWorkerDB(s3Key);
+                            if (result.status === 'ok') {
+                                const downloadedBinaryString = result.object;
+                                debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+                                await itemKeyReady();
+                                const decryptedContent = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
+                                debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
+                                const [decryptedImageStr, embeddJSON] = decryptedContent.split(embeddJSONSeperator);
+                                const decodedContent = (forge.util.decodeUtf8(decryptedImageStr));
+                                const decryptedImageDataInUint8Array = convertBinaryStringToUint8Array(decodedContent);
+                                const blob = new Blob([decryptedImageDataInUint8Array], {
+                                    type: 'image/*'
+                                });
+                                const link = window.URL.createObjectURL(blob);
+                                blob.src = link;
+                                blob.metadata = {
+                                    ExcalidrawExportedImage: true,
+                                    ExcalidrawSerializedJSON: embeddJSON
+                                };
+                                dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                             }
                             resolve();
                         } else {
@@ -2575,7 +2575,6 @@ export const saveContentThunk = (data) => async (dispatch, getState) => {
                     itemCopy.s3ObjectsInContent = s3ObjectsInContent;
                     itemCopy.s3ObjectsSizeInContent = s3ObjectsSize;
                     itemCopy.update = "content";
-                    itemCopy.contentType = state.contentType
 
                     await createNewItemVersionForPage(itemCopy, dispatch);
                     dispatch(newVersionCreated({

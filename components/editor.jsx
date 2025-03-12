@@ -152,13 +152,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     }
 
     const saving = () => {
-        if (contentType === "WritingPage") {
-            let content = $(editorRef.current).froalaEditor('html.get');
-            debugLog(debugOn, "editor content: ", content);
-            setTimeout(() => {
-                onContentChanged(editorId, content);
-            }, 0)
-        } else if (contentType === "DrawingPage") {
+        if (editorId ==="content" && contentType === "DrawingPage") {
             debugLog(debugOn, "Saving drawing page ...");
             if (!ExcalidrawRef.current) {
                 return;
@@ -185,7 +179,13 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     onContentChanged(editorId, blob);
                 })
             })
-        }
+        } else {
+            let content = $(editorRef.current).froalaEditor('html.get');
+            debugLog(debugOn, "editor content: ", content);
+            setTimeout(() => {
+                onContentChanged(editorId, content);
+            }, 0)
+        } 
     }
 
     const readOnly = () => {
@@ -210,11 +210,10 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                 readOnly();
                 break;
             case "Writing":
-                if (contentType === "WritingPage")
-                    writing();
-                else if (contentType === "DrawingPage")
+                if (editorId ==='content' && contentType === "DrawingPage")
                     drawing();
-                break;
+                else 
+                    writing();
                 break;
             case "Saving":
                 saving();
@@ -516,7 +515,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                             Draw
                                         </Tooltip>
                                     )}
-                                ><Button variant="link" className="text-dark p-0 mx-1" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> |</span>}
+                                ><Button variant="link" className="text-dark p-0 mx-1" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
                                 {(editorId === 'content' && draft !== null) &&
                                     <ButtonGroup className='pull-right mx-3' size="sm">
                                         <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
