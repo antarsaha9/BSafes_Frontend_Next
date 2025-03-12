@@ -526,17 +526,18 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                             </Col>
                         </Row>
                         :
-                        ""
-
+                        <Row>
+                            <span> . </span>
+                        </Row>
                     }
-                    {(contentType === 'WritingPage' && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
+                    {((contentType !== 'DrawingPage' || editorId ==='title' ) && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
                         <Row className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
                             <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{ __html: content }} style={{ overflowX: 'auto' }}>
                             </div>
                         </Row>
                     }
                     {
-                        contentType === 'DrawingPage' && editorId === 'content' &&
+                        editorId === 'content' && contentType === 'DrawingPage' && editorId === 'content' &&
                         <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '80vh' }}>
                             {(mode == 'Writing' || mode === 'Saving') ?
                                 <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
