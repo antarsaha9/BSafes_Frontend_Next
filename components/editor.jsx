@@ -142,7 +142,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     ExcalidrawRef.current.updateScene(res);
                     if (res.files)
                         ExcalidrawRef.current.addFiles(Object.values(res.files));
-                    ExcalidrawRef.current.scrollToContent();
+                    //ExcalidrawRef.current.scrollToContent();
                 }
             }
             setTimeout(() => {

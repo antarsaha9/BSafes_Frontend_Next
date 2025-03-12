@@ -152,7 +152,7 @@ export default function DiaryPage() {
                                 }}
                             />
                     <br />  
-                    <Row>
+                    <Row id="BSafesPage">
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel} ${pageStyle}`}>
                                 <ItemTopRows />

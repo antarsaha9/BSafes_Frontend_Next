@@ -800,7 +800,7 @@ export default function PageCommons() {
                 </Col>
             </Row>
             <Row className="justify-content-center">
-                <Col className="contenEditorRow" xs="12" sm="10" >
+                <Col className={`${BSafesStyle.contentEditorRow} contenEditorRow`} xs="12" sm="10" >
                     <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} />
                 </Col>
             </Row>

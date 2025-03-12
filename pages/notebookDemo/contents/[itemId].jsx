@@ -161,7 +161,7 @@ export default function NotebookContents() {
                     <br />
                         <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <br />  
-                    <Row>
+                    <Row id="BSafesPage">
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
                                 <br />

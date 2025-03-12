@@ -21,6 +21,7 @@ function MyApp({ Component, pageProps }) {
   const debugOn = true;
   const dispatch = useDispatch()
   useEffect(() => {
+    window.EXCALIDRAW_ASSET_PATH = "/js/";
     if (process.env.NEXT_PUBLIC_platform === 'iOS') {
       const pingFromNative = () => {
         debugLog(debugOn, "pingFromNative");
