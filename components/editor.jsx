@@ -540,7 +540,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                         editorId === 'content' && contentType === 'DrawingPage' && editorId === 'content' &&
                         <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '60vh' }}>
                             {(mode == 'Writing' || mode === 'Saving') ?
-                                <div style={{position: "fixed", top: "0", left: "0", height: "100%", width: "100%"}}>
+                                <div style={{position: "fixed", zIndex:"100", top: "0", left: "0", height: "100%", width: "100%"}}>
                                     <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
                                         ExcalidrawRef.current = excalidrawApi;
                                     }}
