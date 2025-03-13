@@ -8,6 +8,7 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Image from 'react-bootstrap/Image';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
+import Modal from "react-bootstrap/Modal";
 
 import jquery from "jquery"
 
@@ -152,7 +153,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     }
 
     const saving = () => {
-        if (editorId ==="content" && contentType === "DrawingPage") {
+        if (editorId === "content" && contentType === "DrawingPage") {
             debugLog(debugOn, "Saving drawing page ...");
             if (!ExcalidrawRef.current) {
                 return;
@@ -185,7 +186,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             setTimeout(() => {
                 onContentChanged(editorId, content);
             }, 0)
-        } 
+        }
     }
 
     const readOnly = () => {
@@ -210,9 +211,9 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                 readOnly();
                 break;
             case "Writing":
-                if (editorId ==='content' && contentType === "DrawingPage")
+                if (editorId === 'content' && contentType === "DrawingPage")
                     drawing();
-                else 
+                else
                     writing();
                 break;
             case "Saving":
@@ -515,7 +516,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                             Draw
                                         </Tooltip>
                                     )}
-                                ><Button variant="link" className="text-dark p-0 mx-1" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
+                                ><Button variant="link" className="text-dark p-0 mx-3" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
                                 {(editorId === 'content' && draft !== null) &&
                                     <ButtonGroup className='pull-right mx-3' size="sm">
                                         <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
@@ -529,7 +530,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                             <span> . </span>
                         </Row>
                     }
-                    {((contentType !== 'DrawingPage' || editorId ==='title' ) && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
+                    {((contentType !== 'DrawingPage' || editorId === 'title') && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
                         <Row className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
                             <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{ __html: content }} style={{ overflowX: 'auto' }}>
                             </div>
@@ -537,14 +538,17 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     }
                     {
                         editorId === 'content' && contentType === 'DrawingPage' && editorId === 'content' &&
-                        <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '80vh' }}>
+                        <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '60vh' }}>
                             {(mode == 'Writing' || mode === 'Saving') ?
-                                <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
-                                    ExcalidrawRef.current = excalidrawApi;
-                                }}
-                                />
+                                <div style={{position: "fixed", top: "0", left: "0", height: "100%", width: "100%"}}>
+                                    <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
+                                        ExcalidrawRef.current = excalidrawApi;
+                                    }}
+                                    />
+                                </div>
                                 :
-                                content && <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />
+                                content &&
+                                <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />
                             }
                         </Row>
                     }

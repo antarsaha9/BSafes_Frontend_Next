@@ -29,7 +29,7 @@ export default function SampleItemNoticeModal({ show = false, handleClose }) {
             <Modal.Body>
                 <p>{`It's only for demo purposes. Your data is stored locally and is not backed up to the cloud. You can open the demo ${itemType.toLowerCase()}`} and then try</p>
                 <ul>
-                    <li>writing <i className="fa fa-pencil" aria-hidden="true"></i>, </li>
+                    <li>writing <i className="fa fa-pencil" aria-hidden="true"></i> or drawing <i className="fa fa-paint-brush" aria-hidden="true"></i>, </li>
                     <li>adding photos <i className="fa fa-picture-o" aria-hidden="true"></i>,</li>
                     <li> videos <i className="fa fa-video-camera" aria-hidden="true"></i>, and files <i className="fa fa-paperclip" aria-hidden="true"></i>.</li>
                 </ul>

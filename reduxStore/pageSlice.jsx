@@ -1389,7 +1389,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 startDownloadingContentImages(data.itemId, dispatch, getState);
                             }
                             resolve();
-                        } else if (result.item.content && result.item.content.startsWith('s3DrawingObject/')) {
+                        } else if (item.content && item.content.startsWith('s3DrawingObject/')) {
                             dispatch(setContentType('DrawingPage'));
                             const s3Key = forge.util.decode64(item.content.substring(16));
                             const result = await getS3ObjectFromServiceWorkerDB(s3Key);

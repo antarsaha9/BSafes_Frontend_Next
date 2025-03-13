@@ -55,6 +55,7 @@ export default function PageCommons() {
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
+    const draft = useSelector(state => state.page.draft);
     const draftLoaded = useSelector(state => state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
     const contentType = useSelector(state => state.page.contentType);
@@ -349,6 +350,9 @@ export default function PageCommons() {
         dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
+        if(!draft && !contentEditorContent){
+            dispatch(setContentType(""))
+        }
         if (draftLoaded) {
             dispatch(loadOriginalContentThunk());
         }

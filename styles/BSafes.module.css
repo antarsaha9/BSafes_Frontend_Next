@@ -483,6 +483,10 @@
 
 /* End of container general */
 /*--***** Box */
+.boxItem {
+  background-color: #EBF5FB;
+}
+
 .boxCoverPanel {
   margin-bottom: 10px;
   background-color: #EBF5FB;
@@ -506,6 +510,10 @@
 
 /* End of Box*/
 /*--**** Folder */
+.folderItem {
+  background-color: #FCF3CF;
+}
+
 .folderCoverPanel {
   background-color: #FCF3CF;
   border-radius: 0 20px 20px 0;
@@ -526,6 +534,10 @@
 /* End of folder */
 
 /*--***** Notebook */
+.notebookItem {
+  background-color: #F2F3F4;
+}
+
 .notebookCoverPanel {
   border-left: 30px solid #000;
   background-color: #F2F3F4;
@@ -535,6 +547,9 @@
 /* End of notebook */
 
 /*--****** Diary */
+.diaryItem {
+  background-color: #FEF5E7;
+}
 .diaryControlPanelBody {
   padding-bottom: 10px;
 }
@@ -557,6 +572,9 @@
 
 /*--****** Page *******/
 /*--***** Page general */
+.pageItem {
+  background-color: #fff;
+}
 .pagePanel {
   /*background-color:faf5f1*/
   background-color: #fff;
@@ -636,23 +654,23 @@
   font-size: 1.1rem;
 }
 
-.contentEditorRow {
-  min-height: 2500px;
+.contentEditorRowBak {
+  min-height: 250px;
 }
 @media only screen and (min-width: 400px) {
-  .contentEditorRow {
+  .contentEditorRowBak {
     min-height: 350px;
   }
 }
 
 @media only screen and (min-width: 560px) {
-  .contentEditorRow {
+  .contentEditorRowBak {
     min-height: 600px;
   }
 }
 
 @media only screen and (min-width: 992px) {
-  .contentEditorRow {
+  .contentEditorRowBak {
     min-height: 600px;
   }
 }
