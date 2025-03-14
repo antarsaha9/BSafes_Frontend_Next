@@ -1319,6 +1319,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                                 resolve();
                             } else {
+                                dispatch(setContentType('WritingPage'));
                                 resolve();
                             }
                         } else {
@@ -2268,16 +2269,21 @@ export const saveTitleThunk = (title, workspaceKey, searchKey, searchIV) => asyn
 async function preProcessEditorContentBeforeSaving(content, contentType) {
     if (contentType === "DrawingPage") {
         const ExcalidrawSerializedJSON = content.metadata.ExcalidrawSerializedJSON;
-        const DataURI = await new Promise((resolve) => {
-            const img = new Image();
+        const imageDataInBinaryString = await new Promise((resolve) => {
+            /*const img = new Image();
             img.src = content.src;
             img.onload = async () => {
                 const result = await downScaleImage(img, null, 720);
                 resolve(result.byteString)
-            }
+            }*/
+            const reader = new FileReader();
+            reader.addEventListener('load', async () => {
+                resolve(reader.result);
+            });
+            reader.readAsBinaryString(content);
         });
         return {
-            content: DataURI + embeddJSONSeperator + ExcalidrawSerializedJSON,
+            content: imageDataInBinaryString + embeddJSONSeperator + ExcalidrawSerializedJSON,
             s3ObjectsInContent: [],
             s3ObjectsSize: 0
         }
