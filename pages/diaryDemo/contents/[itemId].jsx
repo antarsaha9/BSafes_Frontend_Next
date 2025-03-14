@@ -155,9 +155,7 @@ export default function DiaryContents() {
                             router.push(`/${productID}/${pageItemId}`);
                         }} 
                         onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch}
-                        datePickerViewMode="monthYear" showSearchIcon />
-                    <br />  
-                    
+                        datePickerViewMode="monthYear" showSearchIcon />                    
                     <Row>
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel}`}>

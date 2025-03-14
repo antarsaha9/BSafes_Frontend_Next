@@ -130,7 +130,7 @@ export default function Notebook() {
                     <PageItemWrapper itemId={router.query.itemId}> 
                         <br />
                         <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
-                        <br />  
+                        <br/>
                         <Row>
                             <Col lg={{span:10, offset:1}}>                       
                             { 

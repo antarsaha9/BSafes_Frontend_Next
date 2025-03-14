@@ -39,12 +39,12 @@ export default function Box() {
     const container = useSelector(state => state.page.container);
     const position = useSelector(state => state.page.position);
 
-    const workspaceKey = useSelector( state => state.container.workspaceKey);
-    const workspaceSearchKey = useSelector( state => state.container.searchKey);
-    const workspaceSearchIV = useSelector( state => state.container.searchIV);
-    
-    const activity = useSelector( state => state.page.activity);
-    const activityErrors = useSelector( state => state.page.activityErrors);
+    const workspaceKey = useSelector(state => state.container.workspaceKey);
+    const workspaceSearchKey = useSelector(state => state.container.searchKey);
+    const workspaceSearchIV = useSelector(state => state.container.searchIV);
+
+    const activity = useSelector(state => state.page.activity);
+    const activityErrors = useSelector(state => state.page.activityErrors);
     const [editingEditorId, setEditingEditorId] = useState(null);
     const [titleEditorMode, setTitleEditorMode] = useState("ReadOnly");
     const titleEditorContent = useSelector(state => state.page.title);
@@ -52,14 +52,14 @@ export default function Box() {
 
     async function gotoAnotherItem(anotherItemNumber) {
         debugLog(debugOn, `gotoAnotherItem ${changingPage} ${pageItemId} ${container} ${position}`);
-        if(changingPage || !(pageItemId || !container || !position)) return;
+        if (changingPage || !(pageItemId || !container || !position)) return;
         setChangingPage(true);
         let anotherItemId, anotherItemLink = null;
-        
+
         const getAnotherItemLink = (itemId) => {
             const itemType = itemId.split(':')[0];
             let itemLink;
-            switch(itemType) {
+            switch (itemType) {
                 case 'b':
                     itemLink = '/box/' + itemId;
                     break;
@@ -76,26 +76,26 @@ export default function Box() {
 
         switch (anotherItemNumber) {
             case '-1':
-                try{
+                try {
                     anotherItemId = await getAnotherItem('getPreviousItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
                         setEndOfContainer(true);
                     } else {
-                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                        anotherItemLink = getAnotherItemLink(anotherItemId);
                     }
-                } catch(error) {
+                } catch (error) {
 
                 }
                 break;
             case '+1':
-                try{
+                try {
                     anotherItemId = await getAnotherItem('getNextItem', container, position, dispatch);
                     if (anotherItemId === 'EndOfContainer') {
                         setEndOfContainer(true);
                     } else {
-                        anotherItemLink = getAnotherItemLink(anotherItemId); 
+                        anotherItemLink = getAnotherItemLink(anotherItemId);
                     }
-                } catch(error) {
+                } catch (error) {
 
                 }
                 break;
@@ -123,27 +123,27 @@ export default function Box() {
 
     const handlePenClicked = (editorId) => {
         debugLog(debugOn, `pen ${editorId} clicked`);
-        if(editorId === 'title') {
+        if (editorId === 'title') {
             setTitleEditorMode("Writing");
             setEditingEditorId("title");
-        } 
+        }
     }
 
     const handleContentChanged = (editorId, content) => {
         debugLog(debugOn, `editor-id: ${editorId} content: ${content}`);
-        
-        if(editingEditorId === "title") {
-            if(content !== titleEditorContent) {
+
+        if (editingEditorId === "title") {
+            if (content !== titleEditorContent) {
                 dispatch(saveTitleThunk(content, workspaceKey, workspaceSearchKey, workspaceSearchIV));
             } else {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
             }
-        }  
+        }
     }
 
     const setEditingEditorMode = (mode) => {
-        switch(editingEditorId) {
+        switch (editingEditorId) {
             case 'title':
                 setTitleEditorMode(mode);
                 break;
@@ -151,7 +151,7 @@ export default function Box() {
         }
     }
 
-    const handleWrite = () =>{
+    const handleWrite = () => {
         debugLog(debugOn, "handleWrite");
         setTitleEditorMode("Writing");
         setEditingEditorId("title");
@@ -170,34 +170,34 @@ export default function Box() {
 
     const handleOpen = async () => {
         debugLog(debugOn, "handleOpen");
-        
+
         const link = `/box/contents/${pageItemId}`;
         router.push(link);
-        
+
     }
 
     const handleCoverClicked = () => {
-        if(!container) return;
+        if (!container) return;
         let newLink = getCoverAndContentsLink(container).converLink;
         router.push(newLink);
     }
 
     const handleContentsClicked = () => {
-        if(!container) return;
+        if (!container) return;
         let newLink = getCoverAndContentsLink(container).contentsLink;
         router.push(newLink);
     }
 
     useEffect(() => {
-        if(activity === 0) {
-            if((activityErrors === 0) && editingEditorId) {
+        if (activity === 0) {
+            if ((activityErrors === 0) && editingEditorId) {
                 setEditingEditorMode("ReadOnly");
                 setEditingEditorId(null);
-            } else if(editingEditorId) {
+            } else if (editingEditorId) {
                 setEditingEditorMode("Writing");
             }
-        } 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activity]);
 
 
@@ -205,17 +205,17 @@ export default function Box() {
         <div>
             <div className={BSafesStyle.pageBackground}>
                 <ContentPageLayout>
-                    <PageItemWrapper itemId={router.query.itemId}> 
+                    <PageItemWrapper itemId={router.query.itemId}>
                         <br />
                         <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                         <br />
                         <Row>
-                            <Col lg={{span:10, offset:1}}>                       
+                            <Col lg={{ span: 10, offset: 1 }}>
                                 <div className={`${BSafesStyle.boxPanel} ${BSafesStyle.boxCoverPanel} ${BSafesStyle.containerCoverPanel}`}>
                                     <ItemTopRows />
                                     <br />
                                     <br />
-                                    <TurningPageControls cover={true} onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={()=>setEndOfContainer(false)}/>
+                                    <TurningPageControls cover={true} onNextClicked={gotoNextItem} onPreviousClicked={gotoPreviousItem} showAlert={endOfContainer} alertClosed={() => setEndOfContainer(false)} />
                                     <Row className="justify-content-center">
                                         <Col className={BSafesStyle.containerTitleLabel} xs="10" sm="10" md="8" >
                                             <Editor editorId="title" mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0)} />
@@ -231,10 +231,10 @@ export default function Box() {
                                 </div>
                             </Col>
                         </Row>
-                    </PageItemWrapper> 
+                    </PageItemWrapper>
                 </ContentPageLayout>
                 <Scripts />
             </div>
-         </div>
+        </div>
     )
 }

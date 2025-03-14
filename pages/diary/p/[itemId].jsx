@@ -36,8 +36,8 @@ export default function DiaryPage() {
     const [pageDate, setPageDate] = useState();
     const [distance, setDistance] = useState(null);
 
-    const pageItemId = useSelector( state => state.page.id);
-    const pageStyle = useSelector( state => state.page.style);
+    const pageItemId = useSelector(state => state.page.id);
+    const pageStyle = useSelector(state => state.page.style);
 
     const gotoAnotherDate = (anotherDate) => {
         if (!(pageItemId && pageDate)) return;
@@ -66,7 +66,7 @@ export default function DiaryPage() {
         router.push(`/diary/p/${nextPageId}`);
     }
 
-    const gotoNextPage = () =>{
+    const gotoNextPage = () => {
         debugLog(debugOn, "Next Page ");
         gotoAnotherDate('+1');
     }
@@ -76,25 +76,25 @@ export default function DiaryPage() {
         gotoAnotherDate('-1');
     }
 
-    const handleDateChanged = (date) => {    
+    const handleDateChanged = (date) => {
         let newDate;
-        if(isSameDay(date, pageDate)) return; 
+        if (isSameDay(date, pageDate)) return;
         debugLog(debugOn, "date chagned: ", date);
         newDate = format(date, 'yyyy-LL-dd');
         gotoAnotherDate(newDate);
     }
 
-    useEffect(()=>{
-        if(router.query.itemId) {
+    useEffect(() => {
+        if (router.query.itemId) {
             let dateStr, date, distance, dd;
-            
+
             dateStr = router.query.itemId.split(':').pop();
             date = parse(dateStr, 'yyyy-LL-dd', new Date());
             setPageDate(date);
 
             if (isSameDay(date, today)) {
                 distance = 'Today';
-            } else if(today > date) {
+            } else if (today > date) {
                 distance = Math.ceil((today - date) / (1000 * 60 * 60 * 24));
                 if (distance === 1)
                     distance = '1 day ago'
@@ -111,36 +111,35 @@ export default function DiaryPage() {
             setDistance(distance);
 
             dd = parseInt(dateStr.split('-')[2]);
-            if(dd%2) {
+            if (dd % 2) {
                 dispatch(setPageStyle(BSafesStyle.leftPagePanel));
             } else {
                 dispatch(setPageStyle(BSafesStyle.rightPagePanel));
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [router.query.itemId]);
 
     return (
         <div className={BSafesStyle.pageBackground}>
-            <ContentPageLayout>            
+            <ContentPageLayout>
                 <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                     <DiaryTopControlPanel
-                                showListIcon
-                                startDate={pageDate}
-                                setStartDate={handleDateChanged}
-                                onCoverClicked={() => {
-                                    const parts = pageItemId.split(':');
-                                    router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}?initialDisplay=cover`)
-                                }}
-                                onContentsClicked={() => {
-                                    const parts = pageItemId.split(':');
-                                    router.push(`/diary/contents/d:${parts[1]}:${parts[2]}:${parts[3]}`)
-                                }}
-                            />
-                    <br />  
+                        showListIcon
+                        startDate={pageDate}
+                        setStartDate={handleDateChanged}
+                        onCoverClicked={() => {
+                            const parts = pageItemId.split(':');
+                            router.push(`/diary/d:${parts[1]}:${parts[2]}:${parts[3]}?initialDisplay=cover`)
+                        }}
+                        onContentsClicked={() => {
+                            const parts = pageItemId.split(':');
+                            router.push(`/diary/contents/d:${parts[1]}:${parts[2]}:${parts[3]}`)
+                        }}
+                    />
                     <Row id="BSafesPage">
-                        <Col lg={{span:10, offset:1}}>
+                        <Col lg={{ span: 10, offset: 1 }}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.diaryPanel} ${pageStyle}`}>
                                 <ItemTopRows />
                                 <Row className="mt-5">
@@ -150,12 +149,12 @@ export default function DiaryPage() {
                                     </Col>
                                 </Row>
                                 <PageCommons />
-                            </div>  
+                            </div>
                         </Col>
-                    </Row> 
+                    </Row>
 
                     <TurningPageControls onNextClicked={gotoNextPage} onPreviousClicked={gotoPreviousPage} />
-                </PageItemWrapper>           
+                </PageItemWrapper>
             </ContentPageLayout>
             <Scripts />
         </div>

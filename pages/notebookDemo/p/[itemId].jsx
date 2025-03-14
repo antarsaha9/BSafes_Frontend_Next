@@ -144,7 +144,6 @@ export default function NotebookPage() {
                 <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                     <TopControlPanel pageNumber={pageNumber} onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onPageNumberChanged={handlePageNumberChanged} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
-                    <br />  
                     <Row id="BSafesPage">
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>

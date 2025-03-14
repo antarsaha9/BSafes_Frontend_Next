@@ -159,7 +159,6 @@ export default function Page() {
                     {!hideFunction &&
                         <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} ></TopControlPanel>
                     }
-                    <br />
                     <div className={BSafesStyle.pagePanel}>
                         <ItemTopRows />
                         <PageCommons />

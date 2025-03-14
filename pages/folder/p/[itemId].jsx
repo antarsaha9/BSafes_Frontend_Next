@@ -128,7 +128,6 @@ export default function FolderPage() {
                 <PageItemWrapper itemId={router.query.itemId}>
                     <br />
                     <TopControlPanel onCoverClicked={handleCoverClicked} onContentsClicked={handleContentsClicked} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
-                    <br />  
                     <Row id="BSafesPage">
                         <Col lg={{span:10, offset:1}}>
                             <div className={`${BSafesStyle.pagePanel}`}>

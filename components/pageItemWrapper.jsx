@@ -106,12 +106,8 @@ const PageItemWrapper = ({ itemId, children }) => {
   }, []);
 
   useEffect(() => {
-    debugLog(debugOn, "initPage" );
+    debugLog(debugOn, "initPage");
     dispatch(initPage());
-    const elem = document.getElementById("BSafesPage");
-    if (elem && navigationInSameContainer) {
-      elem.scrollIntoView({behavior: "smooth"});
-    }
   }, [itemId])
 
   useEffect(() => {
@@ -132,6 +128,10 @@ const PageItemWrapper = ({ itemId, children }) => {
         payload.version = parseInt(version);
       }
       dispatch(getPageItemThunk(payload));
+      const elem = document.getElementById("BSafesPage");
+      if (elem && navigationInSameContainer) {
+        elem.scrollIntoView({ behavior: "smooth" });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageItemId]);

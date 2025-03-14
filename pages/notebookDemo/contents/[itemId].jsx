@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux'
-import {useRouter} from "next/router";
+import { useRouter } from "next/router";
 
 import Row from 'react-bootstrap/Row'
 import Col from 'react-bootstrap/Col'
@@ -31,54 +31,54 @@ export default function NotebookContents() {
 
     const [searchValue, setSearchValue] = useState(null);
 
-    const containerInWorkspace = useSelector( state => state.container.container);
-    const mode = useSelector( state => state.container.mode);
-    const itemsState = useSelector( state => state.container.items);
-    const pageNumber = useSelector( state => state.container.pageNumber);
-    const totalNumberOfPages = useSelector( state => state.container.totalNumberOfPages );
+    const containerInWorkspace = useSelector(state => state.container.container);
+    const mode = useSelector(state => state.container.mode);
+    const itemsState = useSelector(state => state.container.items);
+    const pageNumber = useSelector(state => state.container.pageNumber);
+    const totalNumberOfPages = useSelector(state => state.container.totalNumberOfPages);
     const itemsPerPage = useSelector(state => state.container.itemsPerPage);
     const total = useSelector(state => state.container.total);
 
-    const pageItemId = useSelector( state => state.page.id);
-    const pageStyle = useSelector( state => state.page.style);
+    const pageItemId = useSelector(state => state.page.id);
+    const pageStyle = useSelector(state => state.page.style);
 
-    const items = itemsState.map( (item, index) => 
-        <ItemRow itemIndex={index} key={index} item={item} productID={productID}/>
+    const items = itemsState.map((item, index) =>
+        <ItemRow itemIndex={index} key={index} item={item} productID={productID} />
     );
 
 
-    function gotoAnotherPage (anotherPageNumber) {
-        if(!(pageItemId)) return;
+    function gotoAnotherPage(anotherPageNumber) {
+        if (!(pageItemId)) return;
 
         let idParts, nextPageId, newLink;
         idParts = pageItemId.split(':');
         idParts.splice(0, 1);
-        switch(anotherPageNumber) {
+        switch (anotherPageNumber) {
             case '-1':
-                if(pageNumber > 1) {
+                if (pageNumber > 1) {
 
                 } else {
-                    newLink = `/${productID}/${containerInWorkspace}`;  
+                    newLink = `/${productID}/${containerInWorkspace}`;
                 }
                 break;
             case '+1':
-                if(!totalNumberOfPages || (pageNumber === totalNumberOfPages) ) {
-                    nextPageId = 'np:'+ idParts.join(':') + ':1';
-                    newLink = `/${productID}/p/${nextPageId}`; 
+                if (!totalNumberOfPages || (pageNumber === totalNumberOfPages)) {
+                    nextPageId = 'np:' + idParts.join(':') + ':1';
+                    newLink = `/${productID}/p/${nextPageId}`;
                 } else {
 
                 }
                 break;
             default:
                 idParts.push(anotherPageNumber);
-                nextPageId = 'np:'+ idParts.join(':');
-                newLink = `/${productID}/p/${nextPageId}`;         
-        }      
+                nextPageId = 'np:' + idParts.join(':');
+                newLink = `/${productID}/p/${nextPageId}`;
+        }
 
         router.push(newLink);
     }
 
-    const gotoNextPage = () =>{
+    const gotoNextPage = () => {
         debugLog(debugOn, "Next Page ");
         gotoAnotherPage('+1');
     }
@@ -100,11 +100,11 @@ export default function NotebookContents() {
 
     const handleSubmitSearch = (value) => {
         setSearchValue(value);
-        dispatch(searchItemsThunk({searchValue:value, pageNumber:1}));
+        dispatch(searchItemsThunk({ searchValue: value, pageNumber: 1 }));
     }
 
     const handleCancelSearch = () => {
-        dispatch(listItemsThunk({pageNumber: 1}));
+        dispatch(listItemsThunk({ pageNumber: 1 }));
     }
 
     const handleGoToFirstItem = async () => {
@@ -112,7 +112,7 @@ export default function NotebookContents() {
             const itemId = await getFirstItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/${productID}/p/${itemId}`;
             router.push(newLink);
-        } catch(error) {
+        } catch (error) {
             alert("Could not get the first item in the container");
         }
     }
@@ -122,7 +122,7 @@ export default function NotebookContents() {
             const itemId = await getLastItemInContainer(containerInWorkspace, dispatch);
             const newLink = `/${productID}/p/${itemId}`;
             router.push(newLink);
-        } catch(error) {
+        } catch (error) {
             alert("Could not get the first item in the container");
         }
     }
@@ -136,48 +136,47 @@ export default function NotebookContents() {
     }
 
     useEffect(() => {
-        if(setupDemo()){
+        if (setupDemo()) {
             dispatch(setDemoMode(true));
             dispatch(setDemoWorkspace());
         }
     }, [])
 
-    useEffect(()=>{
-        if(pageNumber) {
+    useEffect(() => {
+        if (pageNumber) {
             debugLog(debugOn, "pageNumber: ", pageNumber);
-            if(pageNumber%2) {
+            if (pageNumber % 2) {
                 dispatch(setPageStyle(BSafesStyle.leftPagePanel));
             } else {
                 dispatch(setPageStyle(BSafesStyle.rightPagePanel));
             }
         }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [pageNumber])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pageNumber])
 
     return (
         <div className={BSafesStyle.pageBackground}>
-            <ContentPageLayout> 
+            <ContentPageLayout>
                 <PageItemWrapper itemId={router.query.itemId}>
                     <br />
-                        <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
-                    <br />  
+                    <TopControlPanel onCoverClicked={handleCoverClicked} onPageNumberChanged={handlePageNumberChanged} onSubmitSearch={handleSubmitSearch} onCancelSearch={handleCancelSearch} onGotoFirstItem={handleGoToFirstItem} onGotoLastItem={handleGoToLastItem}></TopControlPanel>
                     <Row id="BSafesPage">
-                        <Col lg={{span:10, offset:1}}>
+                        <Col lg={{ span: 10, offset: 1 }}>
                             <div className={`${BSafesStyle.pagePanel} ${BSafesStyle.notebookPanel} ${pageStyle}`}>
                                 <br />
                                 <br />
                                 <p className='fs-1 text-center'>Contents</p>
                                 <Row>
-                                    <Col xs={{span:2, offset:1}} sm={{span:2, offset:1}} md={{span:1, offset:1}}>
-           	                            <p className="fs-5">Page</p> 
-                                    </Col> 
+                                    <Col xs={{ span: 2, offset: 1 }} sm={{ span: 2, offset: 1 }} md={{ span: 1, offset: 1 }}>
+                                        <p className="fs-5">Page</p>
+                                    </Col>
                                     <Col xs={8} sm={8} md={9}>
-              	                        <p className="fs-5">Title</p> 
+                                        <p className="fs-5">Title</p>
                                     </Col>
                                 </Row>
                                 <Row>
-                                    <Col xs={{span:10, offset:1}}>
-                                        <hr className="mt-1 mb-1"/>
+                                    <Col xs={{ span: 10, offset: 1 }}>
+                                        <hr className="mt-1 mb-1" />
                                     </Col>
                                 </Row>
                                 {items}
@@ -191,7 +190,7 @@ export default function NotebookContents() {
                                                     total={total}
                                                     limit={itemsPerPage}
                                                     changePage={(page) => {
-                                                        listItems({pageNumber:page})
+                                                        listItems({ pageNumber: page })
                                                     }}
                                                     ellipsis={1}
                                                 />
