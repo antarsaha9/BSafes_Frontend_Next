@@ -1314,7 +1314,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 blob.src = link;
                                 blob.metadata = {
                                     ExcalidrawExportedImage: true,
-                                    ExcalidrawSerializedJSON: embeddJSON
+                                    ExcalidrawSerializedJSON: forge.util.decodeUtf8(embeddJSON)
                                 };
                                 dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                                 resolve();
@@ -1410,7 +1410,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 blob.src = link;
                                 blob.metadata = {
                                     ExcalidrawExportedImage: true,
-                                    ExcalidrawSerializedJSON: embeddJSON
+                                    ExcalidrawSerializedJSON: forge.util.decodeUtf8(embeddJSON)
                                 };
                                 dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                             }
