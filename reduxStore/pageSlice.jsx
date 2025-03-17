@@ -1318,8 +1318,10 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 };
                                 dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                                 resolve();
-                            } else {
+                            } else if(result.item.content) {
                                 dispatch(setContentType('WritingPage'));
+                                resolve();
+                            } else {
                                 resolve();
                             }
                         } else {

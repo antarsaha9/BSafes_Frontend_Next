@@ -165,7 +165,9 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             Excalidraw.exportToCanvas({
                 elements,
                 appState: {
+                    ...ExcalidrawRef.current.getAppState(),
                     exportWithDarkMode: false,
+                    exportBackground: true
                 },
                 files: ExcalidrawRef.current.getFiles(),
             }).then(canvas => {
@@ -492,7 +494,6 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             {scriptsLoaded ?
                 <>
                     {(showPen) && (editable) ?
-
                         <Row>
                             <Col xs={6}>
                                 {(editorId === 'title' && content === '<h2></h2>') && <h6 className='m-0 text-secondary'>Title</h6>}
@@ -536,21 +537,34 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                             </div>
                         </Row>
                     }
-                    {
-                        editorId === 'content' && contentType === 'DrawingPage' && editorId === 'content' &&
-                        <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '60vh' }}>
+                    {editorId === 'content' && contentType === 'DrawingPage' &&
+                        <>
                             {(mode == 'Writing' || mode === 'Saving') ?
-                                <div style={{position: "fixed", zIndex:"100", top: "0", left: "0", height: "100%", width: "100%"}}>
+                                <div style={{ position: "fixed", zIndex: "100", top: "0", left: "0", height: "100%", width: "100%" }}>
                                     <Excalidraw.Excalidraw excalidrawAPI={(excalidrawApi) => {
                                         ExcalidrawRef.current = excalidrawApi;
                                     }}
-                                    />
+                                    >
+                                        <Excalidraw.MainMenu>
+                                            <Excalidraw.MainMenu.Group title="Excalidraw items">
+                                                <Excalidraw.MainMenu.DefaultItems.LoadScene />
+                                                <Excalidraw.MainMenu.DefaultItems.Export />
+                                                <Excalidraw.MainMenu.DefaultItems.SaveAsImage />
+                                                <Excalidraw.MainMenu.DefaultItems.Help />
+                                                <Excalidraw.MainMenu.DefaultItems.ClearCanvas /> 
+                                                <Excalidraw.MainMenu.DefaultItems.ToggleTheme />   
+                                                <Excalidraw.MainMenu.DefaultItems.ChangeCanvasBackground />                                         
+                                            </Excalidraw.MainMenu.Group>
+                                        </Excalidraw.MainMenu>
+                                    </Excalidraw.Excalidraw>
                                 </div>
                                 :
-                                content &&
-                                <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />
+                                <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '60vh' }}>
+                                    {content &&
+                                        <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />}
+                                </Row>
                             }
-                        </Row>
+                        </>
                     }
                 </> : ""
             }
