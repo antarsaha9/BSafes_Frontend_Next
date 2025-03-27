@@ -1,8 +1,7 @@
-let videoChunkSize;
+let mediaChunkSize;
 const broadcastChannelName = 'streamService';
 let streams = {};
-let videoStreams = {};
-let audioStreams = {};
+let mediaStreams = {};
 let streamWaitingList = {};
 
 // ======== Support functions =================================
@@ -31,7 +30,7 @@ function helloDB() {
 
 function openDB() {
   return new Promise((resolve, reject) => {
-    const request = myIndexedDB.open(DBName, 1);
+    const request = myIndexedDB.open(DBName, 3);
     let upgradedNeeded = false;
 
 
@@ -49,13 +48,20 @@ function openDB() {
       upgradedNeeded = true;
       const db = e.target.result;
       const transaction = e.target.transaction;
-      db.createObjectStore(mediaChunkStoreName, { keyPath: "chunkId" });
-      db.createObjectStore(streamStoreName, { keyPath: "videoId" });
-      db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
-      db.createObjectStore(notebookTokensStoreName, { keyPath: "token" });
-      db.createObjectStore(diaryPagesStoreName, { keyPath: "month" });
-      db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
-      db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
+      if( !db.objectStoreNames.contains(mediaChunkStoreName))
+        db.createObjectStore(mediaChunkStoreName, { keyPath: "chunkId" });
+      if( !db.objectStoreNames.contains(streamStoreName))
+        db.createObjectStore(streamStoreName, { keyPath: "videoId" });
+      if( !db.objectStoreNames.contains(notebookPagesStoreName))
+        db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
+      if( !db.objectStoreNames.contains(notebookTokensStoreName))
+        db.createObjectStore(notebookTokensStoreName, { keyPath: "token" });
+      if( !db.objectStoreNames.contains(diaryPagesStoreName))
+        db.createObjectStore(diaryPagesStoreName, { keyPath: "month" });
+      if( !db.objectStoreNames.contains(itemVersionsStoreName))
+        db.createObjectStore(itemVersionsStoreName, { keyPath: "itemId" });
+      if( !db.objectStoreNames.contains(s3ObjectsStoreName))
+        db.createObjectStore(s3ObjectsStoreName, { keyPath: "s3Key" });
       transaction.oncomplete = (e) => {
         resolve(db);
       }
@@ -905,9 +911,9 @@ self.addEventListener("message", async (event) => {
     let browserInfo = event.data.browserInfo;
     let resumeForNewStream = event.data.resumeForNewStream;
     let start = event.data.start;
-    videoChunkSize = event.data.videoChunkSize;
-    let numberOfChunks = Math.floor(fileSize / videoChunkSize);
-    if (fileSize % videoChunkSize) numberOfChunks += 1;
+    mediaChunkSize = event.data.videoChunkSize;
+    let numberOfChunks = Math.floor(fileSize / mediaChunkSize);
+    if (fileSize % mediaChunkSize) numberOfChunks += 1;
     let id = encodeURI(`${timeStamp}_${fileName}`);
     let streamInfo = {
       port,
@@ -922,7 +928,7 @@ self.addEventListener("message", async (event) => {
       chunksInfo: {}
     };
 
-    videoStreams[id] = streamInfo;
+    mediaStreams[id] = streamInfo;
     if (streamWaitingList[id]) {
       let target = streamWaitingList[id].target;
       target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { detail: streamInfo }));
@@ -984,10 +990,10 @@ self.addEventListener("message", async (event) => {
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
-    videoChunkSize = event.data.videoChunkSize;
-    let numberOfChunks = Math.floor(fileSize / videoChunkSize);
+    mediaChunkSize = event.data.videoChunkSize;
+    let numberOfChunks = Math.floor(fileSize / mediaChunkSize);
 
-    if (fileSize % videoChunkSize) numberOfChunks += 1;
+    if (fileSize % mediaChunkSize) numberOfChunks += 1;
 
     let id = encodeURI(`${timeStamp}_${fileName}`);
 
@@ -1000,7 +1006,7 @@ self.addEventListener("message", async (event) => {
       numberOfChunks
     };
 
-    videoStreams[id] = streamInfo;
+    mediaStreams[id] = streamInfo;
     //await addStreamToDB(id, streamInfo);
 
     port.postMessage({ type: "STREAM_OPENED", stream: { id } });
@@ -1035,9 +1041,9 @@ self.addEventListener("message", async (event) => {
     let browserInfo = event.data.browserInfo;
     let resumeForNewStream = event.data.resumeForNewStream;
     let start = event.data.start;
-    audioChunkSize = event.data.audioChunkSize;
-    let numberOfChunks = Math.floor(fileSize / audioChunkSize);
-    if (fileSize % audioChunkSize) numberOfChunks += 1;
+    mediaChunkSize = event.data.audioChunkSize;
+    let numberOfChunks = Math.floor(fileSize / mediaChunkSize);
+    if (fileSize % mediaChunkSize) numberOfChunks += 1;
     let id = encodeURI(`${timeStamp}_${fileName}`);
     let streamInfo = {
       port,
@@ -1052,7 +1058,7 @@ self.addEventListener("message", async (event) => {
       chunksInfo: {}
     };
 
-    audioStreams[id] = streamInfo;
+    mediaStreams[id] = streamInfo;
     if (streamWaitingList[id]) {
       let target = streamWaitingList[id].target;
       target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { detail: streamInfo }));
@@ -1113,10 +1119,10 @@ self.addEventListener("message", async (event) => {
     let fileType = event.data.fileType;
     let fileSize = event.data.fileSize;
     let browserInfo = event.data.browserInfo;
-    audioChunkSize = event.data.audioChunkSize;
-    let numberOfChunks = Math.floor(fileSize / audioChunkSize);
+    mediaChunkSize = event.data.audioChunkSize;
+    let numberOfChunks = Math.floor(fileSize / mediaChunkSize);
 
-    if (fileSize % audioChunkSize) numberOfChunks += 1;
+    if (fileSize % mediaChunkSize) numberOfChunks += 1;
 
     let id = encodeURI(`${timeStamp}_${fileName}`);
 
@@ -1129,7 +1135,7 @@ self.addEventListener("message", async (event) => {
       numberOfChunks
     };
 
-    audioStreams[id] = streamInfo;
+    mediaStreams[id] = streamInfo;
     //await addStreamToDB(id, streamInfo);
 
     port.postMessage({ type: "STREAM_OPENED", stream: { id } });
@@ -1337,15 +1343,15 @@ self.addEventListener("fetch", async (event) => {
     function waitForResponse() {
       let range = event.request.headers.get('Range');
       let start, end;
-      console.log(`new video request range: ${range}`);
+      console.log(`new media request range: ${range}`);
       range = range.split('=')[1].split('-');
       start = parseInt(range[0]);
       end = range[1];
-      console.log(`new video request range start: ${start} end: ${end}`);
+      console.log(`new media request range start: ${start} end: ${end}`);
 
       function getStreamInfo(client) {
         return new Promise(resolve => {
-          let streamInfo = videoStreams[id];
+          let streamInfo = mediaStreams[id];
           if (streamInfo) {
             resolve(streamInfo);
           } else {
@@ -1384,13 +1390,13 @@ self.addEventListener("fetch", async (event) => {
           let timeOut = streamInfo.timeOut;
           if (timeOut) clearTimeout(timeOut);
 
-          let chunkIndex = Math.floor(start / videoChunkSize);
+          let chunkIndex = Math.floor(start / mediaChunkSize);
           if (end === "") {
             if (!streamInfo.twoBytesSent) {
               end = start + 1;
               streamInfo.twoBytesSent = true;
             } else {
-              end = start + (chunkIndex + 1) * videoChunkSize - 1;
+              end = start + (chunkIndex + 1) * mediaChunkSize - 1;
             }
           } else {
             end = parseInt(end);
@@ -1403,11 +1409,11 @@ self.addEventListener("fetch", async (event) => {
           const waitForResult = () => {
             function responseFromDBResult(result) {
               let responseData, response;
-              if (end < (chunkIndex + 1) * videoChunkSize - 1) {
-                responseData = result.dataInBinary.substring(start % videoChunkSize, end % videoChunkSize + 1)
+              if (end < (chunkIndex + 1) * mediaChunkSize - 1) {
+                responseData = result.dataInBinary.substring(start % mediaChunkSize, end % mediaChunkSize + 1)
               } else {
-                responseData = result.dataInBinary.substring(start % videoChunkSize);
-                end = (chunkIndex + 1) * videoChunkSize - 1;
+                responseData = result.dataInBinary.substring(start % mediaChunkSize);
+                end = (chunkIndex + 1) * mediaChunkSize - 1;
               }
               let headers = {
                 'Content-Type': fileType || 'application/octet-stream; charset=utf-8',
