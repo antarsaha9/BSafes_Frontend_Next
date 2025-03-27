@@ -31,7 +31,7 @@ const reduxStore = configureStore({
         // Ignore these field paths in all actions
         ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer', 'payload.xhr', 'payload.writer', 'payload.stripePromise', 'payload.content', 'payload.item.content'],
         // Ignore these paths in the state
-        ignoredPaths: ['page.videosUploadQueue', 'page.videoPanels', 'page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController', 'page.xhr', 'page.writer', 'scripts.stripePromise', 'page.content', 'page.error'],
+        ignoredPaths: ['page.videosUploadQueue', 'page.videoPanels', 'page.audiosUploadQueue', 'page.audioPanels', 'page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController', 'page.xhr', 'page.writer', 'scripts.stripePromise', 'page.content', 'page.error'],
       },
     }),
 })

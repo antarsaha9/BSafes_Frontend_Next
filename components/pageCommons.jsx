@@ -13,6 +13,7 @@ import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
 
 import Editor from './editor';
 import VideoPanel from "./videoPanel";
+import AudioPanel from "./audioPanel";
 import ImagePanel from "./imagePanel";
 import PageCommonControls from "./pageCommonControls";
 import AttachmentPanel from "./attachmentPanel";
@@ -20,7 +21,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setContentType } from "../reduxStore/pageSlice";
+import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadAudiosThunk, downloadAudioThunk, setAudioWordsMode, saveAudioWordsThunk, uploadImagesThunk, uploadAttachmentsThunk,  setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setContentType } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -52,6 +53,7 @@ export default function PageCommons() {
     const contentImagesAllDisplayed = (contentImagesDisplayIndex === contentImagesDownloadQueue.length);
     const contentVideosDownloadQueue = useSelector(state => state.page.contentVideosDownloadQueue);
     const videoPanelsState = useSelector(state => state.page.videoPanels);
+    const audioPanelsState = useSelector(state => state.page.audioPanels);
     const imagePanelsState = useSelector(state => state.page.imagePanels);
     const attachmentPanelsState = useSelector(state => state.page.attachmentPanels);
     const comments = useSelector(state => state.page.comments);
@@ -69,6 +71,9 @@ export default function PageCommons() {
     const imageFilesInputRef = useRef(null);
     const [imagesDragActive, setImagesDragActive] = useState(false);
 
+    const audioFilesInputRef = useRef(null);
+    const [audioDragActive, setAudiosDragActive] = useState(false);
+
     const attachmentsInputRef = useRef(null);
     const [attachmentsDragActive, setAttachmentsDragActive] = useState(false);
 
@@ -80,6 +85,19 @@ export default function PageCommons() {
                 const s3KeyPrefix = thisPanel.s3KeyPrefix;
                 const numberOfChunks = thisPanel.numberOfChunks;
                 dispatch(downloadVideoThunk({ id, s3KeyPrefix, numberOfChunks, fileName: thisPanel.fileName, fileType: thisPanel.fileType, fileSize: thisPanel.fileSize }));
+                break;
+            }
+        }
+    }
+
+    const onAudioClicked = (queueId) => {
+        debugLog(debugOn, "onAudioClicked: ", queueId);
+        for (const thisPanel of audioPanelsState) {
+            if (thisPanel.queueId === queueId) {
+                const id = thisPanel.queueId;
+                const s3KeyPrefix = thisPanel.s3KeyPrefix;
+                const numberOfChunks = thisPanel.numberOfChunks;
+                dispatch(downloadAudioThunk({ id, s3KeyPrefix, numberOfChunks, fileName: thisPanel.fileName, fileType: thisPanel.fileType, fileSize: thisPanel.fileSize }));
                 break;
             }
         }
@@ -260,7 +278,16 @@ export default function PageCommons() {
                 dispatch(setVideoWordsMode({ index: videoIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
-        } else if (editingEditorId.startsWith("image_")) {
+        } else if (editingEditorId.startsWith("audio_")) {
+            const audioIndex = parseInt(editingEditorId.split("_")[1]);
+            console.log(content, audioPanelsState[audioIndex].words)
+            if (content !== audioPanelsState[audioIndex].words) {
+                dispatch(saveAudioWordsThunk({ index: audioIndex, content: content }));
+            } else {
+                dispatch(setAudioWordsMode({ index: audioIndex, mode: "ReadOnly" }));
+                setEditingEditorId(null);
+            }
+        }  else if (editingEditorId.startsWith("image_")) {
             const imageIndex = parseInt(editingEditorId.split("_")[1]);
             if (content !== imagePanelsState[imageIndex].words) {
                 dispatch(saveImageWordsThunk({ index: imageIndex, content: content }));
@@ -283,6 +310,10 @@ export default function PageCommons() {
 
     const videoPanels = videoPanelsState.map((item, index) =>
         <VideoPanel key={item.queueId} panelIndex={"video_" + index} panel={item} onVideoClicked={onVideoClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
+    )
+
+    const audioPanels = audioPanelsState.map((item, index) =>
+        <AudioPanel key={item.queueId} panelIndex={"audio_" + index} panel={item} onAudioClicked={onAudioClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0)} />
     )
 
     const imagePanels = imagePanelsState.map((item, index) =>
@@ -400,6 +431,26 @@ export default function PageCommons() {
         }
     }
 
+    const handleAudioButton = (e) => {
+        debugLog(debugOn, "handleAudioBtn");
+        e.preventDefault();
+        audioFilesInputRef.current.value = null;
+        audioFilesInputRef.current?.click();
+    };
+
+    const uploadAudios = (files, where) => {
+        dispatch(uploadAudiosThunk({ files, where, workspaceKey }));
+    };
+
+    const handleAudioFiles = (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleAudioFiles: ", e.target.id);
+        const files = e.target.files;
+        if (files.length) {
+            uploadAudios(files, 'top');
+        }
+    }
+
     const attachmentPanels = attachmentPanelsState.map((item, index) =>
         <AttachmentPanel key={item.queueId} panelIndex={"attachment_" + index} panel={item} />
     )
@@ -475,6 +526,16 @@ export default function PageCommons() {
                     else images.push(file);
                 }
                 uploadImages(images, 'top');
+            } else if (e.target.id === 'audios') {
+                const audioType = /audio.*/;
+                const audios = [];
+                for (const file of e.dataTransfer.files) {
+                    if (!file.type.match(audioType)) {
+                        debugLog(debugOn, "Not an audio.");
+                    }
+                    else audios.push(file);
+                }
+                uploadAudios(audios, 'top');
             } else if (e.target.id === 'attachments') {
                 debugLog(debugOn, "handleDrop attachments: ", e.dataTransfer.files.length);
                 const attachments = [];
@@ -843,6 +904,24 @@ export default function PageCommons() {
             <Row className="justify-content-center">
                 <Col xs="12" sm="10" lg="8" >
                     {imagePanels}
+                </Col>
+            </Row>
+            <br />
+            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
+                <div className="audios">
+                    <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" multiple className="d-none editControl" id="audios" />
+                    <Row>
+                        <Col id="audios" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.audiosDragDropZoneActive : BSafesStyle.audiosDragDropZone}`}>
+                            <Button id="audios" onClick={handleAudioButton} variant="link" className="text-dark btn btn-labeled">
+                                <h4><i id="audios" className="fa fa-volume-up fa-lg" aria-hidden="true"></i></h4>
+                            </Button>
+                        </Col>
+                    </Row>
+                </div>
+            }
+            <Row className="justify-content-center">
+                <Col xs="12" md="8" >
+                    {audioPanels}
                 </Col>
             </Row>
             <br />

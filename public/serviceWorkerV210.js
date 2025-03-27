@@ -2,6 +2,7 @@ let videoChunkSize;
 const broadcastChannelName = 'streamService';
 let streams = {};
 let videoStreams = {};
+let audioStreams = {};
 let streamWaitingList = {};
 
 // ======== Support functions =================================
@@ -12,7 +13,7 @@ function sleep(ms) {
 
 // indexedDB
 const DBName = "streams";
-const chunkStoreName = "videoChunksStore";
+const mediaChunkStoreName = "mediaChunksStore";
 const streamStoreName = "streamStore";
 const notebookPagesStoreName = "notebookPagesStore";
 const notebookTokensStoreName = "notebookTokensStore";
@@ -48,7 +49,7 @@ function openDB() {
       upgradedNeeded = true;
       const db = e.target.result;
       const transaction = e.target.transaction;
-      db.createObjectStore(chunkStoreName, { keyPath: "chunkId" });
+      db.createObjectStore(mediaChunkStoreName, { keyPath: "chunkId" });
       db.createObjectStore(streamStoreName, { keyPath: "videoId" });
       db.createObjectStore(notebookPagesStoreName, { keyPath: "itemId" });
       db.createObjectStore(notebookTokensStoreName, { keyPath: "token" });
@@ -84,7 +85,7 @@ function deleteDB() {
   })
 }
 
-function addChunkToDB(videoId, chunkIndex, dataInBinary) {
+function addMediaChunkToDB(videoId, chunkIndex, dataInBinary) {
   return new Promise((resolve) => {
 
     const chunkId = `${videoId}_${chunkIndex}`;
@@ -95,8 +96,8 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
     }
 
     const request = streamDB
-      .transaction(chunkStoreName, "readwrite")
-      .objectStore(chunkStoreName)
+      .transaction(mediaChunkStoreName, "readwrite")
+      .objectStore(mediaChunkStoreName)
       .put(chunkDataInBinary);
 
     request.onsuccess = async (e) => {
@@ -106,7 +107,7 @@ function addChunkToDB(videoId, chunkIndex, dataInBinary) {
     }
 
     request.onerror = (e) => {
-      console.log("addChunkToDB failed: ", e.target.error);
+      console.log("addMediaChunkToDB failed: ", e.target.error);
       if (e.target.error.name == "ConstraintError") {
         resolve();
       }
@@ -128,8 +129,8 @@ function updateChunksMap(action, videoId, chunkIndex) {
     }
 
     const request = streamDB
-      .transaction(chunkStoreName, "readwrite")
-      .objectStore(chunkStoreName)
+      .transaction(mediaChunkStoreName, "readwrite")
+      .objectStore(mediaChunkStoreName)
       .put(chunksMap);
 
     request.onsuccess = (e) => {
@@ -150,8 +151,8 @@ function deleteChunkInDB(chunkId) {
   return new Promise((resolve) => {
 
     streamDB
-      .transaction(chunkStoreName, "readwrite")
-      .objectStore(chunkStoreName)
+      .transaction(mediaChunkStoreName, "readwrite")
+      .objectStore(mediaChunkStoreName)
       .delete(chunkId)
       .onsuccess = (e) => {
         console.log("chunk deleted: ", chunkId);
@@ -168,8 +169,8 @@ function getChunkFromDB(videoId, chunkIndex) {
     let time1, time2;
     time1 = Date.now();
     const request = streamDB
-      .transaction(chunkStoreName)
-      .objectStore(chunkStoreName)
+      .transaction(mediaChunkStoreName)
+      .objectStore(mediaChunkStoreName)
       .get(chunkId);
 
     request.onsuccess = (e) => {
@@ -625,7 +626,7 @@ function getDiaryContents(itemId, month) {
 
       for (let i = 0; i < total; i++) {
         const pageNumberInString = pages[i].toString();
-        const pageNumber = pageNumberInString.substring(0,4) + '-' + pageNumberInString.substring(4,6) + '-' + pageNumberInString.substring(6,8);
+        const pageNumber = pageNumberInString.substring(0, 4) + '-' + pageNumberInString.substring(4, 6) + '-' + pageNumberInString.substring(6, 8);
         const pageItemId = itemId.replace("d:", "dp:") + `:${pageNumber}`;
         const item = await getAnItemVersionFromDB(pageItemId);
         if (item) hits.push(item.item);
@@ -943,7 +944,7 @@ self.addEventListener("message", async (event) => {
               let chunkLength = event.data.chunk.length;
               console.log("chunk length: ", chunkLength);
               console.log(`Service Worker RECEIVE: chunkIndex: ${event.data.chunkIndex}`)
-              const chunksMap = await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
+              const chunksMap = await addMediaChunkToDB(id, event.data.chunkIndex, event.data.chunk);
 
               if (streamInfo.chunksInfo[event.data.chunkIndex] && streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches) {
                 console.log(`Pending fetches exist for chunkIndex: ${event.data.chunkIndex}`);
@@ -1012,8 +1013,135 @@ self.addEventListener("message", async (event) => {
               let chunkLength = event.data.chunk.length;
               console.log("chunk length: ", chunkLength);
 
-              await addChunkToDB(id, event.data.chunkIndex, event.data.chunk);
+              await addMediaChunkToDB(id, event.data.chunkIndex, event.data.chunk);
 
+              break;
+            default:
+          }
+        } catch (error) {
+          console.log("port.onmessage failed: ", error)
+        }
+
+      }
+    }
+  }
+
+  async function setupAudioStream(event) {
+    let port = event.ports[0];
+    let timeStamp = event.data.s3KeyPrefix.split(':').pop();
+    let fileName = event.data.fileName;
+    let fileType = event.data.fileType;
+    let fileSize = event.data.fileSize;
+    let browserInfo = event.data.browserInfo;
+    let resumeForNewStream = event.data.resumeForNewStream;
+    let start = event.data.start;
+    audioChunkSize = event.data.audioChunkSize;
+    let numberOfChunks = Math.floor(fileSize / audioChunkSize);
+    if (fileSize % audioChunkSize) numberOfChunks += 1;
+    let id = encodeURI(`${timeStamp}_${fileName}`);
+    let streamInfo = {
+      port,
+      id,
+      fileType,
+      fileName,
+      fileSize,
+      browserInfo,
+      numberOfChunks,
+      twoBytesSent: false,
+      nextChunkIndex: (numberOfChunks === 1) ? -99999 : 1,
+      chunksInfo: {}
+    };
+
+    audioStreams[id] = streamInfo;
+    if (streamWaitingList[id]) {
+      let target = streamWaitingList[id].target;
+      target.dispatchEvent(new CustomEvent("STREAM_AVAILABLE", { detail: streamInfo }));
+    }
+
+    let initialChunkIndex = await findNextChunkToDownload(id, numberOfChunks, 0);
+    let nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, initialChunkIndex + 1);
+    streamInfo.nextChunkIndex = nextChunkIndex;
+
+    console.log(`Service Worker SEND: STREAM_OPENED initialChunkIndex: ${initialChunkIndex}`)
+    port.postMessage({ type: "STREAM_OPENED", stream: { id }, initialChunkIndex });
+    streamInfo.requestedChunkIndex = initialChunkIndex;
+
+    port.onmessage = async event => {
+      if (event.data) {
+        try {
+          switch (event.data.type) {
+            case 'BINARY':
+              let chunkLength = event.data.chunk.length;
+              console.log("chunk length: ", chunkLength);
+              console.log(`Service Worker RECEIVE: chunkIndex: ${event.data.chunkIndex}`)
+              const chunksMap = await addMediaChunkToDB(id, event.data.chunkIndex, event.data.chunk);
+
+              if (streamInfo.chunksInfo[event.data.chunkIndex] && streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches) {
+                console.log(`Pending fetches exist for chunkIndex: ${event.data.chunkIndex}`);
+                streamInfo.chunksInfo[event.data.chunkIndex].pendingFetches.forEach((target) => {
+                  console.log(`dispatch CHUNK_AVAILABLE for chunkIndex:${event.data.chunkIndex}`)
+                  target.dispatchEvent(new Event("CHUNK_AVAILABLE"));
+                })
+              }
+              if (streamInfo.jumpToChunk) {
+                console.log("jumpToChunk: ", streamInfo.jumpToChunk);
+                streamInfo.nextChunkIndex = streamInfo.jumpToChunk;
+                streamInfo.jumpToChunk = null;
+              }
+              console.log(`Service Worker SEND: NEXT_CHUNK nextChunkIndex: ${streamInfo.nextChunkIndex}`)
+              port.postMessage({ type: "NEXT_CHUNK", chunksMap, nextChunkIndex: streamInfo.nextChunkIndex });
+              streamInfo.requestedChunkIndex = streamInfo.nextChunkIndex;
+
+              nextChunkIndex = await findNextChunkToDownload(id, numberOfChunks, streamInfo.nextChunkIndex + 1)
+              streamInfo.nextChunkIndex = nextChunkIndex;
+
+              break;
+            default:
+          }
+        } catch (error) {
+          console.log("port.onmessage failed: ", error)
+        }
+
+      }
+    }
+  }
+
+  async function setupEditorAudioStream(event) {
+    let port = event.ports[0];
+    let timeStamp = event.data.s3KeyPrefix.split(':').pop();
+    let fileName = event.data.fileName;
+    let fileType = event.data.fileType;
+    let fileSize = event.data.fileSize;
+    let browserInfo = event.data.browserInfo;
+    audioChunkSize = event.data.audioChunkSize;
+    let numberOfChunks = Math.floor(fileSize / audioChunkSize);
+
+    if (fileSize % audioChunkSize) numberOfChunks += 1;
+
+    let id = encodeURI(`${timeStamp}_${fileName}`);
+
+    let streamInfo = {
+      id,
+      fileType,
+      fileName,
+      fileSize,
+      browserInfo,
+      numberOfChunks
+    };
+
+    audioStreams[id] = streamInfo;
+    //await addStreamToDB(id, streamInfo);
+
+    port.postMessage({ type: "STREAM_OPENED", stream: { id } });
+
+    port.onmessage = async event => {
+      if (event.data) {
+        try {
+          switch (event.data.type) {
+            case 'BINARY':
+              let chunkLength = event.data.chunk.length;
+              console.log("chunk length: ", chunkLength);
+              await addMediaChunkToDB(id, event.data.chunkIndex, event.data.chunk);
               break;
             default:
           }
@@ -1036,6 +1164,12 @@ self.addEventListener("message", async (event) => {
         break;
       case 'INIT_EDITOR_VIDEO_PORT':
         setupEditorVideoStream(event);
+        break;
+      case 'INIT_AUDIO_PORT':
+        setupAudioStream(event);
+        break;
+      case 'INIT_EDITOR_AUDIO_PORT':
+        setupEditorAudioStream(event);
         break;
       case 'DELETE_DB':
         await deleteDB();
@@ -1193,12 +1327,12 @@ self.addEventListener("fetch", async (event) => {
   if (!idParts[1]) return null;
 
   idParts = idParts[1].split('/');
-  const isVideo = (idParts[0] === 'video');
+  const isMedia = (idParts[0] === 'video') || (idParts[0] === 'audio');
   const id = idParts.pop();
 
   let streamInfo;
 
-  if (isVideo) {
+  if (isMedia) {
 
     function waitForResponse() {
       let range = event.request.headers.get('Range');

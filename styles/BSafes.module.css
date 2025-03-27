@@ -622,6 +622,18 @@
   margin-bottom: 10px;
 }
 
+.audiosDragDropZone {
+  border: 2px dashed #e4e1e1;
+  background-color: #d1f2eb;
+  margin-bottom: 10px;
+}
+
+.audiosDragDropZoneActive {
+  border: 2px dashed #e4e1e1;
+  background-color: white;
+  margin-bottom: 10px;
+}
+
 .attachmentsDragDropZone {
   border: 2px dashed #e4e1e1;
   background-color: blanchedalmond;

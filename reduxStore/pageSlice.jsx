@@ -55,6 +55,11 @@ const initialState = {
     videosUploadIndex: 0,
     videosDownloadQueue: [],
     videoChunksMap: {},
+    audioPanels: [],
+    audiosUploadQueue: [],
+    audiosUploadIndex: 0,
+    audiosDownloadQueue: [],
+    audioChunksMap: {},
     imagePanels: [],
     imageUploadQueue: [],
     imageUploadIndex: 0,
@@ -531,7 +536,7 @@ const pageSlice = createSlice({
             panel.fileType = action.payload.fileType;
             panel.fileSize = action.payload.fileSize;
             panel.s3KeyPrefix = action.payload.s3KeyPrefix;
-            panel.size = action.payload.size;
+            panel.encryptedFileSize = action.payload.encryptedFileSize;
             panel.failedChunk = null;
             panel.src = action.payload.link;
             panel.play = true;
@@ -573,6 +578,100 @@ const pageSlice = createSlice({
             const downloadingChunk = action.payload.downloadingChunk;
             const lastChunkDownloaded = action.payload.lastChunkDownloaded;
             state.videoChunksMap[chunksMapId] = { map, downloadingChunk, lastChunkDownloaded }
+        },
+        addUploadAudios: (state, action) => {
+            if (state.aborted) return;
+            const files = action.payload.files;
+            if (!files.length) return;
+            let newPanels = [];
+            for (let i = 0; i < files.length; i++) {
+                const queueId = 'u' + state.audiosUploadQueue.length;
+                const fileSize = files[i].size;
+                const audioChunkSize = getEditorConfig().audioChunkSize;
+                let numberOfChunks = Math.floor(fileSize / audioChunkSize);
+                if (fileSize % audioChunkSize) numberOfChunks += 1;
+                const newUpload = { file: files[i], numberOfChunks };
+                state.audiosUploadQueue.push(newUpload);
+                const newPanel = {
+                    audio: true,
+                    queueId: queueId,
+                    fileName: forge.util.encode64(encryptBinaryString(encodeURI(files[i].name), state.itemKey)),
+                    fileSize: files[i].size,
+                    fileType: encodeURI(files[i].type),
+                    status: "WaitingForUpload",
+                    numberOfChunks: newUpload.numberOfChunks,
+                    progress: 0
+                }
+                newPanels.push(newPanel);
+            }
+            switch (action.payload.where) {
+                case "top":
+                    state.audioPanels.unshift(...newPanels);
+                    break;
+                default:
+                    let index = parseInt(action.payload.where.split('_').pop());
+                    state.audioPanels.splice(index + 1, 0, ...newPanels);
+            }
+        },
+        uploadingAudio: (state, action) => {
+            if (state.aborted) return;
+            let panel = state.audioPanels.find((item) => item.queueId === 'u' + state.audiosUploadIndex);
+            panel.status = "Uploading";
+            panel.progress = action.payload;
+        },
+        audioUploaded: (state, action) => {
+            if (state.aborted) return;
+
+            let panel = state.audioPanels.find((item) => item.queueId === 'u' + state.audiosUploadIndex);
+            state.audiosUploadIndex += 1;
+            if (!panel) return;
+            panel.status = "Uploaded";
+            panel.progress = 100;
+            panel.fileType = action.payload.fileType;
+            panel.fileSize = action.payload.fileSize;
+            panel.s3KeyPrefix = action.payload.s3KeyPrefix;
+            panel.encryptedFileSize = action.payload.encryptedFileSize;
+            panel.failedChunk = null;
+            panel.src = action.payload.link;
+            panel.play = true;
+
+        },
+        setAudioWordsMode: (state, action) => {
+            let panel = state.audioPanels[action.payload.index];
+            if (!panel) return;
+            panel.editorMode = action.payload.mode;
+        },
+        downloadAudio: (state, action) => {
+            if (state.aborted) return;
+            state.audiosDownloadQueue.push(action.payload);
+        },
+        downloadingAudio: (state, action) => {
+            if (state.aborted) return;
+            if (action.payload.itemId !== state.activeRequest) return;
+            const indexInQueue = action.payload.indexInQueue;
+            const audio = state.audiosDownloadQueue[indexInQueue];
+            const panel = state.audioPanels.find((item) => item.queueId === audio.id);
+            if (!panel) return;
+            if (panel.status !== 'DownloadedFromServiceWorker') panel.status = "DownloadingAudio";
+            panel.progress = action.payload.progress;
+        },
+        audioFromServiceWorker: (state, action) => {
+            if (state.aborted) return;
+            if (action.payload.itemId !== state.activeRequest) return;
+            const indexInQueue = action.payload.indexInQueue;
+            const audio = state.audiosDownloadQueue[indexInQueue];
+            const panel = state.audioPanels.find((item) => item.queueId === audio.id);
+            if (!panel) return;
+            panel.status = "DownloadedFromServiceWorker";
+            panel.play = true;
+            panel.src = action.payload.link;
+        },
+        updateAudioChunksMap: (state, action) => {
+            const chunksMapId = action.payload.chunkId;
+            const map = action.payload.map;
+            const downloadingChunk = action.payload.downloadingChunk;
+            const lastChunkDownloaded = action.payload.lastChunkDownloaded;
+            state.audioChunksMap[chunksMapId] = { map, downloadingChunk, lastChunkDownloaded }
         },
         addUploadImages: (state, action) => {
             if (state.aborted) return;
@@ -852,7 +951,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, setContentType } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, addUploadAudios, uploadingAudio, audioUploaded, setAudioWordsMode, downloadAudio, downloadingAudio, audioFromServiceWorker, updateAudioChunksMap, playingAudio, setContentType } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1318,7 +1417,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 };
                                 dispatch(contentDecrypted({ item: { id: data.itemId, content: blob } }));
                                 resolve();
-                            } else if(result.item.content) {
+                            } else if (result.item.content) {
                                 dispatch(setContentType('WritingPage'));
                                 resolve();
                             } else {
@@ -1922,6 +2021,221 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+export const downloadAudioThunk = (data) => async (dispatch, getState) => {
+    const audio = data;
+    let state = getState().page;
+    const indexInAudiosDownloadQueue = state.audiosDownloadQueue.length;
+    const itemId = state.id;
+    const isUsingServiceWorker = true;
+
+    if (state.audiosDownloadQueue.length === 0) {
+        navigator.serviceWorker.addEventListener("message", async (event) => {
+            debugLog(debugOn, event.data);
+            /*This happens when playing from html audio player, but the stream does not exist.*/
+            if (event.data.type === 'STREAM_NOT_FOUND') {
+                let audioLinkFromServiceWorker = '/downloadFile/audio/' + event.data.id;
+                state = getState().page;
+                let audio = null;
+                let i;
+                for (i = 0; i < state.audiosDownloadQueue.length; i++) {
+                    audio = state.audiosDownloadQueue[i];
+                    if (audio.src === audioLinkFromServiceWorker) break;
+                }
+                if (audio) {
+                    let start = event.data.start;
+                    await downloadAnAudio(audio, i, true, start);
+                }
+            }
+        });
+    }
+    dispatch(downloadAudio(data));
+    const downloadAnAudio = (audio, indexInQueue, resumeForNewStream = false, start = 0) => {
+        debugLog(debugOn, "downloadAnAudio");
+        let decryptedAudioStr, audioStarted = false;
+        return new Promise(async (resolve, reject) => {
+            if (audio.numberOfChunks) {
+                let s3KeyPrefix, encrytedFileName, fileName, fileType, fileSize, numberOfChunks, messageChannel, fileInUint8Array, fileInUint8ArrayIndex, audioLinkFromServiceWorker;
+                fileName = audio.fileName;
+                fileType = decodeURI(audio.fileType);
+                fileSize = audio.fileSize;
+                numberOfChunks = audio.numberOfChunks;
+                s3KeyPrefix = audio.s3KeyPrefix;
+
+                async function setupWriter() {
+                    debugLog(debugOn, "setupWriter");
+                    function talkToServiceWorker() {
+                        return new Promise(async (resolve, reject) => {
+                            debugLog(debugOn, "talkToServiceWorker");
+                            navigator.serviceWorker.getRegistration("/").then((registration) => {
+                                debugLog(debugOn, "registration: ", registration);
+                                if (registration) {
+
+                                    messageChannel = new MessageChannel();
+
+                                    registration.active.postMessage({
+                                        type: 'INIT_AUDIO_PORT',
+                                        audioChunkSize: getEditorConfig().audioChunkSize,
+                                        s3KeyPrefix,
+                                        fileName,
+                                        fileType,
+                                        fileSize,
+                                        browserInfo: getBrowserInfo(),
+                                        resumeForNewStream,
+                                        start
+                                    }, [messageChannel.port2]);
+
+                                    messageChannel.port1.onmessage = async (event) => {
+                                        // Print the result
+                                        debugLog(debugOn, event.data);
+                                        if (event.data) {
+                                            switch (event.data.type) {
+                                                case 'STREAM_OPENED':
+                                                    audioLinkFromServiceWorker = '/downloadFile/audio/' + event.data.stream.id;
+                                                    debugLog(debugOn, "STREAM_OPENED");
+                                                    if (event.data.initialChunkIndex >= 0) {
+                                                        await downloadDecryptAndAssemble(event.data.initialChunkIndex);
+                                                    }
+                                                    if (event.data.initialChunkIndex !== 0) {
+                                                        dispatch(audioFromServiceWorker({ itemId, indexInQueue, link: audioLinkFromServiceWorker }));
+                                                        audioStarted = true;
+                                                    }
+                                                    resolve();
+                                                    break;
+                                                case 'NEXT_CHUNK':
+                                                    debugLog(debugOn, "NEXT_CHUNK: ", event.data.nextChunkIndex);
+                                                    if (!audioStarted) {
+                                                        dispatch(audioFromServiceWorker({ itemId, indexInQueue, link: audioLinkFromServiceWorker }));
+                                                        audioStarted = true;
+                                                    }
+                                                    if (event.data.nextChunkIndex >= 0) {
+                                                        await downloadDecryptAndAssemble(event.data.nextChunkIndex);
+                                                    }
+                                                    const chunksMap = event.data.chunksMap;
+                                                    chunksMap.downloadingChunk = event.data.nextChunkIndex;
+                                                    chunksMap.lastChunkDownloaded = (event.data.nextChunkIndex === -99999);
+                                                    dispatch(updateAudioChunksMap(chunksMap));
+                                                    break;
+                                                case 'STREAM_CLOSED':
+                                                    messageChannel.port1.onmessage = null
+                                                    messageChannel.port1.close();
+                                                    messageChannel.port2.close();
+                                                    messageChannel = null;
+                                                    break;
+                                                default:
+                                            }
+                                        }
+                                    };
+
+                                } else {
+                                    debugLog(debugOn, "serviceWorker.getRegistration error");
+                                    reject("serviceWorker.getRegistration error")
+                                }
+                            });
+                        })
+                    }
+
+                    if (!isUsingServiceWorker) {
+                        fileInUint8Array = new Uint8Array(fileSize);
+                        fileInUint8ArrayIndex = 0;
+                        return true;
+                    } else {
+                        try {
+                            await talkToServiceWorker();
+                            return true;
+                        } catch (error) {
+                            debugLog(debugOn, "setupWriter failed: ", error)
+                            return false;
+                        }
+                    }
+                }
+
+                function writeAChunkToFile(chunkIndex, chunk) {
+                    debugLog(debugOn, "writeAChunkToFile");
+                    return new Promise(async (resolve, reject) => {
+                        if (!isUsingServiceWorker) {
+                            for (let offset = 0; offset < chunk.length; offset++) {
+                                if (fileInUint8ArrayIndex + offset < fileInUint8Array.length) {
+                                    fileInUint8Array[fileInUint8ArrayIndex + offset] = chunk.charCodeAt(offset);
+                                } else {
+                                    reject("writeAChunkToFile error: fileInUint8Array overflow");
+                                    return;
+                                }
+                            }
+                            fileInUint8ArrayIndex += chunk.length;
+                            resolve();
+                        } else {
+                            debugLog(debugOn, "BINARY: ", Date.now());
+                            messageChannel.port1.postMessage({
+                                type: 'BINARY',
+                                chunkIndex,
+                                chunk
+                            });
+                            resolve();
+                        }
+                    })
+                }
+
+                function writeAChunkToFileFailed(chunkIndex) {
+                    if (!isUsingServiceWorker) {
+
+                    } else {
+
+                    }
+                }
+
+                function downloadDecryptAndAssemble(chunkIndex) {
+                    debugLog(debugOn, "downloadDecryptAndAssemble", chunkIndex);
+                    return new Promise(async (resolve, reject) => {
+                        try {
+                            let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false, dispatch);
+                            let response;
+                            response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAudio, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks, indexInAudiosDownloadQueue);
+                            debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
+                            if (state.activeRequest !== itemId) {
+                                reject("Aborted");
+                                return;
+                            }
+
+
+                            let buffer = Buffer.from(response, 'binary');
+                            let downloadedBinaryString = buffer.toString('binary');
+                            debugLog(debugOn, "Downloaded string length: ", downloadedBinaryString.length);
+                            let decryptedChunkStr = await decryptChunkBinaryStringToBinaryStringAsync(downloadedBinaryString, state.itemKey)
+                            debugLog(debugOn, "Decrypted chunk string length: ", decryptedChunkStr.length);
+
+                            await writeAChunkToFile(chunkIndex, decryptedChunkStr);
+
+
+                            resolve();
+                        } catch (error) {
+                            debugLog(debugOn, "downloadDecryptAndAssemble failed: ", error);
+                            writeAChunkToFileFailed(chunkIndex);
+                            reject("downloadDecryptAndAssemble error.");
+                        }
+                    });
+                }
+
+                if (!(await setupWriter())) {
+                    reject("setupWriter failed");
+                    return;
+                };
+
+            }
+        });
+    }
+
+    return new Promise(async (resolve, reject) => {
+        state = getState().page;
+        debugLog(debugOn, `downloadAudioThunk: audiosDownloadQueue index:${indexInAudiosDownloadQueue}, length: ${state.audiosDownloadQueue.length}`);
+        try {
+            await downloadAnAudio(audio, indexInAudiosDownloadQueue);
+            resolve();
+        } catch (error) {
+            reject("Failed to download a audio.");
+        }
+    });
+}
+
 async function createNewItemVersion(itemCopy, dispatch) {
     return new Promise(async (resolve, reject) => {
         const workspace = itemCopy.space;
@@ -2448,7 +2762,6 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
             alert('error');
             reject("Failed to save draft.");
         }
-
     });
 }
 
@@ -2965,6 +3278,375 @@ export const uploadVideoSnapshotThunk = (data) => async (dispatch, getState) => 
     } catch (error) {
         console.log("uploadSnapshot failed");
     }
+}
+
+export const deleteAVideoThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.DeleteAVideo, () => {
+        return new Promise(async (resolve, reject) => {
+            let state, newVideos, videoPanels, itemCopy;
+            state = getState().page;
+            itemCopy = { ...state.itemCopy };
+            newVideos = itemCopy.videos.filter(function (video) {
+                return data.panel.s3Key !== video.s3Key;
+            });
+            try {
+
+                itemCopy.videos = newVideos;
+                itemCopy.update = "videos";
+                await createNewItemVersionForPage(itemCopy, dispatch);
+
+                videoPanels = state.videoPanels.filter((panel) => {
+                    return data.panel.s3Key !== panel.s3Key;
+                })
+                dispatch(newVersionCreated({
+                    itemCopy,
+                    videoPanels
+                }));
+                resolve();
+            } catch (error) {
+                reject("Failed to delete videos.");
+            }
+        });
+    });
+}
+
+const uploadAnAudio = (dispatch, getState, state, { file: audio, numberOfChunks }, workspaceKey) => {
+    const chunkSize = getEditorConfig().audioChunkSize;
+    const fileType = audio.type;
+    const fileSize = audio.size;
+    const fileName = audio.name;
+    let i, encryptedFileSize = 0, s3KeyPrefix = 'null', startingChunk;
+    let serviceWorkerReady = false, audioLinkFromServiceWorker = null, messageChannel = null;
+    const workspace = getState().container.workspace;;
+    // BEGIN **** For playing back audio from service worker ***
+    function setupWriter(s3KeyPrefix) {
+        debugLog(debugOn, "setupWriter");
+        return new Promise(async (resolve, reject) => {
+            debugLog(debugOn, "talkToServiceWorker");
+            navigator.serviceWorker.getRegistration("/").then((registration) => {
+                debugLog(debugOn, "registration: ", registration);
+                if (registration) {
+
+                    messageChannel = new MessageChannel();
+
+                    registration.active.postMessage({
+                        type: 'INIT_EDITOR_AUDIO_PORT',
+                        audioChunkSize: getEditorConfig().audioChunkSize,
+                        s3KeyPrefix,
+                        fileName,
+                        fileType,
+                        fileSize,
+                        browserInfo: getBrowserInfo()
+                    }, [messageChannel.port2]);
+
+                    messageChannel.port1.onmessage = async (event) => {
+                        // Print the result
+                        debugLog(debugOn, event.data);
+                        if (event.data) {
+                            switch (event.data.type) {
+                                case 'STREAM_OPENED':
+                                    audioLinkFromServiceWorker = '/downloadFile/audio/' + event.data.stream.id;
+                                    debugLog(debugOn, "STREAM_OPENED");
+                                    resolve();
+                                    break;
+                                case 'NEXT_CHUNK':
+                                    break;
+                                case 'STREAM_CLOSED':
+                                    messageChannel.port1.onmessage = null
+                                    messageChannel.port1.close();
+                                    messageChannel.port2.close();
+                                    messageChannel = null;
+                                    break;
+                                default:
+                            }
+                        }
+                    };
+                } else {
+                    debugLog(debugOn, "serviceWorker.getRegistration error");
+                    reject("serviceWorker.getRegistration error")
+                }
+            }).catch(error => {
+                debugLog(debugOn, "serviceWorker.getRegistration error: ", error);
+                reject(error);
+            });
+        })
+    }
+    function writeAChunkToFile(chunkIndex, chunk) {
+        debugLog(debugOn, "writeAChunkToFile");
+        return new Promise(async (resolve, reject) => {
+            debugLog(debugOn, "BINARY: ", Date.now());
+            messageChannel.port1.postMessage({
+                type: 'BINARY',
+                chunkIndex,
+                chunk
+            });
+            resolve();
+        })
+    }
+
+    // END **** For playing back audio from service worker ***
+
+    function sliceEncryptAndUpload(file, chunkIndex) {
+        return new Promise((resolve, reject) => {
+            let reader, offset, binaryData, encryptedData, fileUploadProgress = 0;
+
+            offset = (chunkIndex) * chunkSize;
+            reader = new FileReader();
+            const blob = file.slice(offset, offset + chunkSize);
+
+            function uploadAChunk(index, data) {
+                let result, s3Key, signedURL, s3KeyPrefixParts, timeStamp;
+
+                s3KeyPrefixParts = s3KeyPrefix.split(':');
+                timeStamp = s3KeyPrefixParts[s3KeyPrefixParts.length - 1];
+
+                return new Promise(async (resolve, reject) => {
+                    try {
+                        if (!workspace.startsWith("d:")) {
+                            result = await preS3ChunkUpload(state.id, index, timeStamp);
+                            fileUploadProgress = index * (100 / numberOfChunks) + 15 / numberOfChunks;
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAudio(fileUploadProgress));
+
+                            s3Key = result.s3Key;
+                            s3KeyPrefix = result.s3KeyPrefix;
+                            signedURL = result.signedURL;
+                            debugLog(debugOn, 'chunk signed url', signedURL);
+
+                            const uploader = async (data, signedURL, uploadingPlaceholder) => {
+                                const config = {
+                                    onUploadProgress: async (progressEvent) => {
+                                        const percentCompleted = 15 + Math.ceil(progressEvent.loaded * 85 / progressEvent.total);
+                                        let fileUploadProgress = index * (100 / numberOfChunks) + percentCompleted / numberOfChunks;
+                                        fileUploadProgress = (Math.round(fileUploadProgress * 100) / 100).toFixed(2);
+                                        debugLog(debugOn, `Chunk upload progress: ${progressEvent.loaded}/${progressEvent.total} ${percentCompleted} `);
+                                        debugLog(debugOn, `upload prgoress: ${fileUploadProgress}`);
+                                        dispatch(uploadingPlaceholder(fileUploadProgress));
+                                    },
+                                    headers: {
+                                        'Content-Type': 'binary/octet-stream'
+                                    }
+                                }
+                                await putS3Object(s3Key, signedURL, data, config, dispatch);
+                            }
+                            await uploader(data, signedURL, uploadingAudio);
+                        } else {
+                            if (index === 0) {
+                                const demoOwner = workspace.split(":")[1];
+                                s3KeyPrefix = `${demoOwner}:3:${Date.now()}L`;
+                            }
+                            s3Key = `${s3KeyPrefix}_chunk_${index}`;
+                            const params = {
+                                table: 's3Objects',
+                                key: s3Key,
+                                data
+                            }
+                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDBTable(params);
+                            if (result.status !== 'ok') {
+                                throw new Error("Failed to write a chunk to service worker DB!");
+                            }
+                            fileUploadProgress = (index + 1) * (100 / numberOfChunks);
+                            debugLog(debugOn, `File upload prgoress: ${fileUploadProgress}`);
+                            dispatch(uploadingAudio(fileUploadProgress));
+                        }
+                        if (!serviceWorkerReady) {
+                            await setupWriter(s3KeyPrefix);
+                            serviceWorkerReady = true;
+                        }
+                        await writeAChunkToFile(chunkIndex, binaryData);
+                        resolve();
+                    } catch (error) {
+                        debugLog(debugOn, 'uploadAChunk failed: ', error);
+                        reject(error);
+                    }
+                });
+            }
+
+            reader.onloadend = async function (e) {
+                binaryData = reader.result;
+
+                encryptedData = await encryptChunkBinaryStringToBinaryStringAsync(binaryData, state.itemKey);
+
+                encryptedFileSize += encryptedData.length;
+
+                try {
+                    await uploadAChunk(chunkIndex, encryptedData);
+                    resolve();
+                } catch (error) {
+                    debugLog(debugOn, 'sliceEncryptAndUpload failed: ', error);
+                    reject(error);
+                }
+            };
+            reader.readAsBinaryString(blob);
+        });
+    }
+
+    return new Promise(async (resolve, reject) => {
+        startingChunk = 0;
+        for (i = startingChunk; i < numberOfChunks; i++) {
+            try {
+                debugLog(debugOn, 'sliceEncryptAndUpload chunks: ', i + '/' + numberOfChunks);
+                await sliceEncryptAndUpload(audio, i);
+            } catch (error) {
+                debugLog(debugOn, 'uploadAnAudio failed: ', error);
+                if (confirm("Network failure, retry?")) {
+                    i--;
+                } else {
+                    break;
+                };
+            }
+        }
+
+        if (i === numberOfChunks) {
+            debugLog(debugOn, `uploadAnAudio done, total chunks: ${numberOfChunks} encryptedFileSize: ${encryptedFileSize}`);
+            return resolve({ fileType, fileSize, s3KeyPrefix, encryptedFileSize, link: audioLinkFromServiceWorker });
+        } else {
+            reject("Uploadig a audio failed!")
+        }
+    })
+}
+
+export const uploadAudiosThunk = (data) => async (dispatch, getState) => {
+    let state, workspaceKey, itemKey, audio, uploadResult;
+    state = getState().page;
+    workspaceKey = data.workspaceKey;
+
+    if (state.activity & pageActivity.UploadAudios) {
+        dispatch(addUploadAudios({ files: data.files, where: data.where }));
+        return;
+    }
+
+    function doneUploadAnAudio() {
+        debugLog(debugOn, 'doneUploadAnAudio ...');
+        const audios = [];
+
+        const findAudioWordsByKey = (audios, s3KeyPrefix) => {
+            if (!audios) return null;
+            for (let i = 0; i < audios.length; i++) {
+                if (audios[i].s3KeyPrefix === s3KeyPrefix) {
+                    return audios[i].words;
+                }
+            }
+            return null;
+        }
+
+        for (let i = 0; i < state.audioPanels.length; i++) {
+            const audioPanel = state.audioPanels[i];
+            let audio = { s3KeyPrefix: audioPanel.s3KeyPrefix, fileType: audioPanel.fileType, fileName: audioPanel.fileName, fileSize: audioPanel.fileSize, encryptedFileSize: audioPanel.encryptedFileSize, numberOfChunks: audioPanel.numberOfChunks };
+            if (audioPanel.queueId.startsWith('d')) {
+                audio.fileName = forge.util.encode64(encryptBinaryString(encodeURI(audioPanel.fileName), state.itemKey))
+            }
+            let words = null;
+            if (state.itemCopy) words = findAudioWordsByKey(state.itemCopy.audios, audio.s3KeyPrefix);
+            audio.words = words;
+            audios.push(audio);
+        }
+
+        return new Promise(async (resolve, reject) => {
+            if (!state.itemCopy) {
+                try {
+                    let keyEnvelope = encryptBinaryString(state.itemKey, workspaceKey);
+
+                    let newPageData = {
+                        itemId: state.id,
+                        keyEnvelope: forge.util.encode64(keyEnvelope),
+                        audios: JSON.stringify(audios)
+                    };
+
+                    let updatedState = {
+                    };
+
+                    await createANewPage(dispatch, getState, state, newPageData, updatedState);
+                    resolve();
+                } catch (error) {
+                    reject("Failed to create a new page with attachment.");
+                }
+            } else {
+                let itemCopy = {
+                    ...state.itemCopy
+                }
+                try {
+                    itemCopy.audios = audios;
+                    itemCopy.update = "audios";
+                    await createNewItemVersionForPage(itemCopy, dispatch);
+                    dispatch(newVersionCreated({
+                        itemCopy
+                    }));
+                    resolve();
+                } catch (error) {
+                    reject("Failed to add an audio.");
+                }
+            }
+        })
+    }
+
+    newActivity(dispatch, pageActivity.UploadAudios, () => {
+        return new Promise(async (resolve, reject) => {
+            state = getState().page;
+            if (!state.itemCopy) {
+                itemKey = generateNewItemKey();
+                dispatch(newItemKey({ itemKey }));
+            }
+            dispatch(addUploadAudios({ files: data.files, where: data.where }));
+            state = getState().page;
+            while (state.audiosUploadQueue.length > state.audiosUploadIndex) {
+                if (state.aborted) {
+                    debugLog(debugOn, "abort: ", state.aborted);
+                    break;
+                }
+                debugLog(debugOn, "======================= Uploading file: ", `index: ${state.audiosUploadIndex} name: ${state.audiosUploadQueue[state.audiosUploadIndex].file.name}`)
+                audio = state.audiosUploadQueue[state.audiosUploadIndex];
+                try {
+                    uploadResult = await uploadAnAudio(dispatch, getState, state, audio, workspaceKey);
+                    dispatch(audioUploaded(uploadResult));
+                    state = getState().page;
+                    await doneUploadAnAudio(uploadResult);
+                    state = getState().page;
+                } catch (error) {
+                    debugLog(debugOn, 'uploadAudiosThunk failed: ', error);
+                    reject("Failed to upload an audio.");
+                    break;
+                }
+            }
+            if (state.audiosUploadQueue.length === state.audiosUploadIndex) {
+                resolve();
+            }
+            if (process.env.NEXT_PUBLIC_platform === 'android') {
+                if (Android) {
+                    console.log("Calling Android.deleteTemporaryFiles")
+                    Android.deleteTemporaryFiles();
+                }
+            }
+        });
+    });
+}
+
+export const deleteAnAudioThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.DeleteAnAudio, () => {
+        return new Promise(async (resolve, reject) => {
+            let state, newAudios, audioPanels, itemCopy;
+            state = getState().page;
+            itemCopy = { ...state.itemCopy };
+            newAudios = itemCopy.audios.filter(function (audio) {
+                return data.panel.s3Key !== audio.s3Key;
+            });
+            try {
+                itemCopy.audios = newAudios;
+                itemCopy.update = "audios";
+                await createNewItemVersionForPage(itemCopy, dispatch);
+                audioPanels = state.audioPanels.filter((panel) => {
+                    return data.panel.s3Key !== panel.s3Key;
+                })
+                dispatch(newVersionCreated({
+                    itemCopy,
+                    audioPanels
+                }));
+                resolve();
+            } catch (error) {
+                reject("Failed to delete audios.");
+            }
+        });
+    });
 }
 
 const uploadAnImage = async (dispatch, getState, state, file) => {
@@ -3874,6 +4556,44 @@ export const saveVideoWordsThunk = (data) => async (dispatch, getState) => {
                 reject("Failed to save video words.");
             }
 
+        });
+    })
+}
+
+export const saveAudioWordsThunk = (data) => async (dispatch, getState) => {
+    newActivity(dispatch, pageActivity.SaveAudioWords, () => {
+        return new Promise(async (resolve, reject) => {
+            console.log('saveAudioWordsThunk')
+            let state, encodedContent, encryptedContent, itemCopy, audioPanels;
+            const content = data.content;
+            const index = data.index;
+            state = getState().page;
+            try {
+                encodedContent = forge.util.encodeUtf8(content);
+                encryptedContent = encryptBinaryString(encodedContent, state.itemKey);
+                if (!state.itemCopy) {
+                } else {
+                    itemCopy = JSON.parse(JSON.stringify(state.itemCopy));
+                    itemCopy.audios[index].words = forge.util.encode64(encryptedContent);
+                    itemCopy.update = "audio words";
+                    audioPanels = JSON.parse(JSON.stringify(state.audioPanels));
+                    for (let i = 0; i < audioPanels.length; i++) {
+                        audioPanels[i].thumbnail = state.audioPanels[i].thumbnail;
+                        audioPanels[i].src = state.audioPanels[i].src;
+                        audioPanels[i].play = state.audioPanels[i].play;
+                    }
+                    audioPanels[index].words = content;
+                    await createNewItemVersionForPage(itemCopy, dispatch);
+                    dispatch(newVersionCreated({
+                        itemCopy,
+                        audioPanels
+                    }));
+                    resolve();
+                }
+            } catch (error) {
+                console.error(error);
+                reject("Failed to save audio words.");
+            }
         });
     })
 }
