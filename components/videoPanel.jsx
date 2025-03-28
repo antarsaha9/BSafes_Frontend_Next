@@ -138,6 +138,11 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
 
     return (
         <div>
+            <DropdownButton id="dropdown-basic-button" title="Dropdown button" autoClose={false}>
+      <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
+      <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
+      <Dropdown.Item href="#/action-3">Something else</Dropdown.Item>
+    </DropdownButton>
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
             <Row className="">
                 <Col>
@@ -154,7 +159,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                 </> :
                                 <>
                                     <Image alt="image broken" src={panel.thumbnail || panel.placeholder} fluid />
-                                    { panel.status === "Downloaded" &&
+                                    {panel.status === "Downloaded" &&
                                         <div style={{
                                             position: 'absolute',
                                             width: '100px',
@@ -192,7 +197,6 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                 <Col xs={4} sm={3} className="p-0">
                     {(panel.status !== 'Uploading' || panel.status === 'WaitingForUpload') ?
                         <div>
-
                             {editable ?
                                 <DropdownButton variant="link" align="end" title={
                                     <span>

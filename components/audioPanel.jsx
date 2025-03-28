@@ -83,6 +83,9 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
     return (
         <div>
             <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" className="d-none editControl" id="audios" />
+            <Row>
+                <p><i className="fa fa-volume-up" aria-hidden="true"></i> {panel.fileName}</p>
+            </Row>
             <Row className="">
                 <Col>
                     {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadFailed' || panel.status === 'DownloadingAudio' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
@@ -92,14 +95,14 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
                                     {panel.src ?
                                         <audio alt="Audio broken" playsInline controls autoPlay muted src={panel.src} onPlaying={onPlaying} onCanPlay={onCanPlay} onLoadedMetadata={onLoadedMetadata} onLoadedData={onLoadedData} className='w-100' /> :
                                         <>
-                                            <Button>Play Audio</Button>
+                                            <Button>Play</Button>
                                         </>
                                     }
                                 </> :
                                 <>
-                                    { panel.status === "Downloaded" &&
+                                    {panel.status === "Downloaded" &&
                                         <Button onClick={handleAudioClicked}>
-                                            Play Audio
+                                            Play
                                         </Button>
                                     }
                                     {(panel.status === "DownloadingAudio") && <LoaderSpinner />}
@@ -109,7 +112,12 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
                         : ""
                     }
                     {(panel.status === "Uploading") ? <ProgressBar now={panel.progress} /> : ""}
-                    {(panel.status === "WaitingForUpload" || panel.status === "WaitingForDownload") && <i className="fa fa-volume-up" aria-hidden="true"></i>}
+                    {(panel.status === "WaitingForUpload") && <></>}
+                    {(panel.status === "WaitingForDownload") &&
+                        <Button size="sm" onClick={handleAudioClicked}>
+                            Play
+                        </Button>
+                    }
                 </Col>
             </Row>
             <Row className="">

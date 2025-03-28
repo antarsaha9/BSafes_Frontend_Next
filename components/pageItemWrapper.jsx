@@ -227,7 +227,7 @@ const PageItemWrapper = ({ itemId, children }) => {
       dispatch(decryptPageItemThunk({ itemId: pageItemId, workspaceKey }));
 
       if (!(pageType === 'f' || pageType === 'b' || pageType === 'n' || pageType === 'd')) {
-        dispatch(getPageCommentsThunk({ itemId: pageItemId }));
+        //dispatch(getPageCommentsThunk({ itemId: pageItemId }));
       }
 
       setContainerCleared(false);

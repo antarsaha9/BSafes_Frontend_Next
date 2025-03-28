@@ -8,7 +8,8 @@ import ButtonGroup from 'react-bootstrap/ButtonGroup';
 import Image from 'react-bootstrap/Image';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
-import Modal from "react-bootstrap/Modal";
+
+import { Blocks } from 'react-loader-spinner';
 
 import jquery from "jquery"
 
@@ -242,7 +243,6 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             await ic.Codemirror;
             await ic.Photoswipe;
             await ic.Others;
-            Excalidraw = (await ic.Excalidraw)[0];
 
             setScriptsLoaded(true);
 
@@ -566,7 +566,17 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                             }
                         </>
                     }
-                </> : ""
+                </> : 
+                <div className={BSafesStyle.screenCenter}>
+                <Blocks
+                    visible={true}
+                    height="40"
+                    width="40"
+                    ariaLabel="blocks-loading"
+                    wrapperStyle={{}}
+                    wrapperClass="blocks-wrapper"
+                />
+            </div>
             }
         </>
     );

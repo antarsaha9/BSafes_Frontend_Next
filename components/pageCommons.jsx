@@ -241,6 +241,10 @@ export default function PageCommons() {
             const videoIndex = parseInt(editorId.split("_")[1]);
             dispatch(setVideoWordsMode({ index: videoIndex, mode: "Writing" }));
             setEditingEditorId(editorId);
+        } else if (editorId.startsWith("audio_")) {
+            const audioIndex = parseInt(editorId.split("_")[1]);
+            dispatch(setAudioWordsMode({ index: audioIndex, mode: "Writing" }));
+            setEditingEditorId(editorId);
         } else if (editorId.startsWith("image_")) {
             const imageIndex = parseInt(editorId.split("_")[1]);
             dispatch(setImageWordsMode({ index: imageIndex, mode: "Writing" }));
@@ -341,6 +345,15 @@ export default function PageCommons() {
                         case "Saving":
                         case "ReadOnly":
                             dispatch(setVideoWordsMode({ index: videoIndex, mode }))
+                            break;
+                        default:
+                    }
+                } if (editingEditorId.startsWith("audio_")) {
+                    const audioIndex = parseInt(editingEditorId.split("_")[1]);
+                    switch (mode) {
+                        case "Saving":
+                        case "ReadOnly":
+                            dispatch(setAudioWordsMode({ index: audioIndex, mode }))
                             break;
                         default:
                     }

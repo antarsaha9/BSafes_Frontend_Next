@@ -16,7 +16,7 @@ import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable, writ
 
 const embeddJSONSeperator = '=#=#=embeddJSON=';
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
-const debugOn = false;
+const debugOn = true;
 
 const initialState = {
     aborted: false,
@@ -226,6 +226,39 @@ function decryptPageItemFunc(state, workspaceKey) {
             newPanels.push(newPanel);
         }
         state.videoPanels = newPanels;
+    }
+
+    if (item.audios) {
+        let newPanels = [];
+        for (let i = 0; i < item.audios.length; i++) {
+            let audio = item.audios[i];
+            let encryptedWords, encodedWords, words;
+            const queueId = 'd' + i;
+            if (audio.words && audio.words !== "") {
+                encryptedWords = forge.util.decode64(audio.words);
+                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
+                words = forge.util.decodeUtf8(encodedWords);
+                words = DOMPurify.sanitize(words);
+            } else {
+                words = "";
+            }
+
+            const newPanel = {
+                audio: true,
+                queueId,
+                fileType: audio.fileType,
+                fileName: decodeURI(decryptBinaryString(forge.util.decode64(audio.fileName), state.itemKey)),
+                fileSize: audio.fileSize,
+                encryptedFileSize: audio.encryptedFileSize,
+                status: "WaitingForDownload",
+                numberOfChunks: audio.numberOfChunks,
+                s3KeyPrefix: audio.s3KeyPrefix,
+                progress: 0,
+                words
+            }
+            newPanels.push(newPanel);
+        }
+        state.audioPanels = newPanels;
     }
 
     if (item.images) {
@@ -595,7 +628,7 @@ const pageSlice = createSlice({
                 const newPanel = {
                     audio: true,
                     queueId: queueId,
-                    fileName: forge.util.encode64(encryptBinaryString(encodeURI(files[i].name), state.itemKey)),
+                    fileName: files[i].name,
                     fileSize: files[i].size,
                     fileType: encodeURI(files[i].type),
                     status: "WaitingForUpload",
@@ -3532,10 +3565,7 @@ export const uploadAudiosThunk = (data) => async (dispatch, getState) => {
 
         for (let i = 0; i < state.audioPanels.length; i++) {
             const audioPanel = state.audioPanels[i];
-            let audio = { s3KeyPrefix: audioPanel.s3KeyPrefix, fileType: audioPanel.fileType, fileName: audioPanel.fileName, fileSize: audioPanel.fileSize, encryptedFileSize: audioPanel.encryptedFileSize, numberOfChunks: audioPanel.numberOfChunks };
-            if (audioPanel.queueId.startsWith('d')) {
-                audio.fileName = forge.util.encode64(encryptBinaryString(encodeURI(audioPanel.fileName), state.itemKey))
-            }
+            let audio = { s3KeyPrefix: audioPanel.s3KeyPrefix, fileType: audioPanel.fileType, fileName: audioPanel.fileName, fileSize: audioPanel.fileSize, encryptedFileSize: audioPanel.encryptedFileSize, numberOfChunks: audioPanel.numberOfChunks };                audio.fileName = forge.util.encode64(encryptBinaryString(encodeURI(audioPanel.fileName), state.itemKey));
             let words = null;
             if (state.itemCopy) words = findAudioWordsByKey(state.itemCopy.audios, audio.s3KeyPrefix);
             audio.words = words;

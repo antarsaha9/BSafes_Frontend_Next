@@ -1327,7 +1327,7 @@ self.addEventListener("message", async (event) => {
 })
 
 self.addEventListener("fetch", async (event) => {
-  console.log(`Handling fetch event for ${event.request.url}`);
+  //console.log(`Handling fetch event for ${event.request.url}`);
 
   let idParts = event.request.url.split('/downloadFile/');
   if (!idParts[1]) return null;
