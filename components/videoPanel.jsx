@@ -138,11 +138,6 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
 
     return (
         <div>
-            <DropdownButton id="dropdown-basic-button" title="Dropdown button" autoClose={false}>
-      <Dropdown.Item href="#/action-1">Action</Dropdown.Item>
-      <Dropdown.Item href="#/action-2">Another action</Dropdown.Item>
-      <Dropdown.Item href="#/action-3">Something else</Dropdown.Item>
-    </DropdownButton>
             <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" className="d-none editControl" id="videos" />
             <Row className="">
                 <Col>

@@ -84,7 +84,9 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
         <div>
             <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" className="d-none editControl" id="audios" />
             <Row>
-                <p><i className="fa fa-volume-up" aria-hidden="true"></i> {panel.fileName}</p>
+                <Col xs={11} style={{overflow:"hidden", whiteSpace:"nowrap", textOverflow: "ellipsis"}}>
+                    <h6><i className="fa fa-volume-up" aria-hidden="true"></i> <span className="attachmentFileName">{panel.fileName}</span></h6>
+                </Col>
             </Row>
             <Row className="">
                 <Col>

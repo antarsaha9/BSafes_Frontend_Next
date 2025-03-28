@@ -3320,16 +3320,15 @@ export const deleteAVideoThunk = (data) => async (dispatch, getState) => {
             state = getState().page;
             itemCopy = { ...state.itemCopy };
             newVideos = itemCopy.videos.filter(function (video) {
-                return data.panel.s3Key !== video.s3Key;
+                return data.panel.s3KeyPrefix !== video.s3KeyPrefix;
             });
             try {
-
                 itemCopy.videos = newVideos;
                 itemCopy.update = "videos";
                 await createNewItemVersionForPage(itemCopy, dispatch);
 
                 videoPanels = state.videoPanels.filter((panel) => {
-                    return data.panel.s3Key !== panel.s3Key;
+                    return data.panel.s3KeyPrefix !== panel.s3KeyPrefix;
                 })
                 dispatch(newVersionCreated({
                     itemCopy,
@@ -3658,14 +3657,14 @@ export const deleteAnAudioThunk = (data) => async (dispatch, getState) => {
             state = getState().page;
             itemCopy = { ...state.itemCopy };
             newAudios = itemCopy.audios.filter(function (audio) {
-                return data.panel.s3Key !== audio.s3Key;
+                return data.panel.s3KeyPrefix !== audio.s3KeyPrefix;
             });
             try {
                 itemCopy.audios = newAudios;
                 itemCopy.update = "audios";
                 await createNewItemVersionForPage(itemCopy, dispatch);
                 audioPanels = state.audioPanels.filter((panel) => {
-                    return data.panel.s3Key !== panel.s3Key;
+                    return data.panel.s3KeyPrefix !== panel.s3KeyPrefix;
                 })
                 dispatch(newVersionCreated({
                     itemCopy,
