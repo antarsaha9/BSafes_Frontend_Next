@@ -21,7 +21,7 @@ import Comments from "./comments";
 
 import BSafesStyle from '../styles/BSafes.module.css'
 
-import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadAudiosThunk, downloadAudioThunk, setAudioWordsMode, saveAudioWordsThunk, uploadImagesThunk, uploadAttachmentsThunk,  setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setContentType } from "../reduxStore/pageSlice";
+import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadAudiosThunk, downloadAudioThunk, setAudioWordsMode, saveAudioWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraft, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setContentType } from "../reduxStore/pageSlice";
 import { debugLog } from '../lib/helper';
 
 export default function PageCommons() {
@@ -34,6 +34,7 @@ export default function PageCommons() {
 
     const activity = useSelector(state => state.page.activity);
 
+    const abort = useSelector(state => state.page.abort);
     const pageItemId = useSelector(state => state.page.id);
     const itemCopy = useSelector(state => state.page.itemCopy);
     const oldVersion = useSelector(state => state.page.oldVersion);
@@ -223,13 +224,13 @@ export default function PageCommons() {
     const handlePenClicked = (editorId, purpose) => {
         debugLog(debugOn, `pen ${editorId} clicked ${purpose}`);
         let thisReadyForSaving = true;
-        if(editorId === 'content') {
+        if (editorId === 'content') {
             if (purpose === 'froala')
                 dispatch(setContentType('WritingPage'));
             else if (purpose === 'excalidraw') {
                 dispatch(setContentType('DrawingPage'));
             }
-        } 
+        }
         if (editorId === 'content') {
             beforeWritingContent();
             setEditingEditorId("content");
@@ -291,7 +292,7 @@ export default function PageCommons() {
                 dispatch(setAudioWordsMode({ index: audioIndex, mode: "ReadOnly" }));
                 setEditingEditorId(null);
             }
-        }  else if (editingEditorId.startsWith("image_")) {
+        } else if (editingEditorId.startsWith("image_")) {
             const imageIndex = parseInt(editingEditorId.split("_")[1]);
             if (content !== imagePanelsState[imageIndex].words) {
                 dispatch(saveImageWordsThunk({ index: imageIndex, content: content }));
@@ -394,7 +395,7 @@ export default function PageCommons() {
         dispatch(setS3SignedUrlForContentUpload(null));
         setEditingEditorMode("ReadOnly");
         setEditingEditorId(null);
-        if(!draft && !contentEditorContent){
+        if (!draft && !contentEditorContent) {
             dispatch(setContentType(""))
         }
         if (draftLoaded) {
@@ -861,123 +862,125 @@ export default function PageCommons() {
 
 
     return (
-        <div className="pageCommons">
-            <Row className="justify-content-center">
-                <Col sm="10">
-                    <hr />
-                </Col>
-            </Row>
-            <Row className="justify-content-center">
-                <Col sm="10" >
-                    <Editor editorId="title" showWriteIcon={true} mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
-                </Col>
-            </Row>
-            <Row className="justify-content-center">
-                <Col sm="10">
-                    <hr />
-                </Col>
-            </Row>
-            <Row className="justify-content-center">
-                <Col className={`contenEditorRow`} xs="12" sm="10" >
-                    <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} />
-                </Col>
-            </Row>
-            <br />
-            <br />
-            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
-                <div className="videos">
-                    <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" multiple className="d-none editControl" id="videos" />
-                    <Row>
-                        <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.videosDragDropZoneActive : BSafesStyle.videosDragDropZone}`}>
-                            <Button id="videos" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="videos" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>
-                            </Button>
-                        </Col>
-                    </Row>
+        <>
+            <div className="pageCommons">
+                <Row className="justify-content-center">
+                    <Col sm="10">
+                        <hr />
+                    </Col>
+                </Row>
+                <Row className="justify-content-center">
+                    <Col sm="10" >
+                        <Editor editorId="title" showWriteIcon={true} mode={titleEditorMode} content={titleEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />
+                    </Col>
+                </Row>
+                <Row className="justify-content-center">
+                    <Col sm="10">
+                        <hr />
+                    </Col>
+                </Row>
+                <Row className="justify-content-center">
+                    <Col className={`contenEditorRow`} xs="12" sm="10" >
+                        <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} />
+                    </Col>
+                </Row>
+                <br />
+                <br />
+                {(!abort && !editingEditorId && (activity === 0) && (!oldVersion)) &&
+                    <div className="videos">
+                        <input ref={videoFilesInputRef} onChange={handleVideoFiles} type="file" accept="video/*" multiple className="d-none editControl" id="videos" />
+                        <Row>
+                            <Col id="videos" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.videosDragDropZoneActive : BSafesStyle.videosDragDropZone}`}>
+                                <Button id="videos" onClick={handleVideoButton} variant="link" className="text-dark btn btn-labeled">
+                                    <h4><i id="videos" className="fa fa-video-camera fa-lg" aria-hidden="true"></i></h4>
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
+                }
+                <Row className="justify-content-center">
+                    <Col xs="12" md="8" >
+                        {videoPanels}
+                    </Col>
+                </Row>
+                <br />
+                {(!abort && !editingEditorId && (activity === 0) && (!oldVersion)) &&
+                    <div className="images">
+                        <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
+                        <Row>
+                            <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${imagesDragActive ? BSafesStyle.imagesDragDropZoneActive : BSafesStyle.imagesDragDropZone}`}>
+                                <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
+                                    <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
+                }
+                <Row className="justify-content-center">
+                    <Col xs="12" sm="10" lg="8" >
+                        {imagePanels}
+                    </Col>
+                </Row>
+                <br />
+                {(!abort && !editingEditorId && (activity === 0) && (!oldVersion)) &&
+                    <div className="audios">
+                        <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" multiple className="d-none editControl" id="audios" />
+                        <Row>
+                            <Col id="audios" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.audiosDragDropZoneActive : BSafesStyle.audiosDragDropZone}`}>
+                                <Button id="audios" onClick={handleAudioButton} variant="link" className="text-dark btn btn-labeled">
+                                    <h4><i id="audios" className="fa fa-volume-up fa-lg" aria-hidden="true"></i></h4>
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
+                }
+                <Row className="justify-content-center">
+                    <Col xs="12" md="8" >
+                        {audioPanels}
+                    </Col>
+                </Row>
+                <br />
+                {(!abort && !editingEditorId && (activity === 0) && (!oldVersion)) &&
+                    <div className="attachments">
+                        <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
+                        <Row>
+                            <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${attachmentsDragActive ? BSafesStyle.attachmentsDragDropZoneActive : BSafesStyle.attachmentsDragDropZone}`}>
+                                <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
+                                    <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>
+                                </Button>
+                            </Col>
+                        </Row>
+                    </div>
+                }
+                <Row className="justify-content-center">
+                    <Col xs="12" md="8" >
+                        {attachmentPanels}
+                    </Col>
+                </Row>
+                <br />
+                {photoSwipeGallery()}
+                {false && itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
+                {true &&
+                    <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)} />
+                }
+                {!contentImagesAllDisplayed &&
+                    <div className='fixed-bottom'>
+                        <Alert variant='info'>
+                            Loading contents, please wait ...
+                        </Alert>
+                    </div>
+                }
+                <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
+                    <Blocks
+                        visible={true}
+                        height="80"
+                        width="80"
+                        ariaLabel="blocks-loading"
+                        wrapperStyle={{}}
+                        wrapperClass="blocks-wrapper"
+                    />
                 </div>
-            }
-            <Row className="justify-content-center">
-                <Col xs="12" md="8" >
-                    {videoPanels}
-                </Col>
-            </Row>
-            <br />
-            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
-                <div className="images">
-                    <input ref={imageFilesInputRef} onChange={handleImageFiles} type="file" multiple accept="image/*" className="d-none editControl" id="images" />
-                    <Row>
-                        <Col id="images" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${imagesDragActive ? BSafesStyle.imagesDragDropZoneActive : BSafesStyle.imagesDragDropZone}`}>
-                            <Button id="images" onClick={handleImageButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="images" className="fa fa-picture-o fa-lg" aria-hidden="true"></i></h4>
-                            </Button>
-                        </Col>
-                    </Row>
-                </div>
-            }
-            <Row className="justify-content-center">
-                <Col xs="12" sm="10" lg="8" >
-                    {imagePanels}
-                </Col>
-            </Row>
-            <br />
-            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
-                <div className="audios">
-                    <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" multiple className="d-none editControl" id="audios" />
-                    <Row>
-                        <Col id="audios" onDragEnter={handleDrag} onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${videosDragActive ? BSafesStyle.audiosDragDropZoneActive : BSafesStyle.audiosDragDropZone}`}>
-                            <Button id="audios" onClick={handleAudioButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="audios" className="fa fa-volume-up fa-lg" aria-hidden="true"></i></h4>
-                            </Button>
-                        </Col>
-                    </Row>
-                </div>
-            }
-            <Row className="justify-content-center">
-                <Col xs="12" md="8" >
-                    {audioPanels}
-                </Col>
-            </Row>
-            <br />
-            {(!editingEditorId && (activity === 0) && (!oldVersion)) &&
-                <div className="attachments">
-                    <input ref={attachmentsInputRef} onChange={handleAttachments} type="file" multiple className="d-none editControl" id="attachments" />
-                    <Row>
-                        <Col id="attachments" onDragLeave={handleDrag} onDragOver={handleDrag} onDrop={handleDrop} sm={{ span: 10, offset: 1 }} md={{ span: 8, offset: 2 }} className={`text-center ${attachmentsDragActive ? BSafesStyle.attachmentsDragDropZoneActive : BSafesStyle.attachmentsDragDropZone}`}>
-                            <Button id="attachments" onClick={handleAttachmentButton} variant="link" className="text-dark btn btn-labeled">
-                                <h4><i id="attachments" className="fa fa-paperclip fa-lg" aria-hidden="true"></i></h4>
-                            </Button>
-                        </Col>
-                    </Row>
-                </div>
-            }
-            <Row className="justify-content-center">
-                <Col xs="12" md="8" >
-                    {attachmentPanels}
-                </Col>
-            </Row>
-            <br />
-            {photoSwipeGallery()}
-            {false && itemCopy && <Comments handleContentChanged={handleContentChanged} handlePenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion)} />}
-            {true &&
-                <PageCommonControls isEditing={editingEditorId} onWrite={handleWrite} readyForSaving={(S3SignedUrlForContentUpload !== null) || readyForSaving} onSave={handleSave} onCancel={handleCancel} canEdit={(!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed)} />
-            }
-            {!contentImagesAllDisplayed &&
-                <div className='fixed-bottom'>
-                    <Alert variant='info'>
-                        Loading contents, please wait ...
-                    </Alert>
-                </div>
-            }
-            <div ref={spinnerRef} className='bsafesMediaSpinner' hidden>
-                <Blocks
-                    visible={true}
-                    height="80"
-                    width="80"
-                    ariaLabel="blocks-loading"
-                    wrapperStyle={{}}
-                    wrapperClass="blocks-wrapper"
-                />
             </div>
-        </div>
+        </>
     )
 }

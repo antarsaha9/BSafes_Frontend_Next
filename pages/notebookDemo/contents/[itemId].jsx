@@ -66,7 +66,8 @@ export default function NotebookContents() {
                     nextPageId = 'np:' + idParts.join(':') + ':1';
                     newLink = `/${productID}/p/${nextPageId}`;
                 } else {
-
+                    listItems({ pageNumber: pageNumber+1 });
+                    return;
                 }
                 break;
             default:
