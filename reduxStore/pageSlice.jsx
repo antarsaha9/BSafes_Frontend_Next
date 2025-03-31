@@ -83,6 +83,7 @@ const initialState = {
     comments: [],
     S3SignedUrlForContentUpload: null,
     draft: null,
+    draftContentType: null,
     draftLoaded: false,
     originalContent: null,
     contentType: ''
@@ -946,20 +947,25 @@ const pageSlice = createSlice({
             state.S3SignedUrlForContentUpload = action.payload;
         },
         setDraft: (state, action) => {
-            state.draft = action.payload;
+            state.draft = action.payload.draft;
+            state.draftContentType = action.payload.draftContentType;
         },
         clearDraft: (state, action) => {
             state.draft = null;
-            const draftId = 'Draft-' + state.id;
+            state.draftContentType = null;
+            const {draftId, draftContentTypeId} = formDraftId(state.id);
             localStorage.removeItem(draftId);
+            localStorage.removeItem(draftContentTypeId);
         },
-        draftLoaded: (state, action) => {
+        loadDraft: (state, action) => {
             state.originalContent = state.content;
             state.content = forge.util.decodeUtf8(state.draft);
             state.draftLoaded = true;
             state.draft = null;
-            const draftId = 'Draft-' + state.id;
+            state.draftContentType = null;
+            const {draftId, draftContentTypeId} = formDraftId(state.id);
             localStorage.removeItem(draftId);
+            localStorage.removeItem(draftContentTypeId);
             state.contentImagesDownloadQueue = [];
             state.contentImagedDownloadIndex = 0;
             state.contentImagesAllDownloaded = false;
@@ -984,7 +990,7 @@ const pageSlice = createSlice({
     }
 })
 
-export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, draftLoaded, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, addUploadAudios, uploadingAudio, audioUploaded, setAudioWordsMode, downloadAudio, downloadingAudio, audioFromServiceWorker, updateAudioChunksMap, playingAudio, setContentType } = pageSlice.actions;
+export const { cleanPageSlice, resetPageActivity, activityStart, activityDone, activityError, clearPage, initPage, setIOSActivity, setChangingPage, abort, setActiveRequest, setNavigationMode, setPageItemId, setPageStyle, setPageNumber, dataFetched, setOldVersion, contentDecrypted, itemPathLoaded, decryptPageItem, containerDataFetched, setContainerData, newItemKey, newItemCreated, newVersionCreated, clearItemVersions, itemVersionsFetched, downloadingContentImage, contentImageDownloaded, contentImageDownloadFailed, setContentImagesAllDownloaded, updateContentImagesDisplayIndex, downloadContentVideo, downloadingContentVideo, contentVideoDownloaded, contentVideoFromServiceWorker, playingContentVideo, addUploadImages, uploadingImage, imageUploaded, downloadingImage, imageDownloaded, imageDownloadFailed, addUploadAttachments, setAbortController, uploadingAttachment, stopUploadingAnAttachment, attachmentUploaded, uploadAChunkFailed, addDownloadAttachment, stopDownloadingAnAttachment, downloadingAttachment, setXHR, attachmentDownloaded, setAttachmentSelectedForDownload, writerClosed, setupWriterFailed, downloadAChunkFailed, setImageWordsMode, setCommentEditorMode, pageCommentsFetched, newCommentAdded, commentUpdated, setS3SignedUrlForContentUpload, setDraft, clearDraft, loadDraft, setDraftLoaded, loadOriginalContent, addUploadVideos, uploadingVideo, videoUploaded, setVideoWordsMode, downloadVideo, downloadingVideo, videoFromServiceWorker, updateVideoChunksMap, playingVideo, addUploadAudios, uploadingAudio, audioUploaded, setAudioWordsMode, downloadAudio, downloadingAudio, audioFromServiceWorker, updateAudioChunksMap, playingAudio, setContentType } = pageSlice.actions;
 
 
 const newActivity = async (dispatch, type, activity) => {
@@ -1481,10 +1487,11 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 reject("Failed to get a page item!!!");
                             }
                         }
-                        const draftId = 'Draft-' + data.itemId;
+                        const {draftId, draftContentTypeId} = formDraftId(data.itemId);
                         const draft = localStorage.getItem(draftId);
+                        const draftContentType = localStorage.getItem(draftContentTypeId);
                         if (draft) {
-                            dispatch(setDraft(draft));
+                            dispatch(setDraft({draft, draftContentType}));
                         }
 
                     } else {
@@ -1594,10 +1601,11 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             }
                         }
                     }
-                    const draftId = 'Draft-' + data.itemId;
+                    const {draftId, draftContentTypeId} = formDraftId(data.itemId);
                     const draft = localStorage.getItem(draftId);
+                    const draftContentType = localStorage.getItem(draftContentTypeId);
                     if (draft) {
-                        dispatch(setDraft(draft));
+                        dispatch(setDraft({draft, draftContentType}));
                     }
 
                 } else {
@@ -2776,7 +2784,12 @@ export const getS3SignedUrlForContentUploadThunk = (data) => async (dispatch, ge
         }
     });
 }
-
+function formDraftId(pageId) {
+    return { 
+        draftId: 'Draft-' + pageId, 
+        draftContentTypeId: 'DraftContentType-' + pageId 
+    };
+}
 export const saveDraftThunk = (data) => async (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
         const content = data.content;
@@ -2787,8 +2800,9 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
 
         try {
             encodedContent = forge.util.encodeUtf8(result.content);
-            const draftId = 'Draft-' + state.id;
+            const {draftId, draftContentTypeId} = formDraftId(state.id);
             localStorage.setItem(draftId, encodedContent);
+            localStorage.setItem(draftContentTypeId, state.contentType);
             dispatch(setDraft(encodedContent));
             resolve();
         } catch (error) {
@@ -2799,7 +2813,7 @@ export const saveDraftThunk = (data) => async (dispatch, getState) => {
 }
 
 export const loadDraftThunk = (data) => async (dispatch, getState) => {
-    dispatch(draftLoaded());
+    dispatch(loadDraft());
 }
 
 export const startDownloadingContentImagesForDraftThunk = (data) => async (dispatch, getState) => {

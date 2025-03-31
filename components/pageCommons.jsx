@@ -62,6 +62,8 @@ export default function PageCommons() {
     const draftLoaded = useSelector(state => state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
     const contentType = useSelector(state => state.page.contentType);
+    const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
+    const contentEditorPreviousContent = useRef();
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
@@ -401,6 +403,7 @@ export default function PageCommons() {
         if (draftLoaded) {
             dispatch(loadOriginalContentThunk());
         }
+        handleDraftDelete();        // clearing the draft if user clicks the cancel button.
         dispatch(setDraftLoaded(false));
         setReadyForSaving(false);
     }
@@ -651,7 +654,8 @@ export default function PageCommons() {
     }, [activity]);
 
     useEffect(() => {
-        if (contentEditorContent === null) return;
+        if (contentEditorPreviousContent.current===contentEditorContent && contentEditorContent === null) return;
+        contentEditorPreviousContent.current = contentEditorContent;
         afterContentReadOnly();
         setcontentEditorContentWithImagesAndVideos(contentEditorContent);
         // eslint-disable-next-line react-hooks/exhaustive-deps    
@@ -805,7 +809,7 @@ export default function PageCommons() {
     useEffect(() => {
         if (contentImagesAllDownloaded && draftLoaded) {
             handleWrite();
-            setWritingAfterDraftLoaded(false);
+            // setWritingAfterDraftLoaded(false);
             setRenderingDraft(false);
         }
     }, [contentImagesAllDownloaded, draftLoaded]);
