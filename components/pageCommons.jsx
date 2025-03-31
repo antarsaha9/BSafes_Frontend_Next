@@ -62,7 +62,6 @@ export default function PageCommons() {
     const draftLoaded = useSelector(state => state.page.draftLoaded);
     const [renderingDraft, setRenderingDraft] = useState(false);
     const contentType = useSelector(state => state.page.contentType);
-    const [writingAfterDraftLoaded, setWritingAfterDraftLoaded] = useState(false);
     const contentEditorPreviousContent = useRef();
 
     const spinnerRef = useRef(null);
