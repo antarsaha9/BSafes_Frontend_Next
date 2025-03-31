@@ -5,6 +5,8 @@ import Head from "next/head";
 import Script from 'next/script';
 
 import '../styles/materia.css'
+import 'boxicons/css/boxicons.min.css'
+import '../styles/bsafesStore.css'
 import '../styles/react-tagsinput-bsafes.css'
 import "../styles/react-datepicker-bsafes.css";
 import '../lib/importStyles';
@@ -13,6 +15,9 @@ import "../styles/froala-editor-bsafes.css"
 import '../public/css/froalaEditorCSS/video.css'
 import '../styles/bootstrapOverride.css'
 import '../styles/complianceBadge.css'
+import 'swiper/css'
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 import { debugLog } from '../lib/helper';
 import { setServiceWorkerRegistered } from '../reduxStore/auth';
