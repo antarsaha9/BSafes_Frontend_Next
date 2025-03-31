@@ -1967,11 +1967,7 @@ export const downloadVideoThunk = (data) => async (dispatch, getState) => {
                         try {
                             let result = await preS3ChunkDownload(state.id, chunkIndex, s3KeyPrefix, false, dispatch);
                             let response;
-                            if (fromContent) {
-                                response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingContentVideo, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks, indexInContentVideosDownloadQueue);
-                            } else {
-                                response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingVideo, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks, indexInVideosDownloadQueue);
-                            }
+                            response = await XHRDownload(state.id, dispatch, result.signedURL, downloadingAudio, chunkIndex * 100 / numberOfChunks, 1 / numberOfChunks, indexInAudiosDownloadQueue);
 
                             debugLog(debugOn, "downloadChunk completed. Length: ", response.byteLength);
                             if (state.activeRequest !== itemId) {
@@ -3088,7 +3084,7 @@ const uploadAVideo = (dispatch, getState, state, { file: video, numberOfChunks }
                                 key: s3Key,
                                 data
                             }
-                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDBTable(params);
+                            const result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write a chunk to service worker DB!");
                             }
@@ -3473,7 +3469,7 @@ const uploadAnAudio = (dispatch, getState, state, { file: audio, numberOfChunks 
                                 key: s3Key,
                                 data
                             }
-                            const result = { status: 'ok' }; // await writeDataToServiceWorkerDBTable(params);
+                            const result = await writeDataToServiceWorkerDBTable(params);
                             if (result.status !== 'ok') {
                                 throw new Error("Failed to write a chunk to service worker DB!");
                             }

@@ -132,6 +132,19 @@ export default function PageCommons() {
         gallery.init();
     }
 
+    const handleDrawingClicked = (data) => {
+        const slides = [data];
+        const pswpElement = pswpRef.current;
+        const options = {
+            // optionName: 'option value'
+            // for example:
+            history: false,
+            index: 0
+        };
+        const gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, slides, options);
+        gallery.init();
+    }
+
     const handleVideoClick = (e) => {
         let playVideoElement = e.target;
         if (e.target.tagName === 'I') {
@@ -881,7 +894,7 @@ export default function PageCommons() {
                 </Row>
                 <Row className="justify-content-center">
                     <Col className={`contenEditorRow`} xs="12" sm="10" >
-                        <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} />
+                        <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} onDrawingClicked={handleDrawingClicked} />
                     </Col>
                 </Row>
                 <br />

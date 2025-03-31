@@ -81,14 +81,14 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
 
 
     return (
-        <div>
+        <div style={{borderStyle:"solid", borderRadius:"2px", padding:"0px"}}>
             <input ref={audioFilesInputRef} onChange={handleAudioFiles} type="file" accept="audio/*" className="d-none editControl" id="audios" />
-            <Row>
+            <Row className="pt-3 pb-1 px-3">
                 <Col xs={11} style={{overflow:"hidden", whiteSpace:"nowrap", textOverflow: "ellipsis"}}>
                     <h6><i className="fa fa-volume-up" aria-hidden="true"></i> <span className="attachmentFileName">{panel.fileName}</span></h6>
                 </Col>
             </Row>
-            <Row className="">
+            <Row className="px-3">
                 <Col>
                     {(panel.status === 'Uploaded' || panel.status === 'Downloaded' || panel.status === 'DownloadFailed' || panel.status === 'DownloadingAudio' || panel.status === 'DownloadedFromServiceWorker' || panel.status === 'Downloading' || panel.status === 'DownloadingThumbnail' || panel.status === 'ThumbnailDownloaded') ?
                         <div className='d-flex justify-content-center align-items-center w-100' >
@@ -97,14 +97,14 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
                                     {panel.src ?
                                         <audio alt="Audio broken" playsInline controls autoPlay muted src={panel.src} onPlaying={onPlaying} onCanPlay={onCanPlay} onLoadedMetadata={onLoadedMetadata} onLoadedData={onLoadedData} className='w-100' /> :
                                         <>
-                                            <Button>Play</Button>
-                                        </>
+                                            <Button onClick={handleAudioClicked}><i className="fa fa-play" aria-hidden="true"></i> Play</Button>
+                                        </> 
                                     }
                                 </> :
                                 <>
                                     {panel.status === "Downloaded" &&
-                                        <Button onClick={handleAudioClicked}>
-                                            Play
+                                        <Button variant="dark" onClick={handleAudioClicked}>
+                                            <i className="fa fa-play" aria-hidden="true"></i> Play
                                         </Button>
                                     }
                                     {(panel.status === "DownloadingAudio") && <LoaderSpinner />}
@@ -116,20 +116,20 @@ export default function AudioPanel({ panelIndex, panel, onAudioClicked, editorMo
                     {(panel.status === "Uploading") ? <ProgressBar now={panel.progress} /> : ""}
                     {(panel.status === "WaitingForUpload") && <></>}
                     {(panel.status === "WaitingForDownload") &&
-                        <Button size="sm" onClick={handleAudioClicked}>
-                            Play
+                        <Button variant="dark" size="sm" onClick={handleAudioClicked}>
+                            <i className="fa fa-play" aria-hidden="true"></i> Play
                         </Button>
                     }
                 </Col>
             </Row>
-            <Row className="">
+            <Row className="px-3">
                 <Col>
                     {(false || panel.status === "Downloading") ? <ProgressBar now={panel.progress} /> : ""}
                 </Col>
             </Row>
-            <Row>
+            <Row className="pt-2">
                 <Col xs={8} sm={9}>
-                    <div className="pt-2">
+                    <div className="">
                         <Editor editorId={panelIndex} showWriteIcon={true} mode={editorMode} content={panel.words} onContentChanged={onContentChanged} showPen={false} editable={editable} hideIfEmpty={true} />
                     </div>
                 </Col>

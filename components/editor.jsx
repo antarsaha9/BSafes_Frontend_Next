@@ -24,7 +24,7 @@ import { rotateImage, downScaleImage } from '../lib/wnImage';
 import { newItemKey, putS3ObjectInServiceWorkerDB } from "../reduxStore/pageSlice";
 
 let Excalidraw = null;
-export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false }) {
+export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null }) {
     const debugOn = false;
     const dispatch = useDispatch();
 
@@ -243,7 +243,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             await ic.Codemirror;
             await ic.Photoswipe;
             await ic.Others;
-
+            Excalidraw = (await ic.Excalidraw)[0];
             setScriptsLoaded(true);
 
         });
@@ -306,6 +306,16 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
 
     const handlePenClicked = (purpose) => {
         onPenClicked(editorId, purpose);
+    }
+
+    const handleDrawingClicked = () => {
+        const img = document.createElement('img');
+        img.src = content.src;
+        img.onload = async () => {
+            const w = img.width;
+            const h = img.height;
+            onDrawingClicked({ src: img.src, w, h })
+        }
     }
 
     const bSafesPreflightHook = (fn) => {
@@ -494,45 +504,52 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             {scriptsLoaded ?
                 <>
                     {(showPen) && (editable) ?
-                        <Row>
-                            <Col xs={6}>
-                                {(editorId === 'title' && content === '<h2></h2>') && <h6 className='m-0 text-secondary'>Title</h6>}
-                                {(editorId === 'content' && content === null) && <h6 className='m-0 text-secondary'>Write {showDrawIcon ? `or Draw` : ``}</h6>}
-                            </Col>
-                            <Col xs={6}>
-                                {showWriteIcon && <OverlayTrigger
-                                    placement="top"
-                                    delay={{ show: 250, hide: 400 }}
-                                    overlay={(props) => (
-                                        <Tooltip id="button-tooltip" {...props}>
-                                            Write
-                                        </Tooltip>
-                                    )}
-                                ><Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button></OverlayTrigger>}
-                                {showDrawIcon && <span className='pull-right mx-2'><OverlayTrigger
-                                    placement="top"
-                                    delay={{ show: 250, hide: 400 }}
-                                    overlay={(props) => (
-                                        <Tooltip id="button-tooltip" {...props}>
-                                            Draw
-                                        </Tooltip>
-                                    )}
-                                ><Button variant="link" className="text-dark p-0 mx-3" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
-                                {(editorId === 'content' && draft !== null) &&
-                                    <ButtonGroup className='pull-right mx-3' size="sm">
-                                        <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
-                                        <Button variant="danger" onClick={onDraftDelete}>X</Button>
-                                    </ButtonGroup>
-                                }
-                            </Col>
-                        </Row>
+                        <>
+                            <Row>
+                                <Col xs={6}>
+                                    {(editorId === 'title' && content === '<h2></h2>') && <h6 className='m-0 text-secondary'>Title</h6>}
+                                    {(editorId === 'content' && content === null) && <h6 className='m-0 text-secondary'>Write {showDrawIcon ? `or Draw` : ``}</h6>}
+                                </Col>
+                                <Col xs={6}>
+                                    {showWriteIcon && <OverlayTrigger
+                                        placement="top"
+                                        delay={{ show: 250, hide: 400 }}
+                                        overlay={(props) => (
+                                            <Tooltip id="button-tooltip" {...props}>
+                                                Write
+                                            </Tooltip>
+                                        )}
+                                    ><Button variant="link" className="text-dark pull-right p-0" onClick={handlePenClicked.bind(null, 'froala')}><i className="fa fa-pencil" aria-hidden="true"></i></Button></OverlayTrigger>}
+                                    {showDrawIcon && <span className='pull-right mx-2'><OverlayTrigger
+                                        placement="top"
+                                        delay={{ show: 250, hide: 400 }}
+                                        overlay={(props) => (
+                                            <Tooltip id="button-tooltip" {...props}>
+                                                Draw
+                                            </Tooltip>
+                                        )}
+                                    ><Button variant="link" className="text-dark p-0 mx-3" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
+                                    {(editorId === 'content' && draft !== null) &&
+                                        <ButtonGroup className='pull-right mx-3' size="sm">
+                                            <Button variant="outline-danger" className='m-0' onClick={onDraftClicked}>Draft</Button>
+                                            <Button variant="danger" onClick={onDraftDelete}>X</Button>
+                                        </ButtonGroup>
+                                    }
+                                </Col>
+                            </Row>
+                        </>
                         :
-                        <Row>
-                            <span> . </span>
-                        </Row>
+                        <>{ editorId === 'content' ?
+                            <Row>
+                                <span> . </span>
+                            </Row>:
+                            ""
+                        }
+                        </>
+
                     }
                     {((contentType !== 'DrawingPage' || editorId === 'title') && ((mode === 'Writing' || mode === 'Saving') || mode === 'ReadOnly' || !(hideIfEmpty && (!content || content.length === 0)))) &&
-                        <Row className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
+                        <Row style={{margin:"0px"}} className={`${(editorId === 'title') ? BSafesStyle.titleEditorRow : BSafesStyle.editorRow} fr-element fr-view`}>
                             <div className="inner-html" ref={editorRef} dangerouslySetInnerHTML={{ __html: content }} style={{ overflowX: 'auto' }}>
                             </div>
                         </Row>
@@ -551,9 +568,9 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                                 <Excalidraw.MainMenu.DefaultItems.Export />
                                                 <Excalidraw.MainMenu.DefaultItems.SaveAsImage />
                                                 <Excalidraw.MainMenu.DefaultItems.Help />
-                                                <Excalidraw.MainMenu.DefaultItems.ClearCanvas /> 
-                                                <Excalidraw.MainMenu.DefaultItems.ToggleTheme />   
-                                                <Excalidraw.MainMenu.DefaultItems.ChangeCanvasBackground />                                         
+                                                <Excalidraw.MainMenu.DefaultItems.ClearCanvas />
+                                                <Excalidraw.MainMenu.DefaultItems.ToggleTheme />
+                                                <Excalidraw.MainMenu.DefaultItems.ChangeCanvasBackground />
                                             </Excalidraw.MainMenu.Group>
                                         </Excalidraw.MainMenu>
                                     </Excalidraw.Excalidraw>
@@ -561,22 +578,22 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                 :
                                 <Row className={`${BSafesStyle.editorRow} w-100`} style={{ height: '60vh' }}>
                                     {content &&
-                                        <Image style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />}
+                                        <Image onClick={handleDrawingClicked} style={{ objectFit: 'scale-down', maxHeight: '100%', maxWidth: '100%' }} alt="Image broken" src={content.src} fluid />}
                                 </Row>
                             }
                         </>
                     }
-                </> : 
+                </> :
                 <div className={BSafesStyle.screenCenter}>
-                <Blocks
-                    visible={true}
-                    height="40"
-                    width="40"
-                    ariaLabel="blocks-loading"
-                    wrapperStyle={{}}
-                    wrapperClass="blocks-wrapper"
-                />
-            </div>
+                    <Blocks
+                        visible={true}
+                        height="40"
+                        width="40"
+                        ariaLabel="blocks-loading"
+                        wrapperStyle={{}}
+                        wrapperClass="blocks-wrapper"
+                    />
+                </div>
             }
         </>
     );
