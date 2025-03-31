@@ -24,6 +24,27 @@ import { rotateImage, downScaleImage } from '../lib/wnImage';
 import { newItemKey, putS3ObjectInServiceWorkerDB } from "../reduxStore/pageSlice";
 
 let Excalidraw = null;
+/**
+ * Editor Component
+ * 
+ * @param {Object} props - The properties object.
+ * @param {string} props.editorId - Unique identifier for the editor.
+ * @param {"Writing" | "ReadOnly" | "Saving"} props.mode - The mode of the editor.
+ * @param {string} props.content - Initial content of the editor.
+ * @param {function(string, string): void} props.onContentChanged - Callback when content changes.
+ * @param {function(string, string): void} props.onPenClicked - Callback when the pen is clicked.
+ * @param {boolean} [props.showPen=true] - Whether to show the pen icon.
+ * @param {boolean} [props.editable=true] - Whether the editor is editable.
+ * @param {boolean} [props.hideIfEmpty=false] - Whether to hide the editor if empty.
+ * @param {function() | null} [props.writingModeReady=null] - Callback when writing mode is ready.
+ * @param {function() | null} [props.readOnlyModeReady=null] - Callback when read-only mode is ready.
+ * @param {function(string) | null} [props.onDraftSampled=null] - Callback when a draft is sampled.
+ * @param {function() | null} [props.onDraftClicked=null] - Callback when a draft is clicked.
+ * @param {function() | null} [props.onDraftDelete=null] - Callback when a draft is deleted.
+ * @param {boolean} [props.showDrawIcon=false] - Whether to show the drawing icon.
+ * @param {boolean} [props.showWriteIcon=false] - Whether to show the writing icon.
+ * @param {function(Object) | null} [props.onDrawingClicked=null] - Callback when the drawing icon is clicked.
+ */
 export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null }) {
     const debugOn = false;
     const dispatch = useDispatch();
@@ -38,6 +59,8 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     const itemKey = useSelector(state => state.page.itemKey);
     const itemIV = useSelector(state => state.page.itemIV);
     const draft = useSelector(state => state.page.draft);
+
+    /** @type {'WritingPage' | 'DrawingPage'} */
     const contentType = useSelector(state => state.page.contentType) || 'WritingPage';
 
     debugLog(debugOn, `editor key: ${froalaKey}`);
@@ -131,6 +154,17 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     }
 
     const drawing = () => {
+        const loadExcalidrawState = () => {
+            setTimeout(() => {
+                const contentSample = getDrawingContent();
+                setOriginalContent(contentSample);
+
+                if (!editorOn) {
+                    debugLog(debugOn, "setEditorOn")
+                    setEditorOn(true);
+                }
+            }, 1000);
+        }
         if (content && content?.metadata?.ExcalidrawSerializedJSON) {
             const savedJSON = JSON.parse(content?.metadata?.ExcalidrawSerializedJSON);
             const res = Excalidraw.restore(savedJSON);
@@ -144,6 +178,8 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     ExcalidrawRef.current.updateScene(res);
                     if (res.files)
                         ExcalidrawRef.current.addFiles(Object.values(res.files));
+
+                    loadExcalidrawState();
                     //ExcalidrawRef.current.scrollToContent();
                 }
             }
@@ -151,6 +187,21 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                 restoreExcalidraw(res);
             }, 500);
         }
+        else {
+            loadExcalidrawState();
+        }
+    }
+
+    const getDrawingContent = () => {
+        if (!ExcalidrawRef.current) {
+            return;
+        }
+        const elements = ExcalidrawRef.current.getSceneElements();
+        if (!elements || !elements.length) {
+            return;
+        }
+        const serialized = Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState(), ExcalidrawRef.current.getFiles(), 'local');
+        return serialized;
     }
 
     const saving = () => {
@@ -174,7 +225,7 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             }).then(canvas => {
                 canvas.toBlob(blob => {
                     blob.name = 'excalidraw.png';
-                    const serialized = Excalidraw.serializeAsJSON(ExcalidrawRef.current.getSceneElements(), ExcalidrawRef.current.getAppState(), ExcalidrawRef.current.getFiles(), 'local');
+                    const serialized = getDrawingContent();
                     blob.src = window.URL.createObjectURL(blob);
                     blob.metadata = {
                         ExcalidrawExportedImage: true,
@@ -194,9 +245,11 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
 
     const readOnly = () => {
         if (editorOn) {
-            $(editorRef.current).froalaEditor('destroy');
-            $(editorRef.current).html(content);
-            editorRef.current.style.overflowX = 'auto';
+            if (contentType === "WritingPage"){
+                $(editorRef.current).froalaEditor('destroy');
+                $(editorRef.current).html(content);
+                editorRef.current.style.overflowX = 'auto';
+            }
             if (draftInterval) {
                 clearInterval(draftInterval);
                 setDraftInterval(null);
@@ -279,19 +332,35 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     }, [originalContent])
 
     useEffect(() => {
-        let content;
         debugLog(debugOn, 'interval state:', intervalState);
         switch (intervalState) {
             case 'Start':
-                const interval = setInterval(() => {
+                const interval = setInterval(async () => {
                     debugLog(debugOn, "Saving draft ...");
-                    content = $(editorRef.current).froalaEditor('html.get');
-                    //debugLog(debugOn, "editor content: ", content );
-                    if (content !== originalContent) {
-                        debugLog(debugOn, 'Content changed');
-                        onDraftSampled(content);
-                        setOriginalContent(content);
-                        setIntervalState('Stop');
+                    if (contentType === "WritingPage") {
+                        const content = $(editorRef.current).froalaEditor('html.get');
+                        if (content !== originalContent) {
+                            debugLog(debugOn, 'Content changed');
+                            onDraftSampled(content);
+                            setOriginalContent(content);
+                            setIntervalState('Stop');
+                        }
+                        debugLog(debugOn, "editor content: ", content);
+                    }
+                    else if (contentType === "DrawingPage") {
+                        const drawingContent = getDrawingContent();
+                        const content = ({
+                            metadata: {
+                                ExcalidrawSerializedJSON: drawingContent
+                            }
+                        });
+                        if (drawingContent !== originalContent?.metadata?.ExcalidrawSerializedJSON) {
+                            debugLog(debugOn, 'Content changed');
+                            onDraftSampled(content);
+                            setOriginalContent(content);
+                            setIntervalState('Stop');
+                        }
+                        debugLog(debugOn, "drawing editor content: ", content);
                     }
                 }, 1000);
                 setDraftInterval(interval);

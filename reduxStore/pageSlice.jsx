@@ -959,7 +959,11 @@ const pageSlice = createSlice({
         },
         loadDraft: (state, action) => {
             state.originalContent = state.content;
-            state.content = forge.util.decodeUtf8(state.draft);
+            if (state.draftContentType === "DrawingPage")
+                state.content = state.draft;
+            else
+                state.content = forge.util.decodeUtf8(state.draft);
+            state.contentType = state.draftContentType;
             state.draftLoaded = true;
             state.draft = null;
             state.draftContentType = null;
@@ -1488,8 +1492,9 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                             }
                         }
                         const {draftId, draftContentTypeId} = formDraftId(data.itemId);
-                        const draft = localStorage.getItem(draftId);
+                        const _draft = localStorage.getItem(draftId);
                         const draftContentType = localStorage.getItem(draftContentTypeId);
+                        const draft = draftContentType === "DrawingPage"?JSON.parse(_draft):_draft;
                         if (draft) {
                             dispatch(setDraft({draft, draftContentType}));
                         }
@@ -1602,8 +1607,9 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         }
                     }
                     const {draftId, draftContentTypeId} = formDraftId(data.itemId);
-                    const draft = localStorage.getItem(draftId);
+                    const _draft = localStorage.getItem(draftId);
                     const draftContentType = localStorage.getItem(draftContentTypeId);
+                    const draft = draftContentType === "DrawingPage"?JSON.parse(_draft):_draft;
                     if (draft) {
                         dispatch(setDraft({draft, draftContentType}));
                     }
@@ -2788,14 +2794,15 @@ function formDraftId(pageId) {
 }
 export const saveDraftThunk = (data) => async (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
-        const content = data.content;
+        const state = getState().page;
 
-        let state, encodedContent;
-        state = getState().page;
+        const _content = data.content;
+        const content = state.contentType === "DrawingPage" ? JSON.stringify(_content) : _content;
+        
         const result = await preProcessEditorContentBeforeSaving(content);
 
         try {
-            encodedContent = forge.util.encodeUtf8(result.content);
+            const encodedContent = forge.util.encodeUtf8(result.content);
             const {draftId, draftContentTypeId} = formDraftId(state.id);
             localStorage.setItem(draftId, encodedContent);
             localStorage.setItem(draftContentTypeId, state.contentType);
