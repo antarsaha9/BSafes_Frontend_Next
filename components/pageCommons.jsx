@@ -666,7 +666,8 @@ export default function PageCommons() {
     }, [activity]);
 
     useEffect(() => {
-        if (contentEditorPreviousContent.current===contentEditorContent && contentEditorContent === null) return;
+        if (contentEditorPreviousContent.current === contentEditorContent // checking if it is initial render
+            && contentEditorContent === null) return;
         contentEditorPreviousContent.current = contentEditorContent;
         afterContentReadOnly();
         setcontentEditorContentWithImagesAndVideos(contentEditorContent);
