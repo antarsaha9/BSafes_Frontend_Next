@@ -13,6 +13,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from 'react-bootstrap/Tooltip';
+import {htmlToPdf} from 'export-pdf';
 
 import TagsInput from 'react-tagsinput-special'
 
@@ -70,6 +71,22 @@ export default function ItemTopRows() {
         }
     }
 
+    const download = () => {
+        const element = document.getElementsByClassName('pageCommons');
+        console.log(element);
+        
+        htmlToPdf(element[0]).then((pdf) => {
+            const url = URL.createObjectURL(pdf);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'document.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
+
     const handleLinkChanged = (link) => {
         router.push(link);
         setVersionsHistoryModalOpened(false);
@@ -108,6 +125,9 @@ export default function ItemTopRows() {
                     }
                 </Col>
                 <Col xs="2">
+                    <div className="pull-right">
+                        <Button variant="link" className="pt-2 pb-0 px-2 text-dark" onClick={download}  ><i className="fa fa-download" aria-hidden="true"></i></Button>
+                    </div>
                     <div className="pull-right">
                         <Button variant="link" className="pt-2 pb-0 px-2 text-dark" onClick={openVersionsHistoryModal}  ><i className="fa fa-history" aria-hidden="true"></i></Button>
                         <p><span>{true && itemCopy && `v.${itemCopy.version}`}</span></p>

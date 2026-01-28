@@ -33,6 +33,7 @@
     "css": "^3.0.0",
     "date-fns": "^2.29.3",
     "dompurify": "^3.2.4",
+    "export-pdf": "github:antarsaha9/ExportPDF",
     "font-awesome": "github:FortAwesome/Font-Awesome#v4.4.0",
     "froala-editor": "github:froala/wysiwyg-editor#v2.6.5",
     "froala-editor2.9.8": "github:froala/wysiwyg-editor#v2.9.8",
