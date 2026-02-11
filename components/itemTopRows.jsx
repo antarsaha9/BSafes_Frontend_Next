@@ -47,6 +47,8 @@ export default function ItemTopRows() {
     const [versionsHistoryModalOpened, setVersionsHistoryModalOpened] = useState(false);
     const [showFeatureNotAvailableForDemoToast, setShowFeatureNotAvailableForDemoToast] = useState(false);
     
+    const titleEditorContent = useSelector(state => state.page.title);
+    
     const handleChange = (tags) => {
         setTags(tags);
         if (!showTagsConfirmButton) setShowTagsConfirmButton(true);
@@ -73,13 +75,19 @@ export default function ItemTopRows() {
 
     const download = () => {
         const element = document.getElementsByClassName('pageCommons');
-        console.log(element);
-        
-        htmlToPdf(element[0]).then((pdf) => {
+
+        htmlToPdf(element[0], {
+            margin: 20,
+        }).then((pdf) => {
             const url = URL.createObjectURL(pdf);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'document.pdf';
+
+            // make file name like "Exported Page Title.pdf", if title is empty, use "Exported Page.pdf"
+            // also remove html tags and replace any invalid file name characters in title with underscore
+            const safeTitle = titleEditorContent ? titleEditorContent.replace(/<[^>]*>?/gm, '').replace(/[/\\?%*:|"<>]/g, '_') : 'Page';
+            
+            link.download = `Exported ${safeTitle}.pdf`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
