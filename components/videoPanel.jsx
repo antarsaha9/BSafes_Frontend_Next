@@ -15,9 +15,10 @@ import { LoaderSpinner } from './loaderSpinner'
 
 import { uploadVideosThunk, uploadVideoSnapshotThunk, deleteAVideoThunk } from '../reduxStore/pageSlice'
 import { debugLog } from '../lib/helper';
+import { set } from 'date-fns'
 
 export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMode, onContentChanged, onPenClicked, editable = true }) {
-    const debugOn = false;
+    const debugOn = true;
     const dispatch = useDispatch();
 
     const videoFilesInputRef = useRef(null);
@@ -25,6 +26,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
 
     const workspaceKey = useSelector(state => state.container.workspaceKey);
 
+    var takingSnapshot = false;
     const [snapshotTaken, setSnapshotTaken] = useState(false);
 
     const handleVideoClicked = () => {
@@ -69,14 +71,20 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
         debugLog(debugOn, 'onLoadedData ...');
     }
 
-    const onCanPlay = (event) => {
+    const onCanPlay = (e) => {
         debugLog(debugOn, 'onCanPlay ...');
+        if (!panel.thumbnail) {
+            getVideoSnapshot(e.target);
+            takingSnapshot = true;
+        }
     };
 
     const onPlaying = (e) => {
         debugLog(debugOn, 'onPlaying ...');
-        if (panel.status === 'Uploaded') getVideoSnapshot(e.target);
-
+        if (!takingSnapshot && !panel.thumbnail) {
+            getVideoSnapshot(e.target);
+            takingSnapshot = false;
+        }
     }
 
     async function getVideoSnapshot(video) {
@@ -146,7 +154,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                             {panel.play ?
                                 <>
                                     {panel.src ?
-                                        <video alt="Video broken" playsInline controls autoPlay poster={panel.thumbnail} src={panel.src} onPlaying={onPlaying} onCanPlay={onCanPlay} onLoadedMetadata={onLoadedMetadata} onLoadedData={onLoadedData} className='w-100' /> :
+                                        <video alt="Video broken" playsInline autoPlay controls poster={panel.thumbnail} src={`${panel.src}`} onPlaying={onPlaying} onCanPlay={onCanPlay} onLoadedMetadata={onLoadedMetadata} onLoadedData={onLoadedData} className='w-100' /> :
                                         <>
                                             <Image alt="image broken" src={panel.thumbnail} fluid />
                                         </>
@@ -154,7 +162,7 @@ export default function VideoPanel({ panelIndex, panel, onVideoClicked, editorMo
                                 </> :
                                 <>
                                     <Image alt="image broken" src={panel.thumbnail || panel.placeholder} fluid />
-                                    {panel.status === "Downloaded" &&
+                                    {(true || panel.status === "Downloaded") &&
                                         <div style={{
                                             position: 'absolute',
                                             width: '100px',
