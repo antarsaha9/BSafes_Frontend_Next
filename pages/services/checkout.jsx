@@ -229,9 +229,14 @@ export default function Checkout() {
                 console.log('checkout');
                 dispatch(activityStart(accountActivity.IOSInAppPurchase))
                 window.bsafesNative.transactionWebCall = transactionWebCallFromIOS;
+                const product = process.env.NEXT_PUBLIC_product;
+                let inAppProductId = planId;
+                if(product){
+                    inAppProductId = product + '_' + planId.split('_')[1];
+                }
                 window.webkit.messageHandlers.toggleMessageHandler.postMessage({
                     "action": 'checkout',
-                    "planId": planId,
+                    "planId": inAppProductId,
                     "appleClientSecret": appleClientSecret
                 });
             }

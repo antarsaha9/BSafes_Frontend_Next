@@ -8,17 +8,17 @@ export default function PRODUCT() {
     const debugOn = true;
 
     const router = useRouter();
-    const productId = router.query.productId;
+    const productID = router.query.productID;
 
     useEffect(() => {
-        if (productId) {
-            debugLog(debugOn, `ProductId: ${productId}`);
-            let productLink = getDemoUrl(productId); //products[productId].demoUrl;
+        if (productID) {
+            debugLog(debugOn, `ProductID: ${productID}`);
+            let productLink = getDemoUrl(productID); //products[productID].demoUrl;
             if (productLink) {
                 router.push(productLink)
             }
         }
-    }, [productId])
+    }, [productID])
 
     return (
         <></>
