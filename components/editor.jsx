@@ -54,10 +54,9 @@ let FontsConfig = null;
  */
 
 
-export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null, drawingImageDone = null, drawingSnapshot = null }) {
+export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showTwinIcon = true, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null, drawingImageDone = null, drawingSnapshot = null }) {
     const debugOn = false;
     const dispatch = useDispatch();
-    const router = useRouter();
 
     const editorRef = useRef(null);
     const monitorExcalidrawCallback = useRef();
@@ -706,12 +705,12 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                         <>
                             <Row>
                                 <Col xs={6}>
-                                    {((productId === "")||(product.fixedSize === undefined)) && (editorId === 'title' && (!content || (content === '<h2></h2>'))) && <h6 className='m-0 text-secondary'>Title</h6>}
-                                    {(editorId === 'content' && content === null) && <div className="px-3 pt-1"><h6 className='m-0 text-secondary'>Write {showDrawIcon ? `or Draw` : ``}</h6></div>}
+                                    {((productId === "") || (product.fixedSize === undefined)) && (editorId === 'title' && (!content || (content === '<h2></h2>'))) && <h6 className='m-0 text-secondary'>Title</h6>}
+                                    {(editorId === 'content' && content === null) && <div className="px-3 pt-1"><h6 className='m-0 text-secondary'>Twin, Write {showDrawIcon ? `or Draw` : ``}</h6></div>}
                                 </Col>
                                 <Col xs={6}>
                                     <div className={`${editorId === "content" ? "px-3 pt-1" : ""}`}>
-                                        {(editorId === "content" || ((productId === "")||(product.fixedSize === undefined))) && showWriteIcon && <OverlayTrigger
+                                        {(editorId === "content" || ((productId === "") || (product.fixedSize === undefined))) && showWriteIcon && <OverlayTrigger
                                             placement="top"
                                             delay={{ show: 250, hide: 400 }}
                                             overlay={(props) => (
@@ -729,6 +728,15 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                                 </Tooltip>
                                             )}
                                         ><Button id="draw-1" variant="link" className="text-dark p-0 mx-3" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
+                                        {editorId === "content" && showTwinIcon && <span className='pull-right mx-2'><OverlayTrigger
+                                            placement="top"
+                                            delay={{ show: 250, hide: 400 }}
+                                            overlay={(props) => (
+                                                <Tooltip id="button-tooltip" {...props}>
+                                                    Twin Paper
+                                                </Tooltip>
+                                            )}
+                                        ><Button id="twin-1" variant="link" className="text-dark p-0" onClick={handlePenClicked.bind(null, 'twin')}><i className="fa fa-camera" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
                                     </div>
                                     {(editorId === 'content' && draft) &&
                                         <ButtonGroup className='pull-right mx-3' size="sm">
