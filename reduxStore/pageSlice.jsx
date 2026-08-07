@@ -977,6 +977,9 @@ const pageSlice = createSlice({
             state.draft = true;
             state.draftContentType = action.payload.draftContentType;
         },
+        setDraftContentType: (state, action) => {
+            state.draftContentType = action.payload.draftContentType;
+        },
         clearDraft: (state, action) => {
             state.draft = false;
             state.draftContentType = null;
@@ -992,10 +995,7 @@ const pageSlice = createSlice({
             }
             state.contentType = state.draftContentType;
             state.draftLoaded = true;
-            //state.draft = false;
-            //state.draftContentType = null;
-            const { draftId, draftContentTypeId } = formDraftId(state.id);
-            //localStorage.removeItem(draftContentTypeId);
+
             state.contentImagesDownloadQueue = [];
             state.contentImagedDownloadIndex = 0;
             state.contentImagesAllDownloaded = false;
@@ -1137,6 +1137,7 @@ export const {
     setS3SignedUrlForContentUpload,
     setDraftInterval,
     setDraft,
+    setDraftContentType,
     clearDraft,
     loadDraft,
     setDraftLoaded,
@@ -3654,7 +3655,7 @@ export const clearDraftThunk = (data) => async (dispatch, getState) => {
 
 export const loadDraftDataThunk = (data) => async (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
-        dispatch(setDraft({ draft: data.draft, draftContentType: data.contentType }));
+        dispatch(setDraftContentType({ draftContentType: data.contentType }));
         dispatch(loadDraft(data.draft));
         resolve()
 

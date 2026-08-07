@@ -404,7 +404,7 @@ export default function PageCommons() {
             const file = files[0];
             const result = await prepareTwinPaperDraft(file);
             if (result.status === "ok") {
-                const draft = forge.util.encodeUtf8(JSON.stringify(result.draft));
+                const draft = result.draft;
                 dispatch(loadDraftDataThunk({ draft, contentType: "DrawingPage" }));
             }else {
                 alert("Error preparing twin paper draft with image file! Error:" + result.error.message);
