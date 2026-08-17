@@ -182,6 +182,9 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
             const contentSample = $(editorRef.current).froalaEditor('html.get');
             setOriginalContent(contentSample);
         }
+        setTimeout(() => {
+            $(editorRef.current).froalaEditor('events.focus', true);
+        }, 500);
     }
 
     const drawing = () => {
