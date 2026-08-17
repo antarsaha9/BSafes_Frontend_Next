@@ -977,6 +977,9 @@ const pageSlice = createSlice({
             state.draft = true;
             state.draftContentType = action.payload.draftContentType;
         },
+        setDraftContentType: (state, action) => {
+            state.draftContentType = action.payload.draftContentType;
+        },
         clearDraft: (state, action) => {
             state.draft = false;
             state.draftContentType = null;
@@ -992,10 +995,7 @@ const pageSlice = createSlice({
             }
             state.contentType = state.draftContentType;
             state.draftLoaded = true;
-            //state.draft = false;
-            //state.draftContentType = null;
-            const { draftId, draftContentTypeId } = formDraftId(state.id);
-            //localStorage.removeItem(draftContentTypeId);
+
             state.contentImagesDownloadQueue = [];
             state.contentImagedDownloadIndex = 0;
             state.contentImagesAllDownloaded = false;
@@ -1137,6 +1137,7 @@ export const {
     setS3SignedUrlForContentUpload,
     setDraftInterval,
     setDraft,
+    setDraftContentType,
     clearDraft,
     loadDraft,
     setDraftLoaded,
@@ -2275,7 +2276,7 @@ export const decryptPageItemThunk = (data) => async (dispatch, getState) => {
                             dispatch(downloadingImage({ itemId, progress: 5 }));
                             let signedURL;
                             if (process.env.NEXT_PUBLIC_app !== 'localBackup') {
-                                 signedURL = await preS3Download(state.id, s3Key, dispatch);
+                                signedURL = await preS3Download(state.id, s3Key, dispatch);
                             }
                             downloadedBinaryString = await getS3ObjectForAPage(itemId, s3Key, false, dispatch, getState, signedURL, downloadingImage);
                             dispatch(downloadingImage({ itemId, progress: 10 }));
@@ -3632,6 +3633,7 @@ export const loadDraftThunk = (data) => async (dispatch, getState) => {
     });
 }
 
+
 const clearDraftFunc = (dispatch, getState) => {
     return new Promise(async (resolve, reject) => {
         const state = getState().page;
@@ -3650,6 +3652,15 @@ const clearDraftFunc = (dispatch, getState) => {
 export const clearDraftThunk = (data) => async (dispatch, getState) => {
     return clearDraftFunc(dispatch, getState);
 }
+
+export const loadDraftDataThunk = (data) => async (dispatch, getState) => {
+    return new Promise(async (resolve, reject) => {
+        dispatch(setDraftContentType({ draftContentType: data.contentType }));
+        dispatch(loadDraft(data.draft));
+        resolve()
+
+    });
+};
 
 export const startDownloadingContentImagesForDraftThunk = (data) => async (dispatch, getState) => {
     const state = getState().page;

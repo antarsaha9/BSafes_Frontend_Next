@@ -54,10 +54,9 @@ let FontsConfig = null;
  */
 
 
-export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null, drawingImageDone = null, drawingSnapshot = null }) {
+export default function Editor({ editorId, mode, content, onContentChanged, onPenClicked, showPen = true, editable = true, hideIfEmpty = false, writingModeReady = null, readOnlyModeReady = null, onDraftSampled = null, onDraftClicked = null, onDraftDelete = null, showTwinIcon = true, showDrawIcon = false, showWriteIcon = false, onDrawingClicked = null, drawingImageDone = null, drawingSnapshot = null }) {
     const debugOn = false;
     const dispatch = useDispatch();
-    const router = useRouter();
 
     const editorRef = useRef(null);
     const monitorExcalidrawCallback = useRef();
@@ -85,12 +84,17 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
     const [monitorExcalidrawInterval, setMonitorExcalidrawInterval] = useState(null);
     const [bottomBarRectBottom, setBottomBarRectBottom] = useState(0);
     const [needToUpdatePageCommonControls, setNeedToUpdatePageCommonControls] = useState(false);
+    const [showTwinTip, setShowTwinTip] = useState(false);
     debugLog(debugOn, "Rendering editor, id,  mode: ", `${editorId} ${mode}`);
 
     let product = {};
     if (productId) {
         product = products[productId];
     }
+
+    const handleTwinTipToggle = (nextShow) => {
+        setShowTwinTip(nextShow);
+    };
 
     const updatePageCommonControlsBottom = () => {
         if (!window || !document || !ExcalidrawRef.current) return;
@@ -708,13 +712,13 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                     {(showPen) && (editable) ?
                         <>
                             <Row>
-                                <Col xs={6}>
-                                    {((productId === "")||(product.fixedSize === undefined)) && (editorId === 'title' && (!content || (content === '<h2></h2>'))) && <h6 className='m-0 text-secondary'>Title</h6>}
-                                    {(editorId === 'content' && content === null) && <div className="px-3 pt-1"><h6 className='m-0 text-secondary'>Write {showDrawIcon ? `or Draw` : ``}</h6></div>}
+                                <Col xs={3}>
+                                    {((productId === "") || (product.fixedSize === undefined)) && (editorId === 'title' && (!content || (content === '<h2></h2>'))) && <h6 className='m-0 text-secondary'>Title</h6>}
+                                    {(editorId === 'content' && content === null) && <div className="px-3 pt-1"><h6 className='m-0 text-secondary'>  {showDrawIcon ? `` : ``}</h6></div>}
                                 </Col>
-                                <Col xs={6}>
+                                <Col xs={9}>
                                     <div className={`${editorId === "content" ? "px-3 pt-1" : ""}`}>
-                                        {(editorId === "content" || ((productId === "")||(product.fixedSize === undefined))) && showWriteIcon && <OverlayTrigger
+                                        {(editorId === "content" || ((productId === "") || (product.fixedSize === undefined))) && showWriteIcon && <OverlayTrigger
                                             placement="top"
                                             delay={{ show: 250, hide: 400 }}
                                             overlay={(props) => (
@@ -732,6 +736,20 @@ export default function Editor({ editorId, mode, content, onContentChanged, onPe
                                                 </Tooltip>
                                             )}
                                         ><Button id="draw-1" variant="link" className="text-dark p-0 mx-3" onClick={handlePenClicked.bind(null, 'excalidraw')}><i className="fa fa-paint-brush" aria-hidden="true"></i></Button></OverlayTrigger> </span>}
+                                        {editorId === "content" && showTwinIcon && <span className='pull-right'><OverlayTrigger
+                                            placement="top"
+                                            show={showTwinTip}
+                                            onToggle={handleTwinTipToggle}
+                                            delay={{ show: 250, hide: 400 }}
+                                            overlay={(props) => (
+                                                <Tooltip id="button-tooltip" {...props}>
+                                                    Twin Paper
+                                                </Tooltip>
+                                            )}
+                                        ><button type="button" className={`${BSafesStyle.twinPaperBtn} mx-0`} onClick={handlePenClicked.bind(null, 'twin')}>
+                                                <img src="/images/twinPaper.png" alt="Search" />
+                                            </button>
+                                        </OverlayTrigger> </span>}
                                     </div>
                                     {(editorId === 'content' && draft) &&
                                         <ButtonGroup className='pull-right mx-3' size="sm">

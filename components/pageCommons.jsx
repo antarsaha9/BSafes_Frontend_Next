@@ -10,6 +10,7 @@ import { Blocks } from 'react-loader-spinner';
 
 import PhotoSwipe from "photoswipe";
 import PhotoSwipeUI_Default from "photoswipe/dist/photoswipe-ui-default";
+import forge from 'node-forge';
 
 import Editor from './editor';
 import HiddenExcalidraw from "./hiddenExcalidraw";
@@ -23,9 +24,10 @@ import Comments from "./comments";
 import BSafesStyle from '../styles/BSafes.module.css'
 import BSafesProductsStyle from '../styles/bsafesProducts.module.css'
 
-import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadAudiosThunk, downloadAudioThunk, setAudioWordsMode, saveAudioWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraftThunk, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadOriginalContentThunk, setContentType, setContentEditorMode, setInitialContentRendered, getPageTemplateThunk, loadPageTemplate, clearPageTemplate } from "../reduxStore/pageSlice";
-import { debugLog } from '../lib/helper';
+import { setIOSActivity, updateContentImagesDisplayIndex, downloadVideoThunk, setImageWordsMode, saveImageWordsThunk, saveDraftThunk, saveContentThunk, saveTitleThunk, uploadVideosThunk, setVideoWordsMode, saveVideoWordsThunk, uploadAudiosThunk, downloadAudioThunk, setAudioWordsMode, saveAudioWordsThunk, uploadImagesThunk, uploadAttachmentsThunk, setCommentEditorMode, saveCommentThunk, playingContentVideo, getS3SignedUrlForContentUploadThunk, setS3SignedUrlForContentUpload, loadDraftThunk, clearDraftThunk, setDraftLoaded, startDownloadingContentImagesForDraftThunk, loadDraftDataThunk, loadOriginalContentThunk, setContentType, setContentEditorMode, setInitialContentRendered, loadPageTemplate, clearPageTemplate } from "../reduxStore/pageSlice";
+import { debugLog, getDataURLFromFile } from '../lib/helper';
 import { products, productIdDelimiter } from "../lib/productID";
+import { prepareTwinPaperDraft } from "../lib/twinPaper";
 
 export default function PageCommons() {
     const debugOn = true;
@@ -87,6 +89,7 @@ export default function PageCommons() {
 
     const spinnerRef = useRef(null);
     const pswpRef = useRef(null);
+    const twinInputRef = useRef(null);
 
     const [drawingSnapshot, setDrawingSnapshot] = useState(null);
     const videoFilesInputRef = useRef(null);
@@ -267,6 +270,12 @@ export default function PageCommons() {
         }
     }
 
+    const handleTwinClicked = () => {
+        debugLog(debugOn, "handleTwinClicked");
+        twinInputRef.current.value = null;
+        twinInputRef.current?.click();
+    }
+
     const handlePenClicked = (editorId, purpose) => {
         debugLog(debugOn, `pen ${editorId} clicked ${purpose}`);
         let thisReadyForSaving = true;
@@ -275,6 +284,9 @@ export default function PageCommons() {
                 dispatch(setContentType('WritingPage'));
             else if (purpose === 'excalidraw') {
                 dispatch(setContentType('DrawingPage'));
+            } else if (purpose === 'twin') {
+                handleTwinClicked();
+                return;
             }
         }
         if (editorId === 'content') {
@@ -383,6 +395,22 @@ export default function PageCommons() {
     const imagePanels = imagePanelsState.map((item, index) =>
         <ImagePanel key={item.queueId} panelIndex={"image_" + index} panel={item} onImageClicked={onImageClicked} editorMode={item.editorMode} onPenClicked={handlePenClicked} onContentChanged={handleContentChanged} editable={!editingEditorId && (activity === 0) && !checkingLatest} />
     )
+
+    const handleTwinImage = async (e) => {
+        e.preventDefault();
+        debugLog(debugOn, "handleTwinImage: ", e.target.id);
+        const files = e.target.files;
+        if (files.length) {
+            const file = files[0];
+            const result = await prepareTwinPaperDraft(file);
+            if (result.status === "ok") {
+                const draft = result.draft;
+                dispatch(loadDraftDataThunk({ draft, contentType: "DrawingPage" }));
+            }else {
+                alert("Error preparing twin paper draft with image file! Error:" + result.error.message);
+            }
+        }
+    }
 
     const handleWrite = () => {
         debugLog(debugOn, "handleWrite");
@@ -1016,6 +1044,7 @@ export default function PageCommons() {
                 }
                 {true &&
                     <div className={`justify-content-center ${contentType !== "DrawingPage" ? "row" : ""}`}>
+                        <input ref={twinInputRef} onChange={handleTwinImage} type="file" accept="image/*" className="d-none editControl" id="twinImage" />
                         <div className={`contenEditorRow ${contentType !== "DrawingPage" ? "col-sm-10 col-12" : ""}`} style={{ minHeight: "280px" }}>
                             <Editor editorId="content" showDrawIcon={!contentType || contentType === 'DrawingPage'} showWriteIcon={!contentType || contentType === 'WritingPage'} mode={contentEditorMode} content={contentEditorContentWithImagesAndVideos || contentEditorContent} onContentChanged={handleContentChanged} onPenClicked={handlePenClicked} editable={!editingEditorId && (activity === 0) && !checkingLatest && (!oldVersion) && contentImagesAllDisplayed} writingModeReady={handleContentWritingModeReady} readOnlyModeReady={handleContentReadOnlyModeReady} onDraftSampled={handleDraftSample} onDraftClicked={handleDraftClicked} onDraftDelete={handleDraftDelete} onDrawingClicked={handleDrawingClicked} drawingImageDone={handleDrawingImageDone} drawingSnapshot={drawingSnapshot} />
                         </div>

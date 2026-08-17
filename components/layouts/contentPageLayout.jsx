@@ -314,13 +314,13 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                         goLogin();
                         return;
                     }
-                    if (product) {
-                        changePage(`/appPreviews/${product}`);
-                        return;
-                    }
                     const path = router.asPath;
                     if (ifRedirectToHome(path)) {
-                        goHome();
+                        if (product) {
+                            changePage(`/appPreviews/${product}`);
+                        } else {
+                            goHome();
+                        }
                     }
                 }
             } else {

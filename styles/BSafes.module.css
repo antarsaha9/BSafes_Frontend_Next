@@ -246,6 +246,19 @@
   bottom: 68px;
 }
 
+.twinPaperBtn {
+  background: none;
+  border: none;
+  margin-top: -10px;
+  padding: 0px;
+  cursor: pointer;
+}
+
+.twinPaperBtn img {
+  width: 32px; /* Set your desired icon size */
+  height: 32px;
+}
+
 /* End of custom buttons */
 
 /*--****** Items Toolbar ***/
