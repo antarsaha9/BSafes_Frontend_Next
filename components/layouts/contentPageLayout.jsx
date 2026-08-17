@@ -235,10 +235,10 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const localSessionStateChanged = () => {
         debugLog(debugOn, `localSessionStateChanged(): preflightReady:${preflightReady}, state: ${JSON.stringify(localSessionState)}, isLoggedIn:${isLoggedIn}`);
 
+        const path = router.asPath;
         if (preflightReady && localSessionState.sessionExists) {
             if (localSessionState.unlocked) {
                 if (isLoggedIn) {
-                    const path = router.asPath;
                     if (checkIfPublicOrAuthPages(path)) {
                         if (accountVersion === 'v1') {
                             changePage('/teams');
@@ -305,6 +305,9 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     } else {
                         goLogin();
                     }
+                   
+                } else if (checkIfPublicOrAuthPages(path)) {
+                    // Do nothing now
                 } else {
                     const storedNickname = getNickname();
                     if (storedNickname) {
