@@ -42,6 +42,7 @@ import { resetV1AccountActivity } from '../../reduxStore/v1AccountSlice';
 import { updateLocalBackupThunk, updateStatusBarMessageThunk } from '../../reduxStore/localBackupSlice';
 
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
+import BackButtonWorker from '../BackButtonWorker';
 
 const hideFunction = (process.env.NEXT_PUBLIC_functions.indexOf('hide') !== -1)
 
@@ -499,6 +500,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
 
     return (
         <div>
+            <BackButtonWorker/>
+
             {(generateDrawingSnapshot || (accountActivity !== 0) || (authActivity !== 0) || (v1AccountActivity !== 0) || (teamsActivity !== 0) || (containerActivity !== 0) || (pageActivity !== 0) || (iOSActivity !== 0)) &&
                 <div className={BSafesStyle.screenBottomLeft}>
                     <Blocks
