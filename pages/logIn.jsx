@@ -19,6 +19,7 @@ import RecoverAccountModal from '../components/recoverAccountModal';
 import Turnstile from '../components/turnstile';
 
 import { logInAsyncThunk, setGotoFirstPagetAfterLoggedIn } from '../reduxStore/auth'
+import { loadAllowLoggedOutViewingThunk } from '../reduxStore/localExportSlice'
 
 import { readAccountRecoveryCode } from '../lib/crypto';
 
@@ -36,6 +37,11 @@ export default function LogIn() {
     const isLoggedIn = useSelector(state => state.auth.isLoggedIn);
     const memberId = useSelector(state => state.auth.memberId);
     const [toPath, setToPath] = useState(null);
+    const allowLoggedOutViewing = useSelector(state => state.localExport.allowLoggedOutViewing);
+
+    useEffect(() => {
+        if (process.env.NEXT_PUBLIC_app === 'localBackup') dispatch(loadAllowLoggedOutViewingThunk());
+    }, [dispatch]);
 
     const nicknameChanged = (e) => {
         setNickname(e.target.value);
@@ -149,6 +155,15 @@ export default function LogIn() {
                                         </Col>
                                     </Row>
                                     <p hidden={process.env.NEXT_PUBLIC_platform !== 'Web'} className='text-center'>30-Day Free</p>
+                                    {process.env.NEXT_PUBLIC_app === 'localBackup' && allowLoggedOutViewing &&
+                                        <Row>
+                                            <Col className='text-center'>
+                                                <Button variant='link' onClick={() => router.push('/openBackup')} style={{ color: 'gray', textTransform: 'none', textDecoration: 'none' }}>
+                                                    <i className="fa fa-archive" aria-hidden="true"></i> Open a local backup
+                                                </Button>
+                                            </Col>
+                                        </Row>
+                                    }
                                 </Card>
                             </Col>
                         </Row>

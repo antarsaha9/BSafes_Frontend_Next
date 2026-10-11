@@ -11,6 +11,7 @@ import teamSlice, {teamReducer} from './teamSlice';
 import v1AccountSlice, { v1AccountReducer } from './v1AccountSlice';
 import productSlice, {productReducer} from './productSlice';
 import localBackupSlice, {localBackupReducer} from './localBackupSlice';
+import localExportSlice, {localExportReducer} from './localExportSlice';
 
 
 const reduxStore = configureStore({
@@ -25,17 +26,18 @@ const reduxStore = configureStore({
         [accountSlice.name]:accountReducer,
         [productSlice.name]:productReducer,
         [localBackupSlice.name]:localBackupReducer,
+        [localExportSlice.name]:localExportReducer,
     },
     devTools: true,
     middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         // Ignore these action types
-        ignoredActions: ['page/addImages', 'page/imageUploaded', 'page/setAbortController'],
+        ignoredActions: ['page/addImages', 'page/imageUploaded', 'page/setAbortController', 'localExport/setBackupRoot'],
         // Ignore these field paths in all actions
         ignoredActionPaths: ['payload.files', 'payload.img', 'payload.buffer', 'payload.xhr', 'payload.writer', 'payload.stripePromise', 'payload.content', 'payload.item.content'],
         // Ignore these paths in the state
-        ignoredPaths: ['page.videosUploadQueue', 'page.videoPanels', 'page.audiosUploadQueue', 'page.audioPanels', 'page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController', 'page.xhr', 'page.writer', 'scripts.stripePromise', 'page.content', 'page.originalContent','page.error'],
+        ignoredPaths: ['page.videosUploadQueue', 'page.videoPanels', 'page.audiosUploadQueue', 'page.audioPanels', 'page.imageUploadQueue', 'page.imagePanels', 'page.attachmentsUploadQueue', 'page.attachmentPanels', 'page.abortController', 'page.xhr', 'page.writer', 'scripts.stripePromise', 'page.content', 'page.originalContent','page.error', 'localExport.backupRoot'],
       },
     }),
 })

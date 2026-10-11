@@ -11,6 +11,7 @@ import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, de
 import { generateNewItemKey, decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
 import { getBookIdFromPage, timeToString, formatTimeDisplay, getEditorConfig, getItemType } from '../lib/bSafesCommonUI';
+import { decryptItemCore, EMBEDDED_JSON_SEPARATOR } from '../lib/itemDecryption';
 import { preS3Download, preS3ChunkUpload, preS3ChunkDownload, putS3Object } from '../lib/s3Helper';
 import { downScaleImage } from '../lib/wnImage';
 import { isDemoMode } from '../lib/demoHelper';
@@ -18,7 +19,6 @@ import { readDataFromServiceWorkerDBTable, writeDataToServiceWorkerDBTable, dele
 import { productIdDelimiter } from '../lib/productID';
 import { setPreflightReady } from './auth';
 
-const embeddJSONSeperator = '=#=#=embeddJSON=';
 const MAX_NUMBER_OF_MEDIA_FILES = 32;
 const debugOn = true;
 
@@ -147,186 +147,25 @@ function findMediasInContent(state, content) {
 function decryptPageItemFunc(state, workspaceKey) {
     if (!state.decrypttionRequired) return;
     const item = state.itemCopy;
-    if ((item.keyEnvelope === undefined)) {
-        debugLog(debugOn, "Error: undefined item key");
-        state.error = "Undefined item key";
+    const result = decryptItemCore(item, workspaceKey);
+    if (result.error) {
+        debugLog(debugOn, "Error decrypting page item: ", result.error);
+        state.error = result.error;
     }
-    if (item.envelopeIV && item.ivEnvelope && item.ivEnvelopeIV) { // legacy CBC-mode
-        state.itemKey = decryptBinaryString(forge.util.decode64(item.keyEnvelope), workspaceKey, forge.util.decode64(item.envelopeIV));
-        state.itemIV = decryptBinaryString(forge.util.decode64(item.ivEnvelope), workspaceKey, forge.util.decode64(item.ivEnvelopeIV));
-    } else {
-        const decoded = forge.util.decode64(item.keyEnvelope);
-        state.itemKey = decryptBinaryString(decoded, workspaceKey);
-        state.itemIV = null;
+    state.itemKey = result.itemKey;
+    state.itemIV = result.itemIV;
+    state.tags = result.tags;
+    state.title = result.title;
+    state.titleText = result.titleText;
+    if (result.content !== null) {
+        state.content = result.content;
+        state.contentImagesDownloadQueue = state.contentImagesDownloadQueue.concat(result.contentMediaRefs);
     }
-    let itemTags = [];
-    let hiddenTags = {
-        'contentType#Write': true,
-    }
-    if (item.tags && item.tags.length > 1) {
-        const encryptedTags = item.tags;
-        for (let i = 0; i < (item.tags.length - 1); i++) {
-            try {
-                let encryptedTag = encryptedTags[i];
-                encryptedTag = forge.util.decode64(encryptedTag);
-                const encodedTag = decryptBinaryString(encryptedTag, state.itemKey, state.itemIV);
-                const tag = forge.util.decodeUtf8(encodedTag);
-                if (hiddenTags[tag]) continue;
-                itemTags.push(tag);
-            } catch (err) {
-                state.error = err;
-            }
-        }
-    };
-    state.tags = itemTags;
-
-    if (item.title) {
-        try {
-            const encodedTitle = decryptBinaryString(forge.util.decode64(item.title), state.itemKey, state.itemIV);
-            let title = forge.util.decodeUtf8(encodedTitle);
-            title = DOMPurify.sanitize(title);
-            state.title = title;
-            state.titleText = $(title).text();
-        } catch (err) {
-            state.error = err;
-        }
-    } else {
-        state.title = '<h2></h2>';
-        state.titleText = "";
-    }
-
-    if (item.content && !item.content.startsWith('s3Object/')) {
-        try {
-            const encodedContent = decryptBinaryString(forge.util.decode64(item.content), state.itemKey, state.itemIV);
-            let content = forge.util.decodeUtf8(encodedContent);
-            content = DOMPurify.sanitize(content);
-            state.content = content;
-
-            findMediasInContent(state, content);
-
-        } catch (err) {
-            state.error = err;
-        }
-    }
-
-    if (item.videos) {
-        let newPanels = [];
-        for (let i = 0; i < item.videos.length; i++) {
-            let video = item.videos[i];
-            let encryptedWords, encodedWords, words;
-            const videoThumbnailS3Key = `${video.s3KeyPrefix}_chunk_${getEditorConfig().videoThumbnailIndex}`
-            const queueId = 'd' + state.imageDownloadQueue.length;
-            state.imageDownloadQueue.push({ s3Key: videoThumbnailS3Key, forVideo: true });
-
-            if (video.words && video.words !== "") {
-                encryptedWords = forge.util.decode64(video.words);
-                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
-                words = forge.util.decodeUtf8(encodedWords);
-                words = DOMPurify.sanitize(words);
-            } else {
-                words = "";
-            }
-
-            const newPanel = {
-                video: true,
-                queueId,
-                fileType: video.fileType,
-                fileName: decodeURI(decryptBinaryString(forge.util.decode64(video.fileName), state.itemKey)),
-                fileSize: video.fileSize,
-                encryptedFileSize: video.encryptedFileSize,
-                status: "WaitingForDownload",
-                numberOfChunks: video.numberOfChunks,
-                s3KeyPrefix: video.s3KeyPrefix,
-                progress: 0,
-                words,
-                thumbnail: null,
-                placeholder: "https://placehold.co/600x400?text=Video"
-            }
-            newPanels.push(newPanel);
-        }
-        state.videoPanels = newPanels;
-    }
-
-    if (item.audios) {
-        let newPanels = [];
-        for (let i = 0; i < item.audios.length; i++) {
-            let audio = item.audios[i];
-            let encryptedWords, encodedWords, words;
-            const queueId = 'd' + i;
-            if (audio.words && audio.words !== "") {
-                encryptedWords = forge.util.decode64(audio.words);
-                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
-                words = forge.util.decodeUtf8(encodedWords);
-                words = DOMPurify.sanitize(words);
-            } else {
-                words = "";
-            }
-
-            const newPanel = {
-                audio: true,
-                queueId,
-                fileType: audio.fileType,
-                fileName: decodeURI(decryptBinaryString(forge.util.decode64(audio.fileName), state.itemKey)),
-                fileSize: audio.fileSize,
-                encryptedFileSize: audio.encryptedFileSize,
-                status: "WaitingForDownload",
-                numberOfChunks: audio.numberOfChunks,
-                s3KeyPrefix: audio.s3KeyPrefix,
-                progress: 0,
-                words
-            }
-            newPanels.push(newPanel);
-        }
-        state.audioPanels = newPanels;
-    }
-
-    if (item.images) {
-        for (let i = 0; i < item.images.length; i++) {
-            let image = item.images[i];
-            let encryptedWords, encodedWords, words;
-            const queueId = 'd' + state.imageDownloadQueue.length;
-            state.imageDownloadQueue.push({ s3Key: image.s3Key });
-            if (image.words && image.words !== "") {
-                encryptedWords = forge.util.decode64(image.words);
-                encodedWords = decryptBinaryString(encryptedWords, state.itemKey, state.itemIV);
-                words = forge.util.decodeUtf8(encodedWords);
-                words = DOMPurify.sanitize(words);
-            } else {
-                words = "";
-            }
-            const newPanel = {
-                queueId: queueId,
-                s3Key: image.s3Key,
-                size: image.size,
-                status: "WaitingForDownload",
-                words: words,
-                progress: 0
-            }
-            state.imagePanels.push(newPanel);
-        }
-    }
-    if (item.attachments.length > 1) {
-        let encryptedFileName, encodedFileName, fileName, fileType, fileSize;
-        let newPanels = [];
-        for (let i = 1; i < item.attachments.length; i++) {
-            let attachment = item.attachments[i];
-            encryptedFileName = forge.util.decode64(attachment.fileName);
-            encodedFileName = decryptBinaryString(encryptedFileName, state.itemKey, state.itemIV);
-            fileName = forge.util.decodeUtf8(encodedFileName);
-            const newPanel = {
-                queueId: 'a' + i,
-                fileName,
-                fileType: attachment.fileType,
-                fileSize: attachment.fileSize,
-                status: "Uploaded",
-                numberOfChunks: attachment.numberOfChunks,
-                s3KeyPrefix: attachment.s3KeyPrefix,
-                progress: 0
-            }
-            newPanels.push(newPanel);
-        }
-        state.attachmentPanels = newPanels.reverse();
-    }
+    state.videoPanels = result.videoPanels;
+    state.audioPanels = result.audioPanels;
+    state.imagePanels = result.imagePanels;
+    state.attachmentPanels = result.attachmentPanels;
+    state.imageDownloadQueue = state.imageDownloadQueue.concat(result.imageDownloadQueue);
 }
 
 const containerDataFetchedFunc = (state, action) => {
@@ -1915,7 +1754,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                         const keyData = getCurrentItemKey();
                         const decryptedContent = decryptLargeBinaryString(downloadedBinaryString, keyData.itemKey, keyData.itemIV)
                         debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                        const [decryptedImageStr, embeddJSON] = decryptedContent.split(embeddJSONSeperator);
+                        const [decryptedImageStr, embeddJSON] = decryptedContent.split(EMBEDDED_JSON_SEPARATOR);
                         const blob = {};
                         blob.metadata = {
                             ExcalidrawSerializedJSON: forge.util.decodeUtf8(embeddJSON)
@@ -2191,7 +2030,7 @@ export const getPageItemThunk = (data) => async (dispatch, getState) => {
                                 await itemKeyReady();
                                 const decryptedContent = decryptLargeBinaryString(downloadedBinaryString, state.itemKey, state.itemIV)
                                 debugLog(debugOn, "Decrypted string length: ", decryptedContent.length);
-                                const [decryptedImageStr, embeddJSON] = decryptedContent.split(embeddJSONSeperator);
+                                const [decryptedImageStr, embeddJSON] = decryptedContent.split(EMBEDDED_JSON_SEPARATOR);
                                 const blob = {};
                                 blob.metadata = {
                                     ExcalidrawSerializedJSON: forge.util.decodeUtf8(embeddJSON)
@@ -3529,7 +3368,7 @@ async function preProcessEditorContentBeforeSaving(content, contentType) {
     if (contentType === "DrawingPage") {
         const ExcalidrawSerializedJSON = content.metadata.ExcalidrawSerializedJSON;
         return {
-            content: "NA" + embeddJSONSeperator + ExcalidrawSerializedJSON,
+            content: "NA" + EMBEDDED_JSON_SEPARATOR + ExcalidrawSerializedJSON,
             s3ObjectsInContent: [],
             s3ObjectsSize: 0
         }
