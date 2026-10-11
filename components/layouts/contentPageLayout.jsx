@@ -195,7 +195,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     }
 
     const ifRedirectToHome = (path) => {
-        // The backup viewer reads already-decrypted local files, so it needs no login.
+        // Don't send this page to the login screen. It checks for itself whether viewing
+        // backups without logging in is allowed.
         if (process.env.NEXT_PUBLIC_app === 'localBackup' && path.startsWith('/openBackup')) return false;
         if ((path !== '/') && (!path.startsWith('/public/') && !path.startsWith('/apps/') && !path.startsWith('/appPreviews/') && !path.startsWith('/getStarted') && !path.startsWith('/logIn') && (path !== '/keySetup') && (!path.startsWith('/n/')))) {
             return true;

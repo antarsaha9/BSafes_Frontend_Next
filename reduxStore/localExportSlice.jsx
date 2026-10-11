@@ -24,7 +24,7 @@ const initialState = {
     leafItemCount: 0,
     exportErrors: [],
     lastFolderName: null,
-    allowLoggedOutViewing: null, // null until loaded from storage
+    allowLoggedOutViewing: null, // null means not loaded yet
     backupRoot: null,
     backupManifest: null,
     openBackupError: null,
@@ -141,11 +141,12 @@ export const cancelExportThunk = () => (dispatch) => {
 }
 
 /**
- * Prompts the user for a folder, then walks the entire workspace and writes a fully
- * decrypted, browsable export: a nested folder per Box/Folder/Notebook/Diary (each with
- * a manifest.json listing its children) and a page.html + media/ + manifest.json (with
- * per-file SHA-256 hashes) per leaf page. A single item's decrypt/download/write failure
- * is recorded and skipped rather than aborting the whole export.
+ * Makes a full backup of the workspace, unlocked, into a folder on the computer.
+ * - Uses the remembered folder (if useLastFolder is true), otherwise asks the user to pick one.
+ * - Creates a folder for each Box, Folder, Notebook and Diary, and one for each page
+ *   (with page.html, media/ and manifest.json).
+ * - If one page fails, it is noted and skipped; the rest of the backup continues.
+ * Progress is shown in the status bar, and the user can cancel at any time.
  */
 export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, getState) => {
     return newActivity(dispatch, localExportActivity.Export, () => {
@@ -310,7 +311,7 @@ export const loadAllowLoggedOutViewingThunk = () => async (dispatch) => {
     return allowed;
 }
 
-/** Only a logged-in user can change this, so a logged-out visitor can't turn it on. */
+/** Turns "view backups without logging in" on or off. Only works while logged in, so someone who isn't logged in can't turn it on. */
 export const changeAllowLoggedOutViewingThunk = (allowed) => async (dispatch, getState) => {
     if (!getState().auth.isLoggedIn) return;
     await saveAllowLoggedOutViewing(allowed);
@@ -323,9 +324,12 @@ async function canViewBackups(dispatch, getState) {
 }
 
 /**
- * Opens a backup folder for viewing. `useLastFolder` reuses the remembered folder;
- * `autoOpen` is for page load (no user click), so it only opens the remembered folder
- * if access is already granted and never shows a picker or permission prompt.
+ * Opens a backup folder to view it in the app.
+ * - useLastFolder: open the remembered folder (asks for permission if needed)
+ * - autoOpen: used when the page loads by itself. It opens the remembered folder only if
+ *   the app already has permission, and never shows a folder picker or a permission prompt.
+ * - neither: ask the user to pick a folder
+ * When logged out, it only works if "view backups without logging in" is turned on.
  */
 export const openBackupFolderThunk = ({ useLastFolder = false, autoOpen = false } = {}) => (dispatch, getState) => {
     return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
