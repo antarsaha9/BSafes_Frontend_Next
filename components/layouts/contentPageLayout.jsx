@@ -12,7 +12,6 @@ import Container from 'react-bootstrap/Container'
 import Dropdown from 'react-bootstrap/Dropdown'
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
-import Spinner from 'react-bootstrap/Spinner';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 
@@ -693,7 +692,6 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                     <Row>
                         <Col xs={localExportInProgress ? 10 : 12}>
                             <p>
-                                {localExportInProgress && <Spinner animation="border" size="sm" className='me-2' />}
                                 {localExportStatusBarMessage}
                             </p>
                         </Col>
