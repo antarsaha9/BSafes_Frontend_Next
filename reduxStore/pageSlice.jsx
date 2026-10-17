@@ -6,7 +6,7 @@ const DOMPurify = require('dompurify');
 import { setPaymentIntentData } from './accountSlice';
 import { setNavigationInSameContainer } from './containerSlice';
 import { setCurrentProduct } from './productSlice';
-import { setSignedUrlForBackup, backupAnItemVersionToS3, getPageItemFromLocalBackup } from './localBackupSlice';
+import { setSignedUrlForBackup, backupAnItemVersionToS3, getPageItemFromLocalBackup, getLocalS3Object } from './localBackupSlice';
 import { getBrowserInfo, usingServiceWorker, convertBinaryStringToUint8Array, debugLog, PostCall, extractHTMLElementText, requestAppleReview } from '../lib/helper'
 import { generateNewItemKey, decryptBinaryString, encryptBinaryString, encryptLargeBinaryString, decryptChunkBinaryStringToBinaryStringAsync, decryptLargeBinaryString, encryptChunkBinaryStringToBinaryStringAsync, stringToEncryptedTokensCBC, stringToEncryptedTokensECB, tokenfieldToEncryptedArray, tokenfieldToEncryptedTokensCBC, tokenfieldToEncryptedTokensECB } from '../lib/crypto';
 import { pageActivity } from '../lib/activities';
@@ -1065,14 +1065,7 @@ const getS3ObjectForAPage = (itemId, s3Key, cacheInServiceWorkerDB = true, dispa
                 }
                 resolve(downloadedBinaryString);
             } else {
-                const fsS3Key = s3Key.split('/').at(-1);
-                let response = await window.desktopAPI.getS3Object(fsS3Key);
-                if (response.status === "ok") {
-                    downloadedBinaryString = response.data;
-                    resolve(downloadedBinaryString);
-                } else {
-                    resolve(null);
-                }
+                resolve(await getLocalS3Object(s3Key));
             }
         } catch (error) {
             reject(error);

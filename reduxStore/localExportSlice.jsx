@@ -9,6 +9,7 @@ import { uniqueEntryName } from '../lib/exportNaming';
 import { exportLeafItem, writeContainerManifest, writeBackupManifest } from '../lib/exportWriter';
 import { readBackupManifest, readContainerManifest, readAndVerifyItem, buildViewableFragment, revokeBlobUrls } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
+import { updateLocalBackupThunk } from './localBackupSlice';
 import { saveLastFolder, loadLastFolder, ensureFolderPermission, getRootDisplayName, saveAllowLoggedOutViewing, loadAllowLoggedOutViewing } from '../lib/exportFolderPrefs';
 
 const debugOn = true;
@@ -24,6 +25,7 @@ const initialState = {
     leafItemCount: 0,
     exportErrors: [],
     lastFolderName: null,
+    syncFailurePrompt: null, // { reason } while asking whether to export without an up-to-date local backup
     allowLoggedOutViewing: null, // null means not loaded yet
     backupRoot: null,
     backupManifest: null,
@@ -98,6 +100,9 @@ const localExportSlice = createSlice({
         setViewingItem: (state, action) => {
             state.viewingItem = action.payload;
         },
+        setSyncFailurePrompt: (state, action) => {
+            state.syncFailurePrompt = action.payload;
+        },
         setLastFolderName: (state, action) => {
             state.lastFolderName = action.payload;
         },
@@ -121,7 +126,7 @@ export const {
     setExportInProgress, setCancelRequested, setStatusBarMessage,
     resetExportCounters, incrementContainerCount, incrementLeafItemCount,
     addExportError,
-    setBackupRoot, setBackupManifest, setOpenBackupError, setCurrentContainer, setLastFolderName, setAllowLoggedOutViewing,
+    setBackupRoot, setBackupManifest, setOpenBackupError, setCurrentContainer, setLastFolderName, setSyncFailurePrompt, setAllowLoggedOutViewing,
     setBreadcrumbs, setViewingItem, clearOpenBackup
 } = localExportSlice.actions;
 export const localExportReducer = localExportSlice.reducer;
@@ -136,8 +141,29 @@ const newActivity = async (dispatch, type, activity) => {
     }
 }
 
+// Resolves the question shown when the local backup update fails (true = export anyway).
+// Kept outside Redux because a function can't be stored in the state.
+let answerSyncFailurePrompt = null;
+
+function askToExportWithoutSync(dispatch, reason) {
+    return new Promise((resolve) => {
+        answerSyncFailurePrompt = (exportAnyway) => {
+            answerSyncFailurePrompt = null;
+            dispatch(setSyncFailurePrompt(null));
+            resolve(exportAnyway);
+        };
+        dispatch(setSyncFailurePrompt({ reason }));
+    });
+}
+
+/** The user's answer to "the local backup couldn't be updated - export anyway?" */
+export const answerSyncFailurePromptThunk = (exportAnyway) => () => {
+    if (answerSyncFailurePrompt) answerSyncFailurePrompt(!!exportAnyway);
+}
+
 export const cancelExportThunk = () => (dispatch) => {
     dispatch(setCancelRequested(true));
+    if (answerSyncFailurePrompt) answerSyncFailurePrompt(false);
 }
 
 /**
@@ -181,6 +207,22 @@ export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, g
                 dispatch(setExportInProgress(false));
                 resolve();
                 return;
+            }
+
+            // The export is built from the local backup, so bring it up to date first.
+            dispatch(setStatusBarMessage("Updating your local backup before exporting..."));
+            const sync = await dispatch(updateLocalBackupThunk());
+            const localBackupUpToDate = sync.ok;
+            if (!sync.ok) {
+                const reason = (sync.error && sync.error.message) || String(sync.error || 'unknown error');
+                dispatch(setStatusBarMessage("The local backup could not be updated. Waiting for your choice..."));
+                const exportAnyway = await askToExportWithoutSync(dispatch, reason);
+                if (!exportAnyway) {
+                    dispatch(setStatusBarMessage("Export cancelled - the local backup could not be updated (" + reason + ")."));
+                    dispatch(setExportInProgress(false));
+                    resolve();
+                    return;
+                }
             }
 
             const authState = getState().auth;
@@ -244,6 +286,16 @@ export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, g
                     },
                 });
 
+                // If nothing was found, something went wrong reading the local backup. Don't
+                // overwrite an earlier backup in this folder with an empty one.
+                if (rootNode.children.length === 0) {
+                    const errorCount = getState().localExport.exportErrors.length;
+                    dispatch(setStatusBarMessage(`Export stopped: no content was found in your local backup${errorCount ? ` (${errorCount} errors)` : ''}. The backup folder was not changed.`));
+                    dispatch(setExportInProgress(false));
+                    resolve();
+                    return;
+                }
+
                 await writeContainerManifest(root, rootNode.relPath, {
                     id: rootNode.id, type: rootNode.type, title: rootNode.title,
                     children: rootNode.children.map((c) => ({ id: c.id, type: c.type, title: c.title, relPath: c.entryName })),
@@ -255,9 +307,11 @@ export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, g
                     memberId: authState.memberId,
                     displayName: authState.displayName,
                     root: rootNode.relPath,
+                    localBackupUpToDate,
                 });
 
-                dispatch(setStatusBarMessage(`Export complete: ${getState().localExport.containerCount} folders/notebooks/diaries, ${getState().localExport.leafItemCount} pages, ${getState().localExport.exportErrors.length} errors.`));
+                const notice = localBackupUpToDate ? '' : ' Made from your existing local backup, so recent changes may be missing.';
+                dispatch(setStatusBarMessage(`Export complete: ${getState().localExport.containerCount} folders/notebooks/diaries, ${getState().localExport.leafItemCount} pages, ${getState().localExport.exportErrors.length} errors.${notice}`));
                 dispatch(setExportInProgress(false));
                 resolve();
             } catch (error) {

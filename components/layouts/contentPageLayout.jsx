@@ -42,6 +42,7 @@ import { resetV1AccountActivity } from '../../reduxStore/v1AccountSlice';
 import { updateLocalBackupThunk, updateStatusBarMessageThunk } from '../../reduxStore/localBackupSlice';
 import { cancelExportThunk, loadAllowLoggedOutViewingThunk } from '../../reduxStore/localExportSlice';
 import ExportBackupModal from '../exportBackupModal';
+import ExportSyncFailureModal from '../exportSyncFailureModal';
 
 import { setNextAuthStep, lockAsyncThunk, signOutAsyncThunk, signedOut } from '../../reduxStore/v1AccountSlice';
 
@@ -105,6 +106,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
     const statusBarMessage = useSelector(state => state.localBackup.statusBarMessage);
     const localExportStatusBarMessage = useSelector(state => state.localExport.statusBarMessage);
     const localExportInProgress = useSelector(state => state.localExport.exportInProgress);
+    const updatingLocalBackup = useSelector(state => state.localBackup.updatingBackup);
     const allowLoggedOutViewing = useSelector(state => state.localExport.allowLoggedOutViewing);
 
     useEffect(() => {
@@ -641,8 +643,8 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                                     <>
                                         <a href="https://support.bsafes.com" target='_blank' className='' style={{ color: "#000000" }}><i className="fa fa-lg fa-question" aria-hidden="true"></i></a>
                                         <Button variant='link' size='md' className='' onClick={refresh} style={{ color: 'black' }}><i className="fa fa-refresh" aria-hidden="true"></i></Button>
-                                        <Button variant='link' size='md' className='' onClick={localBackup} style={{ color: 'black' }}><i className="fa fa-download" aria-hidden="true"></i></Button>
-                                        {process.env.NEXT_PUBLIC_app === 'localBackup' && <Button variant='link' size='md' className='' title='Export decrypted backup to a folder' onClick={exportBackup} disabled={localExportInProgress} style={{ color: 'black' }}><i className="fa fa-suitcase" aria-hidden="true"></i></Button>}
+                                        <Button variant='link' size='md' className='' onClick={localBackup} disabled={updatingLocalBackup || localExportInProgress} style={{ color: 'black' }}><i className="fa fa-download" aria-hidden="true"></i></Button>
+                                        {process.env.NEXT_PUBLIC_app === 'localBackup' && <Button variant='link' size='md' className='' title='Export decrypted backup to a folder' onClick={exportBackup} disabled={localExportInProgress || updatingLocalBackup} style={{ color: 'black' }}><i className="fa fa-suitcase" aria-hidden="true"></i></Button>}
                                         {process.env.NEXT_PUBLIC_app === 'localBackup' && <Button variant='link' size='md' className='' title='Open a backup folder' onClick={openBackup} disabled={localExportInProgress} style={{ color: 'black' }}><i className="fa fa-archive" aria-hidden="true"></i></Button>}
                                         <Button variant='dark' size='sm' onClick={logOut}>Lock</Button>
                                     </>
@@ -704,6 +706,7 @@ const ContentPageLayout = ({ children, publicPage = false, publicHooks = null, s
                 </div>
             )}
             {process.env.NEXT_PUBLIC_app === 'localBackup' && <ExportBackupModal show={showExportBackupModal} onClose={() => setShowExportBackupModal(false)} />}
+            {process.env.NEXT_PUBLIC_app === 'localBackup' && <ExportSyncFailureModal />}
             {false && (workspace && workspace.startsWith("d:")) &&
                 <DemoNotice />
             }

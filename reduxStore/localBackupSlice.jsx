@@ -204,12 +204,23 @@ export const getBackupTokenThunk = (data) => async (dispatch, getState) => {
         });
     })
 }
+/**
+ * Brings the local backup up to date with the cloud.
+ * Returns { ok: true } when done, or { ok: false, error } if it failed,
+ * so callers (like the export) can wait for it.
+ */
 export const updateLocalBackupThunk = (data) => async (dispatch, getState) => {
-    newActivity(dispatch, localBackupActivity.DownloadItemVersionsBackup, () => {
+    let syncError = null;
+    await newActivity(dispatch, localBackupActivity.DownloadItemVersionsBackup, () => {
         return new Promise(async (resolve, reject) => {
             dispatch(setUpdatingBackup(true));
             if (!localStorage.getItem("backupToken")) {
-                await getBackupToken(dispatch);
+                try {
+                    await getBackupToken(dispatch);
+                } catch (error) {
+                    reject(error);
+                    return;
+                }
             }
             const updateItemKeys = () => {
                 return new Promise(async (resolve, reject) => {
@@ -625,8 +636,16 @@ export const updateLocalBackupThunk = (data) => async (dispatch, getState) => {
                 dispatch(setUpdatingBackup(false));
                 reject(error);
             }
+        }).catch((error) => {
+            syncError = error;
+            dispatch(setStatusBarMessage("Failed to update local backup: " + ((error && error.message) || error)));
+            throw error;
+        }).finally(() => {
+            // Always clear the "updating" flag, however the update ended, so the buttons are enabled again.
+            dispatch(setUpdatingBackup(false));
         });
     });
+    return syncError ? { ok: false, error: syncError } : { ok: true };
 }
 export const listLocalItemsThunk = (data) => async (dispatch, getState) => {
     newActivity(dispatch, localBackupActivity.ListLocalItems, () => {
@@ -677,21 +696,34 @@ export const listLocalItemsThunk = (data) => async (dispatch, getState) => {
                     from: (pageNumber - 1) * state.itemsPerPage,
                 }
             }
-            let response = await window.desktopAPI.listItems(body);
-            if (response.status === "ok") {
-                const total = response.hits.total;
-                const hits = response.hits.hits;
+            try {
+                const { total, hits } = await listLocalItems(body);
                 dispatch(pageLoaded({ pageNumber, total, hits }));
                 dispatch(setListingDone(true));
                 resolve();
-            } else {
-                debugLog(debugOn, "listItems failed: ", data.error);
+            } catch (error) {
+                debugLog(debugOn, "listItems failed: ", error);
                 reject("Failed to list items.");
             }
             dispatch(setListingItems(false));
         });
     });
 }
+/** Lists items from the local backup. Returns { total, hits }; throws if the list can't be read. */
+export async function listLocalItems(body) {
+    const response = await window.desktopAPI.listItems(body);
+    if (response.status !== "ok") {
+        throw new Error(response.error || `Failed to list local items for ${body.container}`);
+    }
+    return { total: response.hits.total, hits: response.hits.hits || [] };
+}
+
+/** Reads one stored (still encrypted) file from the local backup. Returns null if it isn't there. */
+export async function getLocalS3Object(s3Key) {
+    const response = await window.desktopAPI.getS3Object(s3Key.split('/').at(-1));
+    return response.status === "ok" && response.data ? response.data : null;
+}
+
 export const getPageItemFromLocalBackup = (payload) => {
     return new Promise(async (resolve, reject) => {
         let response = await window.desktopAPI.getPageItem(payload);
