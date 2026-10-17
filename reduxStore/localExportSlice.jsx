@@ -4,13 +4,13 @@ import { debugLog } from '../lib/helper';
 import { localExportActivity } from '../lib/activities';
 import { walkWorkspace, fetchFullyDecryptedItem, ExportCancelledError } from '../lib/exportTreeWalk';
 import { getItemType } from '../lib/bSafesCommonUI';
-import { pickExportFolder, pickBackupFolderToOpen } from '../lib/exportFsAccess';
+import { pickExportFolder, pickBackupFolderToOpen, checkFolder } from '../lib/exportFsAccess';
 import { uniqueEntryName } from '../lib/exportNaming';
 import { exportLeafItem, writeContainerManifest, writeBackupManifest } from '../lib/exportWriter';
 import { readBackupManifest, readContainerManifest, readAndVerifyItem, buildViewableFragment, revokeBlobUrls } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
 import { updateLocalBackupThunk } from './localBackupSlice';
-import { saveLastFolder, loadLastFolder, ensureFolderPermission, getRootDisplayName, saveAllowLoggedOutViewing, loadAllowLoggedOutViewing } from '../lib/exportFolderPrefs';
+import { saveLastFolder, loadLastFolder, getRootDisplayName, saveAllowLoggedOutViewing, loadAllowLoggedOutViewing } from '../lib/exportFolderPrefs';
 
 const debugOn = true;
 
@@ -25,6 +25,7 @@ const initialState = {
     leafItemCount: 0,
     exportErrors: [],
     lastFolderName: null,
+    lastFolderPath: null,
     syncFailurePrompt: null, // { reason } while asking whether to export without an up-to-date local backup
     allowLoggedOutViewing: null, // null means not loaded yet
     backupRoot: null,
@@ -103,8 +104,9 @@ const localExportSlice = createSlice({
         setSyncFailurePrompt: (state, action) => {
             state.syncFailurePrompt = action.payload;
         },
-        setLastFolderName: (state, action) => {
-            state.lastFolderName = action.payload;
+        setLastFolder: (state, action) => {
+            state.lastFolderName = action.payload ? action.payload.name : null;
+            state.lastFolderPath = action.payload ? action.payload.path : null;
         },
         setAllowLoggedOutViewing: (state, action) => {
             state.allowLoggedOutViewing = action.payload;
@@ -126,7 +128,7 @@ export const {
     setExportInProgress, setCancelRequested, setStatusBarMessage,
     resetExportCounters, incrementContainerCount, incrementLeafItemCount,
     addExportError,
-    setBackupRoot, setBackupManifest, setOpenBackupError, setCurrentContainer, setLastFolderName, setSyncFailurePrompt, setAllowLoggedOutViewing,
+    setBackupRoot, setBackupManifest, setOpenBackupError, setCurrentContainer, setLastFolder, setSyncFailurePrompt, setAllowLoggedOutViewing,
     setBreadcrumbs, setViewingItem, clearOpenBackup
 } = localExportSlice.actions;
 export const localExportReducer = localExportSlice.reducer;
@@ -186,7 +188,7 @@ export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, g
             try {
                 if (useLastFolder) {
                     const lastFolder = await loadLastFolder();
-                    if (lastFolder && await ensureFolderPermission(lastFolder, 'readwrite', true)) {
+                    if (lastFolder && await checkFolder(lastFolder, { write: true })) {
                         root = lastFolder;
                     }
                 }
@@ -348,7 +350,7 @@ async function loadContainer(dispatch, getState, relPath) {
 async function rememberFolder(dispatch, root) {
     try {
         await saveLastFolder(root);
-        dispatch(setLastFolderName(getRootDisplayName(root)));
+        dispatch(setLastFolder(root));
     } catch (error) {
         debugLog(debugOn, "Failed to remember the backup folder: ", error);
     }
@@ -356,7 +358,7 @@ async function rememberFolder(dispatch, root) {
 
 export const loadLastFolderThunk = () => async (dispatch) => {
     const lastFolder = await loadLastFolder();
-    dispatch(setLastFolderName(getRootDisplayName(lastFolder)));
+    dispatch(setLastFolder(lastFolder));
 }
 
 export const loadAllowLoggedOutViewingThunk = () => async (dispatch) => {
@@ -379,30 +381,33 @@ async function canViewBackups(dispatch, getState) {
 
 /**
  * Opens a backup folder to view it in the app.
- * - useLastFolder: open the remembered folder (asks for permission if needed)
- * - autoOpen: used when the page loads by itself. It opens the remembered folder only if
- *   the app already has permission, and never shows a folder picker or a permission prompt.
+ * - useLastFolder: open the remembered folder; if it's gone, ask the user to pick one
+ * - autoOpen: used when the page loads by itself. It opens the remembered folder if it
+ *   still exists, and never shows a folder picker.
  * - neither: ask the user to pick a folder
  * When logged out, it only works if "view backups without logging in" is turned on.
  */
 export const openBackupFolderThunk = ({ useLastFolder = false, autoOpen = false } = {}) => (dispatch, getState) => {
     return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
-        closeViewingItem(dispatch, getState);
         dispatch(setOpenBackupError(null));
         if (!(await canViewBackups(dispatch, getState))) return;
         let root = null;
         if (useLastFolder || autoOpen) {
             const lastFolder = await loadLastFolder();
-            dispatch(setLastFolderName(getRootDisplayName(lastFolder)));
-            if (lastFolder && await ensureFolderPermission(lastFolder, 'read', !autoOpen)) {
+            dispatch(setLastFolder(lastFolder));
+            if (lastFolder && await checkFolder(lastFolder)) {
                 root = lastFolder;
             }
         }
         if (!root) {
             if (autoOpen) return;
             root = await pickBackupFolderToOpen();
-            if (!root) return;
+            if (!root) return; // picker closed: keep showing whatever backup is open
         }
+        // A folder was chosen: close the backup shown so far, so its content never
+        // appears together with a warning (or content) about the new folder.
+        closeViewingItem(dispatch, getState);
+        dispatch(clearOpenBackup());
         let backupManifest;
         try {
             backupManifest = await readBackupManifest(root);
