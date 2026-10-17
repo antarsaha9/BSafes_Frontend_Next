@@ -171,12 +171,14 @@ export const cancelExportThunk = () => (dispatch) => {
 /**
  * Makes a full backup of the workspace, unlocked, into a folder on the computer.
  * - Uses the remembered folder (if useLastFolder is true), otherwise asks the user to pick one.
+ * - If updateFirst is true, brings the local backup up to date before exporting;
+ *   otherwise it exports what's already in the local backup.
  * - Creates a folder for each Box, Folder, Notebook and Diary, and one for each page
  *   (with page.html, media/ and manifest.json).
  * - If one page fails, it is noted and skipped; the rest of the backup continues.
  * Progress is shown in the status bar, and the user can cancel at any time.
  */
-export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, getState) => {
+export const startExportThunk = ({ useLastFolder = false, updateFirst = true } = {}) => (dispatch, getState) => {
     return newActivity(dispatch, localExportActivity.Export, () => {
         return new Promise(async (resolve, reject) => {
             dispatch(resetExportCounters());
@@ -211,19 +213,22 @@ export const startExportThunk = ({ useLastFolder = false } = {}) => (dispatch, g
                 return;
             }
 
-            // The export is built from the local backup, so bring it up to date first.
-            dispatch(setStatusBarMessage("Updating your local backup before exporting..."));
-            const sync = await dispatch(updateLocalBackupThunk());
-            const localBackupUpToDate = sync.ok;
-            if (!sync.ok) {
-                const reason = (sync.error && sync.error.message) || String(sync.error || 'unknown error');
-                dispatch(setStatusBarMessage("The local backup could not be updated. Waiting for your choice..."));
-                const exportAnyway = await askToExportWithoutSync(dispatch, reason);
-                if (!exportAnyway) {
-                    dispatch(setStatusBarMessage("Export cancelled - the local backup could not be updated (" + reason + ")."));
-                    dispatch(setExportInProgress(false));
-                    resolve();
-                    return;
+            // The export is built from the local backup, so bring it up to date first (if asked to).
+            let localBackupUpToDate = false;
+            if (updateFirst) {
+                dispatch(setStatusBarMessage("Updating your local backup before exporting..."));
+                const sync = await dispatch(updateLocalBackupThunk());
+                localBackupUpToDate = sync.ok;
+                if (!sync.ok) {
+                    const reason = (sync.error && sync.error.message) || String(sync.error || 'unknown error');
+                    dispatch(setStatusBarMessage("The local backup could not be updated. Waiting for your choice..."));
+                    const exportAnyway = await askToExportWithoutSync(dispatch, reason);
+                    if (!exportAnyway) {
+                        dispatch(setStatusBarMessage("Export cancelled - the local backup could not be updated (" + reason + ")."));
+                        dispatch(setExportInProgress(false));
+                        resolve();
+                        return;
+                    }
                 }
             }
 

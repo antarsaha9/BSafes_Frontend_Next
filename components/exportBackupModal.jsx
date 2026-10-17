@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import Modal from 'react-bootstrap/Modal';
 import Button from 'react-bootstrap/Button';
+import Form from 'react-bootstrap/Form';
 
 import { startExportThunk, loadLastFolderThunk } from '../reduxStore/localExportSlice';
 import LoggedOutBackupViewingToggle from './loggedOutBackupViewingToggle';
@@ -12,6 +13,7 @@ export default function ExportBackupModal({ show, onClose }) {
     const dispatch = useDispatch();
     const lastFolderName = useSelector(state => state.localExport.lastFolderName);
     const lastFolderPath = useSelector(state => state.localExport.lastFolderPath);
+    const [updateFirst, setUpdateFirst] = useState(true);
 
     useEffect(() => {
         if (show) dispatch(loadLastFolderThunk());
@@ -19,7 +21,7 @@ export default function ExportBackupModal({ show, onClose }) {
 
     const startExport = (useLastFolder) => {
         onClose();
-        dispatch(startExportThunk({ useLastFolder }));
+        dispatch(startExportThunk({ useLastFolder, updateFirst }));
     };
 
     return (
@@ -37,6 +39,21 @@ export default function ExportBackupModal({ show, onClose }) {
                         <br /><small className='text-muted'>Pages already in this backup are updated in place.</small>
                     </p>
                     : <p className='mb-0 text-muted'>No export folder chosen yet.</p>}
+                <Form.Check
+                    type='checkbox'
+                    id='exportUpdateLocalBackupFirst'
+                    className='mt-3'
+                    checked={updateFirst}
+                    onChange={(e) => setUpdateFirst(e.target.checked)}
+                    label={<>
+                        Update the local backup first (recommended)
+                        <br /><small className='text-muted'>
+                            {updateFirst
+                                ? 'Downloads your latest changes before exporting. Needs a network connection.'
+                                : 'Exports only what is already in the local backup. Faster and works offline, but recent changes may be missing.'}
+                        </small>
+                    </>}
+                />
                 <hr />
                 <LoggedOutBackupViewingToggle />
             </Modal.Body>
