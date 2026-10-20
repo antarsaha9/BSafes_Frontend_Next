@@ -14,6 +14,7 @@ export default function ExportBackupModal({ show, onClose }) {
     const lastFolderName = useSelector(state => state.localExport.lastFolderName);
     const lastFolderPath = useSelector(state => state.localExport.lastFolderPath);
     const [updateFirst, setUpdateFirst] = useState(true);
+    const [fullReexport, setFullReexport] = useState(false);
 
     useEffect(() => {
         if (show) dispatch(loadLastFolderThunk());
@@ -21,7 +22,7 @@ export default function ExportBackupModal({ show, onClose }) {
 
     const startExport = (useLastFolder) => {
         onClose();
-        dispatch(startExportThunk({ useLastFolder, updateFirst }));
+        dispatch(startExportThunk({ useLastFolder, updateFirst, fullReexport }));
     };
 
     return (
@@ -36,7 +37,7 @@ export default function ExportBackupModal({ show, onClose }) {
                         Export to: <strong><i className="fa fa-folder" aria-hidden="true"></i> {lastFolderName}</strong>
                         {canShowFolder() && <Button variant='link' size='sm' className='py-0' onClick={() => showFolder({ path: lastFolderPath })}>Show in folder</Button>}
                         <br /><small className='text-muted' style={{ wordBreak: 'break-all' }}>{lastFolderPath}</small>
-                        <br /><small className='text-muted'>Pages already in this backup are updated in place.</small>
+                        <br /><small className='text-muted'>Only new and changed pages are exported; pages deleted in the app are removed from the backup.</small>
                     </p>
                     : <p className='mb-0 text-muted'>No export folder chosen yet.</p>}
                 <Form.Check
@@ -52,6 +53,17 @@ export default function ExportBackupModal({ show, onClose }) {
                                 ? 'Downloads your latest changes before exporting. Needs a network connection.'
                                 : 'Exports only what is already in the local backup. Faster and works offline, but recent changes may be missing.'}
                         </small>
+                    </>}
+                />
+                <Form.Check
+                    type='checkbox'
+                    id='exportFullReexport'
+                    className='mt-2'
+                    checked={fullReexport}
+                    onChange={(e) => setFullReexport(e.target.checked)}
+                    label={<>
+                        Re-export everything (slower)
+                        <br /><small className='text-muted'>Rebuilds every page, even ones that haven&apos;t changed.</small>
                     </>}
                 />
                 <hr />
