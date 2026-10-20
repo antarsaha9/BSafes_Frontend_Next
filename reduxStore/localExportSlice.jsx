@@ -4,11 +4,11 @@ import { debugLog } from '../lib/helper';
 import { localExportActivity } from '../lib/activities';
 import { walkWorkspace, fetchFullyDecryptedItem, ExportCancelledError } from '../lib/exportTreeWalk';
 import { getItemType } from '../lib/bSafesCommonUI';
-import { pickExportFolder, pickBackupFolderToOpen, checkFolder } from '../lib/exportFsAccess';
+import { pickExportFolder, pickBackupFolderToOpen, checkFolder, openInBrowser } from '../lib/exportFsAccess';
 import { uniqueEntryName } from '../lib/exportNaming';
 import { exportLeafItem, writeContainerManifest, writeBackupManifest, writeIndexHtml } from '../lib/exportWriter';
 import { isPageUpToDate, pruneContainerFolder } from '../lib/exportIncremental';
-import { readBackupManifest, readContainerManifest, readAndVerifyItem, buildViewableFragment, revokeBlobUrls } from '../lib/exportViewer';
+import { readBackupManifest, checkBackup } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
 import { updateLocalBackupThunk } from './localBackupSlice';
 import { saveLastFolder, loadLastFolder, getRootDisplayName, saveAllowLoggedOutViewing, loadAllowLoggedOutViewing } from '../lib/exportFolderPrefs';
@@ -31,13 +31,12 @@ const initialState = {
     lastFolderPath: null,
     syncFailurePrompt: null, // { reason } while asking whether to export without an up-to-date local backup
     allowLoggedOutViewing: null, // null means not loaded yet
-    backupRoot: null,
-    backupManifest: null,
     openBackupError: null,
-    currentRelPath: null,
-    currentContainerManifest: null,
-    breadcrumbs: [],
-    viewingItem: null,
+    openBackupMessage: null, // e.g. "Opened MyBackup in your browser."
+    // While opening a backup: { status: 'checking', pagesChecked } or
+    // { status: 'problems', folderName, pagesChecked, problems } (waiting for the user's choice).
+    openCheck: null,
+    openCheckCancelRequested: false,
 }
 
 const localExportSlice = createSlice({
@@ -93,24 +92,17 @@ const localExportSlice = createSlice({
         addExportError: (state, action) => {
             state.exportErrors.push(action.payload);
         },
-        setBackupRoot: (state, action) => {
-            state.backupRoot = action.payload;
-        },
-        setBackupManifest: (state, action) => {
-            state.backupManifest = action.payload;
-        },
         setOpenBackupError: (state, action) => {
             state.openBackupError = action.payload;
         },
-        setCurrentContainer: (state, action) => {
-            state.currentRelPath = action.payload.relPath;
-            state.currentContainerManifest = action.payload.manifest;
+        setOpenBackupMessage: (state, action) => {
+            state.openBackupMessage = action.payload;
         },
-        setBreadcrumbs: (state, action) => {
-            state.breadcrumbs = action.payload;
+        setOpenCheck: (state, action) => {
+            state.openCheck = action.payload;
         },
-        setViewingItem: (state, action) => {
-            state.viewingItem = action.payload;
+        setOpenCheckCancelRequested: (state, action) => {
+            state.openCheckCancelRequested = action.payload;
         },
         setSyncFailurePrompt: (state, action) => {
             state.syncFailurePrompt = action.payload;
@@ -123,13 +115,10 @@ const localExportSlice = createSlice({
             state.allowLoggedOutViewing = action.payload;
         },
         clearOpenBackup: (state) => {
-            state.backupRoot = null;
-            state.backupManifest = null;
             state.openBackupError = null;
-            state.currentRelPath = null;
-            state.currentContainerManifest = null;
-            state.breadcrumbs = [];
-            state.viewingItem = null;
+            state.openBackupMessage = null;
+            state.openCheck = null;
+            state.openCheckCancelRequested = false;
         },
     }
 });
@@ -139,8 +128,8 @@ export const {
     setExportInProgress, setCancelRequested, setStatusBarMessage,
     resetExportCounters, incrementContainerCount, incrementLeafItemCount, incrementSkippedCount, addRemovedCount,
     addExportError,
-    setBackupRoot, setBackupManifest, setOpenBackupError, setCurrentContainer, setLastFolder, setSyncFailurePrompt, setAllowLoggedOutViewing,
-    setBreadcrumbs, setViewingItem, clearOpenBackup
+    setOpenBackupError, setOpenBackupMessage, setOpenCheck, setOpenCheckCancelRequested,
+    setLastFolder, setSyncFailurePrompt, setAllowLoggedOutViewing, clearOpenBackup
 } = localExportSlice.actions;
 export const localExportReducer = localExportSlice.reducer;
 
@@ -407,19 +396,6 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
 
 const CONTAINER_TYPES = new Set(['Workspace', 'Box', 'Folder', 'Notebook', 'Diary']);
 
-function closeViewingItem(dispatch, getState) {
-    const viewingItem = getState().localExport.viewingItem;
-    if (viewingItem) revokeBlobUrls(viewingItem.blobUrls);
-    dispatch(setViewingItem(null));
-}
-
-async function loadContainer(dispatch, getState, relPath) {
-    const root = getState().localExport.backupRoot;
-    const manifest = await readContainerManifest(root, relPath);
-    closeViewingItem(dispatch, getState);
-    dispatch(setCurrentContainer({ relPath, manifest }));
-}
-
 async function rememberFolder(dispatch, root) {
     try {
         await saveLastFolder(root);
@@ -452,103 +428,93 @@ async function canViewBackups(dispatch, getState) {
     return dispatch(loadAllowLoggedOutViewingThunk());
 }
 
+// Resolves the "some files were changed - open anyway?" question (true = open anyway).
+// Kept outside Redux because a function can't be stored in the state.
+let answerOpenProblems = null;
+
+/** The user's answer when the backup check found changed or missing files. */
+export const answerOpenProblemsThunk = (openAnyway) => () => {
+    if (answerOpenProblems) answerOpenProblems(!!openAnyway);
+}
+
+/** Stops a running backup check (or answers "Cancel" if it's waiting for the user). */
+export const cancelOpenBackupThunk = () => (dispatch) => {
+    dispatch(setOpenCheckCancelRequested(true));
+    if (answerOpenProblems) answerOpenProblems(false);
+}
+
 /**
- * Opens a backup folder to view it in the app.
- * - useLastFolder: open the remembered folder; if it's gone, ask the user to pick one
- * - autoOpen: used when the page loads by itself. It opens the remembered folder if it
- *   still exists, and never shows a folder picker.
- * - neither: ask the user to pick a folder
+ * Opens a backup in the user's web browser.
+ * 1. Uses the remembered folder (if useLastFolder and it still exists), otherwise asks the user to pick one.
+ * 2. Makes sure it's a BSafes backup, and remembers it.
+ * 3. Checks every page for files changed or deleted outside the app. If it finds any,
+ *    it lists them and waits for the user to choose "Open anyway" or "Cancel".
+ * 4. Opens the backup's index.html in the default browser.
  * When logged out, it only works if "view backups without logging in" is turned on.
  */
-export const openBackupFolderThunk = ({ useLastFolder = false, autoOpen = false } = {}) => (dispatch, getState) => {
+export const openBackupInBrowserThunk = ({ useLastFolder = false } = {}) => (dispatch, getState) => {
     return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
-        dispatch(setOpenBackupError(null));
         if (!(await canViewBackups(dispatch, getState))) return;
         let root = null;
-        if (useLastFolder || autoOpen) {
+        if (useLastFolder) {
             const lastFolder = await loadLastFolder();
             dispatch(setLastFolder(lastFolder));
-            if (lastFolder && await checkFolder(lastFolder)) {
-                root = lastFolder;
-            }
+            if (lastFolder && await checkFolder(lastFolder)) root = lastFolder;
         }
         if (!root) {
-            if (autoOpen) return;
             root = await pickBackupFolderToOpen();
-            if (!root) return; // picker closed: keep showing whatever backup is open
+            if (!root) return; // picker closed
         }
-        // A folder was chosen: close the backup shown so far, so its content never
-        // appears together with a warning (or content) about the new folder.
-        closeViewingItem(dispatch, getState);
         dispatch(clearOpenBackup());
+
         let backupManifest;
         try {
             backupManifest = await readBackupManifest(root);
         } catch (error) {
-            dispatch(setOpenBackupError("This folder is not a BSafes backup (backup-manifest.json is missing or unreadable)."));
+            dispatch(setOpenBackupError(`"${root.name}" is not a BSafes backup (backup-manifest.json is missing or unreadable).`));
             return;
         }
-        dispatch(setBackupRoot(root));
-        dispatch(setBackupManifest(backupManifest));
-        dispatch(setBreadcrumbs([]));
         await rememberFolder(dispatch, root);
+
+        dispatch(setOpenCheck({ status: 'checking', pagesChecked: 0 }));
+        let result;
         try {
-            await loadContainer(dispatch, getState, backupManifest.root);
+            result = await checkBackup(root, backupManifest, {
+                onProgress: (pagesChecked) => dispatch(setOpenCheck({ status: 'checking', pagesChecked })),
+                isCancelled: () => getState().localExport.openCheckCancelRequested,
+            });
         } catch (error) {
-            dispatch(setOpenBackupError("Failed to read the backup: " + (error.message || String(error))));
+            dispatch(setOpenCheck(null));
+            dispatch(setOpenBackupError("Failed to check the backup: " + (error.message || String(error))));
+            return;
+        }
+        if (result.cancelled) {
+            dispatch(clearOpenBackup());
+            return;
+        }
+        if (result.problems.length) {
+            const openAnyway = await new Promise((resolve) => {
+                answerOpenProblems = (choice) => {
+                    answerOpenProblems = null;
+                    resolve(choice);
+                };
+                dispatch(setOpenCheck({ status: 'problems', folderName: root.name, pagesChecked: result.pagesChecked, problems: result.problems }));
+            });
+            dispatch(setOpenCheck(null));
+            if (!openAnyway) return;
+        } else {
+            dispatch(setOpenCheck(null));
+        }
+
+        try {
+            await openInBrowser(root);
+            dispatch(setOpenBackupMessage(`Opened "${root.name}" in your web browser.`));
+        } catch (error) {
+            dispatch(setOpenBackupError(error.code === 'ENOENT'
+                ? `"${root.name}" was made by an older version of the app and can't be opened in a browser yet. Export to this folder again to make it browsable.`
+                : "Failed to open the backup in your browser: " + (error.message || String(error))));
         }
     });
-}
-
-export const openBackupChildThunk = (child) => (dispatch, getState) => {
-    return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
-        const state = getState().localExport;
-        const childRelPath = `${state.currentRelPath}/${child.relPath}`;
-        dispatch(setOpenBackupError(null));
-        try {
-            if (CONTAINER_TYPES.has(child.type)) {
-                const parentCrumb = { relPath: state.currentRelPath, title: state.currentContainerManifest.title };
-                await loadContainer(dispatch, getState, childRelPath);
-                dispatch(setBreadcrumbs([...state.breadcrumbs, parentCrumb]));
-                return;
-            }
-            closeViewingItem(dispatch, getState);
-            const { manifest, tampered, tamperedFiles, fileContents } = await readAndVerifyItem(state.backupRoot, childRelPath);
-            if (tampered) {
-                dispatch(setViewingItem({ relPath: childRelPath, title: manifest.title, tags: manifest.tags, tampered: true, tamperedFiles, bodyHtml: null, blobUrls: [] }));
-                return;
-            }
-            const { bodyHtml, blobUrls } = buildViewableFragment(fileContents);
-            dispatch(setViewingItem({ relPath: childRelPath, title: manifest.title, tags: manifest.tags, tampered: false, tamperedFiles: [], bodyHtml, blobUrls }));
-        } catch (error) {
-            debugLog(debugOn, "openBackupChildThunk failed: ", error);
-            dispatch(setOpenBackupError("Failed to open this item - the backup may have been modified or is incomplete: " + (error.message || String(error))));
-        }
-    });
-}
-
-export const openBackupBreadcrumbThunk = (index) => (dispatch, getState) => {
-    return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
-        const breadcrumbs = getState().localExport.breadcrumbs;
-        const target = breadcrumbs[index];
-        if (!target) return;
-        dispatch(setOpenBackupError(null));
-        try {
-            await loadContainer(dispatch, getState, target.relPath);
-            dispatch(setBreadcrumbs(breadcrumbs.slice(0, index)));
-        } catch (error) {
-            dispatch(setOpenBackupError("Failed to read the backup: " + (error.message || String(error))));
-        }
-    });
-}
-
-export const closeBackupItemThunk = () => (dispatch, getState) => {
-    closeViewingItem(dispatch, getState);
-}
-
-export const closeBackupThunk = () => (dispatch, getState) => {
-    closeViewingItem(dispatch, getState);
-    dispatch(clearOpenBackup());
 }
 
 export default localExportSlice;
