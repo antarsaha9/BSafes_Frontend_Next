@@ -9,6 +9,7 @@ import { uniqueEntryName } from '../lib/exportNaming';
 import { exportLeafItem, writeContainerManifest, writeBackupManifest, writeIndexHtml, EXPORT_FORMAT } from '../lib/exportWriter';
 import { isPageUpToDate, pruneContainerFolder } from '../lib/exportIncremental';
 import { ensureStoreFolder, readPageRecord, verifyRecordObjects, restorePageFromStore, collectGarbage } from '../lib/exportStore';
+import { writeStyleFolder, styleHrefFor } from '../lib/exportStyle';
 import { readBackupManifest, checkBackup } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
 import { updateLocalBackupThunk } from './localBackupSlice';
@@ -310,7 +311,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                         const node = nodeStack.pop();
                         try {
                             await writeContainerManifest(root, node.relPath, { id: node.id, type: node.type, title: node.title, children: manifestChildren(node) });
-                            await writeIndexHtml(root, node.relPath, { title: node.title, crumbs: crumbsFor(node.relPath, nodeStack.slice(1)), items: indexItems(node) });
+                            await writeIndexHtml(root, node.relPath, { title: node.title, crumbs: crumbsFor(node.relPath, nodeStack.slice(1)), items: indexItems(node), styleHref: styleHrefFor(node.relPath) });
                             await prune(node);
                         } catch (error) {
                             debugLog(debugOn, `startExportThunk: failed to write container manifest for ${node.id}`, error);
@@ -339,7 +340,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                                 const record = await readPageRecord(root, entry.id);
                                 if (record && record.version === version && record.exportFormat === EXPORT_FORMAT && await verifyRecordObjects(root, record)) {
                                     dispatch(setStatusBarMessage(`${progressPrefix()} Moving ${titleText || 'untitled page'}...`));
-                                    const { linked } = await restorePageFromStore(root, relPath, record, crumbs);
+                                    const { linked } = await restorePageFromStore(root, relPath, record, crumbs, styleHrefFor(relPath));
                                     if (!linked) copiedInsteadOfLinked = true;
                                     dispatch(incrementMovedCount());
                                     parent.children.push({ id: entry.id, type, title: titleText, entryName });
@@ -349,7 +350,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                             // 3. New or changed: unlock it from the local backup and export it.
                             dispatch(setStatusBarMessage(`${progressPrefix()} Exporting ${titleText || 'untitled page'}...`));
                             const { item, decrypted, drawing } = await fetchFullyDecryptedItem(entry.id, workspaceKey);
-                            const { linked } = await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, isCancelled);
+                            const { linked } = await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, styleHrefFor(relPath), isCancelled);
                             if (!linked) copiedInsteadOfLinked = true;
                             dispatch(incrementLeafItemCount());
                             parent.children.push({ id: entry.id, type, title: titleText, entryName });
@@ -381,8 +382,11 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                 // The hidden store's folder (files were already added to it during the export).
                 await ensureStoreFolder(root);
 
+                // The stylesheets and fonts every page links to, so pages look like the app.
+                const styleOk = await writeStyleFolder(root);
+
                 await writeContainerManifest(root, rootNode.relPath, { id: rootNode.id, type: rootNode.type, title: rootNode.title, children: manifestChildren(rootNode) });
-                await writeIndexHtml(root, rootNode.relPath, { title: rootNode.title, crumbs: crumbsFor(rootNode.relPath, []), items: indexItems(rootNode) });
+                await writeIndexHtml(root, rootNode.relPath, { title: rootNode.title, crumbs: crumbsFor(rootNode.relPath, []), items: indexItems(rootNode), styleHref: styleHrefFor(rootNode.relPath) });
                 await prune(rootNode);
 
                 // Clean the hidden store only after a complete export, so nothing still needed is removed.
@@ -409,12 +413,14 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                     title: `BSafes Backup – ${rootNode.title}`,
                     subtitle: `${authState.displayName ? authState.displayName + ' · ' : ''}exported ${exportedAt}`,
                     items: indexItems(rootNode, `${rootNode.entryName}/`),
+                    styleHref: styleHrefFor(''),
                 });
 
                 const notice = localBackupUpToDate ? '' : ' Made from your existing local backup, so recent changes may be missing.';
                 const linkNotice = copiedInsteadOfLinked ? " This drive doesn't support hard links, so files were copied (uses more disk space)." : '';
+                const styleNotice = styleOk ? '' : " The page styles couldn't be added, so pages will look plainer than in the app.";
                 const { leafItemCount, skippedCount, movedCount, removedCount, exportErrors } = getState().localExport;
-                dispatch(setStatusBarMessage(`Export complete: ${leafItemCount} pages updated, ${movedCount} moved, ${skippedCount} unchanged, ${removedCount} removed, ${exportErrors.length} errors.${notice}${linkNotice}`));
+                dispatch(setStatusBarMessage(`Export complete: ${leafItemCount} pages updated, ${movedCount} moved, ${skippedCount} unchanged, ${removedCount} removed, ${exportErrors.length} errors.${notice}${linkNotice}${styleNotice}`));
                 dispatch(setExportInProgress(false));
                 resolve();
             } catch (error) {

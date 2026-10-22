@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/buildExportStyle.js",
     "dev": "next dev --webpack",
+    "prebuild:localExport": "node scripts/buildExportStyle.js",
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint ."

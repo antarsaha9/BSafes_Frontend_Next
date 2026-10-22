@@ -1,0 +1,150 @@
+/*
+ * Styles for exported backup pages (page.html / index.html), opened in a web browser without the app.
+ * The app's own stylesheets are in app.css (see scripts/buildExportStyle.js). This file copies the
+ * page layout rules the app keeps in styles/BSafes.module.css, whose class names are hashed there,
+ * so they're named "bsafes-..." here.
+ */
+
+/* Roboto, the app's main font, comes from Google Fonts in the app. Backups are read offline,
+   so the nearly identical Roboto Flex (already included for the editor's font menu) stands in. */
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 1000;
+  src: url(../node_modules/@fontsource-variable/roboto-flex/files/roboto-flex-latin-ext-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Roboto';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 1000;
+  src: url(../node_modules/@fontsource-variable/roboto-flex/files/roboto-flex-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* Background (BSafes.module.css .teamsBackground) */
+body {
+  background-color: #FDFEFE;
+  min-height: 100vh;
+}
+
+/* Top bar with the "back" links */
+.bsafes-topBar {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 12px 15px 0 15px;
+}
+.bsafes-topBar .breadcrumb {
+  margin-bottom: 0;
+  font-size: .9rem;
+}
+
+/* Page (BSafes.module.css .pagePanel) */
+.bsafes-pagePanel {
+  position: relative;
+  max-width: 1024px;
+  min-height: 600px;
+  margin: 20px auto;
+  padding: 0 15px 48px 15px;
+  background-color: #fff;
+}
+
+.bsafes-pageCommonsExtension {
+  background-color: #fff;
+}
+
+/* Editors (BSafes.module.css .editorRow / .titleEditorRow) */
+.bsafes-editorRow {
+  min-height: 60px;
+  font-size: 1.1rem;
+}
+.bsafes-titleEditorRow {
+  min-height: 36px;
+  overflow-x: auto;
+  font-size: 1.1rem;
+}
+.bsafes-pagePanel .inner-html {
+  overflow-x: auto;
+}
+.bsafes-drawing {
+  display: block;
+  margin: auto;
+  object-fit: scale-down;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tags row (components/itemTopRows.jsx) */
+.bsafes-tagsRow {
+  padding-top: 12px;
+}
+.bsafes-tagsRow .bsafes-tagsIcon {
+  padding-top: 4px;
+  text-align: right;
+}
+
+/* Media panels (components/imagePanel.jsx, videoPanel.jsx, audioPanel.jsx, attachmentPanel.jsx) */
+.bsafes-panelHeading {
+  margin-top: 1.5rem;
+  margin-bottom: .75rem;
+  color: #666;
+}
+.bsafes-imagePanel,
+.bsafes-videoPanel {
+  margin-bottom: 1.5rem;
+}
+.bsafes-imagePanel img,
+.bsafes-videoPanel video {
+  max-width: 100%;
+  height: auto;
+}
+.bsafes-panelWords {
+  padding-top: .5rem;
+}
+.bsafes-audioPanel {
+  border-style: solid;
+  border-radius: 7px;
+  border-color: #adb7a5;
+  padding: 1rem 1rem .5rem 1rem;
+  margin-bottom: 1rem;
+}
+.bsafes-audioPanel h6,
+.bsafes-videoPanel h6 {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.bsafes-attachmentPanel {
+  margin-bottom: .75rem;
+}
+.bsafes-attachmentPanel a {
+  color: inherit;
+}
+.bsafes-panelNote {
+  color: #888;
+  font-style: italic;
+}
+
+/* Folder pages (index.html): the contents list */
+.bsafes-contents .list-group-item {
+  display: flex;
+  align-items: center;
+}
+.bsafes-contents .bsafes-typeIcon {
+  width: 1.75em;
+  text-align: center;
+  color: #666;
+}
+.bsafes-contents .bsafes-typeLabel {
+  margin-left: auto;
+  padding-left: 1em;
+  font-size: .8rem;
+  color: #888;
+}
+
+@media print {
+  .bsafes-topBar { display: none; }
+  .bsafes-pagePanel { margin: 0; min-height: 0; }
+}
