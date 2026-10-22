@@ -6,8 +6,9 @@ import { walkWorkspace, fetchFullyDecryptedItem, ExportCancelledError } from '..
 import { getItemType } from '../lib/bSafesCommonUI';
 import { pickExportFolder, pickBackupFolderToOpen, checkFolder, openInBrowser } from '../lib/exportFsAccess';
 import { uniqueEntryName } from '../lib/exportNaming';
-import { exportLeafItem, writeContainerManifest, writeBackupManifest, writeIndexHtml } from '../lib/exportWriter';
+import { exportLeafItem, writeContainerManifest, writeBackupManifest, writeIndexHtml, EXPORT_FORMAT } from '../lib/exportWriter';
 import { isPageUpToDate, pruneContainerFolder } from '../lib/exportIncremental';
+import { ensureStoreFolder, readPageRecord, verifyRecordObjects, restorePageFromStore, collectGarbage } from '../lib/exportStore';
 import { readBackupManifest, checkBackup } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
 import { updateLocalBackupThunk } from './localBackupSlice';
@@ -25,6 +26,7 @@ const initialState = {
     containerCount: 0,
     leafItemCount: 0, // pages exported (new or changed) in this run
     skippedCount: 0, // pages left as they were, because they hadn't changed
+    movedCount: 0, // pages rebuilt from the hidden store (moved/renamed), without unlocking them again
     removedCount: 0, // folders removed because their item no longer exists
     exportErrors: [],
     lastFolderName: null,
@@ -74,6 +76,7 @@ const localExportSlice = createSlice({
             state.containerCount = 0;
             state.leafItemCount = 0;
             state.skippedCount = 0;
+            state.movedCount = 0;
             state.removedCount = 0;
             state.exportErrors = [];
         },
@@ -82,6 +85,9 @@ const localExportSlice = createSlice({
         },
         incrementLeafItemCount: (state) => {
             state.leafItemCount += 1;
+        },
+        incrementMovedCount: (state) => {
+            state.movedCount += 1;
         },
         incrementSkippedCount: (state) => {
             state.skippedCount += 1;
@@ -126,7 +132,7 @@ const localExportSlice = createSlice({
 export const {
     resetLocalExportActivity, activityStart, activityDone, activityError,
     setExportInProgress, setCancelRequested, setStatusBarMessage,
-    resetExportCounters, incrementContainerCount, incrementLeafItemCount, incrementSkippedCount, addRemovedCount,
+    resetExportCounters, incrementContainerCount, incrementLeafItemCount, incrementSkippedCount, incrementMovedCount, addRemovedCount,
     addExportError,
     setOpenBackupError, setOpenBackupMessage, setOpenCheck, setOpenCheckCancelRequested,
     setLastFolder, setSyncFailurePrompt, setAllowLoggedOutViewing, clearOpenBackup
@@ -248,9 +254,12 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
             const nodeStack = [rootNode];
 
             const isCancelled = () => getState().localExport.cancelRequested;
+            const seenIds = new Set(); // every page found in this export (kept in the hidden store)
+            let anyListingFailed = false; // if true, the store isn't cleaned up (the list was incomplete)
+            let copiedInsteadOfLinked = false; // the drive couldn't make hard links
             const progressPrefix = () => {
-                const { leafItemCount, skippedCount } = getState().localExport;
-                return `[${leafItemCount + skippedCount} pages done]`;
+                const { leafItemCount, skippedCount, movedCount } = getState().localExport;
+                return `[${leafItemCount + skippedCount + movedCount} pages done]`;
             };
 
             // Links back up the folder tree ("breadcrumbs") for a file in folder `dirRelPath`.
@@ -316,16 +325,32 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                         const relPath = `${parent.relPath}/${entryName}`;
                         const version = entry.itemPack && entry.itemPack.version;
                         parent.keepNames.add(entryName); // keep its folder even if this page fails below
+                        seenIds.add(entry.id); // and keep its copy in the hidden store
+                        const crumbs = crumbsFor(relPath, nodeStack.slice(1));
                         try {
-                            if (!fullReexport && await isPageUpToDate(root, relPath, entry.id, version)) {
-                                dispatch(incrementSkippedCount());
-                                parent.children.push({ id: entry.id, type, title: titleText, entryName });
-                                return;
+                            if (!fullReexport) {
+                                // 1. Its folder is already current: nothing to do.
+                                if (await isPageUpToDate(root, relPath, entry.id, version)) {
+                                    dispatch(incrementSkippedCount());
+                                    parent.children.push({ id: entry.id, type, title: titleText, entryName });
+                                    return;
+                                }
+                                // 2. Unchanged, but moved or renamed: rebuild it from the hidden store.
+                                const record = await readPageRecord(root, entry.id);
+                                if (record && record.version === version && record.exportFormat === EXPORT_FORMAT && await verifyRecordObjects(root, record)) {
+                                    dispatch(setStatusBarMessage(`${progressPrefix()} Moving ${titleText || 'untitled page'}...`));
+                                    const { linked } = await restorePageFromStore(root, relPath, record, crumbs);
+                                    if (!linked) copiedInsteadOfLinked = true;
+                                    dispatch(incrementMovedCount());
+                                    parent.children.push({ id: entry.id, type, title: titleText, entryName });
+                                    return;
+                                }
                             }
+                            // 3. New or changed: unlock it from the local backup and export it.
                             dispatch(setStatusBarMessage(`${progressPrefix()} Exporting ${titleText || 'untitled page'}...`));
                             const { item, decrypted, drawing } = await fetchFullyDecryptedItem(entry.id, workspaceKey);
-                            const crumbs = crumbsFor(relPath, nodeStack.slice(1));
-                            await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, isCancelled);
+                            const { linked } = await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, isCancelled);
+                            if (!linked) copiedInsteadOfLinked = true;
                             dispatch(incrementLeafItemCount());
                             parent.children.push({ id: entry.id, type, title: titleText, entryName });
                         } catch (error) {
@@ -338,6 +363,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                         debugLog(debugOn, `startExportThunk: error walking ${info.itemId}`, info.error);
                         // This folder's list is incomplete, so don't remove anything from it.
                         nodeStack[nodeStack.length - 1].listingFailed = true;
+                        anyListingFailed = true;
                         dispatch(addExportError({ itemId: info.itemId, error: info.error.message || String(info.error) }));
                     },
                 });
@@ -352,9 +378,21 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                     return;
                 }
 
+                // The hidden store's folder (files were already added to it during the export).
+                await ensureStoreFolder(root);
+
                 await writeContainerManifest(root, rootNode.relPath, { id: rootNode.id, type: rootNode.type, title: rootNode.title, children: manifestChildren(rootNode) });
                 await writeIndexHtml(root, rootNode.relPath, { title: rootNode.title, crumbs: crumbsFor(rootNode.relPath, []), items: indexItems(rootNode) });
                 await prune(rootNode);
+
+                // Clean the hidden store only after a complete export, so nothing still needed is removed.
+                if (!anyListingFailed) {
+                    try {
+                        await collectGarbage(root, seenIds);
+                    } catch (error) {
+                        debugLog(debugOn, "startExportThunk: failed to clean up the hidden store", error);
+                    }
+                }
 
                 await writeBackupManifest(root, {
                     formatVersion: 1,
@@ -374,8 +412,9 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                 });
 
                 const notice = localBackupUpToDate ? '' : ' Made from your existing local backup, so recent changes may be missing.';
-                const { leafItemCount, skippedCount, removedCount, exportErrors } = getState().localExport;
-                dispatch(setStatusBarMessage(`Export complete: ${leafItemCount} pages updated, ${skippedCount} unchanged, ${removedCount} removed, ${exportErrors.length} errors.${notice}`));
+                const linkNotice = copiedInsteadOfLinked ? " This drive doesn't support hard links, so files were copied (uses more disk space)." : '';
+                const { leafItemCount, skippedCount, movedCount, removedCount, exportErrors } = getState().localExport;
+                dispatch(setStatusBarMessage(`Export complete: ${leafItemCount} pages updated, ${movedCount} moved, ${skippedCount} unchanged, ${removedCount} removed, ${exportErrors.length} errors.${notice}${linkNotice}`));
                 dispatch(setExportInProgress(false));
                 resolve();
             } catch (error) {
