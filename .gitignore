@@ -48,3 +48,6 @@ runForLocalBackup
 runAnIOSFeatureProduct
 public/js/excalidraw/custom-fonts
 resolved_fonts.json
+
+
+public/exportStyle
