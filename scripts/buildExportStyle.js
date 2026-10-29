@@ -1,7 +1,7 @@
 /**
- * Builds public/exportStyle/: the stylesheets and fonts that exported backup pages use,
- * so a backup opened in a web browser looks like the app (offline, without the app).
- * The export copies this folder into each backup as "bsafes-style/" (see lib/exportStyle.js).
+ * Builds public/exportStyle/: the stylesheets and fonts that exported pages use,
+ * so an export opened in a web browser looks like the app (offline, without the app).
+ * The export copies this folder into each export as "bsafes-style/" (see lib/exportStyle.js).
  *
  *   app.css      the app's own stylesheets (Bootstrap theme, Froala content styles, fonts, icons)
  *   export.css   styles/exportPage.css: the page layout rules of the app (its CSS-module classes)
@@ -35,7 +35,7 @@ const APP_CSS_SOURCES = [
 ];
 const EXPORT_CSS_SOURCE = 'styles/exportPage.css';
 
-// Older font formats every current browser skips (they would only make the backup bigger).
+// Older font formats every current browser skips (they would only make the export bigger).
 const SKIPPED_FONT_FORMATS = new Set(['.eot', '.svg', '.ttf', '.otf']);
 
 /** Copies the files a stylesheet points to into fonts/ and points the stylesheet at the copies. */

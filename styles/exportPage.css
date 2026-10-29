@@ -1,11 +1,11 @@
 /*
- * Styles for exported backup pages (page.html / index.html), opened in a web browser without the app.
+ * Styles for exported pages (page.html / index.html), opened in a web browser without the app.
  * The app's own stylesheets are in app.css (see scripts/buildExportStyle.js). This file copies the
  * page layout rules the app keeps in styles/BSafes.module.css, whose class names are hashed there,
  * so they're named "bsafes-..." here.
  */
 
-/* Roboto, the app's main font, comes from Google Fonts in the app. Backups are read offline,
+/* Roboto, the app's main font, comes from Google Fonts in the app. Exports are read offline,
    so the nearly identical Roboto Flex (already included for the editor's font menu) stands in. */
 @font-face {
   font-family: 'Roboto';

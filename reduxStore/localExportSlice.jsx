@@ -4,16 +4,16 @@ import { debugLog } from '../lib/helper';
 import { localExportActivity } from '../lib/activities';
 import { walkWorkspace, fetchFullyDecryptedItem, ExportCancelledError } from '../lib/exportTreeWalk';
 import { getItemType } from '../lib/bSafesCommonUI';
-import { pickExportFolder, pickBackupFolderToOpen, checkFolder, openInBrowser } from '../lib/exportFsAccess';
+import { pickExportFolder, pickExportFolderToOpen, checkFolder, openInBrowser } from '../lib/exportFsAccess';
 import { uniqueEntryName } from '../lib/exportNaming';
-import { exportLeafItem, writeContainerManifest, writeBackupManifest, writeIndexHtml, EXPORT_FORMAT } from '../lib/exportWriter';
+import { exportLeafItem, writeContainerManifest, writeExportManifest, writeIndexHtml, EXPORT_FORMAT } from '../lib/exportWriter';
 import { isPageUpToDate, pruneContainerFolder } from '../lib/exportIncremental';
 import { ensureStoreFolder, readPageRecord, verifyRecordObjects, restorePageFromStore, collectGarbage } from '../lib/exportStore';
 import { writeStyleFolder, styleHrefFor } from '../lib/exportStyle';
-import { readBackupManifest, checkBackup } from '../lib/exportViewer';
+import { readExportManifest, readExportOwner, checkExport } from '../lib/exportViewer';
 import { htmlToText } from '../lib/itemDecryption';
 import { updateLocalBackupThunk } from './localBackupSlice';
-import { saveLastFolder, loadLastFolder, getRootDisplayName, saveAllowLoggedOutViewing, loadAllowLoggedOutViewing } from '../lib/exportFolderPrefs';
+import { saveLastFolder, loadLastFolder, getRootDisplayName } from '../lib/exportFolderPrefs';
 
 const debugOn = true;
 
@@ -33,10 +33,9 @@ const initialState = {
     lastFolderName: null,
     lastFolderPath: null,
     syncFailurePrompt: null, // { reason } while asking whether to export without an up-to-date local backup
-    allowLoggedOutViewing: null, // null means not loaded yet
-    openBackupError: null,
-    openBackupMessage: null, // e.g. "Opened MyBackup in your browser."
-    // While opening a backup: { status: 'checking', pagesChecked } or
+    openExportError: null,
+    openExportMessage: null, // e.g. "Opened MyExport in your browser."
+    // While opening an export: { status: 'checking', pagesChecked } or
     // { status: 'problems', folderName, pagesChecked, problems } (waiting for the user's choice).
     openCheck: null,
     openCheckCancelRequested: false,
@@ -99,11 +98,11 @@ const localExportSlice = createSlice({
         addExportError: (state, action) => {
             state.exportErrors.push(action.payload);
         },
-        setOpenBackupError: (state, action) => {
-            state.openBackupError = action.payload;
+        setOpenExportError: (state, action) => {
+            state.openExportError = action.payload;
         },
-        setOpenBackupMessage: (state, action) => {
-            state.openBackupMessage = action.payload;
+        setOpenExportMessage: (state, action) => {
+            state.openExportMessage = action.payload;
         },
         setOpenCheck: (state, action) => {
             state.openCheck = action.payload;
@@ -118,12 +117,9 @@ const localExportSlice = createSlice({
             state.lastFolderName = action.payload ? action.payload.name : null;
             state.lastFolderPath = action.payload ? action.payload.path : null;
         },
-        setAllowLoggedOutViewing: (state, action) => {
-            state.allowLoggedOutViewing = action.payload;
-        },
-        clearOpenBackup: (state) => {
-            state.openBackupError = null;
-            state.openBackupMessage = null;
+        clearOpenExport: (state) => {
+            state.openExportError = null;
+            state.openExportMessage = null;
             state.openCheck = null;
             state.openCheckCancelRequested = false;
         },
@@ -135,8 +131,8 @@ export const {
     setExportInProgress, setCancelRequested, setStatusBarMessage,
     resetExportCounters, incrementContainerCount, incrementLeafItemCount, incrementSkippedCount, incrementMovedCount, addRemovedCount,
     addExportError,
-    setOpenBackupError, setOpenBackupMessage, setOpenCheck, setOpenCheckCancelRequested,
-    setLastFolder, setSyncFailurePrompt, setAllowLoggedOutViewing, clearOpenBackup
+    setOpenExportError, setOpenExportMessage, setOpenCheck, setOpenCheckCancelRequested,
+    setLastFolder, setSyncFailurePrompt, clearOpenExport
 } = localExportSlice.actions;
 export const localExportReducer = localExportSlice.reducer;
 
@@ -176,17 +172,17 @@ export const cancelExportThunk = () => (dispatch) => {
 }
 
 /**
- * Makes a full backup of the workspace, unlocked, into a folder on the computer.
- * - Uses the remembered folder (if useLastFolder is true), otherwise asks the user to pick one.
+ * Exports the whole workspace, unlocked, into a folder on the computer.
+ * - Uses the account's remembered folder (if useLastFolder is true), otherwise asks the user to pick one.
  * - If updateFirst is true, brings the local backup up to date before exporting;
  *   otherwise it exports what's already in the local backup.
  * - Creates a folder for each Box, Folder, Notebook and Diary, and one for each page
  *   (with page.html, media/ and manifest.json).
  * - Pages that haven't changed since the last export (and whose files weren't edited) are
  *   left as they are, unless fullReexport is true. Folders of items that no longer exist are removed.
- * - Writes index.html files so the backup can be browsed in a web browser, starting from
+ * - Writes index.html files so the export can be browsed in a web browser, starting from
  *   index.html in the chosen folder.
- * - If one page fails, it is noted and skipped; the rest of the backup continues.
+ * - If one page fails, it is noted and skipped; the rest of the export continues.
  * Progress is shown in the status bar, and the user can cancel at any time.
  */
 export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fullReexport = false } = {}) => (dispatch, getState) => {
@@ -200,16 +196,24 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
             let root = null;
             try {
                 if (useLastFolder) {
-                    const lastFolder = await loadLastFolder();
+                    const lastFolder = await loadLastFolder(currentMemberId(getState));
                     if (lastFolder && await checkFolder(lastFolder, { write: true })) {
                         root = lastFolder;
                     }
                 }
                 if (!root) {
-                    dispatch(setStatusBarMessage("Choose a folder to export your backup to..."));
+                    dispatch(setStatusBarMessage("Choose a folder to export to..."));
                     root = await pickExportFolder();
-                    if (root) await rememberFolder(dispatch, root);
                 }
+                // Never export into a folder that holds another account's export.
+                const owner = root ? await readExportOwner(root) : null;
+                if (owner && owner !== getState().auth.memberId) {
+                    dispatch(setStatusBarMessage(`Export stopped: "${getRootDisplayName(root)}" already has an export from another account. Please choose a different folder.`));
+                    dispatch(setExportInProgress(false));
+                    resolve();
+                    return;
+                }
+                if (root) await rememberFolder(dispatch, getState, root);
             } catch (error) {
                 debugLog(debugOn, "startExportThunk: pickExportFolder failed: ", error);
                 dispatch(setStatusBarMessage("Failed to access the export folder: " + (error.message || String(error))));
@@ -269,7 +273,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
             const crumbsFor = (dirRelPath, ancestors) => {
                 const depth = depthOf(dirRelPath);
                 return [
-                    { title: 'Backup home', href: '../'.repeat(depth) + 'index.html' },
+                    { title: 'Export home', href: '../'.repeat(depth) + 'index.html' },
                     ...ancestors.map((node) => ({ title: node.title, href: '../'.repeat(depth - depthOf(node.relPath)) + 'index.html' })),
                 ];
             };
@@ -370,10 +374,10 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                 });
 
                 // If nothing was found, something went wrong reading the local backup. Don't
-                // overwrite an earlier backup in this folder with an empty one.
+                // overwrite an earlier export in this folder with an empty one.
                 if (rootNode.children.length === 0) {
                     const errorCount = getState().localExport.exportErrors.length;
-                    dispatch(setStatusBarMessage(`Export stopped: no content was found in your local backup${errorCount ? ` (${errorCount} errors)` : ''}. The backup folder was not changed.`));
+                    dispatch(setStatusBarMessage(`Export stopped: no content was found in your local backup${errorCount ? ` (${errorCount} errors)` : ''}. The export folder was not changed.`));
                     dispatch(setExportInProgress(false));
                     resolve();
                     return;
@@ -398,7 +402,7 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                     }
                 }
 
-                await writeBackupManifest(root, {
+                await writeExportManifest(root, {
                     formatVersion: 1,
                     exportedAt: new Date().toISOString(),
                     memberId: authState.memberId,
@@ -407,10 +411,10 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                     localBackupUpToDate,
                 });
 
-                // The starting page of the backup, to open in a web browser.
+                // The starting page of the export, to open in a web browser.
                 const exportedAt = new Date().toLocaleString();
                 await writeIndexHtml(root, '', {
-                    title: `BSafes Backup – ${rootNode.title}`,
+                    title: `BSafes Export – ${rootNode.title}`,
                     subtitle: `${authState.displayName ? authState.displayName + ' · ' : ''}exported ${exportedAt}`,
                     items: indexItems(rootNode, `${rootNode.entryName}/`),
                     styleHref: styleHrefFor(''),
@@ -441,100 +445,90 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
 
 const CONTAINER_TYPES = new Set(['Workspace', 'Box', 'Folder', 'Notebook', 'Diary']);
 
-async function rememberFolder(dispatch, root) {
+// The logged-in account, whose export folder is remembered (null if nobody is logged in).
+const currentMemberId = (getState) => {
+    const { isLoggedIn, memberId } = getState().auth;
+    return isLoggedIn && memberId ? memberId : null;
+};
+
+async function rememberFolder(dispatch, getState, root) {
+    const memberId = currentMemberId(getState);
+    if (!memberId) return;
     try {
-        await saveLastFolder(root);
+        await saveLastFolder(memberId, root);
         dispatch(setLastFolder(root));
     } catch (error) {
-        debugLog(debugOn, "Failed to remember the backup folder: ", error);
+        debugLog(debugOn, "Failed to remember the export folder: ", error);
     }
 }
 
-export const loadLastFolderThunk = () => async (dispatch) => {
-    const lastFolder = await loadLastFolder();
+export const loadLastFolderThunk = () => async (dispatch, getState) => {
+    const lastFolder = await loadLastFolder(currentMemberId(getState));
     dispatch(setLastFolder(lastFolder));
-}
-
-export const loadAllowLoggedOutViewingThunk = () => async (dispatch) => {
-    const allowed = await loadAllowLoggedOutViewing();
-    dispatch(setAllowLoggedOutViewing(allowed));
-    return allowed;
-}
-
-/** Turns "view backups without logging in" on or off. Only works while logged in, so someone who isn't logged in can't turn it on. */
-export const changeAllowLoggedOutViewingThunk = (allowed) => async (dispatch, getState) => {
-    if (!getState().auth.isLoggedIn) return;
-    await saveAllowLoggedOutViewing(allowed);
-    dispatch(setAllowLoggedOutViewing(!!allowed));
-}
-
-async function canViewBackups(dispatch, getState) {
-    if (getState().auth.isLoggedIn) return true;
-    return dispatch(loadAllowLoggedOutViewingThunk());
 }
 
 // Resolves the "some files were changed - open anyway?" question (true = open anyway).
 // Kept outside Redux because a function can't be stored in the state.
 let answerOpenProblems = null;
 
-/** The user's answer when the backup check found changed or missing files. */
+/** The user's answer when the export check found changed or missing files. */
 export const answerOpenProblemsThunk = (openAnyway) => () => {
     if (answerOpenProblems) answerOpenProblems(!!openAnyway);
 }
 
-/** Stops a running backup check (or answers "Cancel" if it's waiting for the user). */
-export const cancelOpenBackupThunk = () => (dispatch) => {
+/** Stops a running export check (or answers "Cancel" if it's waiting for the user). */
+export const cancelOpenExportThunk = () => (dispatch) => {
     dispatch(setOpenCheckCancelRequested(true));
     if (answerOpenProblems) answerOpenProblems(false);
 }
 
 /**
- * Opens a backup in the user's web browser.
- * 1. Uses the remembered folder (if useLastFolder and it still exists), otherwise asks the user to pick one.
- * 2. Makes sure it's a BSafes backup, and remembers it.
+ * Opens an export in the user's web browser.
+ * 1. Uses the account's remembered folder (if useLastFolder and it still exists), otherwise asks the user to pick one.
+ * 2. Makes sure it's a BSafes export, and remembers it.
  * 3. Checks every page for files changed or deleted outside the app. If it finds any,
  *    it lists them and waits for the user to choose "Open anyway" or "Cancel".
- * 4. Opens the backup's index.html in the default browser.
- * When logged out, it only works if "view backups without logging in" is turned on.
+ * 4. Opens the export's index.html in the default browser.
+ * Only works while logged in.
  */
-export const openBackupInBrowserThunk = ({ useLastFolder = false } = {}) => (dispatch, getState) => {
-    return newActivity(dispatch, localExportActivity.OpenBackup, async () => {
-        if (!(await canViewBackups(dispatch, getState))) return;
+export const openExportInBrowserThunk = ({ useLastFolder = false } = {}) => (dispatch, getState) => {
+    return newActivity(dispatch, localExportActivity.OpenExport, async () => {
+        if (!getState().auth.isLoggedIn) return;
         let root = null;
         if (useLastFolder) {
-            const lastFolder = await loadLastFolder();
+            const lastFolder = await loadLastFolder(currentMemberId(getState));
             dispatch(setLastFolder(lastFolder));
             if (lastFolder && await checkFolder(lastFolder)) root = lastFolder;
         }
         if (!root) {
-            root = await pickBackupFolderToOpen();
+            root = await pickExportFolderToOpen();
             if (!root) return; // picker closed
         }
-        dispatch(clearOpenBackup());
+        dispatch(clearOpenExport());
 
-        let backupManifest;
+        let exportManifest;
         try {
-            backupManifest = await readBackupManifest(root);
+            exportManifest = await readExportManifest(root);
         } catch (error) {
-            dispatch(setOpenBackupError(`"${root.name}" is not a BSafes backup (backup-manifest.json is missing or unreadable).`));
+            dispatch(setOpenExportError(`"${root.name}" is not a BSafes export (export-manifest.json is missing or unreadable).`));
             return;
         }
-        await rememberFolder(dispatch, root);
+        await rememberFolder(dispatch, getState, root);
 
         dispatch(setOpenCheck({ status: 'checking', pagesChecked: 0 }));
         let result;
         try {
-            result = await checkBackup(root, backupManifest, {
+            result = await checkExport(root, exportManifest, {
                 onProgress: (pagesChecked) => dispatch(setOpenCheck({ status: 'checking', pagesChecked })),
                 isCancelled: () => getState().localExport.openCheckCancelRequested,
             });
         } catch (error) {
             dispatch(setOpenCheck(null));
-            dispatch(setOpenBackupError("Failed to check the backup: " + (error.message || String(error))));
+            dispatch(setOpenExportError("Failed to check the export: " + (error.message || String(error))));
             return;
         }
         if (result.cancelled) {
-            dispatch(clearOpenBackup());
+            dispatch(clearOpenExport());
             return;
         }
         if (result.problems.length) {
@@ -553,11 +547,11 @@ export const openBackupInBrowserThunk = ({ useLastFolder = false } = {}) => (dis
 
         try {
             await openInBrowser(root);
-            dispatch(setOpenBackupMessage(`Opened "${root.name}" in your web browser.`));
+            dispatch(setOpenExportMessage(`Opened "${root.name}" in your web browser.`));
         } catch (error) {
-            dispatch(setOpenBackupError(error.code === 'ENOENT'
+            dispatch(setOpenExportError(error.code === 'ENOENT'
                 ? `"${root.name}" was made by an older version of the app and can't be opened in a browser yet. Export to this folder again to make it browsable.`
-                : "Failed to open the backup in your browser: " + (error.message || String(error))));
+                : "Failed to open the export in your browser: " + (error.message || String(error))));
         }
     });
 }
