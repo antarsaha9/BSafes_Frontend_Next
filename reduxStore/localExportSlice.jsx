@@ -5,7 +5,7 @@ import { localExportActivity } from '../lib/activities';
 import { walkWorkspace, fetchFullyDecryptedItem, ExportCancelledError } from '../lib/exportTreeWalk';
 import { getItemType } from '../lib/bSafesCommonUI';
 import { pickExportFolder, pickExportFolderToOpen, checkFolder, openInBrowser } from '../lib/exportFsAccess';
-import { uniqueEntryName } from '../lib/exportNaming';
+import { uniqueEntryName, sanitizeFsName, diaryPageDate } from '../lib/exportNaming';
 import { exportLeafItem, writeContainerManifest, writeExportManifest, writeIndexHtml, EXPORT_FORMAT } from '../lib/exportWriter';
 import { isPageUpToDate, pruneContainerFolder } from '../lib/exportIncremental';
 import { ensureStoreFolder, readPageRecord, verifyRecordObjects, restorePageFromStore, collectGarbage } from '../lib/exportStore';
@@ -326,7 +326,10 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                         const parent = nodeStack[nodeStack.length - 1];
                         const titleText = htmlToText(entry.title);
                         const type = getItemType(entry.id);
-                        const entryName = uniqueEntryName(titleText, entry.id, type || 'page');
+                        // A diary page is named by its date (one page per day), e.g. "2026-10-30 Hike".
+                        const date = diaryPageDate(entry.id);
+                        const label = date ? (titleText ? `${date} – ${titleText}` : date) : titleText;
+                        const entryName = date ? sanitizeFsName(titleText ? `${date} ${titleText}` : date) : uniqueEntryName(titleText, entry.id, type || 'page');
                         const relPath = `${parent.relPath}/${entryName}`;
                         const version = entry.itemPack && entry.itemPack.version;
                         parent.keepNames.add(entryName); // keep its folder even if this page fails below
@@ -337,27 +340,27 @@ export const startExportThunk = ({ useLastFolder = false, updateFirst = true, fu
                                 // 1. Its folder is already current: nothing to do.
                                 if (await isPageUpToDate(root, relPath, entry.id, version)) {
                                     dispatch(incrementSkippedCount());
-                                    parent.children.push({ id: entry.id, type, title: titleText, entryName });
+                                    parent.children.push({ id: entry.id, type, title: label, entryName });
                                     return;
                                 }
                                 // 2. Unchanged, but moved or renamed: rebuild it from the hidden store.
                                 const record = await readPageRecord(root, entry.id);
                                 if (record && record.version === version && record.exportFormat === EXPORT_FORMAT && await verifyRecordObjects(root, record)) {
-                                    dispatch(setStatusBarMessage(`${progressPrefix()} Moving ${titleText || 'untitled page'}...`));
-                                    const { linked } = await restorePageFromStore(root, relPath, record, crumbs, styleHrefFor(relPath));
+                                    dispatch(setStatusBarMessage(`${progressPrefix()} Moving ${label || 'untitled page'}...`));
+                                    const { linked } = await restorePageFromStore(root, relPath, record, crumbs, styleHrefFor(relPath), label);
                                     if (!linked) copiedInsteadOfLinked = true;
                                     dispatch(incrementMovedCount());
-                                    parent.children.push({ id: entry.id, type, title: titleText, entryName });
+                                    parent.children.push({ id: entry.id, type, title: label, entryName });
                                     return;
                                 }
                             }
                             // 3. New or changed: unlock it from the local backup and export it.
-                            dispatch(setStatusBarMessage(`${progressPrefix()} Exporting ${titleText || 'untitled page'}...`));
+                            dispatch(setStatusBarMessage(`${progressPrefix()} Exporting ${label || 'untitled page'}...`));
                             const { item, decrypted, drawing } = await fetchFullyDecryptedItem(entry.id, workspaceKey);
-                            const { linked } = await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, styleHrefFor(relPath), isCancelled);
+                            const { linked } = await exportLeafItem(root, relPath, entry.id, item.version, decrypted, drawing, crumbs, styleHrefFor(relPath), label, isCancelled);
                             if (!linked) copiedInsteadOfLinked = true;
                             dispatch(incrementLeafItemCount());
-                            parent.children.push({ id: entry.id, type, title: titleText, entryName });
+                            parent.children.push({ id: entry.id, type, title: label, entryName });
                         } catch (error) {
                             if (error instanceof ExportCancelledError) throw error;
                             debugLog(debugOn, `startExportThunk: failed to export item ${entry.id}`, error);
